@@ -40,7 +40,7 @@ export interface DetectionResult {
   apiSchema?: { url: string; format: "openapi"; version?: string };
   /** How to authenticate — the bet. Aggregated across REST, MCP, and PRM. */
   auth?: {
-    rest?: ReadonlyArray<{ name: string; type: string; scheme?: string; in?: string; bearerFormat?: string; openIdConnectUrl?: string; flows?: unknown }>;
+    rest?: ReadonlyArray<{ name: string; type: string; scheme?: string; in?: string; keyName?: string; bearerFormat?: string; openIdConnectUrl?: string; flows?: unknown }>;
     mcp?: ReadonlyArray<{ url: string; type?: string; authorizationServer?: string }>;
     oauthProtectedResource?: { authorizationServers: string[]; scopes?: string[] };
   };
@@ -145,6 +145,7 @@ function extractRestAuth(doc: any) {
     type: s?.type,
     scheme: s?.scheme,
     in: s?.in,
+    keyName: s?.name, // for apiKey: the header/query param to send, e.g. "X-API-Key"
     bearerFormat: s?.bearerFormat,
     openIdConnectUrl: s?.openIdConnectUrl,
     flows: s?.flows,

@@ -3,6 +3,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDomain } from "tldts";
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
+import { faviconUrl } from "../src/lib/favicon.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCES = join(ROOT, "sources");
@@ -309,7 +310,7 @@ function buildCli(): Integration[] {
       name: c.name,
       description: c.description ?? "",
       url: c.docs,
-      icon: `https://${c.domain}/favicon.ico`,
+      icon: faviconUrl(c.domain) ?? undefined,
       categories: [],
       feeds: ["cli-seed" as Feed],
       cli: { install: c.install, domain: c.domain, docs: c.docs, repo: c.repo },
@@ -387,7 +388,7 @@ function applyFavicons(recs: Integration[]): Integration[] {
     if (!domain) return { ...r, icon: undefined };
     return {
       ...r,
-      icon: `https://${domain}/favicon.ico`,
+      icon: faviconUrl(domain) ?? undefined,
     };
   });
 }
@@ -528,8 +529,9 @@ function buildIndex(all: Integration[]) {
       name: remapped ? r.name.replace(/^.*?[–-]\s*/, "") : r.name,
       description: r.description.slice(0, 240),
       url: r.url,
-      // Icon is the provider's own apex-domain favicon — never a third-party host.
-      icon: domain ? `https://${domain}/favicon.ico` : undefined,
+      // Icon is the provider's own apex-domain favicon — never a third-party host,
+      // and never a LAN address (.local/private hosts return null).
+      icon: faviconUrl(domain) ?? undefined,
       domain,
       categories: r.categories,
       feeds: r.feeds,

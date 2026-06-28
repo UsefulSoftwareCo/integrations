@@ -1,4 +1,4 @@
-import { detect } from "../src/lib/detect.ts";
+import { apiHandler } from "./api.ts";
 
 export { McpDurableObject } from "./mcp-do.ts";
 
@@ -22,13 +22,6 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
     headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", ...headers },
   });
 
-// Normalize "https://Vercel.com/foo" / "vercel.com" -> "vercel.com"; reject non-domains.
-function cleanDomain(input: string | null): string | null {
-  if (!input) return null;
-  const d = input.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
-  return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(d) ? d : null;
-}
-
 export default {
   async fetch(
     request: Request,
@@ -37,29 +30,45 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
 
-    // MCP server (write-once tool registry) — point Claude/Cursor at /mcp.
-    // Routed through a single Durable Object so the session map persists.
+    // MCP server — point Claude/Cursor at /mcp. Routed through a single Durable
+    // Object so the session map persists across stateless Worker requests.
     if (url.pathname === "/mcp") {
-      const stub = env.MCP.get(env.MCP.idFromName("mcp"));
-      return stub.fetch(request);
+      return env.MCP.get(env.MCP.idFromName("mcp")).fetch(request);
     }
 
-    // Detection endpoint: run the full agent-readiness battery for a domain.
-    // GET /api/<domain>/detect -> structured DetectionResult (cached 1h).
-    const detectMatch = url.pathname.match(/^\/api\/([^/]+)\/detect\/?$/);
-    if (detectMatch) {
-      const domain = cleanDomain(decodeURIComponent(detectMatch[1]));
-      if (!domain) return json({ error: "invalid domain — GET /api/<domain>/detect" }, 400);
-      const cacheKey = new Request(`https://integrations.sh/api/${domain}/detect`);
+    // Self-describe via the same discovery format the catalog indexes: point at
+    // our own OpenAPI + MCP endpoint.
+    if (url.pathname === "/.well-known/api-catalog") {
+      return json(
+        {
+          linkset: [{
+            anchor: "https://integrations.sh",
+            "service-desc": [{ href: "https://integrations.sh/openapi.json", type: "application/openapi+json" }],
+            "service-doc": [{ href: "https://integrations.sh" }],
+            item: [{ href: "https://integrations.sh/mcp", type: "application/json" }],
+          }],
+        },
+        200,
+        { "cache-control": "public, max-age=86400" },
+      );
+    }
+
+    // The API + its OpenAPI doc — single source of truth (worker/api.ts).
+    if (url.pathname === "/openapi.json" || url.pathname.startsWith("/api/")) {
       const cache = (caches as unknown as { default: Cache }).default;
-      const cached = await cache.match(cacheKey);
+      const cached = await cache.match(request);
       if (cached) return cached;
-      const result = await detect(domain);
-      const res = json(result, 200, { "cache-control": "public, max-age=3600" });
-      ctx.waitUntil(cache.put(cacheKey, res.clone()));
+      const res = await apiHandler(request);
+      if (request.method === "GET" && res.status === 200) {
+        const out = new Response(res.clone().body, res);
+        out.headers.set("cache-control", "public, max-age=3600");
+        ctx.waitUntil(cache.put(request, out.clone()));
+        return out;
+      }
       return res;
     }
 
+    // Analytics: count executor-agent hits.
     const ip = request.headers.get("cf-connecting-ip") || "unknown";
     const country = request.headers.get("cf-ipcountry") || "unknown";
     const agent = request.headers.get("user-agent") || "unknown";
@@ -67,19 +76,12 @@ export default {
       ctx.waitUntil(
         fetch("https://us.i.posthog.com/i/v0/e/", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             api_key: env.POSTHOG_KEY,
             event: "hit",
             distinct_id: ip,
-            properties: {
-              $process_person_profile: false,
-              user_agent: agent,
-              country,
-              path: url.pathname,
-            },
+            properties: { $process_person_profile: false, user_agent: agent, country, path: url.pathname },
           }),
         }),
       );

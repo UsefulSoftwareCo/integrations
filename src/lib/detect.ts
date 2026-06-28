@@ -38,6 +38,12 @@ export interface DetectionResult {
     mcp: string[];
   };
   apiSchema?: { url: string; format: "openapi"; version?: string };
+  /** How to authenticate — the bet. Aggregated across REST, MCP, and PRM. */
+  auth?: {
+    rest?: ReadonlyArray<{ name: string; type: string; scheme?: string; in?: string; bearerFormat?: string; openIdConnectUrl?: string; flows?: unknown }>;
+    mcp?: ReadonlyArray<{ url: string; type?: string; authorizationServer?: string }>;
+    oauthProtectedResource?: { authorizationServers: string[]; scopes?: string[] };
+  };
   mcp: McpDetection[];
   agentCard?: { name?: string; url?: string };
   agentSkills?: { count: number; names: string[] };
@@ -130,22 +136,50 @@ async function checkLlmsTxt(fetchImpl: FetchLike, domain: string): Promise<boole
   return hit.text.length > 0 && !/<!doctype|<html/i.test(hit.text.slice(0, 200));
 }
 
-/** Probe conventional live-spec paths; trust the OpenAPI content-type / key. */
+/** Summarize the OpenAPI `securitySchemes` — how to authenticate to the API. */
+function extractRestAuth(doc: any) {
+  const schemes = doc?.components?.securitySchemes ?? doc?.securityDefinitions; // OAS3 / Swagger2
+  if (!schemes || typeof schemes !== "object") return undefined;
+  const out = Object.entries<any>(schemes).map(([name, s]) => ({
+    name,
+    type: s?.type,
+    scheme: s?.scheme,
+    in: s?.in,
+    bearerFormat: s?.bearerFormat,
+    openIdConnectUrl: s?.openIdConnectUrl,
+    flows: s?.flows,
+  }));
+  return out.length ? out : undefined;
+}
+
+/** Probe conventional live-spec paths; parse the OpenAPI to also surface auth. */
 async function checkApiSchema(fetchImpl: FetchLike, domain: string) {
   const paths = ["/api/schema/", "/openapi.json", "/swagger.json", "/api/openapi.json", "/v1/openapi.json"];
   for (const p of paths) {
     const hit = await get(fetchImpl, `https://${domain}${p}`);
     if (!hit || !hit.res.ok) continue;
     const ct = hit.res.headers.get("content-type") ?? "";
-    if (/openapi/i.test(ct)) {
-      return { url: `https://${domain}${p}`, format: "openapi" as const };
-    }
     const doc = asJson(hit.text, ct);
-    if (doc && (doc.openapi || doc.swagger)) {
-      return { url: `https://${domain}${p}`, format: "openapi" as const, version: doc.openapi ?? doc.swagger };
-    }
+    const isOpenapi = /openapi/i.test(ct) || Boolean(doc && (doc.openapi || doc.swagger));
+    if (!isOpenapi) continue;
+    return {
+      url: `https://${domain}${p}`,
+      format: "openapi" as const,
+      version: doc?.openapi ?? doc?.swagger,
+      rest: extractRestAuth(doc),
+    };
   }
   return undefined;
+}
+
+/** OAuth 2.0 Protected Resource Metadata (RFC 9728) — the API's auth servers. */
+async function checkOauthProtectedResource(fetchImpl: FetchLike, domain: string) {
+  const hit = await get(fetchImpl, `https://${domain}/.well-known/oauth-protected-resource`);
+  if (!hit || !hit.res.ok) return undefined;
+  const doc = asJson(hit.text, hit.res.headers.get("content-type"));
+  const servers = doc?.authorization_servers;
+  if (!Array.isArray(servers) || servers.length === 0) return undefined;
+  return { authorizationServers: servers as string[], scopes: doc?.scopes_supported as string[] | undefined };
 }
 
 /**
@@ -181,14 +215,21 @@ async function detectMcpOnboarding(fetchImpl: FetchLike, mcpUrl: string): Promis
 
 export async function detect(domain: string, fetchImpl: FetchLike = fetch): Promise<DetectionResult> {
   const errors: string[] = [];
-  const [apiCatalog, serverCard, agentCard, agentSkills, llmsTxt, apiSchema] = await Promise.all([
+  const [apiCatalog, serverCard, agentCard, agentSkills, llmsTxt, apiSchemaRaw, oauthPR] = await Promise.all([
     checkApiCatalog(fetchImpl, domain).catch((e) => (errors.push(`api-catalog: ${e}`), undefined)),
     checkServerCard(fetchImpl, domain).catch((e) => (errors.push(`server-card: ${e}`), undefined)),
     checkAgentCard(fetchImpl, domain).catch((e) => (errors.push(`agent-card: ${e}`), undefined)),
     checkAgentSkills(fetchImpl, domain).catch((e) => (errors.push(`agent-skills: ${e}`), undefined)),
     checkLlmsTxt(fetchImpl, domain).catch(() => false),
     checkApiSchema(fetchImpl, domain).catch(() => undefined),
+    checkOauthProtectedResource(fetchImpl, domain).catch(() => undefined),
   ]);
+
+  // Keep apiSchema as the spec locator; lift its auth into the aggregate below.
+  const restAuth = apiSchemaRaw?.rest;
+  const apiSchema = apiSchemaRaw
+    ? { url: apiSchemaRaw.url, format: apiSchemaRaw.format, version: apiSchemaRaw.version }
+    : undefined;
 
   // Collect MCP endpoints from the server card + api-catalog, then probe each
   // for self-onboarding capability.
@@ -199,6 +240,18 @@ export async function detect(domain: string, fetchImpl: FetchLike = fetch): Prom
     [...mcpSeen.values()].map(async (m) => ({ ...m, ...(await detectMcpOnboarding(fetchImpl, m.url).catch(() => ({}))) })),
   );
 
+  // Aggregate auth — the bet — across REST (OpenAPI securitySchemes), MCP
+  // (oauth2 + authorization server), and the PRM well-known.
+  const mcpAuth = mcp
+    .filter((m) => m.auth && m.auth !== "none")
+    .map((m) => ({ url: m.url, type: m.auth, authorizationServer: m.authorizationServer }));
+  const auth = {
+    ...(restAuth ? { rest: restAuth } : {}),
+    ...(mcpAuth.length ? { mcp: mcpAuth } : {}),
+    ...(oauthPR ? { oauthProtectedResource: oauthPR } : {}),
+  };
+  const hasAuth = Object.keys(auth).length > 0;
+
   const found: string[] = [];
   if (apiCatalog) found.push("api-catalog");
   if (apiSchema) found.push("openapi-schema");
@@ -207,6 +260,7 @@ export async function detect(domain: string, fetchImpl: FetchLike = fetch): Prom
   if (agentCard) found.push("agent-card");
   if (agentSkills) found.push("agent-skills");
   if (llmsTxt) found.push("llms.txt");
+  if (hasAuth) found.push("auth");
 
-  return { domain, found, apiCatalog, apiSchema, mcp, agentCard, agentSkills, llmsTxt, errors };
+  return { domain, found, apiCatalog, apiSchema, auth: hasAuth ? auth : undefined, mcp, agentCard, agentSkills, llmsTxt, errors };
 }

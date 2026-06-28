@@ -17,6 +17,7 @@ export const DetectionResult = Schema.Struct({
   found: Schema.Array(Schema.String),
   apiCatalog: Schema.optional(Schema.Unknown),
   apiSchema: Schema.optional(Schema.Unknown),
+  auth: Schema.optional(Schema.Unknown),
   mcp: Schema.Array(Schema.Unknown),
   agentCard: Schema.optional(Schema.Unknown),
   agentSkills: Schema.optional(Schema.Unknown),

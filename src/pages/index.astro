@@ -72,14 +72,6 @@ const counts = {
 
   const esc = (s) =>
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  // Favicon URL, or "" for non-public hosts (.local / localhost / private IP)
-  // — requesting those from a public page triggers a Local Network Access prompt.
-  const fav = (d) => {
-    const h = String(d).toLowerCase();
-    if (!h.includes(".") || h === "localhost" || h.endsWith(".local") || h.endsWith(".internal") ||
-        h.endsWith(".localhost") || /^(10|127)\.\d|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\./.test(h)) return "";
-    return `https://${d}/favicon.ico`;
-  };
   const dpath = (d) => `/d/${encodeURIComponent(d)}/`;
 
   const buildGroups = (recs) => {
@@ -100,9 +92,9 @@ const counts = {
 
   const groupRowHtml = (g) => {
     const ph = esc((g.domain[0] || "?").toUpperCase());
-    const src = g.icon || fav(g.domain);
-    const icon = src
-      ? `<img class="c-fav" src="${esc(src)}" alt="" loading="lazy" width="18" height="18" onerror="this.outerHTML='<span class=&quot;ph&quot;>${ph}</span>'">`
+    // g.icon is the PSL-validated favicon URL from api.json (null for non-public hosts).
+    const icon = g.icon
+      ? `<img class="c-fav" src="${esc(g.icon)}" alt="" loading="lazy" width="18" height="18" onerror="this.outerHTML='<span class=&quot;ph&quot;>${ph}</span>'">`
       : `<span class="ph">${ph}</span>`;
     const chips = TORDER.filter((t) => g.types[t]).map((t) => {
       const c = g.types[t];

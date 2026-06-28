@@ -57,7 +57,7 @@ export interface DetectionResult {
   errors: string[];
 }
 
-const TIMEOUT_MS = 7000;
+const TIMEOUT_MS = 5000;
 
 async function get(
   fetchImpl: FetchLike,
@@ -149,16 +149,16 @@ async function checkLlmsTxt(fetchImpl: FetchLike, domain: string): Promise<boole
  */
 async function checkApiSchema(fetchImpl: FetchLike, domain: string) {
   const paths = ["/api/schema/", "/openapi.json", "/swagger.json", "/api/openapi.json", "/v1/openapi.json"];
-  for (const p of paths) {
+  // Probe all candidate paths concurrently; keep the first (by order) that is a spec.
+  const results = await Promise.all(paths.map(async (p) => {
     const hit = await get(fetchImpl, `https://${domain}${p}`);
-    if (!hit || !hit.res.ok) continue;
+    if (!hit || !hit.res.ok) return undefined;
     const ct = hit.res.headers.get("content-type") ?? "";
     const doc = asJson(hit.text, ct);
     const isOpenapi = /openapi/i.test(ct) || Boolean(doc && (doc.openapi || doc.swagger));
-    if (!isOpenapi) continue;
-    return { url: `https://${domain}${p}`, format: "openapi" as const, version: doc?.openapi ?? doc?.swagger };
-  }
-  return undefined;
+    return isOpenapi ? { url: `https://${domain}${p}`, format: "openapi" as const, version: doc?.openapi ?? doc?.swagger } : undefined;
+  }));
+  return results.find(Boolean);
 }
 
 /** Read an OAuth Authorization Server metadata doc (RFC 8414) for capabilities. */
@@ -249,6 +249,7 @@ async function discoverMcpEndpoint(fetchImpl: FetchLike, domain: string): Promis
 
 export async function detect(domain: string, fetchImpl: FetchLike = fetch): Promise<DetectionResult> {
   const errors: string[] = [];
+  const discoverMcpEndpointResult = discoverMcpEndpoint(fetchImpl, domain); // start concurrently
   const [apiCatalog, serverCard, agentCard, agentSkills, llmsTxt, apiSchema, apiOAuth] = await Promise.all([
     checkApiCatalog(fetchImpl, domain).catch((e) => (errors.push(`api-catalog: ${e}`), undefined)),
     checkServerCard(fetchImpl, domain).catch((e) => (errors.push(`server-card: ${e}`), undefined)),
@@ -258,7 +259,7 @@ export async function detect(domain: string, fetchImpl: FetchLike = fetch): Prom
     checkApiSchema(fetchImpl, domain).catch(() => undefined),
     checkApiOAuth(fetchImpl, domain).catch(() => undefined),
   ]);
-  const probedMcp = await discoverMcpEndpoint(fetchImpl, domain).catch(() => undefined);
+  const probedMcp = await discoverMcpEndpointResult.catch(() => undefined);
 
   // Collect MCP endpoints from the server card + api-catalog, then probe each
   // for self-onboarding capability.

@@ -26,8 +26,43 @@ export const navHtml = (stars: number | null): string =>
   `<a class="ghstar" href="${REPO_URL}" target="_blank" rel="noopener">${STAR_SVG}<span>star on github</span>` +
   `${stars != null ? `<span class="ghstar-n">${formatStars(stars)}</span>` : ""}</a></div></nav>`;
 
+/** Small up-chevron affordance for the footer toggle (rotates on expand). */
+const CHEV_SVG = `<svg class="sf-chev" width="11" height="11" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+/**
+ * The footer — a compact, fixed bar docked to the bottom of the viewport that
+ * auto-hides on scroll-down / reveals on scroll-up, and expands on click to show
+ * secondary links. Concept ported from AnswerOverflow's CompactStickyFooter,
+ * restyled to the registry-grade minimal language. Behavior lives in FOOTER_JS
+ * (set:html-injected scripts don't run, so each consumer emits it as a real
+ * inline <script>); styles live in GLOBAL_CSS under "compact sticky footer".
+ */
 export const footerHtml = (): string =>
-  `<footer class="site"><div class="container"><span>integrations.sh</span><a href="${REPO_URL}" target="_blank" rel="noopener">star on github</a></div></footer>`;
+  `<footer id="sfooter" class="sf"><div class="container">` +
+  `<div class="sf-bar" role="button" tabindex="0" aria-controls="sf-panel" aria-expanded="false" aria-label="Toggle footer links">` +
+  `<span class="sf-mark">integrations.sh</span>` +
+  `<span class="sf-toggle"><span class="sf-more"><span class="sf-more-a">more</span><span class="sf-more-b">less</span></span>${CHEV_SVG}</span>` +
+  `</div>` +
+  `<div class="sf-panel" id="sf-panel"><div class="sf-panel-clip"><div class="sf-panel-inner">` +
+  `<p class="sf-tag">Services your agent can reach — official APIs, GraphQL endpoints, and MCP servers, with structured credential facts.</p>` +
+  `<nav class="sf-links" aria-label="Footer"><a href="/">registry</a><a href="/integrations.sh/">connect your agent</a><a href="${REPO_URL}" target="_blank" rel="noopener">github</a></nav>` +
+  `</div></div></div>` +
+  `</div></footer>`;
+
+/**
+ * Footer behavior — vanilla, framework-free (must run in both the Astro layout
+ * and the worker-SSR'd page). Toggles `.sf-open` on click/keyboard, and adds
+ * `.sf-hidden` when scrolling down past a threshold (reveals on scroll-up).
+ *
+ * The hide/show logic runs DIRECTLY in the scroll handler — deliberately not
+ * wrapped in requestAnimationFrame, since rAF is throttled/paused in some
+ * embedded preview surfaces, which would silently freeze the auto-hide while
+ * scrolling. The work is cheap (one scrollY read + an occasional class toggle),
+ * so a direct passive handler is fine. The footer is always revealed at the very
+ * top and within ~one footer-height of the page bottom, so a long infinite-scroll
+ * list still ends on a visible footer.
+ */
+export const FOOTER_JS = `(function(){var f=document.getElementById("sfooter");if(!f)return;var bar=f.querySelector(".sf-bar"),lastY=window.scrollY,open=false;function set(v){open=v;f.classList.toggle("sf-open",v);bar.setAttribute("aria-expanded",String(v));}bar.addEventListener("click",function(){set(!open);});bar.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();set(!open);}});function update(){var y=window.scrollY,d=document.documentElement,atEdge=(y<=8)||((y+window.innerHeight)>=(d.scrollHeight-96));if(!atEdge&&y>lastY&&y>120){f.classList.add("sf-hidden");if(open)set(false);}else if(atEdge||y<lastY){f.classList.remove("sf-hidden");}lastY=y;}window.addEventListener("scroll",update,{passive:true});update();})();`;
 
 /** The global stylesheet shared by every page (static + SSR'd). */
 export const GLOBAL_CSS = `
@@ -67,11 +102,32 @@ nav.site .container { height: 64px; display: flex; align-items: center; gap: 32p
 .ghstar-ico { flex-shrink: 0; }
 .ghstar-n { font-variant-numeric: tabular-nums; color: var(--gray-400); padding-left: 8px; border-left: 1px solid var(--gray-200); }
 
-main { flex: 1 0 auto; padding-bottom: 72px; }
-footer.site { border-top: 1px solid var(--gray-100); position: relative; z-index: 1; background: var(--white); }
-footer.site .container { height: 56px; display: flex; align-items: center; gap: 24px; font-family: var(--font-mono); font-size: 12px; color: var(--gray-400); }
-footer.site a { color: var(--gray-400); text-decoration: none; }
-footer.site a:hover { color: var(--gray-1000); }
+main { flex: 1 0 auto; padding-bottom: 96px; }
+
+/* compact sticky footer — fixed to the bottom, auto-hides on scroll-down /
+   reveals on scroll-up, click to expand. Concept from AnswerOverflow's
+   CompactStickyFooter, restyled minimal. Behavior in chrome.ts FOOTER_JS. */
+footer.sf { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; border-top: 1px solid var(--gray-100); background: var(--white); transform: translateY(0); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+footer.sf.sf-hidden { transform: translateY(100%); transition-duration: 0.2s; }
+.sf-bar { height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 24px; cursor: pointer; font-family: var(--font-mono); font-size: 12px; color: var(--gray-400); -webkit-user-select: none; user-select: none; }
+.sf-bar:focus-visible { outline: 2px solid var(--gray-300); outline-offset: -4px; border-radius: 4px; }
+.sf-mark { color: var(--gray-400); }
+.sf-toggle { display: inline-flex; align-items: center; gap: 7px; transition: color 0.15s; }
+.sf-bar:hover .sf-toggle { color: var(--gray-1000); }
+.sf-chev { transition: transform 0.15s ease; }
+footer.sf.sf-open .sf-chev { transform: rotate(180deg); }
+.sf-more-b { display: none; }
+footer.sf.sf-open .sf-more-a { display: none; }
+footer.sf.sf-open .sf-more-b { display: inline; }
+.sf-panel { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease; }
+footer.sf.sf-open .sf-panel { grid-template-rows: 1fr; opacity: 1; }
+.sf-panel-clip { overflow: hidden; }
+.sf-panel-inner { padding: 14px 0 18px; border-top: 1px solid var(--gray-100); }
+.sf-tag { margin: 0 0 12px; font-size: 13px; line-height: 1.55; color: var(--gray-500); max-width: 540px; }
+.sf-links { display: flex; flex-wrap: wrap; gap: 9px 22px; font-family: var(--font-mono); font-size: 12px; }
+.sf-links a { color: var(--gray-400); text-decoration: none; transition: color 0.12s; }
+.sf-links a:hover { color: var(--gray-1000); }
+@media (prefers-reduced-motion: reduce) { footer.sf, .sf-chev, .sf-panel { transition: none; } }
 
 /* shared atoms */
 .sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-400); }

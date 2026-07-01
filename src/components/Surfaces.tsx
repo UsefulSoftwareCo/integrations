@@ -232,6 +232,9 @@ export default function Surfaces({ domain, catalog }: { domain: string; catalog:
   }, [domain]);
 
   async function run() {
+    // The site's key conversion — posthog is the snippet global from chrome.ts
+    // (absent on localhost, hence the guard).
+    (window as { posthog?: { capture: (e: string, p?: Record<string, unknown>) => void } }).posthog?.capture("map_surface_clicked", { domain });
     setState("loading");
     setProgress("Starting…");
     setLiveCreds({});

@@ -110,6 +110,31 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
     headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", ...headers },
   });
 
+/** Fire-and-forget server-side PostHog capture. Browser pageviews come from
+ * posthog-js (ANALYTICS_JS in chrome.ts); this covers the callers that never
+ * run JS — agents fetching data files, MCP clients, and direct API users. */
+function track(env: Env, ctx: ExecutionContext, request: Request, event: string, properties: Record<string, unknown> = {}): void {
+  if (!env.POSTHOG_KEY) return;
+  ctx.waitUntil(
+    fetch("https://us.i.posthog.com/i/v0/e/", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        api_key: env.POSTHOG_KEY,
+        event,
+        distinct_id: request.headers.get("cf-connecting-ip") || "unknown",
+        properties: {
+          $process_person_profile: false,
+          user_agent: request.headers.get("user-agent") || "unknown",
+          country: request.headers.get("cf-ipcountry") || "unknown",
+          path: new URL(request.url).pathname,
+          ...properties,
+        },
+      }),
+    }).catch(() => {}),
+  );
+}
+
 export default {
   async fetch(
     request: Request,
@@ -119,9 +144,27 @@ export default {
     const url = new URL(request.url);
     wireAi(env);
 
+    // First-party analytics proxy — posthog-js points api_host here (see
+    // ANALYTICS_JS in chrome.ts), so ingestion is same-origin and survives
+    // tracker blocklists. Static assets (array.js) come from the assets host;
+    // everything else goes to ingestion. Pass the client IP through so PostHog
+    // geolocates the visitor rather than the Cloudflare edge.
+    if (url.pathname.startsWith("/_i/")) {
+      const upstream = url.pathname.startsWith("/_i/static/")
+        ? "https://us-assets.i.posthog.com"
+        : "https://us.i.posthog.com";
+      const target = new URL(url.pathname.slice(3) + url.search, upstream);
+      const headers = new Headers(request.headers);
+      headers.delete("cookie");
+      const ip = request.headers.get("cf-connecting-ip");
+      if (ip) headers.set("x-forwarded-for", ip);
+      return fetch(new Request(target, { method: request.method, headers, body: request.body, redirect: "follow" }));
+    }
+
     // MCP server — point Claude/Cursor at /mcp. Routed through a single Durable
     // Object so the session map persists across stateless Worker requests.
     if (url.pathname === "/mcp") {
+      track(env, ctx, request, "mcp_request");
       return env.MCP.get(env.MCP.idFromName("mcp")).fetch(request);
     }
 
@@ -175,6 +218,7 @@ export default {
       const producer = (async () => {
         try {
           const cached = await cache.match(cacheKey);
+          track(env, ctx, request, "discovery_run", { domain, cached: !!cached });
           if (cached) {
             const result = (await cached.json()) as { domain?: string };
             await send("done", result);
@@ -219,6 +263,7 @@ export default {
     // Dynamic API (the Effect HttpApi) — detect, discover + the OpenAPI doc.
     // Other /api/* paths (e.g. the static /api/domains.json) fall through to assets.
     if (url.pathname === "/openapi.json" || /^\/api\/[^/]+\/(?:detect|discover)\/?$/.test(url.pathname)) {
+      track(env, ctx, request, "api_request");
       const cache = (caches as unknown as { default: Cache }).default;
       // Version the cache key so a deploy that bumps CACHE_VERSION orphans stale
       // entries (the Cache API otherwise survives deploys).
@@ -273,23 +318,16 @@ export default {
       }
     }
 
-    // Analytics: count executor-agent hits.
-    const ip = request.headers.get("cf-connecting-ip") || "unknown";
-    const country = request.headers.get("cf-ipcountry") || "unknown";
+    // Analytics on asset fallthrough: `hit` for executor agents (kept as-is —
+    // pre-launch dashboards query it), `data_fetch` for any non-browser caller
+    // pulling the machine-readable files. Browser pageviews are client-side.
     const agent = request.headers.get("user-agent") || "unknown";
     if (agent.includes("executor")) {
-      ctx.waitUntil(
-        fetch("https://us.i.posthog.com/i/v0/e/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            api_key: env.POSTHOG_KEY,
-            event: "hit",
-            distinct_id: ip,
-            properties: { $process_person_profile: false, user_agent: agent, country, path: url.pathname },
-          }),
-        }),
-      );
+      track(env, ctx, request, "hit");
+    } else if (!agent.includes("Mozilla") && (/\.json$/.test(url.pathname) || url.pathname.startsWith("/.well-known/"))) {
+      // Browsers (the homepage fetches /api/domains.json) identify as Mozilla;
+      // what's left is curl, scripts, and agents pulling the data files.
+      track(env, ctx, request, "data_fetch");
     }
 
     return await env.ASSETS.fetch(request);

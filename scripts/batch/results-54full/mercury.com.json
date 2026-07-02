@@ -1,0 +1,547 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "mercury.com",
+    "detect": {
+      "domain": "mercury.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:34:20.533Z",
+    "summary": "Mercury exposes a REST banking API, a hosted MCP server at `https://mcp.mercury.com/mcp`, and an official `mercury` CLI; all require authentication via Mercury-issued API or OAuth credentials.",
+    "description": "Mercury provides business banking and financial operations tools, including accounts, payments, cards, invoicing, and treasury features. It lets customers access and automate parts of those workflows programmatically.",
+    "credentials": {
+      "mercury_api_token": {
+        "type": "bearer",
+        "label": "Mercury API token",
+        "generateUrl": "https://app.mercury.com/settings/tokens",
+        "setup": "Sign in to your Mercury account, open the [API Tokens page](https://app.mercury.com/settings/tokens), and click **Create an API Token**. Choose the minimum needed permission tier (`read-only`, `read-write`, or `custom`). Save the token when it is shown; Mercury says you cannot view it again after closing the dialog. The token value includes the `secret-token:` prefix.",
+        "acquisition": "manual"
+      },
+      "mercury_oauth_client": {
+        "type": "oauth2",
+        "label": "Mercury OAuth2 client credentials",
+        "setup": "For third-party integrations on behalf of Mercury customers, request approval using [Mercury's OAuth access form](https://mercurytechnologies.notion.site/2b1951a7f2158076b600db0ce173317c). If approved, Mercury creates your OAuth client after you provide your redirect URI details, app legal links, logo, and GPG public key. Mercury then securely shares your `client_id` and `client_secret`, plus sandbox test-client credentials.",
+        "acquisition": "manual"
+      },
+      "mercury_mcp_dcr_client": {
+        "type": "oauth2",
+        "label": "Mercury MCP dynamic client credentials",
+        "generateUrl": "https://mcp.mercury.com/register",
+        "setup": "For Mercury's hosted MCP server, register your client with OAuth 2.0 Dynamic Client Registration by POSTing to [https://mcp.mercury.com/register](https://mcp.mercury.com/register) with your `redirect_uris` and `client_name`. Mercury returns a `client_id` and `client_secret` for use in the OAuth authorization code flow against Mercury MCP.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "mercury-api",
+        "name": "Mercury API",
+        "type": "http",
+        "docs": "https://docs.mercury.com/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mercury.com/docs/welcome",
+            "https://docs.mercury.com/reference/getting-started-with-your-api",
+            "https://mercury.com/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mercury_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mercury.com/reference/getting-started-with-your-api",
+                  "https://raw.githubusercontent.com/MercuryTechnologies/mercury-cli/main/README.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "mercury_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mercury.com/reference/getting-started-with-your-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "mercury_oauth_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mercury.com/docs/integrations-with-oauth2"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.mercury.com/api/v1"
+      },
+      {
+        "slug": "mercury-mcp",
+        "name": "Mercury MCP",
+        "type": "mcp",
+        "docs": "https://docs.mercury.com/docs/connecting-mercury-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mercury.com/docs/what-is-mercury-mcp",
+            "https://docs.mercury.com/docs/connecting-mercury-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mercury_mcp_dcr_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mercury.com/docs/connecting-mercury-mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.mercury.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "mercury-cli",
+        "name": "Mercury CLI",
+        "type": "cli",
+        "docs": "https://github.com/MercuryTechnologies/mercury-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://raw.githubusercontent.com/MercuryTechnologies/mercury-cli/main/README.md",
+            "https://mercury.com/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mercury_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "mercury --api-key '<TOKEN>'",
+                    "env": [
+                      "MERCURY_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/MercuryTechnologies/mercury-cli/main/README.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "mercury_oauth_client",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "mercury login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/MercuryTechnologies/mercury-cli/main/README.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "go",
+            "identifier": "github.com/MercuryTechnologies/mercury-cli/cmd/mercury",
+            "runtimeHint": "go install"
+          },
+          {
+            "registryType": "github",
+            "identifier": "MercuryTechnologies/mercury-cli",
+            "runtimeHint": "curl installer / source repo"
+          }
+        ],
+        "command": "mercury"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:34:20.534Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 152537,
+    "completion_tokens": 1537,
+    "total_tokens": 154074
+  },
+  "visited": [
+    "https://docs.mercury.com/docs/connecting-mercury-mcp",
+    "https://docs.mercury.com/docs/integrations-with-oauth2",
+    "https://docs.mercury.com/docs/welcome",
+    "https://docs.mercury.com/docs/what-is-mercury-mcp",
+    "https://docs.mercury.com/llms.txt",
+    "https://docs.mercury.com/reference/getting-started-with-your-api",
+    "https://docs.mercury.com/reference/welcome-to-mercury-api",
+    "https://github.com/MercuryTechnologies/mercury-cli",
+    "https://mercury.com/api",
+    "https://raw.githubusercontent.com/MercuryTechnologies/mercury-cli/main/README.md",
+    "https://www.scalekit.com/connectors/mercurymcp"
+  ],
+  "grounding": [
+    "https://api.mercury.com/api/v1/accounts",
+    "https://app.mercury.com/login",
+    "https://app.mercury.com/redirect",
+    "https://app.mercury.com/settings/tokens",
+    "https://app.mercury.com/signup",
+    "https://apps.apple.com/us/app/mercury-powerful-banking/id1491984028",
+    "https://archiveprogram.github.com",
+    "https://chatgpt.com/#settings/Connectors",
+    "https://claude.ai/settings/connectors?modal=add-custom-connector",
+    "https://cli.mercury.com/install.sh",
+    "https://column.com/legal/sweep-program-network-banks",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-4.1",
+    "https://datatracker.ietf.org/doc/html/rfc7591",
+    "https://datatracker.ietf.org/doc/html/rfc7636#section-1.1",
+    "https://demo.mercury.com/dashboard",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.mercury.com/#content",
+    "https://docs.mercury.com/changelog",
+    "https://docs.mercury.com/changelog/cards-api-now-available.md",
+    "https://docs.mercury.com/changelog/categories-api-now-available.md",
+    "https://docs.mercury.com/changelog/n8n-community-node-launch.md",
+    "https://docs.mercury.com/changelog/send-money-api-now-supports-checks-and-domestic-wires-as-payment-methods.md",
+    "https://docs.mercury.com/changelog/treasury-statements-now-avaliable.md",
+    "https://docs.mercury.com/docs",
+    "https://docs.mercury.com/docs/api-token-security-policies",
+    "https://docs.mercury.com/docs/api-token-security-policies.md",
+    "https://docs.mercury.com/docs/connecting-mercury-mcp",
+    "https://docs.mercury.com/docs/connecting-mercury-mcp.md",
+    "https://docs.mercury.com/docs/getting-started",
+    "https://docs.mercury.com/docs/getting-started.md",
+    "https://docs.mercury.com/docs/integrations-with-oauth2",
+    "https://docs.mercury.com/docs/integrations-with-oauth2.md",
+    "https://docs.mercury.com/docs/obtain-the-tokens",
+    "https://docs.mercury.com/docs/security-best-practices",
+    "https://docs.mercury.com/docs/security-best-practices.md",
+    "https://docs.mercury.com/docs/start-oauth2-flow",
+    "https://docs.mercury.com/docs/supported-tools-on-mercury-mcp",
+    "https://docs.mercury.com/docs/supported-tools-on-mercury-mcp.md",
+    "https://docs.mercury.com/docs/using-mercury-sandbox",
+    "https://docs.mercury.com/docs/using-mercury-sandbox.md",
+    "https://docs.mercury.com/docs/using-the-access-token",
+    "https://docs.mercury.com/docs/welcome",
+    "https://docs.mercury.com/docs/welcome.md",
+    "https://docs.mercury.com/docs/what-is-mercury-mcp",
+    "https://docs.mercury.com/docs/what-is-mercury-mcp.md",
+    "https://docs.mercury.com/llms.txt",
+    "https://docs.mercury.com/recipes",
+    "https://docs.mercury.com/recipes/bulk-upload-receipts.md",
+    "https://docs.mercury.com/recipes/bulk-upload-tax-docs.md",
+    "https://docs.mercury.com/recipes/create-a-new-payment-recipient.md",
+    "https://docs.mercury.com/recipes/retrieve-information-about-all-of-your-accounts.md",
+    "https://docs.mercury.com/recipes/retrieve-information-about-all-of-your-payment-recipients.md",
+    "https://docs.mercury.com/recipes/send-an-ach-payment.md",
+    "https://docs.mercury.com/reference",
+    "https://docs.mercury.com/reference/accounts_receivable",
+    "https://docs.mercury.com/reference/accounts_receivable.md",
+    "https://docs.mercury.com/reference/cancelcard.md",
+    "https://docs.mercury.com/reference/cancelinvoice.md",
+    "https://docs.mercury.com/reference/cards.md",
+    "https://docs.mercury.com/reference/createcard.md",
+    "https://docs.mercury.com/reference/createcategory.md",
+    "https://docs.mercury.com/reference/createcustomer.md",
+    "https://docs.mercury.com/reference/createinternaltransfer.md",
+    "https://docs.mercury.com/reference/createinvoice.md",
+    "https://docs.mercury.com/reference/createrecipient.md",
+    "https://docs.mercury.com/reference/createrecipientinvite.md",
+    "https://docs.mercury.com/reference/createtransaction.md",
+    "https://docs.mercury.com/reference/createwebhook.md",
+    "https://docs.mercury.com/reference/deletecategory.md",
+    "https://docs.mercury.com/reference/deletecustomer.md",
+    "https://docs.mercury.com/reference/deleterecipient.md",
+    "https://docs.mercury.com/reference/deleterecipientinvite.md",
+    "https://docs.mercury.com/reference/deletewebhook.md",
+    "https://docs.mercury.com/reference/editcategory.md",
+    "https://docs.mercury.com/reference/events.md",
+    "https://docs.mercury.com/reference/freezecard.md",
+    "https://docs.mercury.com/reference/getaccountcards.md",
+    "https://docs.mercury.com/reference/getaccounts.md",
+    "https://docs.mercury.com/reference/getaccountstatements.md",
+    "https://docs.mercury.com/reference/getattachment.md",
+    "https://docs.mercury.com/reference/getcard.md",
+    "https://docs.mercury.com/reference/getcustomer.md",
+    "https://docs.mercury.com/reference/getevent.md",
+    "https://docs.mercury.com/reference/getevents.md",
+    "https://docs.mercury.com/reference/getinvoice.md",
+    "https://docs.mercury.com/reference/getinvoicepdf.md",
+    "https://docs.mercury.com/reference/getorganization.md",
+    "https://docs.mercury.com/reference/getrecipient.md",
+    "https://docs.mercury.com/reference/getrecipientinvite.md",
+    "https://docs.mercury.com/reference/getrecipients.md",
+    "https://docs.mercury.com/reference/getsaferequest.md",
+    "https://docs.mercury.com/reference/getsaferequestdocument.md",
+    "https://docs.mercury.com/reference/getsaferequests.md",
+    "https://docs.mercury.com/reference/getsendmoneyapprovalrequest.md",
+    "https://docs.mercury.com/reference/getstatementpdf.md",
+    "https://docs.mercury.com/reference/getting-started-with-your-api",
+    "https://docs.mercury.com/reference/gettransaction.md",
+    "https://docs.mercury.com/reference/gettransactionbyid.md",
+    "https://docs.mercury.com/reference/gettreasury.md",
+    "https://docs.mercury.com/reference/gettreasurystatements.md",
+    "https://docs.mercury.com/reference/gettreasurytransactions.md",
+    "https://docs.mercury.com/reference/getuser.md",
+    "https://docs.mercury.com/reference/getusers.md",
+    "https://docs.mercury.com/reference/getwebhook.md",
+    "https://docs.mercury.com/reference/getwebhooks.md",
+    "https://docs.mercury.com/reference/listaccounttransactions.md",
+    "https://docs.mercury.com/reference/listcards.md",
+    "https://docs.mercury.com/reference/listcategories.md",
+    "https://docs.mercury.com/reference/listcredit.md",
+    "https://docs.mercury.com/reference/listcustomers.md",
+    "https://docs.mercury.com/reference/listinvoiceattachments.md",
+    "https://docs.mercury.com/reference/listinvoices.md",
+    "https://docs.mercury.com/reference/listrecipientinvites.md",
+    "https://docs.mercury.com/reference/listrecipientsattachments.md",
+    "https://docs.mercury.com/reference/listsendmoneyapprovalrequests.md",
+    "https://docs.mercury.com/reference/listtransactions.md",
+    "https://docs.mercury.com/reference/obtainaccesstoken.md",
+    "https://docs.mercury.com/reference/requestsendmoney.md",
+    "https://docs.mercury.com/reference/start-oauth2-flow",
+    "https://docs.mercury.com/reference/startoauth2flow.md",
+    "https://docs.mercury.com/reference/submitonboardingdata-1.md",
+    "https://docs.mercury.com/reference/unfreezecard.md",
+    "https://docs.mercury.com/reference/updatecard.md",
+    "https://docs.mercury.com/reference/updatecustomer.md",
+    "https://docs.mercury.com/reference/updateinvoice.md",
+    "https://docs.mercury.com/reference/updaterecipient.md",
+    "https://docs.mercury.com/reference/updatetransaction.md",
+    "https://docs.mercury.com/reference/updatewebhook.md",
+    "https://docs.mercury.com/reference/uploadrecipientattachment.md",
+    "https://docs.mercury.com/reference/uploadtransactionattachment.md",
+    "https://docs.mercury.com/reference/using-mercury-sandbox",
+    "https://docs.mercury.com/reference/verifywebhook.md",
+    "https://docs.mercury.com/reference/webhooks.md",
+    "https://docs.mercury.com/reference/welcome-to-mercury-api",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/MercuryTechnologies",
+    "https://github.com/MercuryTechnologies/mercury-cli",
+    "https://github.com/MercuryTechnologies/mercury-cli/actions",
+    "https://github.com/MercuryTechnologies/mercury-cli/branches",
+    "https://github.com/MercuryTechnologies/mercury-cli/commit/1d12525adaf445bd9c4e4f2d6ba3d4ef4f29ed24",
+    "https://github.com/MercuryTechnologies/mercury-cli/commit/423139cc9a7b7af0f354cb3ce46d504a806b19dc",
+    "https://github.com/MercuryTechnologies/mercury-cli/commit/6d258805d9f43534ef3c4e66c2845fbb1b9a1119",
+    "https://github.com/MercuryTechnologies/mercury-cli/commit/c30d6529beb6367c45ea1c4370ded9f471cc707e",
+    "https://github.com/MercuryTechnologies/mercury-cli/commit/c791e099a4e883ecd57d5bc8a6347560fd771757",
+    "https://github.com/MercuryTechnologies/mercury-cli/commit/e2e766684e7f3f3eb957bd8912c7997f37082197",
+    "https://github.com/MercuryTechnologies/mercury-cli/commits/main/",
+    "https://github.com/MercuryTechnologies/mercury-cli/commits?author=stainless-app%5Bbot%5D",
+    "https://github.com/MercuryTechnologies/mercury-cli/issues",
+    "https://github.com/MercuryTechnologies/mercury-cli/projects",
+    "https://github.com/MercuryTechnologies/mercury-cli/pull/68",
+    "https://github.com/MercuryTechnologies/mercury-cli/pull/81",
+    "https://github.com/MercuryTechnologies/mercury-cli/pulls",
+    "https://github.com/MercuryTechnologies/mercury-cli/pulse",
+    "https://github.com/MercuryTechnologies/mercury-cli/security",
+    "https://github.com/MercuryTechnologies/mercury-cli/tags",
+    "https://github.com/MercuryTechnologies/mercury-cli/tree/main/.github",
+    "https://github.com/MercuryTechnologies/mercury-cli/tree/main/bin",
+    "https://github.com/MercuryTechnologies/mercury-cli/tree/main/cmd/mercury",
+    "https://github.com/MercuryTechnologies/mercury-cli/tree/main/examples",
+    "https://github.com/MercuryTechnologies/mercury-cli/tree/main/internal",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2FMercuryTechnologies%2Fmercury-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FMercuryTechnologies%2Fmercury-cli",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=MercuryTechnologies%2Fmercury-cli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/tidwall/gjson/blob/master/SYNTAX.md",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://go.dev/doc/install",
+    "https://lix.systems/install/",
+    "https://maintainers.github.com",
+    "https://mcp.mercury.com",
+    "https://mcp.mercury.com/mcp",
+    "https://mcp.mercury.com/register",
+    "https://mercury.com/",
+    "https://mercury.com/#footnote-business-not-a-bank-2026",
+    "https://mercury.com/#footnote-paid-subscribers",
+    "https://mercury.com/about",
+    "https://mercury.com/accounting-automations",
+    "https://mercury.com/accounting-firms",
+    "https://mercury.com/agencies-and-consultants",
+    "https://mercury.com/api",
+    "https://mercury.com/bill-pay",
+    "https://mercury.com/blog",
+    "https://mercury.com/blog/categories/inside-mercury",
+    "https://mercury.com/blog/categories/meridian",
+    "https://mercury.com/blog/how-mercury-works-with-partner-banks",
+    "https://mercury.com/blog/inside-mercury/how-mercury-works-with-partner-banks",
+    "https://mercury.com/blog/topics/scaling-and-growth",
+    "https://mercury.com/blog/topics/starting-a-business",
+    "https://mercury.com/business-banking",
+    "https://mercury.com/business-formation-resources",
+    "https://mercury.com/business-payments",
+    "https://mercury.com/climate",
+    "https://mercury.com/command",
+    "https://mercury.com/contact",
+    "https://mercury.com/credit",
+    "https://mercury.com/ecommerce",
+    "https://mercury.com/events",
+    "https://mercury.com/expense-management",
+    "https://mercury.com/faq",
+    "https://mercury.com/financial-workflows",
+    "https://mercury.com/healthcare-services",
+    "https://mercury.com/how-mercury-works",
+    "https://mercury.com/insights",
+    "https://mercury.com/investor-database",
+    "https://mercury.com/invoicing",
+    "https://mercury.com/jobs",
+    "https://mercury.com/legal",
+    "https://mercury.com/legal/choice/sweep-program-deposit-placement-and-custodial-agreement",
+    "https://mercury.com/legal/column/sweep-program-deposit-placement-and-custodial-agreements",
+    "https://mercury.com/legal/privacy",
+    "https://mercury.com/life-science",
+    "https://mercury.com/llc-banking",
+    "https://mercury.com/partnerships",
+    "https://mercury.com/peak-season",
+    "https://mercury.com/perks",
+    "https://mercury.com/perks/bundles/customer-growth",
+    "https://mercury.com/perks/bundles/ecommerce",
+    "https://mercury.com/perks/bundles/startup-launch",
+    "https://mercury.com/personal-banking",
+    "https://mercury.com/pricing",
+    "https://mercury.com/real-estate-and-construction",
+    "https://mercury.com/releases",
+    "https://mercury.com/saas",
+    "https://mercury.com/safe",
+    "https://mercury.com/security",
+    "https://mercury.com/settings/tokens",
+    "https://mercury.com/switch-to-mercury",
+    "https://mercury.com/tools",
+    "https://mercury.com/tools/cash-burn-rate-calculator",
+    "https://mercury.com/treasury",
+    "https://mercury.com/vc-funds",
+    "https://mercury.com/venture-debt",
+    "https://mercury.com/web3",
+    "https://mercury.com/working-capital-loans",
+    "https://mercurytechnologies.notion.site/2b1951a7f2158076b600db0ce173317c",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://nixos.org/download",
+    "https://play.google.com/store/apps/dev?id=7011991507842528981&pli=1",
+    "https://raw.githubusercontent.com/MercuryTechnologies/mercury-cli/main/README.md",
+    "https://rnt.com/files/ddm/bank-list/pbl-rtncu.pdf",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://support.mercury.com/hc/en-us/business",
+    "https://support.mercury.com/hc/en-us/sections/28736349558420-Getting-Started",
+    "https://www.instagram.com/mercuryfi/",
+    "https://www.linkedin.com/company/mercuryhq",
+    "https://www.scalekit.com/connectors/mercurymcp",
+    "https://www.tiktok.com/@mercury.fi",
+    "https://www.x.com/mercury",
+    "https://www.youtube.com/@Mercuryfi",
+    "https://your-app.com/callback"
+  ]
+}

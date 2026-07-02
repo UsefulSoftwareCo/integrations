@@ -364,6 +364,14 @@ export function createExports(manifest: SSRManifest) {
 
     // Self-describe via the same discovery format the catalog indexes: point at
     // our own OpenAPI + MCP endpoint.
+    // Our own owner declaration — served from the Worker because the assets
+    // layer skips dotfile paths. Content lives in public/.well-known/ for
+    // provenance; this route mirrors it.
+    if (url.pathname === "/.well-known/integrations.json") {
+      const res = await env.ASSETS.fetch(`${url.origin}/.well-known/integrations.json`);
+      if (res.ok) return res;
+      return json({ error: "not found" }, 404);
+    }
     if (url.pathname === "/.well-known/api-catalog") {
       return json(
         {

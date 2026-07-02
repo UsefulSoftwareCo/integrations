@@ -54,3 +54,12 @@
 - morning-rerun.txt at 39 domains (batch-01 vintage symptoms + featurebase).
 - Driver is nohup-detached (pid survives session restarts); TPM-bump monitor
   armed. On bump: kill drive.sh, `bash scripts/batch/drive.sh <next-batch> 8`.
+
+## 07:15 decision
+- Quantified prompt delta: locatorless_http 47% of batch-01 surfaces vs 9% of
+  batch-02. batch-01 (200 domains) gets a FULL rerun under the final prompt
+  when TPM bumps (`run-loop --domains batches/batch-01.txt --force`), replacing
+  the symptom-list approach (morning-rerun.txt now redundant for b1 domains;
+  keep it for the results-mini sample vintage).
+- check-results gained --probe (live-verify grounding offenders; github MCP
+  endpoint case). 257/257 passing at last full check.

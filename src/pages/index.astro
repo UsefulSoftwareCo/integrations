@@ -112,6 +112,17 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
   const dpath = (d: string) => `/${encodeURIComponent(d)}/`;
   const isDomain = (s: string) => /^([a-z0-9-]+\.)+[a-z]{2,}$/i.test(s);
+  // A pasted URL becomes a domain search: scheme, path, port, and www. fall
+  // away ("https://www.mintlify.com/docs" → "mintlify.com"). Non-URLs pass through.
+  const normalizeQuery = (s: string) => {
+    const t = s.trim();
+    if (!/^https?:\/\//i.test(t) && !/^www\./i.test(t)) return s;
+    try {
+      return new URL(/^https?:\/\//i.test(t) ? t : `https://${t}`).hostname.replace(/^www\./i, "");
+    } catch {
+      return s;
+    }
+  };
 
   const rowHtml = (g: DomainRow) => {
     const L = esc((g.domain[0] || "?").toUpperCase());
@@ -181,7 +192,14 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
   });
 
   let to: ReturnType<typeof setTimeout> | undefined;
-  q.addEventListener("input", () => { term = q.value; updateTypeahead(); clearTimeout(to); to = setTimeout(apply, 90); });
+  q.addEventListener("input", () => {
+    const normalized = normalizeQuery(q.value);
+    if (normalized !== q.value) q.value = normalized;
+    term = normalized;
+    updateTypeahead();
+    clearTimeout(to);
+    to = setTimeout(apply, 90);
+  });
   kindsNav.addEventListener("click", (e) => {
     const btn = (e.target as HTMLElement).closest("button");
     if (!btn) return;

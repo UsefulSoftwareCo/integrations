@@ -1,0 +1,404 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "nile.dev",
+    "detect": {
+      "domain": "nile.dev",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:14:52.050Z",
+    "summary": "nile.dev exposes a Management HTTP API, a public Auth API surface, an MCP server, and the `nile` CLI; auth uses a Nile API key plus workspace slug for management/MCP, while the auth sign-in endpoint is public.",
+    "credentials": {
+      "nile_api_key": {
+        "type": "api_key",
+        "label": "Nile API key",
+        "generateUrl": "https://console.thenile.dev/",
+        "setup": "Go to the [Nile console](https://console.thenile.dev/), open your workspace, then use the **Security** tab to create an API key. Store it as `NILE_API_KEY` for the CLI and MCP server, or send it as a bearer token when the HTTP docs require `Authorization: Bearer <token>`.",
+        "acquisition": "manual"
+      },
+      "nile_workspace_slug": {
+        "type": "basic",
+        "label": "Nile workspace slug",
+        "generateUrl": "https://console.thenile.dev/",
+        "setup": "Find your workspace name/slug at the top of the [Nile console](https://console.thenile.dev/). It is used alongside your API key for the MCP server and CLI configuration as `NILE_WORKSPACE_SLUG` or `--workspace`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "nile-management-api",
+        "name": "Nile Management API",
+        "type": "http",
+        "docs": "https://thenile.dev/docs/api-reference/databases/list-dedicated-compute-instances-for-a-database",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://thenile.dev/docs/api-reference/databases/list-dedicated-compute-instances-for-a-database"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "nile_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://thenile.dev/docs/api-reference/databases/list-dedicated-compute-instances-for-a-database"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://global.thenile.dev"
+      },
+      {
+        "slug": "nile-auth-api",
+        "name": "Nile Auth API",
+        "type": "http",
+        "docs": "https://thenile.dev/docs/auth/api-reference/auth/sign-in-to-the-application",
+        "basis": {
+          "via": "discovered",
+          "evidence": []
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://thenile.dev/docs/auth/api-reference/auth/sign-in-to-the-application"
+            ]
+          }
+        },
+        "url": "https://api.example.com/v2"
+      },
+      {
+        "slug": "nile-mcp-server",
+        "name": "Nile MCP server",
+        "type": "mcp",
+        "docs": "https://thenile.dev/docs/ai-embeddings/model_context_protocol",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://thenile.dev/docs/ai-embeddings/model_context_protocol"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "nile_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "NILE_API_KEY"
+                  }
+                },
+                {
+                  "id": "nile_workspace_slug",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "NILE_WORKSPACE_SLUG"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://thenile.dev/docs/ai-embeddings/model_context_protocol"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://localhost:3000/sse",
+        "transports": [
+          "sse"
+        ]
+      },
+      {
+        "slug": "nile-cli",
+        "name": "Nile CLI",
+        "type": "cli",
+        "docs": "https://thenile.dev/docs/cli/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://thenile.dev/docs/cli/introduction"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "nile_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "nile --api-key YOUR_API_KEY",
+                    "env": [
+                      "NILE_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://thenile.dev/docs/cli/introduction"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "nile_workspace_slug",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "nile config --workspace your-workspace"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://thenile.dev/docs/cli/introduction"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "niledatabase",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "nile"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:14:52.050Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 98412,
+    "completion_tokens": 1073,
+    "total_tokens": 99485
+  },
+  "visited": [
+    "https://github.com/blurrah/mcp-graphql",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://nile.dev/llms.txt",
+    "https://thenile.dev/docs/ai-embeddings/model_context_protocol",
+    "https://thenile.dev/docs/api-reference/databases/list-dedicated-compute-instances-for-a-database",
+    "https://thenile.dev/docs/auth/api-reference/auth/sign-in-to-the-application",
+    "https://thenile.dev/docs/cli/introduction",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "http://localhost:3000/messages",
+    "http://localhost:3000/sse",
+    "https://api.example.com/v2/databases/{database}/auth/signin",
+    "https://claude.ai/desktop",
+    "https://console.thenile.dev",
+    "https://console.thenile.dev/",
+    "https://cursor.sh",
+    "https://discord.com/invite/8UuBB84tTy",
+    "https://example.com/user.png",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/niledatabase/cli",
+    "https://github.com/niledatabase/niledatabase",
+    "https://github.com/yourusername/nile-mcp-server.git",
+    "https://global.thenile.dev/workspaces/{workspaceSlug}/databases/{databaseName}/compute",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://nile.dev/llms.txt",
+    "https://thenile.dev/#authentication",
+    "https://thenile.dev/#authorization-authorization",
+    "https://thenile.dev/#available-tools",
+    "https://thenile.dev/#basic-configuration",
+    "https://thenile.dev/#body-email",
+    "https://thenile.dev/#body-password",
+    "https://thenile.dev/#claude-code-setup",
+    "https://thenile.dev/#claude-desktop-setup",
+    "https://thenile.dev/#cline-setup",
+    "https://thenile.dev/#common-issues",
+    "https://thenile.dev/#common-workflows",
+    "https://thenile.dev/#configuration",
+    "https://thenile.dev/#content-area",
+    "https://thenile.dev/#credential-management",
+    "https://thenile.dev/#cursor-setup",
+    "https://thenile.dev/#database-management",
+    "https://thenile.dev/#debugging",
+    "https://thenile.dev/#example-usage",
+    "https://thenile.dev/#getting-help",
+    "https://thenile.dev/#getting-started-with-nile-cli",
+    "https://thenile.dev/#installation",
+    "https://thenile.dev/#installing-nile-model-context-protocol",
+    "https://thenile.dev/#latest-alpha%2Fpreview-version",
+    "https://thenile.dev/#latest-alpha/preview-version",
+    "https://thenile.dev/#managing-tenants",
+    "https://thenile.dev/#manual-installation",
+    "https://thenile.dev/#output-formats",
+    "https://thenile.dev/#parameter-database",
+    "https://thenile.dev/#parameter-database-name",
+    "https://thenile.dev/#parameter-end",
+    "https://thenile.dev/#parameter-start",
+    "https://thenile.dev/#parameter-workspace-slug",
+    "https://thenile.dev/#platform-requirements",
+    "https://thenile.dev/#region-management",
+    "https://thenile.dev/#resource-management",
+    "https://thenile.dev/#response-items-created",
+    "https://thenile.dev/#response-items-database",
+    "https://thenile.dev/#response-items-deleted",
+    "https://thenile.dev/#response-items-desired-instance-type",
+    "https://thenile.dev/#response-items-instance-id",
+    "https://thenile.dev/#response-items-instance-name",
+    "https://thenile.dev/#response-items-instance-type",
+    "https://thenile.dev/#response-items-status",
+    "https://thenile.dev/#response-items-updated",
+    "https://thenile.dev/#response-user",
+    "https://thenile.dev/#server-modes",
+    "https://thenile.dev/#setting-up-a-new-database",
+    "https://thenile.dev/#sql-operations",
+    "https://thenile.dev/#sse-mode",
+    "https://thenile.dev/#stable-version",
+    "https://thenile.dev/#stdin-mode-default",
+    "https://thenile.dev/#tenant-management",
+    "https://thenile.dev/#troubleshooting",
+    "https://thenile.dev/#windsurf-setup",
+    "https://thenile.dev/docs/ai-embeddings/introduction",
+    "https://thenile.dev/docs/ai-embeddings/model_context_protocol",
+    "https://thenile.dev/docs/ai-embeddings/rag",
+    "https://thenile.dev/docs/ai-embeddings/rag_vs_finetune",
+    "https://thenile.dev/docs/ai-embeddings/streaming",
+    "https://thenile.dev/docs/api-reference/databases/create-a-database",
+    "https://thenile.dev/docs/api-reference/databases/create-a-database-credential",
+    "https://thenile.dev/docs/api-reference/databases/create-a-dedicated-compute-instance",
+    "https://thenile.dev/docs/api-reference/databases/delete-a-database",
+    "https://thenile.dev/docs/api-reference/databases/delete-a-database-credential",
+    "https://thenile.dev/docs/api-reference/databases/delete-a-dedicated-compute-instance",
+    "https://thenile.dev/docs/api-reference/databases/describe-a-dedicated-compute-instance",
+    "https://thenile.dev/docs/api-reference/databases/get-a-database",
+    "https://thenile.dev/docs/api-reference/databases/list-available-regions",
+    "https://thenile.dev/docs/api-reference/databases/list-databases",
+    "https://thenile.dev/docs/api-reference/databases/list-dedicated-compute-instances-for-a-database",
+    "https://thenile.dev/docs/api-reference/databases/lists-credentials-for-a-database",
+    "https://thenile.dev/docs/api-reference/databases/rotate-a-database-credential",
+    "https://thenile.dev/docs/api-reference/databases/update-a-dedicated-compute-instance",
+    "https://thenile.dev/docs/api-reference/developers/deletes-a-previously-issued-invite",
+    "https://thenile.dev/docs/api-reference/developers/identify-developer-details",
+    "https://thenile.dev/docs/api-reference/developers/invite-a-developer-to-a-workspace",
+    "https://thenile.dev/docs/api-reference/developers/list-developer-invites",
+    "https://thenile.dev/docs/api-reference/post-oauth2token",
+    "https://thenile.dev/docs/api-reference/workspaces/change-level-effective-now-or-at-timestamp",
+    "https://thenile.dev/docs/api-reference/workspaces/close-a-subscription-row-at-given-time-now-if-omitted",
+    "https://thenile.dev/docs/api-reference/workspaces/create-a-workspace",
+    "https://thenile.dev/docs/api-reference/workspaces/get-current-subscription-from-db",
+    "https://thenile.dev/docs/api-reference/workspaces/get-workspaces",
+    "https://thenile.dev/docs/api-reference/workspaces/get-workspaces-compute-types",
+    "https://thenile.dev/docs/api-reference/workspaces/get-workspaces-metricscompute",
+    "https://thenile.dev/docs/api-reference/workspaces/list-developers-with-access-to-a-workspace",
+    "https://thenile.dev/docs/api-reference/workspaces/list-subscription-history-most-recent-first",
+    "https://thenile.dev/docs/api-reference/workspaces/list-workspaces",
+    "https://thenile.dev/docs/api-reference/workspaces/monthly-totals-by-component-from-rated-lines",
+    "https://thenile.dev/docs/api-reference/workspaces/remove-a-developer-from-a-workspace",
+    "https://thenile.dev/docs/api-reference/workspaces/start-a-subscription-row",
+    "https://thenile.dev/docs/auth/api-reference/auth/complete-an-mfa-challenge",
+    "https://thenile.dev/docs/auth/api-reference/auth/disable-mfa-for-the-current-user",
+    "https://thenile.dev/docs/auth/api-reference/auth/get-available-providers",
+    "https://thenile.dev/docs/auth/api-reference/auth/get-csrf-token",
+    "https://thenile.dev/docs/auth/api-reference/auth/get-the-current-session",
+    "https://thenile.dev/docs/auth/api-reference/auth/handle-provider-callback",
+    "https://thenile.dev/docs/auth/api-reference/auth/initiate-mfa-setup",
+    "https://thenile.dev/docs/auth/api-reference/auth/refresh-session-token",
+    "https://thenile.dev/docs/auth/api-reference/auth/reset-password",
+    "https://thenile.dev/docs/auth/api-reference/auth/resets-the-password",
+    "https://thenile.dev/docs/auth/api-reference/auth/retrieve-password-token",
+    "https://thenile.dev/docs/auth/api-reference/auth/sends-a-verification-email",
+    "https://thenile.dev/docs/auth/api-reference/auth/sign-in-to-the-application",
+    "https://thenile.dev/docs/auth/api-reference/auth/sign-out-of-the-application",
+    "https://thenile.dev/docs/auth/api-reference/auth/takes-in-an-email-verification-token-and-ensures-it-is-valid",
+    "https://thenile.dev/docs/auth/api-reference/tenants/accepts-a-tenant-invite",
+    "https://thenile.dev/docs/auth/api-reference/tenants/creates-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/tenants/delete-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/tenants/delete-the-current-user",
+    "https://thenile.dev/docs/auth/api-reference/tenants/get-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/tenants/invite-a-user-to-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/tenants/list-pending-invites-for-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/tenants/update-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/users/a-list-of-tenant-users",
+    "https://thenile.dev/docs/auth/api-reference/users/create-a-new-user-and-assigns-them-to-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/users/creates-a-user",
+    "https://thenile.dev/docs/auth/api-reference/users/identify-the-principal",
+    "https://thenile.dev/docs/auth/api-reference/users/links-an-existing-user-to-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/users/lists-tenants-of-user",
+    "https://thenile.dev/docs/auth/api-reference/users/signs-up-a-new-user",
+    "https://thenile.dev/docs/auth/api-reference/users/unlinks-a-user-from-a-tenant",
+    "https://thenile.dev/docs/auth/api-reference/users/update-a-user",
+    "https://thenile.dev/docs/auth/api-reference/users/update-the-principal-profile",
+    "https://thenile.dev/docs/auth/introduction",
+    "https://thenile.dev/docs/cli/connect_nile",
+    "https://thenile.dev/docs/cli/global-flags",
+    "https://thenile.dev/docs/cli/interacting_db",
+    "https://thenile.dev/docs/cli/introduction",
+    "https://thenile.dev/docs/cli/local_development",
+    "https://thenile.dev/docs/cli/managing_tenants",
+    "https://thenile.dev/docs/cli/managing_workspaces",
+    "https://thenile.dev/docs/cli/setting_configs",
+    "https://thenile.dev/docs/cli/using_auth",
+    "https://thenile.dev/docs/getting-started/getting-started",
+    "https://thenile.dev/docs/integrations/aws_bedrock",
+    "https://thenile.dev/docs/integrations/betterauth",
+    "https://thenile.dev/docs/integrations/cloudflare",
+    "https://thenile.dev/docs/integrations/cohere",
+    "https://thenile.dev/docs/integrations/confluent",
+    "https://thenile.dev/docs/integrations/lambda",
+    "https://thenile.dev/docs/integrations/llama_index",
+    "https://thenile.dev/docs/integrations/modal",
+    "https://thenile.dev/docs/integrations/netlify",
+    "https://thenile.dev/docs/integrations/nextauth",
+    "https://thenile.dev/docs/integrations/pipedream",
+    "https://thenile.dev/docs/integrations/stripe",
+    "https://thenile.dev/docs/integrations/vercel",
+    "https://thenile.dev/docs/llms.txt",
+    "https://thenile.dev/docs/support/backup_restore",
+    "https://thenile.dev/docs/support/support",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.linkedin.com/company/niledatabase",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=nile",
+    "https://www.thenile.dev",
+    "https://www.thenile.dev/about-us",
+    "https://www.thenile.dev/blog",
+    "https://www.thenile.dev/community",
+    "https://www.thenile.dev/contact-us",
+    "https://www.thenile.dev/pricing",
+    "https://www.thenile.dev/pricing#faq",
+    "https://www.thenile.dev/templates",
+    "https://x.com/niledatabase",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

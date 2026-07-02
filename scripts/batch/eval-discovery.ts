@@ -151,6 +151,7 @@ export function checklist(
   // model saying management.filestackapi.com is fine when the docs showed
   // management.filestackapi.com/apps.
   const groundedHosts = new Set([...groundingSet].map((url) => { try { return new URL(url).host; } catch { return ""; } }).filter(Boolean));
+  const groundedRegDomains = new Set([...groundedHosts].map((host) => registrable(`https://${host}`)).filter(Boolean));
   // The brand's own sibling TLDs count as home turf (clickhouse.com ↔
   // clickhouse.cloud); template URLs ({yourDomain}/…) are placeholders, not claims.
   const brandLabel = resultDomain ? resultDomain.split(".")[0] : null;
@@ -165,7 +166,8 @@ export function checklist(
       !detectedUrls.has(url) &&
       !(urlDomain && visitedDomains.has(urlDomain)) &&
       !groundingSet.has(url.replace(/[.,;:]+$/, "")) &&
-      !(() => { try { return groundedHosts.has(new URL(url).host); } catch { return false; } })()
+      !(() => { try { return groundedHosts.has(new URL(url).host); } catch { return false; } })() &&
+      !(urlDomain && groundedRegDomains.has(urlDomain))
     );
   });
   const unresolvedAuthIds = authUses(result)

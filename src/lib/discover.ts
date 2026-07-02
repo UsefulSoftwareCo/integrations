@@ -240,6 +240,7 @@ const SYSTEM =
   "- An mcp surface's `url` is the CONNECT ENDPOINT an MCP client would use (e.g. https://mcp.example.com/mcp), never a docs page about the server. If only a docs page exists, put it in `docs` and leave `url` unset.\n" +
   "- Write each credential's `setup` around the EASIEST acquisition path. When a CLI login acquires it (`mint login`, `wrangler login`), setup says 'run `x login`' and the binding is mechanics 'cli' with that command — do NOT walk through raw OAuth authorize/token/register endpoints anywhere in setup.\n" +
   "- Exotic auth (AWS SigV4, GitHub-App JWT exchange) — name the credential `type` (signature/aws_sigv4/app/two_step) and write the flow in `setup`; you don't need to model its execution. Use mechanics.source 'http', 'cli', or 'unknown'.\n" +
+  "- Record only credentials THIS service issues. A third-party platform's token that the service consumes (a BigCommerce API token you paste into an integration) belongs to that platform's own entry — mention it in the surface notes at most.\n" +
   "- A credential is something the user MINTS FOR THEMSELVES (their API key, their OAuth app). NEVER record shared, default, or example logins — a self-hosted product's factory password (admin/admin) is a security footgun, not a credential; use authStatus 'unknown' instead. Admin consoles of self-hosted installs are not public integration surfaces; omit them.\n" +
   "- When done, call finish with a one-line summary. Omit surface types that don't exist.";
 

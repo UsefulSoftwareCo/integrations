@@ -100,7 +100,7 @@ export function buildConventionRows(detectValue: unknown, domain: string): Conve
         const url = typeof value.url === "string" ? value.url : pathUrl(domain, INTEGRATIONS_JSON_PATH);
         return { detail: url, valueUrl: url };
       },
-      "/own-your-page/",
+      "/publishing/",
     ),
     row(detect, PROBE_KEYS.llmsTxt, "llms.txt", LLMS_TXT_PATH, () => {
       if (detect?.llmsTxt !== true) return null;

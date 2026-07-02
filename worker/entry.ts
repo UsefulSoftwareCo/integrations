@@ -339,6 +339,10 @@ export function createExports(manifest: SSRManifest) {
 
     // Self-describe via the same discovery format the catalog indexes: point at
     // our own OpenAPI + MCP endpoint.
+    // Renamed docs page — the old path may be linked/indexed.
+    if (url.pathname === "/own-your-page" || url.pathname === "/own-your-page/") {
+      return Response.redirect(new URL("/publishing/", url.origin).toString(), 301);
+    }
     // Our own owner declaration — served from the Worker because the assets
     // layer skips dotfile paths. Content lives in public/.well-known/ for
     // provenance; this route mirrors it.

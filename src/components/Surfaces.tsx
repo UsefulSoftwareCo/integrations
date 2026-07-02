@@ -95,7 +95,7 @@ function Conventions({ rows }: { rows: ConventionRow[] }) {
         ))}
       </ul>
       <p className="conv-owner">
-        Own these signals → <a href="/own-your-page/">/own-your-page</a>
+        Publish these signals → <a href="/publishing/">/publishing</a>
       </p>
     </details>
   );

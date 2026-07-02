@@ -19,7 +19,7 @@ describe("buildConventionRows", () => {
     expect(rows.find((row) => row.key === PROBE_KEYS.integrationsJson)).toMatchObject({
       status: "found",
       detail: "https://example.com/.well-known/integrations.json",
-      specHref: "/own-your-page/",
+      specHref: "/publishing/",
     });
     expect(rows.find((row) => row.key === PROBE_KEYS.llmsTxt)).toMatchObject({
       status: "missing",

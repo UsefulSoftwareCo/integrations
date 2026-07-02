@@ -28,11 +28,10 @@ import { McpDurableObject } from "./mcp-do.ts";
 // (which survives deploys) stops serving results produced by the old code.
 const CACHE_VERSION = "16"; // 16: live spec validation changes discover output
 
-// The discovery-loop model. gpt-5.4-mini drives the agentic tool-calling loop
-// (search/sitemap/scrape/report) — ~1s per tool-decision turn on chat/completions.
-// (Note: gpt-5.x rejects `reasoning_effort` alongside function tools here, so we
-// don't set it.) gpt-4o-mini is a cheaper alternative.
-const OPENAI_MODEL = "gpt-5.4-mini";
+// The discovery-loop model. gpt-5.4 drives the agentic tool-calling loop
+// (search/sitemap/scrape/report). (Note: gpt-5.x rejects `reasoning_effort`
+// alongside function tools here, so we don't set it.)
+const OPENAI_MODEL = "gpt-5.4";
 
 // Spend cap: OpenAI spend is bounded by the usage limit on the OpenAI project/key.
 // To route through Cloudflare AI Gateway instead, point this at the gateway's

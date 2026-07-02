@@ -24,7 +24,7 @@ const HELP = `
 Usage: bun scripts/batch/run-loop.ts --domains file-or-csv [flags]
 
 Flags:
-  --model name       OpenAI model (default: gpt-5.4-mini)
+  --model name       OpenAI model (default: gpt-5.4)
   --concurrency n    Domains in flight (default: 8)
   --out dir          Results dir (default: scripts/batch/results)
   --existing dir     Directory of existing StoredDiscovery rows for slug continuity
@@ -286,7 +286,7 @@ async function main(): Promise<void> {
   if (hasFlag(args, "help")) usage(HELP);
   const domainArg = getFlag(args, "domains");
   if (!domainArg) usage(HELP);
-  const model = getFlag(args, "model", "gpt-5.4-mini")!;
+  const model = getFlag(args, "model", "gpt-5.4")!;
   const concurrency = getNumberFlag(args, "concurrency", 8);
   const outDir = getFlag(args, "out", join(ROOT, "scripts", "batch", "results"))!;
   const existingDir = getFlag(args, "existing");

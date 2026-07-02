@@ -121,9 +121,11 @@ function EntryRow({ e }: { e: SurfaceEntry }) {
 
 function DiscoveryMeta({ discoveredAt, hasSurfaces, onRun }: { discoveredAt?: string; hasSurfaces: boolean; onRun: () => void }) {
   const freshness = discoveryFreshness(discoveredAt, hasSurfaces);
+  // Unknown-age data (timestampless baselines) shows no age claim at all —
+  // just the regenerate affordance.
   return (
     <div className="disc-freshness" title={freshness.title}>
-      <span>discovered {freshness.label}</span>
+      {freshness.known && <span>discovered {freshness.label}</span>}
       {freshness.shouldRegenerate && (
         <button className="conv-action disc-regenerate" onClick={onRun}>
           regenerate

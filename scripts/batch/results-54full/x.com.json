@@ -1,0 +1,684 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "x.com",
+    "detect": {
+      "domain": "x.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:07:28.318Z",
+    "summary": "X exposes a REST X API, separate enterprise HTTP APIs, two hosted MCP servers (X API MCP and docs MCP), and the xurl CLI used especially for MCP/OAuth flows.",
+    "description": "X is a social platform for public posts, conversations, direct messages, Spaces, trends, and related content. Its developer platform provides programmatic access to X data and actions through standard APIs and AI-oriented tooling.",
+    "credentials": {
+      "x_bearer": {
+        "type": "bearer",
+        "label": "X app Bearer token (app-only access token)",
+        "generateUrl": "https://console.x.com",
+        "setup": "In the [Developer Console](https://console.x.com), create an app, then open its **Keys and tokens** page and copy the Bearer token. The docs say app creation presents the API Key, API Secret, and Bearer Token, and that credentials can later be found/regenerated from the app’s **Keys and tokens** tab.",
+        "acquisition": "manual"
+      },
+      "x_oauth_app": {
+        "type": "oauth2",
+        "label": "X app OAuth 2.0 client credentials (Client ID and Client Secret)",
+        "generateUrl": "https://console.x.com",
+        "setup": "In the [Developer Console](https://console.x.com), create an app and enable **OAuth 2.0**. Register a redirect URI such as `http://localhost:8080/callback` if you plan to use the `xurl mcp` bridge, then copy the app’s `CLIENT_ID` and `CLIENT_SECRET` from the app settings / credentials area.",
+        "acquisition": "manual"
+      },
+      "x_api_key_secret": {
+        "type": "compound",
+        "label": "X app API Key and API Secret",
+        "generateUrl": "https://console.x.com",
+        "setup": "Sign in to the [Developer Console](https://console.x.com), create an app, and save the API Key and API Secret shown at creation time. If you already have an app, open it in the console and go to **Keys and tokens** to find or regenerate them.",
+        "acquisition": "manual"
+      },
+      "x_enterprise_basic": {
+        "type": "basic",
+        "label": "X enterprise API console email/password",
+        "generateUrl": "https://console.gnip.com/",
+        "setup": "For enterprise APIs that use HTTP Basic auth, use the credentials for the [enterprise API console](https://console.gnip.com/). The docs state the same email address and password used for that console are sent as Basic auth over HTTPS to enterprise API endpoints.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "x-api",
+        "name": "X API",
+        "type": "http",
+        "docs": "https://docs.x.com/x-api/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.x.com/x-api/introduction",
+            "https://docs.x.com/make-your-first-request",
+            "https://docs.x.com/x-api/overview",
+            "https://docs.x.com/fundamentals/authentication/overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_bearer",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/x-api/introduction",
+                  "https://docs.x.com/make-your-first-request"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "x_api_key_secret",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/fundamentals/authentication/oauth-1-0a/api-key-and-secret",
+                  "https://docs.x.com/fundamentals/authentication/overview"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "x_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/fundamentals/authentication/overview",
+                  "https://docs.x.com/make-your-first-request"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.x.com/2"
+      },
+      {
+        "slug": "x-enterprise-apis",
+        "name": "X Enterprise APIs",
+        "type": "http",
+        "docs": "https://docs.x.com/fundamentals/authentication/basic-auth",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.x.com/fundamentals/authentication/basic-auth"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_enterprise_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/fundamentals/authentication/basic-auth"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://gnip-api.x.com"
+      },
+      {
+        "slug": "x-mcp",
+        "name": "X MCP",
+        "type": "mcp",
+        "docs": "https://docs.x.com/tools/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.x.com/tools/mcp",
+            "https://docs.x.com/tools/mcp#app-only-direct-url-no-bridge",
+            "https://docs.x.com/tools/mcp#headless--remote-machines"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_bearer",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/tools/mcp",
+                  "https://docs.x.com/tools/mcp#app-only-direct-url-no-bridge"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "x_oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx -y @xdevplatform/xurl mcp https://api.x.com/mcp",
+                    "env": [
+                      "CLIENT_ID",
+                      "CLIENT_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/tools/mcp",
+                  "https://docs.x.com/tools/mcp#headless--remote-machines"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.x.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "x-docs-mcp",
+        "name": "X Docs MCP",
+        "type": "mcp",
+        "docs": "https://docs.x.com/tools/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.x.com/tools/mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "xurl",
+        "name": "xurl",
+        "type": "cli",
+        "docs": "https://docs.x.com/tools/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.x.com/tools/mcp",
+            "https://github.com/xdevplatform/xurl"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "xurl auth oauth2",
+                    "env": [
+                      "CLIENT_ID",
+                      "CLIENT_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/tools/mcp",
+                  "https://docs.x.com/tools/mcp#headless--remote-machines"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "x_bearer",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "BEARER_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/tools/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@xdevplatform/xurl",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "homebrew",
+            "identifier": "xdevplatform/tap/xurl"
+          }
+        ],
+        "command": "xurl"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:07:28.319Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 346353,
+    "completion_tokens": 1871,
+    "total_tokens": 348224
+  },
+  "visited": [
+    "https://devcommunity.x.com/t/how-to-get-a-client-id/211185",
+    "https://developer.x.com/",
+    "https://docs.x.com/fundamentals/authentication/basic-auth",
+    "https://docs.x.com/fundamentals/authentication/oauth-1-0a/api-key-and-secret",
+    "https://docs.x.com/fundamentals/authentication/overview",
+    "https://docs.x.com/fundamentals/developer-portal",
+    "https://docs.x.com/make-your-first-request",
+    "https://docs.x.com/tools/mcp",
+    "https://docs.x.com/tools/mcp#app-only-direct-url-no-bridge",
+    "https://docs.x.com/tools/mcp#headless--remote-machines",
+    "https://docs.x.com/x-api/introduction",
+    "https://docs.x.com/x-api/overview",
+    "https://github.com/Infatoshi/x-cli",
+    "https://github.com/xdevplatform/xurl"
+  ],
+  "grounding": [
+    "http://localhost:3000/x-api/enterprise-gnip-2.0/fundamentals/decahose-api",
+    "http://localhost:8080/callback",
+    "https://abs.twimg.com/favicons/twitter.3.ico",
+    "https://api.x.com/2/tweets/1460323737035677698?tweet.fields=created_at",
+    "https://api.x.com/2/tweets/search/all?query=AI%20lang:en",
+    "https://api.x.com/2/tweets/search/recent?query=from:xdevelopers&tweet.fields=created_at",
+    "https://api.x.com/2/tweets/search/stream",
+    "https://api.x.com/2/tweets/search/stream/rules",
+    "https://api.x.com/2/users/2244994945/tweets?max_results=5",
+    "https://api.x.com/2/users/by/username/xdevelopers",
+    "https://api.x.com/2/users/by/username/xdevelopers?user.fields=created_at",
+    "https://api.x.com/mcp",
+    "https://archiveprogram.github.com",
+    "https://console.gnip.com/",
+    "https://console.x.com",
+    "https://d",
+    "https://devcommunity.x.com",
+    "https://devcommunity.x.com/t/how-to-get-a-client-id/211185",
+    "https://developer.x.com",
+    "https://developer.x.com/",
+    "https://developer.x.com/en/apply-for-access",
+    "https://developer.x.com/en/portal/petition/essential/basic-info",
+    "https://developer.x.com/en/support/twitter-api.html",
+    "https://developer.x.com/resources/fundamentals/authentication/obtaining-user-access-tokens",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.x.ai",
+    "https://docs.x.com/",
+    "https://docs.x.com/#1-grok-build",
+    "https://docs.x.com/#2-cursor",
+    "https://docs.x.com/#3-claude-desktop",
+    "https://docs.x.com/#4-vs-code-github-copilot-/-agent-mode",
+    "https://docs.x.com/#5-any-mcp-client",
+    "https://docs.x.com/#additional-resources",
+    "https://docs.x.com/#api-key-and-secret",
+    "https://docs.x.com/#app-only-direct-url-no-bridge",
+    "https://docs.x.com/#authentication",
+    "https://docs.x.com/#authentication-methods",
+    "https://docs.x.com/#available-tools",
+    "https://docs.x.com/#basic-authentication",
+    "https://docs.x.com/#billing-%26-credits",
+    "https://docs.x.com/#billing-&-credits",
+    "https://docs.x.com/#capabilities-at-a-glance",
+    "https://docs.x.com/#configuration",
+    "https://docs.x.com/#configuration-reference",
+    "https://docs.x.com/#connect-your-client",
+    "https://docs.x.com/#content-area",
+    "https://docs.x.com/#docs-mcp-—-documentation-search",
+    "https://docs.x.com/#endpoints",
+    "https://docs.x.com/#enterprise-only",
+    "https://docs.x.com/#filtered-stream",
+    "https://docs.x.com/#first-run-browser-login",
+    "https://docs.x.com/#full-archive-search",
+    "https://docs.x.com/#full-route-xurl-bridge",
+    "https://docs.x.com/#getting-started",
+    "https://docs.x.com/#headless-/-remote-machines",
+    "https://docs.x.com/#how-it-works",
+    "https://docs.x.com/#how-to-acquire-an-api-key-and-secret",
+    "https://docs.x.com/#how-to-find-and-regenerate-your-api-key-and-secret-after-app-creation",
+    "https://docs.x.com/#how-to-use-your-api-key-and-secret",
+    "https://docs.x.com/#key-features",
+    "https://docs.x.com/#metrics",
+    "https://docs.x.com/#more-examples",
+    "https://docs.x.com/#multiple-apps-&-accounts",
+    "https://docs.x.com/#next-steps",
+    "https://docs.x.com/#oauth-2-0-user-context-default",
+    "https://docs.x.com/#pricing",
+    "https://docs.x.com/#quick-start",
+    "https://docs.x.com/#quick-start-with-curl",
+    "https://docs.x.com/#request-more-data-with-fields",
+    "https://docs.x.com/#rich-data-objects",
+    "https://docs.x.com/#security-&-best-practices",
+    "https://docs.x.com/#simple-route-app-only-bearer",
+    "https://docs.x.com/#step-by-step-guide",
+    "https://docs.x.com/#streaming-&-real-time",
+    "https://docs.x.com/#support",
+    "https://docs.x.com/#team-management",
+    "https://docs.x.com/#tools-&-libraries",
+    "https://docs.x.com/#tools-for-testing",
+    "https://docs.x.com/#troubleshooting",
+    "https://docs.x.com/#using-code-instead-of-curl",
+    "https://docs.x.com/#verify-&-troubleshoot",
+    "https://docs.x.com/#what-you-can-build",
+    "https://docs.x.com/#what-you-can-do",
+    "https://docs.x.com/#x-mcp-—-x-api",
+    "https://docs.x.com/changelog",
+    "https://docs.x.com/developer-guidelines",
+    "https://docs.x.com/developer-terms",
+    "https://docs.x.com/enterprise-api/introduction",
+    "https://docs.x.com/enterprise/customer-directory",
+    "https://docs.x.com/enterprise/partner-directory",
+    "https://docs.x.com/forms/billing-support",
+    "https://docs.x.com/fundamentals/authentication/api-reference",
+    "https://docs.x.com/fundamentals/authentication/basic-auth",
+    "https://docs.x.com/fundamentals/authentication/faq",
+    "https://docs.x.com/fundamentals/authentication/guides/log-in-with-x",
+    "https://docs.x.com/fundamentals/authentication/guides/v2-authentication-mapping",
+    "https://docs.x.com/fundamentals/authentication/oauth-1-0a/api-key-and-secret",
+    "https://docs.x.com/fundamentals/authentication/oauth-1-0a/authorizing-a-request",
+    "https://docs.x.com/fundamentals/authentication/oauth-1-0a/creating-a-signature",
+    "https://docs.x.com/fundamentals/authentication/oauth-1-0a/oauth-echo",
+    "https://docs.x.com/fundamentals/authentication/oauth-1-0a/obtaining-user-access-tokens",
+    "https://docs.x.com/fundamentals/authentication/oauth-1-0a/percent-encoding-parameters",
+    "https://docs.x.com/fundamentals/authentication/oauth-1-0a/pin-based-oauth",
+    "https://docs.x.com/fundamentals/authentication/oauth-2-0/user-access-token",
+    "https://docs.x.com/fundamentals/authentication/overview",
+    "https://docs.x.com/fundamentals/counting-characters",
+    "https://docs.x.com/fundamentals/developer-apps",
+    "https://docs.x.com/fundamentals/developer-portal",
+    "https://docs.x.com/fundamentals/rate-limits",
+    "https://docs.x.com/fundamentals/security",
+    "https://docs.x.com/fundamentals/x-ids",
+    "https://docs.x.com/livestreams",
+    "https://docs.x.com/llms.txt",
+    "https://docs.x.com/make-your-first-request",
+    "https://docs.x.com/mcp",
+    "https://docs.x.com/newsletter",
+    "https://docs.x.com/overview",
+    "https://docs.x.com/resources/fundamentals/authentication/api-reference",
+    "https://docs.x.com/resources/fundamentals/authentication/basic-auth",
+    "https://docs.x.com/resources/fundamentals/authentication/faq",
+    "https://docs.x.com/resources/fundamentals/authentication/guides",
+    "https://docs.x.com/resources/fundamentals/authentication/guides/authentication-best-practices",
+    "https://docs.x.com/resources/fundamentals/authentication/oauth-1-0a/api-key-and-secret",
+    "https://docs.x.com/resources/fundamentals/authentication/oauth-1-0a/authorizing-a-request",
+    "https://docs.x.com/resources/fundamentals/authentication/oauth-2-0/authorization-code",
+    "https://docs.x.com/resources/fundamentals/authentication/oauth-2-0/bearer-tokens",
+    "https://docs.x.com/resources/fundamentals/authentication/oauth-2-0/overview",
+    "https://docs.x.com/resources/fundamentals/authentication/overview",
+    "https://docs.x.com/resources/fundamentals/developer-apps",
+    "https://docs.x.com/resources/fundamentals/developer-portal",
+    "https://docs.x.com/resources/tools-and-libraries",
+    "https://docs.x.com/status",
+    "https://docs.x.com/success-stories",
+    "https://docs.x.com/support",
+    "https://docs.x.com/tools-and-libraries",
+    "https://docs.x.com/tools/ai",
+    "https://docs.x.com/tools/llms-txt",
+    "https://docs.x.com/tools/mcp",
+    "https://docs.x.com/tools/mcp#app-only-direct-url-no-bridge",
+    "https://docs.x.com/tools/mcp#headless--remote-machines",
+    "https://docs.x.com/tools/skill-md",
+    "https://docs.x.com/tutorials",
+    "https://docs.x.com/tutorials/postman-getting-started",
+    "https://docs.x.com/what-to-build",
+    "https://docs.x.com/x-api/account-activity/introduction",
+    "https://docs.x.com/x-api/activity/activity-stream",
+    "https://docs.x.com/x-api/activity/create-x-activity-subscription",
+    "https://docs.x.com/x-api/activity/delete-x-activity-subscriptions-by-ids",
+    "https://docs.x.com/x-api/activity/deletes-x-activity-subscription",
+    "https://docs.x.com/x-api/activity/get-x-activity-subscriptions",
+    "https://docs.x.com/x-api/activity/introduction",
+    "https://docs.x.com/x-api/activity/quickstart",
+    "https://docs.x.com/x-api/activity/update-x-activity-subscription",
+    "https://docs.x.com/x-api/articles/create-draft-article",
+    "https://docs.x.com/x-api/articles/introduction",
+    "https://docs.x.com/x-api/articles/publish-article",
+    "https://docs.x.com/x-api/communities/lookup/introduction",
+    "https://docs.x.com/x-api/community-notes/create-a-community-note",
+    "https://docs.x.com/x-api/community-notes/delete-a-community-note",
+    "https://docs.x.com/x-api/community-notes/evaluate-a-community-note",
+    "https://docs.x.com/x-api/community-notes/introduction",
+    "https://docs.x.com/x-api/community-notes/quickstart",
+    "https://docs.x.com/x-api/community-notes/search-for-community-notes-written",
+    "https://docs.x.com/x-api/community-notes/search-for-posts-eligible-for-community-notes",
+    "https://docs.x.com/x-api/compliance/batch-compliance/introduction",
+    "https://docs.x.com/x-api/connections/get-connection-history",
+    "https://docs.x.com/x-api/connections/introduction",
+    "https://docs.x.com/x-api/connections/terminate-all-connections",
+    "https://docs.x.com/x-api/connections/terminate-connections-by-endpoint",
+    "https://docs.x.com/x-api/connections/terminate-multiple-connections",
+    "https://docs.x.com/x-api/direct-messages/lookup/introduction",
+    "https://docs.x.com/x-api/enterprise-gnip-2.0/fundamentals/search-api",
+    "https://docs.x.com/x-api/enterprise-gnip-2.0/fundamentals/usage",
+    "https://docs.x.com/x-api/enterprise-gnip-2.0/powertrack-api",
+    "https://docs.x.com/x-api/fundamentals/data-dictionary",
+    "https://docs.x.com/x-api/fundamentals/expansions",
+    "https://docs.x.com/x-api/fundamentals/fields",
+    "https://docs.x.com/x-api/fundamentals/response-codes-and-errors",
+    "https://docs.x.com/x-api/getting-started/getting-access",
+    "https://docs.x.com/x-api/getting-started/make-your-first-request",
+    "https://docs.x.com/x-api/getting-started/pricing",
+    "https://docs.x.com/x-api/getting-started/pricing#free-xai-api-credits",
+    "https://docs.x.com/x-api/introduction",
+    "https://docs.x.com/x-api/lists/list-lookup/introduction",
+    "https://docs.x.com/x-api/media/introduction",
+    "https://docs.x.com/x-api/news/get-news-stories-by-id",
+    "https://docs.x.com/x-api/news/introduction",
+    "https://docs.x.com/x-api/news/search-news",
+    "https://docs.x.com/x-api/overview",
+    "https://docs.x.com/x-api/posts/create-post",
+    "https://docs.x.com/x-api/posts/filtered-stream/introduction",
+    "https://docs.x.com/x-api/posts/get-liking-users",
+    "https://docs.x.com/x-api/posts/get-post-analytics",
+    "https://docs.x.com/x-api/posts/likes/introduction",
+    "https://docs.x.com/x-api/posts/lookup/introduction",
+    "https://docs.x.com/x-api/posts/search/introduction",
+    "https://docs.x.com/x-api/posts/volume-streams/introduction",
+    "https://docs.x.com/x-api/powerstream/introduction",
+    "https://docs.x.com/x-api/spaces/introduction",
+    "https://docs.x.com/x-api/spaces/lookup/introduction",
+    "https://docs.x.com/x-api/stream/likes-streams-introduction",
+    "https://docs.x.com/x-api/trends/trends-by-woeid/introduction",
+    "https://docs.x.com/x-api/usage/get-usage",
+    "https://docs.x.com/x-api/usage/introduction",
+    "https://docs.x.com/x-api/users/get-liked-posts",
+    "https://docs.x.com/x-api/users/like-post",
+    "https://docs.x.com/x-api/users/lookup/introduction",
+    "https://docs.x.com/x-api/users/unlike-post",
+    "https://docs.x.com/x-api/webhooks/create-replay-job-for-webhook",
+    "https://docs.x.com/x-api/webhooks/create-webhook",
+    "https://docs.x.com/x-api/webhooks/delete-webhook",
+    "https://docs.x.com/x-api/webhooks/get-webhook",
+    "https://docs.x.com/x-api/webhooks/introduction",
+    "https://docs.x.com/x-api/webhooks/quickstart",
+    "https://docs.x.com/x-api/webhooks/stream/introduction",
+    "https://docs.x.com/x-api/webhooks/validate-webhook",
+    "https://docs.x.com/x-api/what-to-build",
+    "https://docs.x.com/xdks/python/overview",
+    "https://docs.x.com/xdks/typescript/overview",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/Infatoshi/x-cli",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fxdevplatform%2Fxurl",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fxdevplatform%2Fxurl",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=xdevplatform%2Fxurl",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.com/xdevplatform",
+    "https://github.com/xdevplatform/Twitter-API-v2-sample-code",
+    "https://github.com/xdevplatform/xurl",
+    "https://github.com/xdevplatform/xurl/actions",
+    "https://github.com/xdevplatform/xurl/branches",
+    "https://github.com/xdevplatform/xurl/commit/080123e4931571ffdf211a7ff9ed7499f5165fb5",
+    "https://github.com/xdevplatform/xurl/commit/67e27675c5a6f813193542d958b31ba5ebd10eb6",
+    "https://github.com/xdevplatform/xurl/commit/a312d5df4402be9a6875076bb76bc2f6083c5d3b",
+    "https://github.com/xdevplatform/xurl/commit/bfb0f365d14f5ed63416d29aa3abbb21a613f5cb",
+    "https://github.com/xdevplatform/xurl/commit/dea95bf7e15855e2e41dc18bd3cad60cd9649c8a",
+    "https://github.com/xdevplatform/xurl/commits/main/",
+    "https://github.com/xdevplatform/xurl/commits?author=santiagomed",
+    "https://github.com/xdevplatform/xurl/issues",
+    "https://github.com/xdevplatform/xurl/projects",
+    "https://github.com/xdevplatform/xurl/pull/78",
+    "https://github.com/xdevplatform/xurl/pull/81",
+    "https://github.com/xdevplatform/xurl/pulls",
+    "https://github.com/xdevplatform/xurl/pulse",
+    "https://github.com/xdevplatform/xurl/security",
+    "https://github.com/xdevplatform/xurl/tags",
+    "https://github.com/xdevplatform/xurl/tree/main/.github/workflows",
+    "https://github.com/xdevplatform/xurl/tree/main/.vscode",
+    "https://github.com/xdevplatform/xurl/tree/main/api",
+    "https://github.com/xdevplatform/xurl/tree/main/assets",
+    "https://github.com/xdevplatform/xurl/tree/main/auth",
+    "https://gnip-api.x.com/search/30day/accounts/",
+    "https://help.x.com/en/rules-and-policies/x-cookies",
+    "https://insomnia.rest/",
+    "https://maintainers.github.com",
+    "https://modelcontextprotocol.io",
+    "https://raw.githubusercontent.com/xdevplatform/xurl/main/install.sh",
+    "https://registry.npmjs.org/",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://static.ads-twitter.com/uwt.js",
+    "https://support.github.com",
+    "https://ton.twimg.com/dataproducts/developerlanding",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/255-3981a3d1f3561bd8.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/339-b31e0013326b3582.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/460-0cd09668a7cbfe6c.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/675-3ca27895d0c94807.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/7-a8fd0260a648123e.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/86-2c7ad7b3d4cbc9d8.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/920-284f49ed43634192.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/app/layout-c5fa5928883af7a9.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/app/page-e081b254c34737ba.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/main-app-2b0bce390b28c7a5.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/polyfills-42372ed130431b0a.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/webpack-aa89f11beae3b8b2.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/css/a79b70afd83d970f.css",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/media/0336a89fb4e7fc1d-s.p.woff2",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/media/38b988e3273f70aa-s.p.woff2",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/media/3975e96899c16a52-s.p.ttf",
+    "https://ton.twimg.com/dataproducts/developerlanding/og.png",
+    "https://www.postman.com/xapidevelopers/x-api-public-workspace/collection/34902927-2efc5689-99c6-4ab6-8091-996f35c2fd80",
+    "https://x.com/en/privacy",
+    "https://x.com/en/tos",
+    "https://x.com/xdevelopers"
+  ]
+}

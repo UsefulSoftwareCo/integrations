@@ -110,19 +110,3 @@ export function mechanicsLine(m: Mechanics): string {
   }
 }
 
-/** A `claude mcp add` / install one-liner, when we have what we need. */
-export function connectCmd(surface: Surface): { label: string; cmd: string } | null {
-  if (surface.type === "mcp" && surface.url) {
-    return { label: "Connect", cmd: `claude mcp add --transport http ${surface.slug} ${surface.url}` };
-  }
-  if (surface.type === "cli") {
-    const p = surface.packages?.[0];
-    if (p) {
-      return {
-        label: "Install",
-        cmd: p.runtimeHint === "npx" ? `npx ${p.identifier}` : `${p.registryType === "npm" ? "npm i -g" : p.registryType} ${p.identifier}`,
-      };
-    }
-  }
-  return null;
-}

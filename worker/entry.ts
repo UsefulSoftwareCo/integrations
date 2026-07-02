@@ -473,6 +473,13 @@ export function createExports(manifest: SSRManifest) {
       track(env, ctx, request, "data_fetch");
     }
 
+    // /ssr/{domain}/ is the INTERNAL render target below — never a public URL.
+    // Direct hits redirect to the one canonical path.
+    const ssrLeak = /^\/ssr\/([^/]+)\/?$/.exec(url.pathname);
+    if (ssrLeak) {
+      return Response.redirect(new URL(`/${ssrLeak[1]}/`, url.origin).toString(), 301);
+    }
+
     // Domain page with a STORED discovery → SSR it with the map baked in
     // (src/pages/ssr/[domain].astro) instead of the prerendered asset, so
     // returning visitors don't get the idle-button flash while the island

@@ -1,0 +1,504 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "buildkite.com",
+    "detect": {
+      "domain": "buildkite.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T11:09:57.392Z",
+    "summary": "Buildkite exposes a REST API, GraphQL API, CLI (`bk`), and MCP server; auth is via API access token, CLI OAuth login, and MCP OAuth.",
+    "credentials": {
+      "bk_api_token": {
+        "type": "bearer",
+        "label": "Buildkite API access token",
+        "generateUrl": "https://buildkite.com/user/api-access-tokens",
+        "setup": "Go to [API access tokens](https://buildkite.com/user/api-access-tokens) in Buildkite, create a new token, and copy it once. Buildkite's docs note this is the credential used for REST API access and for command-line access when GraphQL is enabled. If you need GraphQL from the CLI, make sure the token has the `Enable GraphQL API Access` permission selected.",
+        "acquisition": "manual"
+      },
+      "bk_oauth_user": {
+        "type": "oauth2",
+        "label": "Buildkite user OAuth login",
+        "generateUrl": "https://buildkite.com/docs/platform/cli/configuration",
+        "setup": "Run `bk auth login` to open the browser-based OAuth flow and authorize the Buildkite CLI with your user account. This is the easiest path for CLI authentication. The CLI stores the resulting session for later `bk` commands.",
+        "acquisition": "manual"
+      },
+      "bk_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Buildkite MCP OAuth access",
+        "generateUrl": "https://buildkite.com/docs/apis/mcp-server",
+        "setup": "Use the remote Buildkite MCP server's OAuth sign-in flow to connect your user account. Buildkite documents that the remote MCP server supports OAuth authentication; acquire the token through the server's built-in authorization flow.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "buildkite-rest-api",
+        "name": "Buildkite REST API",
+        "type": "http",
+        "docs": "https://buildkite.com/docs/apis/rest-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://buildkite.com/docs/apis",
+            "https://buildkite.com/docs/apis/rest-api",
+            "https://buildkite.com/docs/apis/managing-api-tokens"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bk_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://buildkite.com/docs/apis/managing-api-tokens",
+                  "https://buildkite.com/docs/apis/rest-api"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "buildkite-graphql-api",
+        "name": "Buildkite GraphQL API",
+        "type": "graphql",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://buildkite.com/docs/apis/graphql-api",
+            "https://buildkite.com/docs/apis",
+            "https://buildkite.com/docs/apis/graphql/graphql-tutorial"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bk_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://buildkite.com/docs/apis/graphql-api",
+                  "https://buildkite.com/docs/apis/graphql/graphql-tutorial"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "https://buildkite.com/docs/apis/graphql-api"
+      },
+      {
+        "slug": "buildkite-cli",
+        "name": "Buildkite CLI",
+        "type": "cli",
+        "docs": "https://buildkite.com/docs/platform/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://buildkite.com/docs/platform/cli/configuration",
+            "https://buildkite.com/docs/platform/cli/reference/api",
+            "https://buildkite.com/docs/platform/cli/reference/auth",
+            "https://buildkite.com/docs/platform/cli/reference/agent"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bk_oauth_user",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "bk auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://buildkite.com/docs/platform/cli/configuration",
+                  "https://buildkite.com/docs/platform/cli/reference/auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "bk_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "BUILDKITE_API_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://buildkite.com/docs/platform/cli/reference/api",
+                  "https://buildkite.com/docs/platform/cli/configuration"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "bk"
+      },
+      {
+        "slug": "buildkite-mcp-server",
+        "name": "Buildkite MCP server",
+        "type": "mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://buildkite.com/docs/apis/mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bk_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://buildkite.com/docs/apis/mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://buildkite.com/docs/apis/mcp-server",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T11:09:57.392Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 294888,
+    "completion_tokens": 1352,
+    "total_tokens": 296240
+  },
+  "visited": [
+    "https://buildkite.com/docs/apis",
+    "https://buildkite.com/docs/apis/graphql-api",
+    "https://buildkite.com/docs/apis/graphql/graphql-tutorial",
+    "https://buildkite.com/docs/apis/managing-api-tokens",
+    "https://buildkite.com/docs/apis/mcp-server",
+    "https://buildkite.com/docs/apis/oauth-device-authorization",
+    "https://buildkite.com/docs/apis/oauth-token-exchange",
+    "https://buildkite.com/docs/apis/rest-api",
+    "https://buildkite.com/docs/platform/cli/configuration",
+    "https://buildkite.com/docs/platform/cli/reference/agent",
+    "https://buildkite.com/docs/platform/cli/reference/api",
+    "https://buildkite.com/docs/platform/cli/reference/auth"
+  ],
+  "grounding": [
+    "https://buildkite.com/#arguments",
+    "https://buildkite.com/#authenticate-using-oauth",
+    "https://buildkite.com/#commands",
+    "https://buildkite.com/#configure-the-buildkite-cli-with-multiple-organizations",
+    "https://buildkite.com/#configure-the-buildkite-cli-with-your-api-access-token",
+    "https://buildkite.com/#configure-the-buildkite-cli-with-your-api-access-token-command-behavior-and-configuration-files",
+    "https://buildkite.com/#configure-the-buildkite-cli-with-your-api-access-token-using-command-flags",
+    "https://buildkite.com/#create-an-api-access-token-for-the-buildkite-cli",
+    "https://buildkite.com/#examples",
+    "https://buildkite.com/#flags",
+    "https://buildkite.com/#install-agent",
+    "https://buildkite.com/#install-agent-examples",
+    "https://buildkite.com/#install-agent-flags",
+    "https://buildkite.com/#list-agents",
+    "https://buildkite.com/#list-agents-examples",
+    "https://buildkite.com/#list-agents-flags",
+    "https://buildkite.com/#login-auth",
+    "https://buildkite.com/#login-auth-examples",
+    "https://buildkite.com/#login-auth-flags",
+    "https://buildkite.com/#logout-auth",
+    "https://buildkite.com/#logout-auth-flags",
+    "https://buildkite.com/#pause-an-agent",
+    "https://buildkite.com/#pause-an-agent-arguments",
+    "https://buildkite.com/#pause-an-agent-examples",
+    "https://buildkite.com/#pause-an-agent-flags",
+    "https://buildkite.com/#restricting-cli-token-scopes",
+    "https://buildkite.com/#resume-an-agent",
+    "https://buildkite.com/#resume-an-agent-arguments",
+    "https://buildkite.com/#resume-an-agent-examples",
+    "https://buildkite.com/#resume-an-agent-flags",
+    "https://buildkite.com/#run-agent",
+    "https://buildkite.com/#run-agent-examples",
+    "https://buildkite.com/#run-agent-flags",
+    "https://buildkite.com/#select-a-configured-organization",
+    "https://buildkite.com/#status-auth",
+    "https://buildkite.com/#status-auth-examples",
+    "https://buildkite.com/#status-auth-flags",
+    "https://buildkite.com/#stop-agents",
+    "https://buildkite.com/#stop-agents-examples",
+    "https://buildkite.com/#stop-agents-flags",
+    "https://buildkite.com/#switch-auth",
+    "https://buildkite.com/#switch-auth-arguments",
+    "https://buildkite.com/#switch-auth-examples",
+    "https://buildkite.com/#switch-auth-flags",
+    "https://buildkite.com/#token-auth",
+    "https://buildkite.com/#token-auth-examples",
+    "https://buildkite.com/#token-auth-flags",
+    "https://buildkite.com/#view-an-agent",
+    "https://buildkite.com/#view-an-agent-arguments",
+    "https://buildkite.com/#view-an-agent-examples",
+    "https://buildkite.com/#view-an-agent-flags",
+    "https://buildkite.com/docs/apis",
+    "https://buildkite.com/docs/apis/api-differences",
+    "https://buildkite.com/docs/apis/graphql-api",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/agents",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/artifacts",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/builds",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/clusters",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/github-rate-limits",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/hosted-agents",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/jobs",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/organizations",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/pipeline-templates",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/pipelines",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/registries",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/rules",
+    "https://buildkite.com/docs/apis/graphql/cookbooks/teams",
+    "https://buildkite.com/docs/apis/graphql/graphql-cookbook",
+    "https://buildkite.com/docs/apis/graphql/graphql-resource-limits",
+    "https://buildkite.com/docs/apis/graphql/graphql-tutorial",
+    "https://buildkite.com/docs/apis/graphql/portals",
+    "https://buildkite.com/docs/apis/graphql/portals/ephemeral-portal-tokens",
+    "https://buildkite.com/docs/apis/graphql/portals/limits",
+    "https://buildkite.com/docs/apis/graphql/portals/user-invoked-portals",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutati",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/agentpause",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/agentresume",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/agentstop",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/agenttokencreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/agenttokenrevoke",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/annotationdelete",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/apiaccesstokencodeauthorize",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/buildannotate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/buildcancel",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/buildcreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/buildrebuild",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/buildretryfailedjobs",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusteragenttokencreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusteragenttokenrevoke",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusteragenttokenupdate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clustercreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusterdelete",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusterqueuecreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusterqueuedelete",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusterqueuepausedispatch",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusterqueueresumedispatch",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusterqueueupdate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/clusterupdate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/emailcreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/emailresendverification",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/graphqlsnippetcreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/jobannotate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/jobtypeblockunblock",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/jobtypecommandcancel",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/jobtypecommandretry",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/noticedismiss",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationapiaccesstokenrevoke",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationapiipallowlistupdate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationbannerdelete",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationbannerupsert",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationenforcetwofactorauthenticationformembersupdate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationinvitationcreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationinvitationresend",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationinvitationrevoke",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationmemberdelete",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationmemberupdate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/organizationrevokeinactivetokensafterupdate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinearchive",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinecreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinecreatewebhook",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinedelete",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinedeletewebhook",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinefavorite",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinerotatewebhookurl",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelineschedulecreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinescheduledelete",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinescheduleupdate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinetemplatecreate",
+    "https://buildkite.com/docs/apis/graphql/schemas/mutation/pipelinetemplatedelete",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/agent",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/agenttoken",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/apiaccesstokencode",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/artifact",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/auditevent",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/build",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/graphqlsnippet",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/job",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/node",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/notificationservice",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/organization",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/organizationinvitation",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/organizationmember",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/pipeline",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/pipelineschedule",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/pipelinetemplate",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/registry",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/rule",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/secret",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/ssoprovider",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/team",
+    "https://buildkite.com/docs/apis/graphql/schemas/query/viewer",
+    "https://buildkite.com/docs/apis/managing-api-tokens",
+    "https://buildkite.com/docs/apis/managing-api-tokens#token-scopes",
+    "https://buildkite.com/docs/apis/mcp-server",
+    "https://buildkite.com/docs/apis/oauth-device-authorization",
+    "https://buildkite.com/docs/apis/oauth-token-exchange",
+    "https://buildkite.com/docs/apis/rest-api",
+    "https://buildkite.com/docs/apis/rest-api/access-token",
+    "https://buildkite.com/docs/apis/rest-api/agents",
+    "https://buildkite.com/docs/apis/rest-api/annotations",
+    "https://buildkite.com/docs/apis/rest-api/artifacts",
+    "https://buildkite.com/docs/apis/rest-api/builds",
+    "https://buildkite.com/docs/apis/rest-api/clusters",
+    "https://buildkite.com/docs/apis/rest-api/clusters/agent-tokens",
+    "https://buildkite.com/docs/apis/rest-api/clusters/maintainers",
+    "https://buildkite.com/docs/apis/rest-api/clusters/queues",
+    "https://buildkite.com/docs/apis/rest-api/clusters/secrets",
+    "https://buildkite.com/docs/apis/rest-api/emojis",
+    "https://buildkite.com/docs/apis/rest-api/jobs",
+    "https://buildkite.com/docs/apis/rest-api/meta",
+    "https://buildkite.com/docs/apis/rest-api/organizations",
+    "https://buildkite.com/docs/apis/rest-api/organizations/audit-events",
+    "https://buildkite.com/docs/apis/rest-api/organizations/members",
+    "https://buildkite.com/docs/apis/rest-api/organizations/rate-limits",
+    "https://buildkite.com/docs/apis/rest-api/package-registries/packages",
+    "https://buildkite.com/docs/apis/rest-api/package-registries/registries",
+    "https://buildkite.com/docs/apis/rest-api/package-registries/registry-tokens",
+    "https://buildkite.com/docs/apis/rest-api/pipeline-schedules",
+    "https://buildkite.com/docs/apis/rest-api/pipeline-templates",
+    "https://buildkite.com/docs/apis/rest-api/pipelines",
+    "https://buildkite.com/docs/apis/rest-api/portals",
+    "https://buildkite.com/docs/apis/rest-api/rate-limits",
+    "https://buildkite.com/docs/apis/rest-api/rules",
+    "https://buildkite.com/docs/apis/rest-api/teams",
+    "https://buildkite.com/docs/apis/rest-api/teams/members",
+    "https://buildkite.com/docs/apis/rest-api/teams/pipelines",
+    "https://buildkite.com/docs/apis/rest-api/teams/suites",
+    "https://buildkite.com/docs/apis/rest-api/test-engine/flaky-tests",
+    "https://buildkite.com/docs/apis/rest-api/test-engine/quarantine",
+    "https://buildkite.com/docs/apis/rest-api/test-engine/runs",
+    "https://buildkite.com/docs/apis/rest-api/test-engine/suites",
+    "https://buildkite.com/docs/apis/rest-api/test-engine/tests",
+    "https://buildkite.com/docs/apis/rest-api/user",
+    "https://buildkite.com/docs/package-registries",
+    "https://buildkite.com/docs/pipelines",
+    "https://buildkite.com/docs/platform",
+    "https://buildkite.com/docs/platform/accessibility",
+    "https://buildkite.com/docs/platform/ai-agents",
+    "https://buildkite.com/docs/platform/audit-log",
+    "https://buildkite.com/docs/platform/cli",
+    "https://buildkite.com/docs/platform/cli/configuration",
+    "https://buildkite.com/docs/platform/cli/installation",
+    "https://buildkite.com/docs/platform/cli/preflight",
+    "https://buildkite.com/docs/platform/cli/reference",
+    "https://buildkite.com/docs/platform/cli/reference/agent",
+    "https://buildkite.com/docs/platform/cli/reference/api",
+    "https://buildkite.com/docs/platform/cli/reference/artifacts",
+    "https://buildkite.com/docs/platform/cli/reference/auth",
+    "https://buildkite.com/docs/platform/cli/reference/auth#login-auth",
+    "https://buildkite.com/docs/platform/cli/reference/browse",
+    "https://buildkite.com/docs/platform/cli/reference/build",
+    "https://buildkite.com/docs/platform/cli/reference/cluster",
+    "https://buildkite.com/docs/platform/cli/reference/config",
+    "https://buildkite.com/docs/platform/cli/reference/configure",
+    "https://buildkite.com/docs/platform/cli/reference/init",
+    "https://buildkite.com/docs/platform/cli/reference/job",
+    "https://buildkite.com/docs/platform/cli/reference/maintainer",
+    "https://buildkite.com/docs/platform/cli/reference/organization",
+    "https://buildkite.com/docs/platform/cli/reference/package",
+    "https://buildkite.com/docs/platform/cli/reference/pipeline",
+    "https://buildkite.com/docs/platform/cli/reference/preflight",
+    "https://buildkite.com/docs/platform/cli/reference/queue",
+    "https://buildkite.com/docs/platform/cli/reference/secret",
+    "https://buildkite.com/docs/platform/cli/reference/skill",
+    "https://buildkite.com/docs/platform/cli/reference/update",
+    "https://buildkite.com/docs/platform/cli/reference/user",
+    "https://buildkite.com/docs/platform/cli/reference/version",
+    "https://buildkite.com/docs/platform/emojis",
+    "https://buildkite.com/docs/platform/legal-and-policies",
+    "https://buildkite.com/docs/platform/limits",
+    "https://buildkite.com/docs/platform/pricing-and-plans",
+    "https://buildkite.com/docs/platform/security/tokens",
+    "https://buildkite.com/docs/platform/service-level-agreement",
+    "https://buildkite.com/docs/platform/sso",
+    "https://buildkite.com/docs/platform/sso/adfs",
+    "https://buildkite.com/docs/platform/sso/azure-ad",
+    "https://buildkite.com/docs/platform/sso/custom-saml",
+    "https://buildkite.com/docs/platform/sso/github-sso",
+    "https://buildkite.com/docs/platform/sso/google-workspace",
+    "https://buildkite.com/docs/platform/sso/google-workspace-saml",
+    "https://buildkite.com/docs/platform/sso/okta",
+    "https://buildkite.com/docs/platform/sso/onelogin",
+    "https://buildkite.com/docs/platform/sso/sso-setup-with-graphql",
+    "https://buildkite.com/docs/platform/team-management",
+    "https://buildkite.com/docs/platform/team-management/enforce-2fa",
+    "https://buildkite.com/docs/platform/team-management/inactive-user-list",
+    "https://buildkite.com/docs/platform/team-management/permissions",
+    "https://buildkite.com/docs/platform/team-management/system-banners",
+    "https://buildkite.com/docs/platform/terraform-provider",
+    "https://buildkite.com/docs/platform/terraform-provider/getting-started-with-managing-pipelines",
+    "https://buildkite.com/docs/platform/terraform-provider/import-existing-resources",
+    "https://buildkite.com/docs/platform/terraform-provider/manage-buildkite-organizations",
+    "https://buildkite.com/docs/platform/terraform-provider/manage-clusters-and-queues",
+    "https://buildkite.com/docs/platform/terraform-provider/manage-teams",
+    "https://buildkite.com/docs/platform/tutorials/2fa",
+    "https://buildkite.com/login",
+    "https://buildkite.com/signup?iaid=pricing-free",
+    "https://buildkite.com/user/api-access-tokens",
+    "https://buildkite.com/user/api-access-tokens/new",
+    "https://buildkite.com/user/api-access-tokens/new?description=Buildkite%20CLI",
+    "https://buildkite.com/user/settings",
+    "https://forum.buildkite.community/",
+    "https://github.com/buildkite/docs/edit/main/pages/platform/cli/reference/api.md",
+    "https://github.com/buildkite/docs/issues"
+  ]
+}

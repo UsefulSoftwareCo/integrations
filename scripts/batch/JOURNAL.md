@@ -23,3 +23,12 @@
   the nudge works
 - asana.com, kensho.com, ramp.com never completed (rate limits) — retry at high
   concurrency in the morning
+
+## 03:50 update
+- batch-01 ~92/200 done, 3 loop failures, checklist ~0-2 fails. Healthy.
+- Prompt hardened twice mid-batch (base-url c74bb0d, dashboards-not-surfaces).
+  Since batch-01 started BEFORE both fixes, built morning-rerun.txt (35 domains
+  showing locatorless/dashboard symptoms) — rerun with --force at high
+  concurrency after the TPM bump, alongside asana/kensho/ramp.
+- algolia shows residual over-splitting (7 surfaces; 'website search index'
+  should not be a surface) — acceptable rate for now, rerun list catches it.

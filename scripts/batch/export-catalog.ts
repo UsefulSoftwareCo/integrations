@@ -15,6 +15,7 @@ type CatalogSurface = {
 
 type CatalogDomain = {
   domain: string;
+  description?: string;
   summary: string;
   surfaces: CatalogSurface[];
 };
@@ -71,6 +72,7 @@ for (const dir of resultDirs) {
     if (surfaces.length === 0) continue;
     domainMap.set(result.domain.toLowerCase(), {
       domain: result.domain.toLowerCase(),
+      description: result.description,
       summary: result.summary,
       surfaces,
     });

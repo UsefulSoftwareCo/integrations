@@ -54,6 +54,8 @@ export const DiscoverResult = Schema.Struct({
   detect: Schema.Unknown,
   /** One-line summary of the service's integration surface. */
   summary: Schema.optional(Schema.String),
+  /** Plain factual description of what the service/product does. */
+  description: Schema.optional(Schema.String),
   /** ISO timestamp this result was produced. */
   discoveredAt: Schema.String,
   /** Global credential registry, keyed by id — the CANONICAL Credential schema,
@@ -145,6 +147,7 @@ export const packDiscovery = (domain: string, detect: unknown, disc: Awaited<Ret
       usedLlm,
       discoveredAt: new Date().toISOString(),
       summary: disc?.summary,
+      description: disc?.description,
       credentials: coerceCredentials(disc?.credentials),
       surfaces: disc?.surfaces,
     }),

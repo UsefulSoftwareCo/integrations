@@ -390,6 +390,7 @@ interface DiscoveredSurface {
 
 interface DiscoveredDomain {
   domain: string;
+  description?: string;
   summary?: string;
   surfaces?: DiscoveredSurface[];
 }
@@ -417,7 +418,7 @@ function buildDiscovered(knownDomains: Set<string>): Integration[] {
     if (kinds.length === 0) continue;
 
     const domainSlug = slugify(domain);
-    const summary = (d.summary ?? "").replace(/\s+/g, " ").trim().slice(0, 240);
+    const description = (d.description || d.summary || "").replace(/\s+/g, " ").trim().slice(0, 240);
     kinds.forEach((kind, i) => {
       const surface = byKind.get(kind)!;
       const slug = i === 0 ? domainSlug : `${domainSlug}-${kind}`;
@@ -426,7 +427,7 @@ function buildDiscovered(knownDomains: Set<string>): Integration[] {
         kind,
         slug,
         name: domain,
-        description: summary,
+        description,
         url: undefined,
         icon: faviconUrl(domain) ?? undefined,
         categories: [],

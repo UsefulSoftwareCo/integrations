@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { detect } from "../../src/lib/detect.ts";
-import { discover, type ChatFn, type DiscoverEvent, type ParsedToolCall } from "../../src/lib/discover.ts";
+import { discover, type ChatFn, type DiscoverEvent, type ParsedToolCall, type WebBackend } from "../../src/lib/discover.ts";
 import { contextWeb } from "../../src/lib/contextdev.ts";
 import { dedupSurfacesWithReport } from "./dedup.ts";
 import {
@@ -28,6 +28,8 @@ Flags:
   --concurrency n    Domains in flight (default: 8)
   --out dir          Results dir (default: scripts/batch/results)
   --existing dir     Directory of existing StoredDiscovery rows for slug continuity
+  --no-scrape-cache  Bypass the local context.dev scrape/search/sitemap cache
+  --scrape-cache-dir Directory for the local scrape cache (default: scripts/batch/scrape-cache)
   --force            Re-run domains whose output file already exists
   --help             Show this help
 `;
@@ -57,6 +59,22 @@ type RunStats = {
   chatRequests: number;
   maxAttempt: number;
   usage: Usage;
+};
+
+type CacheStats = {
+  hits: number;
+  misses: number;
+};
+
+type RunDomainOptions = {
+  apiKey: string;
+  contextKey: string;
+  model: string;
+  outDir: string;
+  existingDir?: string;
+  force: boolean;
+  useScrapeCache: boolean;
+  scrapeCacheDir?: string;
 };
 
 function parseToolArgs(raw: string): Record<string, unknown> {
@@ -145,7 +163,7 @@ function countCreds(result: { credentials?: unknown }): number {
     : 0;
 }
 
-async function runDomain(domain: string, opts: { apiKey: string; contextKey: string; model: string; outDir: string; existingDir?: string; force: boolean }): Promise<void> {
+async function runDomain(domain: string, opts: RunDomainOptions): Promise<void> {
   const outPath = join(opts.outDir, `${safeDomainFile(domain)}.json`);
   if (!opts.force && existsSync(outPath)) {
     console.log(`${domain}\tskipped existing ${outPath}`);
@@ -159,6 +177,11 @@ async function runDomain(domain: string, opts: { apiKey: string; contextKey: str
     maxAttempt: 1,
     usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
   };
+  let cacheStats: CacheStats | undefined;
+  const cacheLog = () =>
+    opts.useScrapeCache
+      ? `\tcacheHits=${cacheStats?.hits ?? 0}\tcacheMisses=${cacheStats?.misses ?? 0}`
+      : "\tcache=off";
   try {
     const d = await detect(domain);
     const events: DiscoverEvent[] = [];
@@ -171,8 +194,14 @@ async function runDomain(domain: string, opts: { apiKey: string; contextKey: str
     const noteUrls = (text: string) => {
       for (const m of text.match(/https?:\/\/[^\s"'<>)\],`\\]+/g) ?? []) seenUrls.add(m.replace(/[.,;:]+$/, ""));
     };
-    const inner = contextWeb(opts.contextKey);
-    const web: typeof inner = {
+    let inner: WebBackend = contextWeb(opts.contextKey);
+    if (opts.useScrapeCache) {
+      const { cachedWeb } = await import("./scrape-cache.ts");
+      const cached = cachedWeb(inner, opts.scrapeCacheDir);
+      inner = cached;
+      cacheStats = cached.cacheStats;
+    }
+    const web: WebBackend = {
       canSearch: inner.canSearch,
       async search(query) {
         const hits = await inner.search(query);
@@ -231,7 +260,7 @@ async function runDomain(domain: string, opts: { apiKey: string; contextKey: str
     });
 
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
-    console.log(`${d.domain}\tsurfaces=${result.surfaces?.length ?? 0}\tcreds=${countCreds(result)}\tturns=${stats.turns}\ttokens=${stats.usage.total_tokens}\tseconds=${seconds}`);
+    console.log(`${d.domain}\tsurfaces=${result.surfaces?.length ?? 0}\tcreds=${countCreds(result)}\tturns=${stats.turns}\ttokens=${stats.usage.total_tokens}\tseconds=${seconds}${cacheLog()}`);
   } catch (error) {
     appendJsonl(join(opts.outDir, "_failures.jsonl"), {
       domain,
@@ -239,7 +268,7 @@ async function runDomain(domain: string, opts: { apiKey: string; contextKey: str
       attemptCount: stats.maxAttempt,
     });
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
-    console.log(`${domain}\tfailed\tturns=${stats.turns}\ttokens=${stats.usage.total_tokens}\tseconds=${seconds}`);
+    console.log(`${domain}\tfailed\tturns=${stats.turns}\ttokens=${stats.usage.total_tokens}\tseconds=${seconds}${cacheLog()}`);
   }
 }
 
@@ -290,13 +319,15 @@ async function main(): Promise<void> {
   const concurrency = getNumberFlag(args, "concurrency", 8);
   const outDir = getFlag(args, "out", join(ROOT, "scripts", "batch", "results"))!;
   const existingDir = getFlag(args, "existing");
+  const useScrapeCache = !hasFlag(args, "no-scrape-cache");
+  const scrapeCacheDir = getFlag(args, "scrape-cache-dir");
   const force = hasFlag(args, "force");
   const secrets = requireSecrets();
   const domains = readDomains(domainArg);
   if (!domains.length) throw new Error("no domains found");
   mkdirSync(outDir, { recursive: true });
   await mapLimit(domains, concurrency, (domain) =>
-    runDomain(domain, { apiKey: secrets.openai, contextKey: secrets.contextDev, model, outDir, existingDir, force }));
+    runDomain(domain, { apiKey: secrets.openai, contextKey: secrets.contextDev, model, outDir, existingDir, force, useScrapeCache, scrapeCacheDir }));
 }
 
 await main();

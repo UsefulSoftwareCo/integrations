@@ -130,6 +130,7 @@ export interface Surface {
 
 export interface DiscoveryResult {
   summary: string;
+  description?: string;
   credentials: Record<string, Credential>;
   surfaces: Surface[];
 }
@@ -217,7 +218,15 @@ const TOOLS = [
     SURFACE_PROPS,
     ["name", "type"],
   ),
-  fn("finish", "Call when you've recorded every credential and surface. Provide a one-line summary of the service's integration surface.", { summary: { type: "string" } }, ["summary"]),
+  fn(
+    "finish",
+    "Call when you've recorded every credential and surface. Provide both the integration-surface summary and the service registry description.",
+    {
+      summary: { type: "string", description: "One-line overview of the service's integration surface." },
+      description: { type: "string", description: "1-2 sentences on what {domain}'s product/service actually does, for a registry listing. Plain, factual, no marketing superlatives." },
+    },
+    ["summary", "description"],
+  ),
 ];
 
 const SYSTEM =
@@ -247,7 +256,7 @@ const SYSTEM =
   "- Credentials are for DEVELOPER surfaces. An end-user app login (a consumer account for booking/shopping/streaming) is not an integration credential — omit it and the flows that need it.\n" +
   "- Record only credentials THIS service issues. A third-party platform's token that the service consumes (a BigCommerce API token you paste into an integration) belongs to that platform's own entry — mention it in the surface notes at most.\n" +
   "- A credential is something the user MINTS FOR THEMSELVES (their API key, their OAuth app). NEVER record shared, default, or example logins — a self-hosted product's factory password (admin/admin) is a security footgun, not a credential; use authStatus 'unknown' instead. Admin consoles of self-hosted installs are not public integration surfaces; omit them.\n" +
-  "- When done, call finish with a one-line summary. Omit surface types that don't exist.";
+  "- When done, call finish with `summary` (one-line integration-surface overview) and `description` (1-2 plain factual sentences describing what the service/product does, not its developer surface). Omit surface types that don't exist.";
 
 const MAX_STEPS = 16;
 const MAX_SCRAPES = 30; // runaway guard, not a doc cap
@@ -349,8 +358,8 @@ export async function discover(
     }
   };
 
-  const finalize = (summary: string): DiscoveryResult =>
-    merge({ summary, credentials, surfaces }, detect, emit);
+  const finalize = (summary: string, description?: string): DiscoveryResult =>
+    merge({ summary, description, credentials, surfaces }, detect, emit);
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const turn = await chat(messages, TOOLS);
@@ -366,14 +375,18 @@ export async function discover(
     // call order so every tool_call gets its tool message. record_* emits stream
     // as each resolves.
     let finishSummary: string | undefined;
+    let finishDescription: string | undefined;
     const results = await Promise.all(
       turn.toolCalls.map((call) => (call.name === "finish" ? Promise.resolve("Done.") : runTool(call))),
     );
     turn.toolCalls.forEach((call, i) => {
-      if (call.name === "finish") finishSummary = typeof call.arguments.summary === "string" ? call.arguments.summary.trim() : "";
+      if (call.name === "finish") {
+        finishSummary = typeof call.arguments.summary === "string" ? call.arguments.summary.trim() : "";
+        finishDescription = typeof call.arguments.description === "string" ? call.arguments.description.trim() : undefined;
+      }
       messages.push({ role: "tool", tool_call_id: call.id, content: results[i] });
     });
-    if (finishSummary !== undefined) return finalize(finishSummary);
+    if (finishSummary !== undefined) return finalize(finishSummary, finishDescription);
   }
 
   // Hit the step cap without a finish. Ask once, no tools, for just a one-line

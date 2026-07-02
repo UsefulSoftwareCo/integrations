@@ -227,6 +227,7 @@ export const DiscoveryResult = Schema.Struct({
   version: Schema.Literal(DISCOVERY_VERSION).annotate({ description: "Payload schema version. Readers dispatch on this — never shape-sniff." }),
   domain: Schema.String,
   summary: Schema.String.annotate({ description: "One-line overview of the service's integration surface." }),
+  description: Schema.optional(Schema.String.annotate({ description: "Plain factual description of what the service/product does, for registry listings." })),
   discoveredAt: Schema.optional(Schema.String.annotate({ description: "ISO timestamp this result was produced — for staleness of `discovered` facts (detected facts carry their own verifiedAt)." })),
   credentials: Schema.Record(Schema.String, Credential).annotate({ description: "Global credential registry, keyed by id — defined once, referenced by surface auth." }),
   surfaces: Schema.Array(Surface).annotate({ description: "Typed surface inventory (http/graphql/mcp/cli)." }),

@@ -28,8 +28,10 @@ export interface Integration {
     provider: string;
     service?: string;
     version: string;
-    /** The provider's own canonical spec URL (apis.guru `origin`), not the mirror. */
+    /** Machine-readable OpenAPI spec URL. */
     specUrl?: string;
+    /** Human-facing docs or developer portal URL. */
+    docsUrl?: string;
     openapiVer: string;
     updated?: string;
     added?: string;

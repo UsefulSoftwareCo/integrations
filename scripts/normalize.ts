@@ -208,6 +208,22 @@ interface ApiGuruSpec {
   raw?: { info?: { "x-logo"?: { url?: string } } };
 }
 
+function isHttpUrl(url: string | undefined): url is string {
+  if (!url) return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isPlausibleSpecUrl(url: string | undefined): url is string {
+  if (!isHttpUrl(url)) return false;
+  const path = new URL(url).pathname;
+  return /\.(json|ya?ml)$/i.test(path) || /openapi|swagger/i.test(path);
+}
+
 function buildOpenapi(): Integration[] {
   const data = readJson<{ specs: ApiGuruSpec[] }>(join(SOURCES, "api-guru-openapi.json"));
   // Hand-curated specs (sources/openapi-manual.json) — kept separate so they
@@ -233,6 +249,12 @@ function buildOpenapi(): Integration[] {
   for (const [key, s] of byKey) {
     const slug = slugify(key);
     const feed: Feed = manualKeys.has(key) ? "override" : "apis-guru";
+    // Always link the apis.guru mirror: origin URLs are provider-reported and
+    // frequently dead or redirecting to an HTML portal (even spec-looking ones
+    // like walmart's /v1/swaggerProxy). Origin survives as the docs link when
+    // it isn't itself a spec document.
+    const specUrl = s.swaggerUrl ?? s.link ?? (isPlausibleSpecUrl(s.origin) ? s.origin : undefined);
+    const docsUrl = !isPlausibleSpecUrl(s.origin) && isHttpUrl(s.origin) ? s.origin : undefined;
     recs.push({
       id: `openapi/${slug}`,
       kind: "openapi",
@@ -247,7 +269,8 @@ function buildOpenapi(): Integration[] {
         provider: s.provider,
         service: s.service ?? undefined,
         version: s.versionKey,
-        specUrl: s.origin, // the provider's own canonical spec, not the apis.guru mirror
+        specUrl,
+        docsUrl,
         openapiVer: s.openapiVer,
         updated: s.updated,
         added: s.added,
@@ -468,7 +491,12 @@ function applyOverrides(kind: Kind, recs: Integration[]): Integration[] {
       ...patch,
     } as Integration);
   }
-  return updated;
+  if (kind !== "openapi") return updated;
+  return updated.map((r) => {
+    const swaggerUrl = (r.openapi as (typeof r.openapi & { swaggerUrl?: string }) | undefined)?.swaggerUrl;
+    if (!r.openapi || r.openapi.specUrl || !swaggerUrl) return r;
+    return { ...r, openapi: { ...r.openapi, specUrl: swaggerUrl } };
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -519,7 +547,7 @@ function recordDomain(r: Integration): string {
     if (DOMAIN_REMAP[provider]) return DOMAIN_REMAP[provider];
     const d = provider.split(":")[0].toLowerCase();
     if (d) return d;
-    url = r.openapi?.swaggerUrl ?? r.url;
+    url = r.openapi?.specUrl ?? r.url;
   } else if (r.kind === "mcp") {
     url = r.mcp?.remoteUrl ?? r.url;
   } else if (r.kind === "cli") {

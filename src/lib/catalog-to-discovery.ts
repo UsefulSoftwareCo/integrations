@@ -33,7 +33,7 @@ export function recordToSurface(r: Integration): Omit<SurfaceView, "slug"> | nul
         auth: r.mcp?.isAuthless ? { status: "none", basis: REG_BASIS } : { status: "unknown" },
       };
     case "openapi":
-      return { name: r.name, type: "http", docs: r.url, basis: REG_BASIS, spec: r.openapi?.specUrl, url: r.url, auth: { status: "unknown" } };
+      return { name: r.name, type: "http", docs: r.openapi?.docsUrl ?? r.url, basis: REG_BASIS, spec: r.openapi?.specUrl, url: r.url, auth: { status: "unknown" } };
     case "graphql":
       return {
         name: r.name,

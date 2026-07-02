@@ -29,6 +29,7 @@ export interface CatalogItem {
   meta: string;
   url?: string;
   spec?: string;
+  docs?: string;
   /** CLI rows: the command name — their only identity (no url/spec). */
   command?: string;
 }

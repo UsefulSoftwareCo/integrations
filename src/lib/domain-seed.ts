@@ -27,10 +27,10 @@ const metaFor = (r: IndexRecord): string => {
 /** Identity for dedup against discovered surfaces (url/spec/command from the
  * full record). CLI rows have no URL — their command IS the identity (the same
  * value catalog-to-discovery emits as the baseline surface's `command`). */
-const identityFor = (r: IndexRecord): { url?: string; spec?: string; command?: string } => {
+const identityFor = (r: IndexRecord): { url?: string; spec?: string; docs?: string; command?: string } => {
   const full = byId.get(r.id);
   if (r.kind === "mcp") return { url: full?.mcp?.remoteUrl };
-  if (r.kind === "openapi") return { spec: full?.openapi?.specUrl };
+  if (r.kind === "openapi") return { spec: full?.openapi?.specUrl, docs: full?.openapi?.docsUrl };
   if (r.kind === "graphql") return { url: full?.graphql?.endpoint };
   if (r.kind === "cli") return { command: r.slug };
   return {};

@@ -166,15 +166,15 @@ async function extractMcp(item: Integration): Promise<ToolsCache> {
 }
 
 async function extractOpenapi(item: Integration): Promise<ToolsCache> {
-  const swagger = item.openapi?.swaggerUrl;
-  if (!swagger) return skipped("no swagger URL");
+  const spec = item.openapi?.specUrl;
+  if (!spec) return skipped("no spec URL");
   const namespace = `openapi_${item.slug}`.replace(/[^a-z0-9_]/g, "_");
   const exec = await createExecutor({
     scope: { name: `extract-${item.slug}` },
     plugins: [openApiPlugin()] as const,
   });
   try {
-    await exec.openapi.addSpec({ spec: swagger, namespace });
+    await exec.openapi.addSpec({ spec, namespace });
     const tools = await exec.tools.list();
     return ok(
       tools
@@ -221,7 +221,7 @@ async function processKind(kind: Kind) {
   const candidates = items.filter((item) => {
     if (!REFRESH && readCache(kind, item.slug)) return false;
     if (kind === "mcp" && !isAuthlessMcp(item)) return false;
-    if (kind === "openapi" && !item.openapi?.swaggerUrl) return false;
+    if (kind === "openapi" && !item.openapi?.specUrl) return false;
     if (kind === "graphql" && item.graphql?.hasSecurity) return false;
     return true;
   });

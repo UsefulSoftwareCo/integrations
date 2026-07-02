@@ -1,11 +1,10 @@
 ---
 // Detail page for a DISCOVERED surface — rendered on demand in the Worker.
 //
-// Discovered surfaces live in KV (not the static catalog), so they have no
-// pre-built page. This route renders one from the stored result at
-// `/{domain}/{surface-slug}/` — name, locator, and the per-surface auth
-// (which credential, how bound) + the referenced credentials. Live discovery
-// (KV) wins; the static-catalog baseline (/disc/{domain}.json) is the fallback.
+// Surface pages render from discovery documents: KV first, then the baseline
+// discovery document. This route renders one at `/{domain}/{surface-slug}/` —
+// name, locator, and the per-surface auth (which credential, how bound) + the
+// referenced credentials.
 //
 // Same Base layout, same components, same CSS as every prerendered page —
 // values from the LLM agent are just props; Astro escapes them like any other.
@@ -43,7 +42,7 @@ let surface: Surface | undefined;
 let creds: Record<string, Credential> = {};
 
 if (looksLikeDomain && runtime) {
-  // Live discovery (KV) wins; fall back to the static catalog baseline.
+  // Live discovery (KV) wins; fall back to the baseline discovery document.
   const raw = await runtime.env.DISCOVERY.get(domain);
   if (raw) {
     const stored = JSON.parse(raw) as { result?: DiscoveryDoc };

@@ -82,8 +82,8 @@ function wireAi(env: Env): void {
   });
 }
 
-/** Prior surfaces for a domain: the stored KV result, else the static-catalog
- * baseline (whose slugs the prerendered pages already link to). */
+/** Prior surfaces for a domain: the stored KV result, else the baseline
+ * discovery document (whose slugs the prerendered pages already link to). */
 async function priorSurfaces(env: Env, origin: string, domain: string): Promise<Surface[]> {
   try {
     const raw = await env.DISCOVERY.get(domain);
@@ -361,8 +361,8 @@ export function createExports(manifest: SSRManifest) {
     }
 
     // Stored discovery — the durable KV result for a domain, written on the
-    // last completion. The domain page reads this at render/mount and merges it
-    // with the static catalog. 404 when nothing has been discovered yet.
+    // last completion. The domain page reads this at render/mount and uses it
+    // as the only render source. 404 when nothing has been discovered yet.
     const storedMatch = /^\/api\/([^/]+)\/discovery\/?$/.exec(url.pathname);
     if (storedMatch) {
       const domain = decodeURIComponent(storedMatch[1]).trim().toLowerCase();

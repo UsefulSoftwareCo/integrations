@@ -23,6 +23,7 @@ export interface Integration {
     toolNames?: string[];
     authTypes?: string[];
     worksWith?: string[];
+    install?: string;
   };
   openapi?: {
     provider: string;

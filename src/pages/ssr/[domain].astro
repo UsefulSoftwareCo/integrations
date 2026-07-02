@@ -4,11 +4,11 @@
 // The worker entry rewrites `/{domain}/` here after a KV hit, so returning
 // visitors get the discovered map baked into the HTML — already in the "done"
 // state, no idle-button flash while the island fetches. (Not underscore-
-// prefixed: `_`-files are excluded from Astro routing.) The catalog seed comes
-// from the baked /disc/{domain}.json (same build data as the prerendered
-// page); the same DomainPage component renders both, so nothing can drift.
+// prefixed: `_`-files are excluded from Astro routing.) KV wins; the baked
+// /disc/{domain}.json baseline is the discovery fallback. The same DomainPage
+// component renders both, so nothing can drift.
 import DomainPage from "~/components/DomainPage.astro";
-import type { CatalogSection, DiscoverData } from "~/components/Surfaces.tsx";
+import type { DiscoverData } from "~/lib/surface-sections.ts";
 
 export const prerender = false;
 
@@ -21,20 +21,22 @@ const raw = runtime ? await runtime.env.DISCOVERY.get(domain) : null;
 // Parsed KV JSON — the envelope is StoredDiscovery, but old rows predate strict
 // typing, so read it as the loose render shape and let the island stay lenient.
 const stored = raw ? (JSON.parse(raw) as { result?: DiscoverData }) : null;
-const initialData: DiscoverData | null = stored?.result?.surfaces ? stored.result : null;
+let initialData: DiscoverData | null = stored?.result?.surfaces ? stored.result : null;
 
-let catalog: CatalogSection[] = [];
-if (runtime) {
+if (!initialData && runtime) {
   const res = await runtime.env.ASSETS.fetch(
     new URL(`/disc/${encodeURIComponent(domain)}.json`, Astro.url.origin).href,
   );
-  if (res.ok) catalog = ((await res.json()) as { catalog?: CatalogSection[] }).catalog ?? [];
+  if (res.ok) {
+    const baseline = (await res.json()) as DiscoverData;
+    if (baseline.surfaces?.length) initialData = baseline;
+  }
 }
 
-// Nothing stored and nothing cataloged → true 404.
-if (!initialData && !catalog.length) return new Response(null, { status: 404 });
+// No KV and no baseline discovery surfaces → true 404.
+if (!initialData) return new Response(null, { status: 404 });
 
 Astro.response.headers.set("cache-control", "public, max-age=60");
 ---
 
-<DomainPage domain={domain} catalog={catalog} initialData={initialData} />
+<DomainPage domain={domain} initialData={initialData} />

@@ -2,10 +2,12 @@
  * Catalog → discovery format (v3).
  *
  * The discovery JSON (DiscoveryResult — credentials + typed surfaces) is the one
- * format the whole site derives from. The static registry predates it, so we
- * express each catalog record AS a discovery surface here. Auth from the catalog
- * is thin (it never captured per-method credentials), so surfaces come out as
- * `unknown` (or `none` when the record says so) — live discovery enriches them.
+ * format the whole site derives from. The static registry predates it, so this
+ * file emits a baseline discovery document only for records that carry a real
+ * locator: MCP remote URLs, OpenAPI spec URLs, GraphQL endpoints, or CLI seed
+ * commands. Auth from the catalog is thin (it never captured per-method
+ * credentials), so surfaces come out as `unknown` (or `none` when the record
+ * says so) — live discovery enriches them.
  *
  * Basis is `detected`/`registry`: these came from machine-normalized registries.
  * Slugs are assigned here at build time (slugified name, deduped per domain) —
@@ -23,9 +25,19 @@ export function isDiscoveredShim(r: { feeds?: readonly string[] }): boolean {
   return r.feeds?.includes("discovered") ?? false;
 }
 
-/** A catalog record as a v3 discovery surface (sans slug — assigned by the caller). */
+function hasBaselineLocator(r: Integration): boolean {
+  if (isDiscoveredShim(r)) return false;
+  if (r.kind === "mcp") return !!r.mcp?.remoteUrl;
+  if (r.kind === "openapi") return !!r.openapi?.specUrl;
+  if (r.kind === "graphql") return !!r.graphql?.endpoint;
+  if (r.kind === "cli") return !!r.cli && !!r.slug;
+  return false;
+}
+
+/** A locator-bearing catalog record as a v3 discovery surface (sans slug —
+ * assigned by the caller). */
 export function recordToSurface(r: Integration): Omit<SurfaceView, "slug"> | null {
-  if (isDiscoveredShim(r)) return null;
+  if (!hasBaselineLocator(r)) return null;
   switch (r.kind) {
     case "mcp":
       return {
@@ -58,8 +70,8 @@ export function recordToSurface(r: Integration): Omit<SurfaceView, "slug"> | nul
 /** Baseline surface slug per record id. Slug assignment is order-dependent
  * (name collisions dedupe with -2, -3…), so EVERY caller must pass records in
  * the same canonical order — `all`'s order (mcp, openapi, graphql, cli file
- * order), which is what the /disc JSON endpoint groups by. The domain-page
- * seed uses this same map so its links agree with the baked JSON. */
+ * order), which is what the /disc JSON endpoint and prerendered domain pages
+ * group by, so baseline links agree with the baked JSON. */
 export function baselineSlugs(records: Integration[]): Map<string, string> {
   const surfaces: { slug: string }[] = [];
   const byRecordId = new Map<string, string>();
@@ -73,7 +85,7 @@ export function baselineSlugs(records: Integration[]): Map<string, string> {
   return byRecordId;
 }
 
-/** The baseline DiscoveryResult (v3 shape) for a domain, from its catalog records. */
+/** The baseline DiscoveryResult (v3 shape) for a domain, from locator-bearing records. */
 export function catalogDiscovery(domain: string, records: Integration[]) {
   const slugs = baselineSlugs(records);
   const surfaces: SurfaceView[] = [];

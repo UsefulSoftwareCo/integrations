@@ -28,6 +28,7 @@
  * are injected, so it runs identically in the Worker, Bun, and tests.
  */
 import type { DetectionResult } from "./detect.ts";
+import { catalogSeeds } from "./catalog-seed.ts";
 import { validateSpecUrl, type SpecValidationResult } from "./spec-validate.ts";
 
 // ── injected model (OpenAI-style tool-calling) ────────────────────────────────
@@ -231,6 +232,7 @@ const SYSTEM =
   "How to work — page by page:\n" +
   "- Start with web_search to find the key developer pages. Then read the most relevant with scrape_page — issue SEVERAL scrape_page calls in the SAME turn so they run in parallel; don't read one, wait, read the next.\n" +
   "- After a batch of reads, record_credential / record_surface for what those pages revealed before reading more. Pass `evidence` (the doc URLs you read) on each surface and auth entry.\n" +
+  "- Catalog facts are authoritative like detect signals: include a surface for each catalog fact, enrich it with docs/auth, and never contradict them.\n" +
   "- Capture spec/schema URLs as POINTERS; never inline a spec. Only state URLs/endpoints you actually saw. Never invent them.\n" +
   "- `spec` must be a MACHINE-READABLE document URL (ends .json/.yaml/.yml, or contains openapi/swagger; graphql: SDL URL or 'introspection'). A docs portal or API-reference page is NOT a spec — leave spec unset and put the page in `docs`.\n" +
   "- Map THE GIVEN DOMAIN only. If your searches keep landing on a DIFFERENT company's docs (a partner, a similarly-named product, a ?ref= link), do not map that company — conclude the given domain exposes nothing and finish with empty surfaces.\n" +
@@ -260,6 +262,7 @@ export async function discover(
   emit?: Emit,
 ): Promise<DiscoveryResult | null> {
   const seed = seedFacts(domain, detect);
+  const catalogSeed = catalogSeeds(domain);
   const messages: unknown[] = [
     { role: "system", content: SYSTEM },
     {
@@ -268,6 +271,7 @@ export async function discover(
         `Service domain: ${domain}\n` +
         `Detected by automated probes: ${detect.found.length ? detect.found.join(", ") : "nothing"}.\n` +
         (seed.length ? `Seed facts (authoritative):\n- ${seed.join("\n- ")}\n` : "") +
+        (catalogSeed.length ? `Catalog facts (authoritative — from curated registries; verify and include these surfaces):\n- ${catalogSeed.join("\n- ")}\n` : "") +
         (web.canSearch ? `\nStart with web_search for "${domain}".` : `\nStart from https://${domain}/docs or https://developer.${domain}/.`),
     },
   ];

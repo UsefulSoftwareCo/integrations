@@ -4,28 +4,26 @@
 // intercepts the request and SSRs the same DomainPage with the map baked in
 // (src/pages/ssr/[domain].astro) instead of serving this asset.
 import DomainPage from "~/components/DomainPage.astro";
-import { index } from "~/lib/data.ts";
-import type { IndexRecord } from "~/lib/data.ts";
-import { catalogSeed } from "~/lib/domain-seed.ts";
+import { all, domainById, index } from "~/lib/data.ts";
+import { catalogDiscovery } from "~/lib/catalog-to-discovery.ts";
 
 // Group every enriched record by its registrable domain (the same key the
-// homepage groups by: `domain`, else the slug). One page per domain, including
-// discovered-only domains whose shim records stay out of the rendered sections.
+// homepage groups by: `domain`, else the slug). One page per domain.
 export function getStaticPaths() {
-  const groups = new Map<string, IndexRecord[]>();
+  const domains = new Set<string>();
   for (const r of index) {
-    const d = r.domain || r.slug;
-    if (!d) continue;
-    (groups.get(d) ?? groups.set(d, []).get(d)!).push(r);
+    const domain = r.domain || r.slug;
+    if (domain) domains.add(domain);
   }
-  return [...groups.entries()].map(([domain, records]) => ({
+  return [...domains].map((domain) => ({
     params: { domain },
-    props: { domain, records },
+    props: { domain },
   }));
 }
 
-const { domain, records } = Astro.props;
-const catalog = catalogSeed(records);
+const { domain } = Astro.props;
+const baseline = catalogDiscovery(domain, all.filter((r) => (domainById.get(r.id) || r.slug) === domain));
+const initialData = baseline.surfaces.length ? baseline : null;
 ---
 
-<DomainPage domain={domain} catalog={catalog} />
+<DomainPage domain={domain} initialData={initialData} />

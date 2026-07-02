@@ -2,86 +2,20 @@
  * Surfaces — the integration map for a domain page.
  *
  * Renders the kind sections (MCP servers / REST · OpenAPI / GraphQL / CLI) from
- * TWO sources merged: the static catalog (passed as props, SSR'd for SEO) and
- * the discovery result (read from durable KV on mount, or run live). A
- * discovered surface enriches the matching catalog entry with its auth (matched
- * on url/spec, else name); discovered-only surfaces are appended. Credentials
- * render once at the bottom. Auth lives WITH each surface, not in a separate
- * "Authentication" block.
+ * discovery data only: SSR/baseline discovery, durable KV read on mount, or the
+ * live discovery run. Credentials render once at the bottom. Auth lives WITH
+ * each surface, not in a separate "Authentication" block.
  *
  * Types come from the canonical Effect Schema (`import type`, so `effect` never
  * enters the client bundle).
  */
 import { useEffect, useState } from "react";
 import type { Credential, DiscoveryResult } from "../lib/discovery-schema.ts";
-import { cliLoginFor, credCta, hostOf, type AuthStatus, type Basis, type DiscoveryDoc, type Surface } from "../lib/surface-view.ts";
+import { buildSections, type DiscoverData, type SurfaceEntry } from "../lib/surface-sections.ts";
+import { cliLoginFor, credCta, hostOf, type AuthStatus, type Basis, type Surface } from "../lib/surface-view.ts";
 import Setup from "./surface/Setup.tsx";
 
-export type DiscoverData = Partial<Pick<DiscoveryResult, "summary">> & DiscoveryDoc;
 type Creds = DiscoveryResult["credentials"];
-
-/** A static catalog entry, pre-flattened by the page (identity for dedup). */
-export interface CatalogItem {
-  name: string;
-  description?: string;
-  slug: string;
-  kind: string;
-  meta: string;
-  url?: string;
-  spec?: string;
-  docs?: string;
-  /** CLI rows: the command name — their only identity (no url/spec). */
-  command?: string;
-}
-export interface CatalogSection {
-  kind: string;
-  label: string;
-  items: CatalogItem[];
-}
-
-const KIND_ORDER = ["mcp", "openapi", "graphql", "cli"] as const;
-const KIND_LABEL: Record<string, string> = { mcp: "MCP servers", openapi: "REST · OpenAPI", graphql: "GraphQL", cli: "CLI" };
-/** surface.type → page section kind (v3 `http` and v2 openapi/rest share the
- * catalog's `openapi` section key). */
-const kindOf = (t: string): string => (t === "http" || t === "rest" ? "openapi" : t);
-const norm = (s: string) => s.trim().toLowerCase();
-
-function surfaceIdentity(s: Surface): string | undefined {
-  switch (s.type) {
-    case "mcp":
-      return s.url;
-    case "graphql":
-      return s.url ?? s.spec;
-    case "cli":
-      return s.command;
-    default: // http (+ legacy openapi/rest)
-      return s.spec ?? s.url;
-  }
-}
-
-function surfaceMeta(s: Surface): string {
-  switch (s.type) {
-    case "mcp":
-      return s.transports?.[0] ?? "mcp";
-    case "graphql":
-      return "graphql";
-    case "cli":
-      return s.command ?? "cli";
-    default: // http (+ legacy openapi/rest)
-      return "rest";
-  }
-}
-
-/** Does a discovered surface refer to the same thing as a catalog entry?
- * Slug equality is authoritative (the worker's continuity pass keeps slugs
- * stable across runs); locator match covers a discovered surface enriching a
- * catalog row that predates it; name match is the last resort. */
-function matches(s: Surface, it: CatalogItem): boolean {
-  if (s.slug && s.slug === it.slug) return true;
-  const id = surfaceIdentity(s);
-  if (id && (id === it.url || id === it.spec || id === it.command)) return true;
-  return norm(s.name) === norm(it.name);
-}
 
 function Prov({ p }: { p: Basis }) {
   if (!p) return null;
@@ -100,45 +34,7 @@ function Prov({ p }: { p: Basis }) {
   );
 }
 
-interface Entry {
-  key: string;
-  name: string;
-  href?: string;
-  meta?: string;
-  surface?: Surface;
-}
-
-/** Merge catalog + discovered surfaces into per-kind sections. A discovered
- * surface (matched or standalone) links to its worker-SSR'd page; a pure-catalog
- * surface keeps its static `/{kind}/{slug}/` detail page. */
-function buildSections(catalog: CatalogSection[], data: DiscoverData | null, domain: string) {
-  const surfaces = data?.surfaces ?? [];
-  const discPage = (s: Surface) => `/${encodeURIComponent(domain)}/${s.slug}/`;
-  const catByKind = new Map(catalog.map((s) => [s.kind, s.items]));
-  const out: { kind: string; label: string; entries: Entry[] }[] = [];
-  for (const kind of KIND_ORDER) {
-    const items = catByKind.get(kind) ?? [];
-    const discovered = surfaces.filter((s) => kindOf(s.type) === kind);
-    const used = new Set<number>();
-    const entries: Entry[] = items.map((it, i) => {
-      const di = discovered.findIndex((s, idx) => !used.has(idx) && matches(s, it));
-      if (di >= 0) {
-        used.add(di);
-        return { key: `c${i}`, name: it.name, href: discPage(discovered[di]), meta: it.meta, surface: discovered[di] };
-      }
-      // Catalog-only surface — its detail page is served from the baseline JSON
-      // by the same `/{domain}/{slug}/` route (worker), keyed by its slug.
-      return { key: `c${i}`, name: it.name, href: `/${encodeURIComponent(domain)}/${it.slug}/`, meta: it.meta };
-    });
-    discovered.forEach((s, idx) => {
-      if (!used.has(idx)) entries.push({ key: `d${idx}`, name: s.name, href: discPage(s), meta: surfaceMeta(s), surface: s });
-    });
-    if (entries.length) out.push({ kind, label: KIND_LABEL[kind], entries });
-  }
-  return out;
-}
-
-function EntryRow({ e }: { e: Entry }) {
+function EntryRow({ e }: { e: SurfaceEntry }) {
   return (
     <li className="disc-entry">
       <div className="disc-entry-head">
@@ -158,11 +54,9 @@ function EntryRow({ e }: { e: Entry }) {
 
 export default function Surfaces({
   domain,
-  catalog = [],
   initialData = null,
 }: {
   domain: string;
-  catalog?: CatalogSection[];
   /** Stored discovery baked in by the SSR'd domain page — the island then
    * hydrates directly into "done" with no fetch and no idle-button flash. */
   initialData?: DiscoverData | null;
@@ -260,12 +154,12 @@ export default function Surfaces({
 
   const activeData: DiscoverData | null =
     state === "loading" ? { credentials: liveCreds, surfaces: liveSurfaces } : state === "done" ? data : null;
-  const built = buildSections(catalog, activeData, domain);
+  const built = buildSections(activeData, domain);
   const creds: Creds = activeData?.credentials ?? {};
   const credIdsOf = (auth?: AuthStatus): string[] =>
     auth?.status === "required" ? auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
-  const usedCredIds = new Set<string>(built.flatMap((sec) => sec.entries.flatMap((e) => credIdsOf(e.surface?.auth))));
-  const allAuths = built.flatMap((sec) => sec.entries.flatMap((e) => (e.surface?.auth ? [e.surface.auth] : [])));
+  const usedCredIds = new Set<string>(built.flatMap((sec) => sec.entries.flatMap((e) => credIdsOf(e.surface.auth))));
+  const allAuths = built.flatMap((sec) => sec.entries.map((e) => e.surface.auth));
   const credList = Object.entries(creds)
     .filter(([id]) => usedCredIds.has(id))
     .map(([id, c]) => ({ id, cred: c, cliLogin: cliLoginFor(id, allAuths) }));

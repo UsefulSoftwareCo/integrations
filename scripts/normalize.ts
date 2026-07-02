@@ -690,6 +690,58 @@ function buildIndex(all: Integration[]) {
   });
 }
 
+interface CatalogSeedEntry {
+  kind: Kind;
+  name: string;
+  feeds: Feed[];
+  remoteUrl?: string;
+  transport?: string;
+  authTypes?: string[];
+  specUrl?: string;
+  docsUrl?: string;
+  endpoint?: string;
+  docs?: string;
+  command?: string;
+  install?: string;
+  repo?: string;
+}
+
+function catalogSeedEntry(r: Integration): { domain: string; entry: CatalogSeedEntry } | null {
+  if (r.feeds.includes("discovered")) return null;
+
+  const domain = recordDomain(r);
+  if (!domain) return null;
+
+  const base = { kind: r.kind, name: r.name, feeds: r.feeds };
+  if (r.kind === "mcp") {
+    if (!r.mcp?.remoteUrl) return null;
+    return { domain, entry: { ...base, remoteUrl: r.mcp.remoteUrl, transport: r.mcp.transport, authTypes: r.mcp.authTypes } };
+  }
+  if (r.kind === "openapi") {
+    if (!r.openapi?.specUrl) return null;
+    return { domain, entry: { ...base, specUrl: r.openapi.specUrl, docsUrl: r.openapi.docsUrl } };
+  }
+  if (r.kind === "graphql") {
+    if (!r.graphql?.endpoint) return null;
+    return { domain, entry: { ...base, endpoint: r.graphql.endpoint, docs: r.graphql.docs[0]?.url } };
+  }
+  if (r.kind === "cli") {
+    if (!r.cli || !r.slug) return null;
+    return { domain, entry: { ...base, command: r.slug, install: r.cli.install, docs: r.cli.docs, repo: r.cli.repo } };
+  }
+  return null;
+}
+
+function buildCatalogSeedData(all: Integration[]): Record<string, CatalogSeedEntry[]> {
+  const out: Record<string, CatalogSeedEntry[]> = {};
+  for (const r of all) {
+    const seeded = catalogSeedEntry(r);
+    if (!seeded) continue;
+    (out[seeded.domain] ??= []).push(seeded.entry);
+  }
+  return out;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Run
 // ─────────────────────────────────────────────────────────────────────────────
@@ -751,6 +803,7 @@ function main() {
 
   const all = [...mcp, ...openapi, ...graphql, ...cli];
   writeFileSync(join(OUTPUT, "index.json"), JSON.stringify(buildIndex(all)));
+  writeFileSync(join(OUTPUT, "catalog-seeds.json"), JSON.stringify(buildCatalogSeedData(all)));
 
   const mergedMcp = mcp.filter((r) => r.feeds.length > 1).length;
   const withTools = (rs: Integration[]) =>

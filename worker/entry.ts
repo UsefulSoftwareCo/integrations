@@ -15,6 +15,8 @@ import { handle } from "@astrojs/cloudflare/handler";
 import resvgWasmModule from "@resvg/resvg-wasm/index_bg.wasm?module";
 import yogaWasmModule from "satori/yoga.wasm?module";
 import { apiContext, apiHandler } from "./api.ts";
+import { canonicalRedirect } from "./canonical.ts";
+import { sitemapSurfacesResponse } from "./sitemap-surfaces.ts";
 import { discoveryDoc } from "./discovery-doc.ts";
 import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
@@ -348,6 +350,11 @@ async function handleRequest(
   app: App,
 ): Promise<Response> {
     const url = new URL(request.url);
+    // Host canonicalization: www / workers.dev serve 301s to the apex
+    // (except /healthz, which monitors may hit on any host).
+    const canonical = canonicalRedirect(request);
+    if (canonical) return canonical;
+    if (url.pathname === "/sitemap-surfaces.xml") return sitemapSurfacesResponse();
     wireAi(env);
 
     // First-party analytics proxy — posthog-js points api_host here (see

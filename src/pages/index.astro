@@ -14,26 +14,15 @@ const counts = {
 };
 const TLABEL: Record<string, string> = { mcp: "MCP", openapi: "API", graphql: "GraphQL", cli: "CLI" };
 const mono = (d: string) => (d[0] || "?").toUpperCase();
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "integrations.sh",
-  url: "https://integrations.sh/",
-  potentialAction: {
-    "@type": "SearchAction",
-    target: "https://integrations.sh/?q={search_term_string}",
-    "query-input": "required name=search_term_string",
-  },
-};
 ---
 
-<Base title="integrations.sh — the registry of everything your agent can reach" path="/" ogImagePath="/og.png" jsonLd={jsonLd}>
+<Base title="integrations.sh — every integration, in every format agents speak" path="/">
   <div class="container">
     <section class="hero">
-      <h1>The registry of everything your agent can reach.</h1>
+      <h1>Every integration, in every format agents speak.</h1>
       <p class="sub" id="lede">
-        Open source catalog of every MCP, CLI, API: {(counts.mcp + counts.openapi + counts.graphql + counts.cli).toLocaleString()} integrations
-        and how to authenticate to them, to embed into your product, give to your agent, or use for yourself.
+        {(counts.mcp + counts.openapi + counts.graphql + counts.cli).toLocaleString()} publicly-accessible
+        integration specs across MCP, OpenAPI, and GraphQL — grouped by domain, readable by you and your agent.
       </p>
       <div class="search-row">
         <input
@@ -44,7 +33,7 @@ const jsonLd = {
         />
         <kbd>/</kbd>
       </div>
-      <a class="connect" href="/integrations.sh/integrations-mcp-server/">Connect your agent <span aria-hidden="true">→</span></a>
+      <a class="connect" href="/integrations.sh/">Connect your agent <span aria-hidden="true">→</span></a>
       <nav class="kinds" id="kinds">
         <button class="active" data-kind="">All</button>
         <button data-kind="mcp">MCP <span>{counts.mcp.toLocaleString()}</span></button>
@@ -123,17 +112,6 @@ const jsonLd = {
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
   const dpath = (d: string) => `/${encodeURIComponent(d)}/`;
   const isDomain = (s: string) => /^([a-z0-9-]+\.)+[a-z]{2,}$/i.test(s);
-  // A pasted URL becomes a domain search: scheme, path, port, and www. fall
-  // away ("https://www.mintlify.com/docs" → "mintlify.com"). Non-URLs pass through.
-  const normalizeQuery = (s: string) => {
-    const t = s.trim();
-    if (!/^https?:\/\//i.test(t) && !/^www\./i.test(t)) return s;
-    try {
-      return new URL(/^https?:\/\//i.test(t) ? t : `https://${t}`).hostname.replace(/^www\./i, "");
-    } catch {
-      return s;
-    }
-  };
 
   const rowHtml = (g: DomainRow) => {
     const L = esc((g.domain[0] || "?").toUpperCase());
@@ -195,22 +173,16 @@ const jsonLd = {
     updateTypeahead();
   };
 
-  fetch("/api/domains.json").then((r) => r.json()).then((data: DomainRow[]) => {
-    all = data;
+  fetch("/api/domains.json").then((r) => r.json()).then((j: DomainRow[] | { data: DomainRow[] }) => {
+    const rows = Array.isArray(j) ? j : j.data;
+    all = rows;
     if (kind || term.trim()) apply();
     else { filtered = all; status.textContent = `${all.length.toLocaleString()} domains`; }
     updateTypeahead();
   });
 
   let to: ReturnType<typeof setTimeout> | undefined;
-  q.addEventListener("input", () => {
-    const normalized = normalizeQuery(q.value);
-    if (normalized !== q.value) q.value = normalized;
-    term = normalized;
-    updateTypeahead();
-    clearTimeout(to);
-    to = setTimeout(apply, 90);
-  });
+  q.addEventListener("input", () => { term = q.value; updateTypeahead(); clearTimeout(to); to = setTimeout(apply, 90); });
   kindsNav.addEventListener("click", (e) => {
     const btn = (e.target as HTMLElement).closest("button");
     if (!btn) return;

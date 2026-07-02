@@ -1,0 +1,365 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "happenstance.ai",
+    "detect": {
+      "domain": "happenstance.ai",
+      "found": [
+        "mcp",
+        "mcp-self-onboard",
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://happenstance.ai"
+          ],
+          "authorizationEndpoint": "https://happenstance.ai/oauth/authorize",
+          "tokenEndpoint": "https://clerk.happenstance.ai/oauth/token",
+          "scopes": [
+            "profile",
+            "email",
+            "public_metadata",
+            "private_metadata",
+            "offline_access",
+            "user:org:read"
+          ],
+          "registrationEndpoint": "https://clerk.happenstance.ai/oauth/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        },
+        "mcp": [
+          {
+            "url": "https://happenstance.ai/mcp",
+            "type": "oauth2",
+            "authorizationServer": "https://happenstance.ai",
+            "dcr": true,
+            "cimd": false
+          }
+        ]
+      },
+      "mcp": [
+        {
+          "url": "https://happenstance.ai/mcp",
+          "source": "probe",
+          "auth": "oauth2",
+          "authorizationServer": "https://happenstance.ai",
+          "dcr": true,
+          "cimd": false
+        }
+      ],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:47:54.180Z",
+    "summary": "Happenstance exposes a bearer-token REST API at `https://api.happenstance.ai`, an OAuth-protected MCP server at `https://happenstance.ai/mcp`, and an `hpn` CLI that uses an API key.",
+    "description": "Happenstance is a people search engine for professional networks. It lets users search across their groups and connections and generate research profiles on people.",
+    "credentials": {
+      "hpn_api_key": {
+        "type": "bearer",
+        "label": "Happenstance API key",
+        "generateUrl": "https://happenstance.ai/integrations/keys",
+        "setup": "Create a Happenstance account, then go to [Settings → API Keys](https://happenstance.ai/integrations/keys) to generate your API key. The docs describe this as the key used for API and CLI access; send it as `Authorization: Bearer YOUR_API_KEY`, or configure the CLI with `hpn config set --api-key YOUR_API_KEY`.",
+        "acquisition": "manual"
+      },
+      "hpn_oauth_app": {
+        "type": "oauth2",
+        "label": "Happenstance OAuth client for MCP",
+        "generateUrl": "https://clerk.happenstance.ai/oauth/register",
+        "setup": "For MCP clients that self-onboard with OAuth, register a client via [dynamic client registration](https://clerk.happenstance.ai/oauth/register). The service's OAuth flow uses authorization at [`https://happenstance.ai/oauth/authorize`](https://happenstance.ai/oauth/authorize) and token exchange at [`https://clerk.happenstance.ai/oauth/token`](https://clerk.happenstance.ai/oauth/token). Available scopes include `profile`, `email`, `public_metadata`, `private_metadata`, `offline_access`, and `user:org:read`. In practice, MCP-compatible clients can usually initiate this flow automatically when connecting to the MCP server.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "happenstance-mcp-server",
+        "name": "Happenstance MCP server",
+        "type": "mcp",
+        "docs": "https://developer.happenstance.ai/mcp/connect",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T21:47:54.180Z"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hpn_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.happenstance.ai/mcp/connect",
+                  "https://happenstance.ai/oauth/authorize",
+                  "https://clerk.happenstance.ai/oauth/token",
+                  "https://clerk.happenstance.ai/oauth/register"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://happenstance.ai/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "happenstance-cli",
+        "name": "Happenstance CLI",
+        "type": "cli",
+        "docs": "https://developer.happenstance.ai/cli/install",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.happenstance.ai/cli/install"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hpn_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "hpn config set --api-key YOUR_API_KEY",
+                    "env": [
+                      "HPN_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.happenstance.ai/cli/install"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "pypi",
+            "identifier": "happenstance",
+            "runtimeHint": "Python 3.11+"
+          },
+          {
+            "registryType": "homebrew",
+            "identifier": "happenstance-ai/tap/happenstance"
+          }
+        ],
+        "command": "hpn"
+      },
+      {
+        "slug": "happenstance-api",
+        "name": "Happenstance API",
+        "type": "http",
+        "docs": "https://developer.happenstance.ai/quickstart",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.happenstance.ai/",
+            "https://developer.happenstance.ai/quickstart",
+            "https://developer.happenstance.ai/openapi.json",
+            "https://happenstance.ai/integrations/api",
+            "https://developer.happenstance.ai/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hpn_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.happenstance.ai/openapi.json",
+                  "https://developer.happenstance.ai/quickstart",
+                  "https://happenstance.ai/integrations/api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.happenstance.ai"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:47:54.181Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 89605,
+    "completion_tokens": 1477,
+    "total_tokens": 91082
+  },
+  "visited": [
+    "https://aembit.io/blog/mcp-oauth-2-1-pkce-and-the-future-of-ai-authorization/",
+    "https://curity.io/resources/learn/implementing-mcp-authorization-apis/",
+    "https://developer.happenstance.ai/",
+    "https://developer.happenstance.ai/cli/install",
+    "https://developer.happenstance.ai/llms.txt",
+    "https://developer.happenstance.ai/mcp/connect",
+    "https://developer.happenstance.ai/openapi.json",
+    "https://developer.happenstance.ai/quickstart",
+    "https://happenstance.ai/",
+    "https://happenstance.ai/api",
+    "https://happenstance.ai/contact",
+    "https://happenstance.ai/integrations",
+    "https://happenstance.ai/integrations/api",
+    "https://happenstance.ai/integrations/keys",
+    "https://happenstance.ai/pricing",
+    "https://www.osohq.com/learn/authorization-for-ai-agents-mcp-oauth-21",
+    "https://www.scalekit.com/blog/api-stack-mcp-ai-agentic-workflows"
+  ],
+  "grounding": [
+    "https://aembit.io/blog/mcp-oauth-2-1-pkce-and-the-future-of-ai-authorization/",
+    "https://api.happenstance.ai/v1/research",
+    "https://api.happenstance.ai/v1/research/547e404b-0129-4400-b42d-038cca184414",
+    "https://api.happenstance.ai/v1/search",
+    "https://api.happenstance.ai/v1/search/$SEARCH_ID",
+    "https://api.happenstance.ai/v1/search/$SEARCH_ID/find-more",
+    "https://api.happenstance.ai/v1/search/a1b2c3d4-5678-90ab-cdef-1234567890ab",
+    "https://api.happenstance.ai/v1/search/a1b2c3d4-5678-90ab-cdef-1234567890ab/find-more",
+    "https://chatgpt.com/apps/happenstance/asdk_app_69aa229aaca8819193b7dec8750221c9",
+    "https://clawhub.ai/almostimplemented/happenstance",
+    "https://curity.io/resources/learn/implementing-mcp-authorization-apis/",
+    "https://developer.happenstance.ai",
+    "https://developer.happenstance.ai/",
+    "https://developer.happenstance.ai/#%40mentions",
+    "https://developer.happenstance.ai/#1-submit-a-research-request",
+    "https://developer.happenstance.ai/#1-submit-a-search-request",
+    "https://developer.happenstance.ai/#2-poll-for-completion",
+    "https://developer.happenstance.ai/#2-poll-for-results",
+    "https://developer.happenstance.ai/#3-find-more-results-optional",
+    "https://developer.happenstance.ai/#@mentions",
+    "https://developer.happenstance.ai/#billing",
+    "https://developer.happenstance.ai/#check-credits",
+    "https://developer.happenstance.ai/#commands",
+    "https://developer.happenstance.ai/#configure",
+    "https://developer.happenstance.ai/#connect",
+    "https://developer.happenstance.ai/#content-area",
+    "https://developer.happenstance.ai/#example-usage",
+    "https://developer.happenstance.ai/#find-more-results",
+    "https://developer.happenstance.ai/#finding-more-results",
+    "https://developer.happenstance.ai/#install",
+    "https://developer.happenstance.ai/#make-your-first-request",
+    "https://developer.happenstance.ai/#need-help",
+    "https://developer.happenstance.ai/#next-steps",
+    "https://developer.happenstance.ai/#pipe-to-jq",
+    "https://developer.happenstance.ai/#prerequisites",
+    "https://developer.happenstance.ai/#research-a-person",
+    "https://developer.happenstance.ai/#resources",
+    "https://developer.happenstance.ai/#scope-control",
+    "https://developer.happenstance.ai/#search-your-network",
+    "https://developer.happenstance.ai/#what-is-happenstance",
+    "https://developer.happenstance.ai/#what-you-can-do",
+    "https://developer.happenstance.ai/api-reference/create-research.md",
+    "https://developer.happenstance.ai/api-reference/create-search.md",
+    "https://developer.happenstance.ai/api-reference/find-more-search.md",
+    "https://developer.happenstance.ai/api-reference/get-current-user-profile.md",
+    "https://developer.happenstance.ai/api-reference/get-group.md",
+    "https://developer.happenstance.ai/api-reference/get-groups.md",
+    "https://developer.happenstance.ai/api-reference/get-research.md",
+    "https://developer.happenstance.ai/api-reference/get-search.md",
+    "https://developer.happenstance.ai/api-reference/get-usage.md",
+    "https://developer.happenstance.ai/api-reference/introduction",
+    "https://developer.happenstance.ai/api-reference/introduction.md",
+    "https://developer.happenstance.ai/cli/install",
+    "https://developer.happenstance.ai/cli/install.md",
+    "https://developer.happenstance.ai/errors/empty-field",
+    "https://developer.happenstance.ai/llms.txt",
+    "https://developer.happenstance.ai/mcp/chatgpt",
+    "https://developer.happenstance.ai/mcp/chatgpt.md",
+    "https://developer.happenstance.ai/mcp/claude",
+    "https://developer.happenstance.ai/mcp/claude-code",
+    "https://developer.happenstance.ai/mcp/claude-code.md",
+    "https://developer.happenstance.ai/mcp/claude.md",
+    "https://developer.happenstance.ai/mcp/connect",
+    "https://developer.happenstance.ai/mcp/connect.md",
+    "https://developer.happenstance.ai/mcp/openclaw",
+    "https://developer.happenstance.ai/mcp/openclaw.md",
+    "https://developer.happenstance.ai/openapi.json",
+    "https://developer.happenstance.ai/quickstart",
+    "https://developer.happenstance.ai/quickstart.md",
+    "https://discord.gg/4YV5Sxd534",
+    "https://github.com/happenstance-ai/cookbook",
+    "https://happenstance.ai",
+    "https://happenstance.ai/",
+    "https://happenstance.ai/alumni",
+    "https://happenstance.ai/api",
+    "https://happenstance.ai/careers",
+    "https://happenstance.ai/contact",
+    "https://happenstance.ai/for/founders",
+    "https://happenstance.ai/for/fundraising",
+    "https://happenstance.ai/for/investors",
+    "https://happenstance.ai/for/recruiting",
+    "https://happenstance.ai/for/sales",
+    "https://happenstance.ai/home",
+    "https://happenstance.ai/home#faq",
+    "https://happenstance.ai/home#integrations",
+    "https://happenstance.ai/integrations",
+    "https://happenstance.ai/integrations/api",
+    "https://happenstance.ai/integrations/apps",
+    "https://happenstance.ai/integrations/claude",
+    "https://happenstance.ai/integrations/claude-code",
+    "https://happenstance.ai/integrations/cli",
+    "https://happenstance.ai/integrations/keys",
+    "https://happenstance.ai/integrations/mcp",
+    "https://happenstance.ai/integrations/usage",
+    "https://happenstance.ai/mcp",
+    "https://happenstance.ai/pricing",
+    "https://happenstance.ai/privacy",
+    "https://happenstance.ai/research/547e404b-0129-4400-b42d-038cca184414",
+    "https://happenstance.ai/search/a1b2c3d4-5678-90ab-cdef-1234567890ab",
+    "https://happenstance.ai/signup?redirect_url=https%3A%2F%2Fhappenstance.ai%2Fintegrations%2Fkeys",
+    "https://happenstance.ai/terms",
+    "https://happenstance.ai/u/person-uuid-1",
+    "https://linkedin.com/company/happenstance-ai",
+    "https://linkedin.com/in/janesmith",
+    "https://pypi.org/project/happenstance/",
+    "https://slack.happenstance.ai/",
+    "https://www.forbes.com/profile/garry-tan/",
+    "https://www.linkedin.com/in/garrytan",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=happenstance",
+    "https://www.osohq.com/learn/authorization-for-ai-agents-mcp-oauth-21",
+    "https://www.scalekit.com/blog/api-stack-mcp-ai-agentic-workflows",
+    "https://www.ycombinator.com/people/garry-tan",
+    "https://x.com/garrytan",
+    "https://x.com/intent/user?screen_name=happenstanceai"
+  ]
+}

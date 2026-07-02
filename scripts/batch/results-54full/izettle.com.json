@@ -1,0 +1,643 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "izettle.com",
+    "detect": {
+      "domain": "izettle.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:53:20.665Z",
+    "summary": "Zettle exposes multiple OAuth-protected HTTP APIs for POS integrations: Product Library, Inventory, Finance, Purchase, Image, Gift Card, plus a Reader Connect REST API with unclear documented auth details; no public GraphQL, MCP server, or CLI surfaced.",
+    "description": "Zettle by PayPal provides point-of-sale and payment tools for merchants, including product catalog, inventory, purchases, finance data, gift cards, and card-reader integrations. Its developer platform lets integrators connect POS and commerce systems to those merchant services.",
+    "credentials": {
+      "zettle_oauth_app": {
+        "type": "oauth2",
+        "label": "Zettle app credentials (client ID and, for confidential apps, client secret) used to obtain OAuth access tokens",
+        "generateUrl": "https://developer.zettle.com/dashboard",
+        "setup": "Create app credentials in the [Zettle Developer Portal dashboard](https://developer.zettle.com/dashboard). For a partner-hosted app, follow [Create credentials for a partner-hosted app](https://developer.zettle.com/docs/get-started/user-guides/create-app-credentials/create-credentials-partner-hosted-app): sign in, click **Create app credentials**, choose **Public API credentials**, enter your HTTPS redirect URI, create the app, and download the `client_id` and `client_secret`. Zettle recommends the OAuth authorization code flow with PKCE as the default; the same dashboard-created app credentials supply the `client_id` for PKCE and confidential code-grant flows.",
+        "acquisition": "manual"
+      },
+      "zettle_api_key": {
+        "type": "jwt",
+        "label": "Zettle self-hosted app API key (JWT assertion) exchanged for OAuth access tokens",
+        "setup": "For self-hosted integrations, ask each merchant user to create an API key in Zettle as described in the OAuth API docs and the linked self-hosted app guides. In the [OAuth API reference](https://developer.zettle.com/docs/api/oauth/api-reference), the assertion grant uses a merchant-created API key (`assertion`) together with the self-hosted app `client_id` to request an access token from `https://oauth.zettle.com/token`. The key can be revoked by the merchant in `my.zettle.com`.",
+        "acquisition": "manual"
+      },
+      "zettle_access_token": {
+        "type": "bearer",
+        "label": "Zettle OAuth access token used to call Zettle APIs",
+        "generateUrl": "https://oauth.zettle.com/token",
+        "setup": "First create Zettle app credentials in the [Developer Portal](https://developer.zettle.com/dashboard). Then obtain an access token through the [OAuth API](https://developer.zettle.com/docs/api/oauth/overview): either authorization code with PKCE, authorization code with `client_secret`, or assertion grant using a merchant-created API key. Send the resulting token as `Authorization: Bearer <token>` in API requests, as shown in [Include access token and tracking identifier in API requests](https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "zettle-product-library-api",
+        "name": "Zettle Product Library API",
+        "type": "http",
+        "docs": "https://developer.zettle.com/docs/api/product-library/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.zettle.com/docs/api/product-library/overview",
+            "https://api.apis.guru/v2/specs/izettle.com/products/1.0.0/openapi.json",
+            "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zettle_access_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "ZettleOauth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.apis.guru/v2/specs/izettle.com/products/1.0.0/openapi.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://products.izettle.com",
+        "variables": [
+          {
+            "name": "organizationUuid",
+            "resolveFrom": "merchant organization UUID or literal `self` where supported",
+            "description": "Organization identifier used in Product Library paths."
+          }
+        ]
+      },
+      {
+        "slug": "zettle-inventory-api",
+        "name": "Zettle Inventory API",
+        "type": "http",
+        "docs": "https://developer.zettle.com/docs/api/inventory/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.zettle.com/docs/api/inventory/overview",
+            "https://developer.zettle.com/docs/api/oauth/overview",
+            "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zettle_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.zettle.com/docs/api/inventory/overview",
+                  "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://inventory.izettle.com/v3",
+        "variables": [
+          {
+            "name": "organizationUuid",
+            "resolveFrom": "merchant organization UUID or literal `self` where supported",
+            "description": "Organization identifier used in some inventory-related flows."
+          }
+        ]
+      },
+      {
+        "slug": "zettle-finance-api",
+        "name": "Zettle Finance API",
+        "type": "http",
+        "docs": "https://developer.zettle.com/docs/api/finance/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.zettle.com/docs/api/finance/overview",
+            "https://developer.zettle.com/docs/api/finance/reference",
+            "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zettle_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.zettle.com/docs/api/finance/reference",
+                  "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://finance.izettle.com/v2"
+      },
+      {
+        "slug": "zettle-purchase-api",
+        "name": "Zettle Purchase API",
+        "type": "http",
+        "docs": "https://developer.zettle.com/docs/api/purchase/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.zettle.com/docs/api/purchase/overview",
+            "https://developer.zettle.com/docs/api/oauth/overview",
+            "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zettle_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.zettle.com/docs/api/purchase/overview",
+                  "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "zettle-image-api",
+        "name": "Zettle Image API",
+        "type": "http",
+        "docs": "https://developer.zettle.com/docs/api/image/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.zettle.com/docs/api/image/overview",
+            "https://developer.zettle.com/docs/api/image/reference",
+            "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zettle_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.zettle.com/docs/api/image/reference",
+                  "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://image.izettle.com",
+        "variables": [
+          {
+            "name": "organizationUuid",
+            "resolveFrom": "merchant organization UUID or literal `self`",
+            "description": "Organization identifier in image paths; docs say `self` can be used to resolve it from the access token."
+          }
+        ]
+      },
+      {
+        "slug": "zettle-gift-card-api",
+        "name": "Zettle Gift Card API",
+        "type": "http",
+        "docs": "https://developer.zettle.com/docs/api/gift-card/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.zettle.com/docs/api/gift-card/overview",
+            "https://developer.zettle.com/docs/api/oauth/overview",
+            "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zettle_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.zettle.com/docs/api/gift-card/overview",
+                  "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "zettle-reader-connect-rest-api",
+        "name": "Zettle Reader Connect REST API",
+        "type": "http",
+        "docs": "https://developer.zettle.com/docs/payment-integrations/reader-connect/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.zettle.com/docs/payment-integrations/reader-connect/overview",
+            "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://reader-connect.zettle.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:53:20.665Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 538468,
+    "completion_tokens": 2901,
+    "total_tokens": 541369
+  },
+  "visited": [
+    "https://api.apis.guru/v2/specs/izettle.com/products/1.0.0/openapi.json",
+    "https://developer.zettle.com/",
+    "https://developer.zettle.com/docs/api",
+    "https://developer.zettle.com/docs/api/card-payments/overview",
+    "https://developer.zettle.com/docs/api/finance/overview",
+    "https://developer.zettle.com/docs/api/finance/reference",
+    "https://developer.zettle.com/docs/api/gift-card/overview",
+    "https://developer.zettle.com/docs/api/image/overview",
+    "https://developer.zettle.com/docs/api/image/reference",
+    "https://developer.zettle.com/docs/api/inventory/overview",
+    "https://developer.zettle.com/docs/api/oauth/api-reference",
+    "https://developer.zettle.com/docs/api/oauth/overview",
+    "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests",
+    "https://developer.zettle.com/docs/api/product-library/concepts/product-library-data",
+    "https://developer.zettle.com/docs/api/product-library/overview",
+    "https://developer.zettle.com/docs/api/product-library/user-guides/manage-products/create-products",
+    "https://developer.zettle.com/docs/api/purchase/overview",
+    "https://developer.zettle.com/docs/faq",
+    "https://developer.zettle.com/docs/get-started/concepts/zettle-apis-sdks",
+    "https://developer.zettle.com/docs/get-started/user-guides/create-app-credentials/create-credentials-partner-hosted-app",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/overview",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference",
+    "https://github.com/api-evangelist/zettle/blob/main/README.md",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/iZettle/api-documentation",
+    "https://github.com/knowsuchagency/mcp2cli",
+    "https://github.com/toolprint/mcp-graphql-forge",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://products.izettle.com/openapi.json",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.izettle.com/gb/sell-online/features",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "https://api.apis.guru/v2/cache/logo/https_cdn.izettle.com_favicons_favicon-32x32.png",
+    "https://api.apis.guru/v2/specs/izettle.com/products/1.0.0/openapi.json",
+    "https://awesomeapp.com",
+    "https://cookiepedia.co.uk/giving-consent-to-cookies",
+    "https://developer.zettle.com/",
+    "https://developer.zettle.com/#authorisation",
+    "https://developer.zettle.com/#available-apis",
+    "https://developer.zettle.com/#available-apis-and-sdks",
+    "https://developer.zettle.com/#create-app-credentials",
+    "https://developer.zettle.com/#create-refunds",
+    "https://developer.zettle.com/#fetch-transactions",
+    "https://developer.zettle.com/#get-new-app-credentials",
+    "https://developer.zettle.com/#get-started",
+    "https://developer.zettle.com/#getting-started",
+    "https://developer.zettle.com/#how-does-the-reader-connect-api-work-with-paypal-reader",
+    "https://developer.zettle.com/#manage-apps-and-users",
+    "https://developer.zettle.com/#manage-product-images",
+    "https://developer.zettle.com/#next-step",
+    "https://developer.zettle.com/#prerequisites",
+    "https://developer.zettle.com/#related-information",
+    "https://developer.zettle.com/#related-resources",
+    "https://developer.zettle.com/#request-a-new-client-secret-for-an-existing-app",
+    "https://developer.zettle.com/#retrieve-gift-card-values",
+    "https://developer.zettle.com/#set-up-authentication-and-authorisation",
+    "https://developer.zettle.com/#step-1-include-an-access-token-in-api-requests",
+    "https://developer.zettle.com/#step-2-optional-include-tracking-identifier-in-api-requests",
+    "https://developer.zettle.com/#supported-markets",
+    "https://developer.zettle.com/#terms-you-should-know",
+    "https://developer.zettle.com/#understand-how-authentication-and-authorisation-work",
+    "https://developer.zettle.com/#understand-how-merchants-work-with-gift-cards",
+    "https://developer.zettle.com/#understand-how-payments-with-zettle-work",
+    "https://developer.zettle.com/#understand-the-finance-api",
+    "https://developer.zettle.com/#understand-the-gift-card-api",
+    "https://developer.zettle.com/#understand-the-image-api",
+    "https://developer.zettle.com/#understanding-inventories",
+    "https://developer.zettle.com/#understanding-product-libraries",
+    "https://developer.zettle.com/#understanding-purchases",
+    "https://developer.zettle.com/#understanding-the-oauth-api",
+    "https://developer.zettle.com/#using-the-api",
+    "https://developer.zettle.com/#working-with-inventories",
+    "https://developer.zettle.com/#working-with-product-libraries",
+    "https://developer.zettle.com/#working-with-purchases",
+    "https://developer.zettle.com/dashboard",
+    "https://developer.zettle.com/docs/api",
+    "https://developer.zettle.com/docs/api/card-payments/create-refund",
+    "https://developer.zettle.com/docs/api/card-payments/overview",
+    "https://developer.zettle.com/docs/api/changelog",
+    "https://developer.zettle.com/docs/api/finance/concepts/how-payments-with-zettle-work",
+    "https://developer.zettle.com/docs/api/finance/finance-api-migration-guide",
+    "https://developer.zettle.com/docs/api/finance/overview",
+    "https://developer.zettle.com/docs/api/finance/reference",
+    "https://developer.zettle.com/docs/api/finance/reference#getAccountTransactions",
+    "https://developer.zettle.com/docs/api/finance/reference#getBalance",
+    "https://developer.zettle.com/docs/api/finance/reference#getPayoutInfo",
+    "https://developer.zettle.com/docs/api/finance/reference#introduction",
+    "https://developer.zettle.com/docs/api/finance/reference#security",
+    "https://developer.zettle.com/docs/api/finance/user-guides/fetch-account-balance",
+    "https://developer.zettle.com/docs/api/finance/user-guides/fetch-account-transactions",
+    "https://developer.zettle.com/docs/api/finance/user-guides/fetch-payout-info",
+    "https://developer.zettle.com/docs/api/finance/user-guides/fetch-purchase-information-for-transactions",
+    "https://developer.zettle.com/docs/api/get-postman-collection",
+    "https://developer.zettle.com/docs/api/gift-card",
+    "https://developer.zettle.com/docs/api/gift-card/api-reference-md",
+    "https://developer.zettle.com/docs/api/gift-card/overview",
+    "https://developer.zettle.com/docs/api/gift-card/user-guides/fetch-expired-redeemed-gift-cards",
+    "https://developer.zettle.com/docs/api/gift-card/user-guides/fetch-sold-returned-gift-cards",
+    "https://developer.zettle.com/docs/api/image/overview",
+    "https://developer.zettle.com/docs/api/image/reference",
+    "https://developer.zettle.com/docs/api/image/reference#fetchProductImage_2",
+    "https://developer.zettle.com/docs/api/image/reference#introduction",
+    "https://developer.zettle.com/docs/api/image/reference#security",
+    "https://developer.zettle.com/docs/api/image/reference#uploadImageFile",
+    "https://developer.zettle.com/docs/api/image/reference#uploadProductImage",
+    "https://developer.zettle.com/docs/api/image/reference#uploadProductImageBulk",
+    "https://developer.zettle.com/docs/api/image/user-guides/add-an-image-to-a-product",
+    "https://developer.zettle.com/docs/api/image/user-guides/upload-product-images",
+    "https://developer.zettle.com/docs/api/inventory/concepts/how-inventories-work",
+    "https://developer.zettle.com/docs/api/inventory/inventory-api-migration-guide",
+    "https://developer.zettle.com/docs/api/inventory/overview",
+    "https://developer.zettle.com/docs/api/inventory/reference#createInventory",
+    "https://developer.zettle.com/docs/api/inventory/reference#getInventories",
+    "https://developer.zettle.com/docs/api/inventory/reference#getInventory",
+    "https://developer.zettle.com/docs/api/inventory/reference#getStock",
+    "https://developer.zettle.com/docs/api/inventory/reference#getStockForInventory",
+    "https://developer.zettle.com/docs/api/inventory/reference#getStockForProduct",
+    "https://developer.zettle.com/docs/api/inventory/reference#getStockForProducts",
+    "https://developer.zettle.com/docs/api/inventory/reference#getStockUpdates",
+    "https://developer.zettle.com/docs/api/inventory/reference#getTrackedProductUpdates",
+    "https://developer.zettle.com/docs/api/inventory/reference#getTrackedProducts",
+    "https://developer.zettle.com/docs/api/inventory/reference#getTrackingStatusForProducts",
+    "https://developer.zettle.com/docs/api/inventory/reference#introduction",
+    "https://developer.zettle.com/docs/api/inventory/reference#moveInventory",
+    "https://developer.zettle.com/docs/api/inventory/reference#saveCustomLowStock",
+    "https://developer.zettle.com/docs/api/inventory/reference#security",
+    "https://developer.zettle.com/docs/api/inventory/reference#trackProducts",
+    "https://developer.zettle.com/docs/api/inventory/user-guides/manage-inventories/create-inventories",
+    "https://developer.zettle.com/docs/api/inventory/user-guides/manage-inventories/fetch-inventories",
+    "https://developer.zettle.com/docs/api/inventory/user-guides/manage-inventory-balances/fetch-inventory-balance",
+    "https://developer.zettle.com/docs/api/inventory/user-guides/manage-inventory-balances/update-inventory-balance",
+    "https://developer.zettle.com/docs/api/inventory/user-guides/manage-inventory-tracking/enable-disable-tracking",
+    "https://developer.zettle.com/docs/api/inventory/user-guides/manage-inventory-tracking/fetch-tracking-products-status",
+    "https://developer.zettle.com/docs/api/inventory/user-guides/manage-low-stock-levels/set-delete-low-stock-level",
+    "https://developer.zettle.com/docs/api/oauth/api-reference",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#ask-app-users-to-authenticate-and-authorise-code-grant",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#ask-app-users-to-authenticate-and-authorise-pkce",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#authorisation-assertion-grant",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#authorisation-code-grant",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#authorisation-code-grant-with-pkce",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#disconnect-app-from-user",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#generate-a-new-access-token-from-the-refresh-token-code-grant",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#generate-a-new-access-token-from-the-refresh-token-pkce",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#get-user-information",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#retrieve-an-access-token-assertion-grant",
+    "https://developer.zettle.com/docs/api/oauth/api-reference#retrieve-the-first-access-and-refresh-token-code-grant",
+    "https://developer.zettle.com/docs/api/oauth/overview",
+    "https://developer.zettle.com/docs/api/oauth/user-guides/include-access-token-tracking-id-in-api-requests",
+    "https://developer.zettle.com/docs/api/oauth/user-guides/manage-apps-users/disconnect-app-from-user",
+    "https://developer.zettle.com/docs/api/oauth/user-guides/manage-apps-users/identify-users",
+    "https://developer.zettle.com/docs/api/oauth/user-guides/set-up-app-authorisation/set-up-authorisation-assertion-grant",
+    "https://developer.zettle.com/docs/api/oauth/user-guides/set-up-app-authorisation/set-up-authorisation-code-grant",
+    "https://developer.zettle.com/docs/api/oauth/user-guides/set-up-app-authorisation/set-up-authorisation-code-grant-with-pkce",
+    "https://developer.zettle.com/docs/api/product-library/concepts/product-library-concept",
+    "https://developer.zettle.com/docs/api/product-library/concepts/product-library-data",
+    "https://developer.zettle.com/docs/api/product-library/concepts/product-library-management",
+    "https://developer.zettle.com/docs/api/product-library/overview",
+    "https://developer.zettle.com/docs/api/product-library/reference#countAllProducts",
+    "https://developer.zettle.com/docs/api/product-library/reference#createCategories",
+    "https://developer.zettle.com/docs/api/product-library/reference#createDiscount",
+    "https://developer.zettle.com/docs/api/product-library/reference#createProduct",
+    "https://developer.zettle.com/docs/api/product-library/reference#createProductSlug",
+    "https://developer.zettle.com/docs/api/product-library/reference#createTaxRates",
+    "https://developer.zettle.com/docs/api/product-library/reference#deleteCategory",
+    "https://developer.zettle.com/docs/api/product-library/reference#deleteDiscount",
+    "https://developer.zettle.com/docs/api/product-library/reference#deleteProduct",
+    "https://developer.zettle.com/docs/api/product-library/reference#deleteProducts",
+    "https://developer.zettle.com/docs/api/product-library/reference#deleteTaxRate",
+    "https://developer.zettle.com/docs/api/product-library/reference#getAllDiscounts",
+    "https://developer.zettle.com/docs/api/product-library/reference#getAllImageUrls",
+    "https://developer.zettle.com/docs/api/product-library/reference#getAllOptions",
+    "https://developer.zettle.com/docs/api/product-library/reference#getAllProductsInPos",
+    "https://developer.zettle.com/docs/api/product-library/reference#getAllProductsV2",
+    "https://developer.zettle.com/docs/api/product-library/reference#getDiscount",
+    "https://developer.zettle.com/docs/api/product-library/reference#getLatestImportStatus",
+    "https://developer.zettle.com/docs/api/product-library/reference#getLibrary",
+    "https://developer.zettle.com/docs/api/product-library/reference#getProduct",
+    "https://developer.zettle.com/docs/api/product-library/reference#getProductCountForAllTaxes",
+    "https://developer.zettle.com/docs/api/product-library/reference#getProductTypes",
+    "https://developer.zettle.com/docs/api/product-library/reference#getStatusByUuid",
+    "https://developer.zettle.com/docs/api/product-library/reference#getTaxRate",
+    "https://developer.zettle.com/docs/api/product-library/reference#getTaxRates",
+    "https://developer.zettle.com/docs/api/product-library/reference#getTaxSettings",
+    "https://developer.zettle.com/docs/api/product-library/reference#importLibraryV2",
+    "https://developer.zettle.com/docs/api/product-library/reference#introduction",
+    "https://developer.zettle.com/docs/api/product-library/reference#renameCategory",
+    "https://developer.zettle.com/docs/api/product-library/reference#security",
+    "https://developer.zettle.com/docs/api/product-library/reference#setTaxationMode",
+    "https://developer.zettle.com/docs/api/product-library/reference#updateDiscount",
+    "https://developer.zettle.com/docs/api/product-library/reference#updateProduct",
+    "https://developer.zettle.com/docs/api/product-library/reference#updateTaxRate",
+    "https://developer.zettle.com/docs/api/product-library/user-guides/manage-categories/fetch-categories",
+    "https://developer.zettle.com/docs/api/product-library/user-guides/manage-images/add-product-images",
+    "https://developer.zettle.com/docs/api/product-library/user-guides/manage-products/create-products",
+    "https://developer.zettle.com/docs/api/product-library/user-guides/manage-products/delete-products",
+    "https://developer.zettle.com/docs/api/product-library/user-guides/manage-products/fetch-products",
+    "https://developer.zettle.com/docs/api/product-library/user-guides/manage-products/update-products",
+    "https://developer.zettle.com/docs/api/purchase/api-reference-md",
+    "https://developer.zettle.com/docs/api/purchase/concepts/custom-amounts",
+    "https://developer.zettle.com/docs/api/purchase/concepts/purchase-concept",
+    "https://developer.zettle.com/docs/api/purchase/concepts/purchase-interactions",
+    "https://developer.zettle.com/docs/api/purchase/concepts/purchases-and-discounts",
+    "https://developer.zettle.com/docs/api/purchase/concepts/purchases-with-exchanges",
+    "https://developer.zettle.com/docs/api/purchase/overview",
+    "https://developer.zettle.com/docs/api/purchase/user-guides/fetch-purchases/fetch-a-list-of-purchases",
+    "https://developer.zettle.com/docs/api/purchase/user-guides/fetch-purchases/fetch-a-purchase",
+    "https://developer.zettle.com/docs/api/purchase/user-guides/fetch-purchases/fetch-purchase-with-discount",
+    "https://developer.zettle.com/docs/api/purchase/user-guides/fetch-purchases/fetch-purchase-with-exchange",
+    "https://developer.zettle.com/docs/api/purchase/user-guides/fetch-purchases/fetch-purchase-with-refund",
+    "https://developer.zettle.com/docs/api/pusher/overview",
+    "https://developer.zettle.com/docs/faq",
+    "https://developer.zettle.com/docs/get-started",
+    "https://developer.zettle.com/docs/get-started/concepts/how-integrations-work",
+    "https://developer.zettle.com/docs/get-started/concepts/types-of-apps",
+    "https://developer.zettle.com/docs/get-started/concepts/zettle-apis-sdks",
+    "https://developer.zettle.com/docs/get-started/user-guides/choose-your-integration",
+    "https://developer.zettle.com/docs/get-started/user-guides/create-app-credentials/create-app-credentials-for-self-hosted-app/create-an-api-key",
+    "https://developer.zettle.com/docs/get-started/user-guides/create-app-credentials/create-app-credentials-for-self-hosted-app/create-credentials-self-hosted-app",
+    "https://developer.zettle.com/docs/get-started/user-guides/create-app-credentials/create-app-credentials-for-self-hosted-app/create-credentials-self-hosted-app#step-2-optional-prepare-for-app-tracking",
+    "https://developer.zettle.com/docs/get-started/user-guides/create-app-credentials/create-credentials-partner-hosted-app",
+    "https://developer.zettle.com/docs/get-started/user-guides/create-app-credentials/create-credentials-partner-hosted-app#request-a-new-client-secret-for-an-existing-app",
+    "https://developer.zettle.com/docs/get-started/user-guides/create-app-credentials/create-credentials-sdk-app",
+    "https://developer.zettle.com/docs/get-started/user-guides/example-take-payments-using-android-ios-sdk",
+    "https://developer.zettle.com/docs/get-started/user-guides/prepare-for-integrations",
+    "https://developer.zettle.com/docs/get-started/user-guides/sign-up-for-a-developer-account",
+    "https://developer.zettle.com/docs/get-started/user-guides/take-payments-using-android-ios-sdk",
+    "https://developer.zettle.com/docs/get-started/user-guides/take-payments-using-reader-connect",
+    "https://developer.zettle.com/docs/get-started/user-guides/try-the-apis",
+    "https://developer.zettle.com/docs/glossary",
+    "https://developer.zettle.com/docs/payment-integrations/android-sdk",
+    "https://developer.zettle.com/docs/payment-integrations/ios-sdk",
+    "https://developer.zettle.com/docs/payment-integrations/overview",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/concepts/pairing-and-links",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/concepts/requests-to-reader",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/concepts/websocket-connections",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/overview",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#check-link-offer-status",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#claim-link-offer",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#configure-integrator-session",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#configure-reader-session",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#cors-claim-link-offer",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#cors-configure-integrator-session",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#cors-get-integrator-links",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#cors-integrator-tag",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#cors-link",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#cors-upsert-integrator-tags",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#create-link-offer",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#delete-integrator-tag",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#delete-link",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#delete-reader-tag",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#get-integrator-links",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#get-link",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#get-link-offer-link-id",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#get-reader-links",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#introduction",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#security",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#upsert-integrator-tags",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/reference#upsert-reader-tags",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/user-guides/create-a-websocket-connection",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/user-guides/link-reader",
+    "https://developer.zettle.com/docs/payment-integrations/reader-connect/user-guides/make-payments",
+    "https://developer.zettle.com/login",
+    "https://developer.zettle.com/register",
+    "https://ext-izettle.atlassian.net/servicedesk/customer/portal/3",
+    "https://finance.izettle.com/v2",
+    "https://finance.izettle.com/v2/accounts/LIQUID/balance",
+    "https://finance.izettle.com/v2/accounts/LIQUID/balance?at=2022-04-01T11:42:10.452-01:00",
+    "https://finance.izettle.com/v2/accounts/LIQUID/transactions",
+    "https://finance.izettle.com/v2/accounts/LIQUID/transactions?start=2022-04-01T11:42:10.452-01:00&end=2022-04-01T11:42:10.452-01:00&includeTransactionType=SOME",
+    "https://github.com/PayPal-Zettle/api-documentation/tree/master/finance-api/v1(deprecated",
+    "https://github.com/api-evangelist/zettle/blob/main/README.md",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/iZettle/api-documentation",
+    "https://github.com/iZettle/example-integration",
+    "https://github.com/iZettle/sdk-android/tree/master/Examples",
+    "https://github.com/iZettle/sdk-ios/tree/master/Example",
+    "https://github.com/knowsuchagency/mcp2cli",
+    "https://github.com/toolprint/mcp-graphql-forge",
+    "https://image.izettle.com",
+    "https://image.izettle.com/v2/images/organizations/{organizationUuid}/products/upload",
+    "https://inventory.izettle.com/v3/stock?cursor=59d2f586-b99b-11ec-908d-71b78005c93b&limit=100",
+    "https://inventory.izettle.com/v3/stock?cursor=81f69e53-e25a-11ec-bb66-2bc1878b8583&limit=100",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://ngrok.com/",
+    "https://oauth.zettle.com",
+    "https://oauth.zettle.com/authorize",
+    "https://oauth.zettle.com/token",
+    "https://products.izettle.com",
+    "https://products.izettle.com/openapi.json",
+    "https://reader-connect.zettle.com",
+    "https://reader-connect.zettle.com/v1/reader/link-offers",
+    "https://reader-connect.zettle.com/v1/reader/link-offers/{id}/link-id",
+    "https://reader-connect.zettle.com/v1/reader/link-offers/{id}/status",
+    "https://reader-connect.zettle.com/v1/reader/sessions",
+    "https://tools.ietf.org/html/rfc7386",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.example.com/get?code=4fa87ba8cc7f30e91ad2ab1ad21c1b3e&state=abc123678",
+    "https://www.izettle.com/gb/sell-online/features",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://www.zettle.com/gb/accessibility",
+    "https://www.zettle.com/gb/legal",
+    "https://www.zettle.com/gb/legal/privacy-policy",
+    "https://www.zettle.com/gb/legal/privacy-policy/cookies",
+    "https://www.zettle.com/gb/payments/security",
+    "https://www.zettle.com/help/articles/2982348-selling-gift-cards",
+    "https://www.zettle.com/se/betallosningar/kortterminal?_gl=1*1isygpw*_gcl_au*MTc3MjI3MTQ2OC4xNzM2NDM0MjAy*FPAU*MTc3MjI3MTQ2OC4xNzM2NDM0MjAy*_ga*NDg2ODY2MTI0LjE3Mjc4NjA4NjE.*_ga_9C5Q0J1HW8*MTczNzM3MTIxOS4zNS4xLjE3MzczNzE0NjQuMC4wLjcxODg1NDE4Mg..*_fplc*Zm10azJudGdIR1pXTWlRYSUyQk1PaWEyUyUyRmRGZzdnN1BJTDVFY2ExSkNFUHVzWjlzVjEwTnZSJTJCJTJGZ2pIJTJCY2FiOWtqQnIlMkZmV09WcmpYdXFhcHFwWTNtbnBNTFhhSTNPYjE4eEhPMVlMWGVnZkp1NkVuZWVQNGR4clZHUHUzOE53JTNEJTNE"
+  ]
+}

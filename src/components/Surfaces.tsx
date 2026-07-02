@@ -226,10 +226,17 @@ export default function Surfaces({
             const { id, credential } = parsed;
             setLiveCreds((c) => ({ ...c, [id]: credential }));
           } else if (ev === "surface") {
-            const key = `${parsed.type}|${(parsed.spec || parsed.url || parsed.name || "").toLowerCase()}`;
+            const surfaceKey = (s: { type?: string; spec?: string; url?: string; name?: string }) =>
+              `${s.type}|${(s.spec || s.url || s.name || "").toLowerCase()}`;
+            const key = surfaceKey(parsed);
+            const next = parsed as unknown as Surface;
             if (!surfaceKeys.has(key)) {
               surfaceKeys.add(key);
-              setLiveSurfaces((s) => [...s, parsed as unknown as Surface]);
+              setLiveSurfaces((s) => [...s, next]);
+            } else {
+              // Re-emit for an already-streamed surface (e.g. basis upgraded
+              // discovered→detected at merge time): overwrite in place.
+              setLiveSurfaces((s) => s.map((cur) => (surfaceKey(cur) === key ? next : cur)));
             }
           } else if (ev === "done") {
             surfaceCount = Array.isArray(parsed.surfaces) ? parsed.surfaces.length : liveSurfaces.length;

@@ -721,6 +721,7 @@ function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit)
     const existing = byLocator.get(surfaceLocator(surface));
     if (existing) {
       mergeDeclaredSurface(existing, surface);
+      emit?.({ kind: "surface", surface: existing });
       continue;
     }
     surface.slug = assignSlug(surface.slug || surface.name || "Declared surface", r.surfaces);
@@ -764,6 +765,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     const existing = r.surfaces.find((s) => s.type === "mcp" && s.url === mcp.url);
     if (existing) {
       existing.basis = { via: "detected", signal: "mcp:initialize", verifiedAt };
+      emit?.({ kind: "surface", surface: existing });
       continue;
     }
     const auth: AuthStatus =
@@ -781,6 +783,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     if (existing) {
       existing.basis = { via: "detected", signal: "openapi:schema", verifiedAt };
       if (!existing.spec) existing.spec = detect.apiSchema.url;
+      emit?.({ kind: "surface", surface: existing });
     } else if (!has((s) => s.type === "http")) {
       const s: Surface = { slug: assignSlug("OpenAPI", r.surfaces), name: "OpenAPI", type: "http", spec: detect.apiSchema.url, basis: { via: "detected", signal: "openapi:schema", verifiedAt }, auth: { status: "unknown" } };
       r.surfaces.push(s);

@@ -1,0 +1,786 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "glean.com",
+    "detect": {
+      "domain": "glean.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T23:25:03.313Z",
+    "summary": "Glean exposes two tenant-scoped REST APIs (Client API and Indexing API), a public developer-docs MCP server at `developers.glean.com/mcp`, and a `glean` CLI that authenticates via OAuth login or API token env vars.",
+    "description": "Glean is an enterprise search and AI platform that connects company knowledge, documents, people, and tools. It lets organizations build search, chat, agent, and indexing workflows over their internal content.",
+    "credentials": {
+      "glean_api_token": {
+        "type": "bearer",
+        "label": "Glean-issued API token",
+        "generateUrl": "https://app.glean.com/admin/about-glean",
+        "setup": "Find your tenant server URL at [About Glean](https://app.glean.com/admin/about-glean). Then in Glean Admin, go to **Settings → API Tokens** to create a token. Use this token for Client API calls, and for Indexing API calls as the only supported auth method. Global Client API tokens require impersonation with `X-Glean-ActAs`; user-scoped tokens do not.",
+        "acquisition": "manual"
+      },
+      "glean_oauth_token": {
+        "type": "oauth2",
+        "label": "OAuth access token issued by Glean OAuth Authorization Server",
+        "generateUrl": "https://developers.glean.com/api-info/client/authentication/oauth",
+        "setup": "Set up a Client API OAuth app using Glean's OAuth authorization server as described in [OAuth Authentication for Client API](https://developers.glean.com/api-info/client/authentication/oauth). Use Authorization Code with PKCE, either with a static client or [Dynamic Client Registration](https://docs.glean.com/administration/oauth/dynamic-client-registration). Obtain an access token for your tenant's Client API; Glean-issued OAuth tokens do not require `X-Glean-Auth-Type`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "glean-developer-docs-mcp-server",
+        "name": "Glean Developer Docs MCP Server",
+        "type": "mcp",
+        "docs": "https://developers.glean.com/docs-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.glean.com/",
+            "https://developers.glean.com/docs-mcp"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://developers.glean.com/",
+              "https://developers.glean.com/docs-mcp"
+            ]
+          }
+        },
+        "url": "https://developers.glean.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "glean-cli",
+        "name": "Glean CLI",
+        "type": "cli",
+        "docs": "https://github.com/gleanwork/glean-cli/raw/main/README.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://github.com/gleanwork/glean-cli/raw/main/README.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "glean_oauth_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "glean auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://github.com/gleanwork/glean-cli/raw/main/README.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "glean_oauth_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "glean auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://github.com/gleanwork/glean-cli/raw/main/README.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "glean_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "GLEAN_API_TOKEN",
+                      "GLEAN_SERVER_URL"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://github.com/gleanwork/glean-cli/raw/main/README.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "gleanwork/tap/glean-cli"
+          },
+          {
+            "registryType": "script",
+            "identifier": "https://raw.githubusercontent.com/gleanwork/glean-cli/main/install.sh",
+            "runtimeHint": "sh"
+          }
+        ],
+        "command": "glean"
+      },
+      {
+        "slug": "glean-client-api",
+        "name": "Glean Client API",
+        "type": "http",
+        "docs": "https://developers.glean.com/api-info/client/getting-started/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.glean.com/get-started/authentication",
+            "https://developers.glean.com/api-info/client/getting-started/overview",
+            "https://developers.glean.com/api-info/client/authentication/overview",
+            "https://developers.glean.com/api-info/client/authentication/glean-issued",
+            "https://developers.glean.com/api-info/client/authentication/oauth",
+            "https://developers.glean.com/oas/client"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "glean_api_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "APIToken"
+                  }
+                },
+                {
+                  "id": "glean_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Glean-ActAs"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.glean.com/api-info/client/authentication/glean-issued"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "glean_api_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "APIToken"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.glean.com/api-info/client/authentication/glean-issued",
+                  "https://developers.glean.com/oas/client"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "glean_oauth_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "APIToken"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.glean.com/api-info/client/authentication/oauth",
+                  "https://developers.glean.com/oas/client"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "glean_oauth_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "APIToken"
+                  }
+                },
+                {
+                  "id": "glean_oauth_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Glean-Auth-Type"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.glean.com/api-info/client/authentication/oauth",
+                  "https://developers.glean.com/api/client-api/authentication/createauthtoken"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{instance}-be.glean.com/rest/api/v1/",
+        "variables": [
+          {
+            "name": "instance",
+            "resolveFrom": "About Glean admin page \"Server instance (QE)\" field",
+            "description": "Tenant instance name used in the backend host, e.g. `acme-prod` in `https://acme-prod-be.glean.com`."
+          }
+        ]
+      },
+      {
+        "slug": "glean-indexing-api",
+        "name": "Glean Indexing API",
+        "type": "http",
+        "docs": "https://developers.glean.com/api-info/indexing/authentication/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.glean.com/get-started/authentication",
+            "https://developers.glean.com/api-info/indexing/authentication/overview",
+            "https://developers.glean.com/oas/indexing"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "glean_api_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "APIToken"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.glean.com/api-info/indexing/authentication/overview",
+                  "https://developers.glean.com/oas/indexing"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{instance}-be.glean.com/api/index/v1/",
+        "variables": [
+          {
+            "name": "instance",
+            "resolveFrom": "About Glean admin page \"Server instance (QE)\" field",
+            "description": "Tenant instance name used in the backend host, e.g. `acme-prod` in `https://acme-prod-be.glean.com`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T23:25:03.314Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 268065,
+    "completion_tokens": 2938,
+    "total_tokens": 271003
+  },
+  "visited": [
+    "https://developers.glean.com/",
+    "https://developers.glean.com/api-info/client/authentication/glean-issued",
+    "https://developers.glean.com/api-info/client/authentication/oauth",
+    "https://developers.glean.com/api-info/client/authentication/overview",
+    "https://developers.glean.com/api-info/client/getting-started/overview",
+    "https://developers.glean.com/api-info/indexing/authentication/overview",
+    "https://developers.glean.com/api/client-api/agents/overview",
+    "https://developers.glean.com/api/client-api/authentication/createauthtoken",
+    "https://developers.glean.com/docs-mcp",
+    "https://developers.glean.com/get-started/authentication",
+    "https://developers.glean.com/guides/mcp/",
+    "https://developers.glean.com/oas/client",
+    "https://developers.glean.com/oas/indexing",
+    "https://docs.glean.com/administration/platform/mcp/about",
+    "https://docs.glean.com/user-guide/mcp/usage",
+    "https://github.com/gleanwork/glean-cli",
+    "https://github.com/gleanwork/glean-cli/blob/main/README.md",
+    "https://github.com/gleanwork/glean-cli/raw/main/README.md"
+  ],
+  "grounding": [
+    "https://",
+    "https://acme-prod-be.glean.com",
+    "https://acme-prod-be.glean.com/",
+    "https://acme-prod-be.glean.com/api/index/v1/",
+    "https://acme-prod-be.glean.com/rest/api/v1/",
+    "https://antigravity.google/docs/cli-overview",
+    "https://antigravity.google/docs/get-started",
+    "https://app.glean.com",
+    "https://app.glean.com/admin/about-glean",
+    "https://app.glean.com/admin/platform/tokenManagement?tab=client",
+    "https://app.glean.com/admin/platform/tokenManagement?tab=indexing",
+    "https://app.glean.com/images/glean-text2.svg",
+    "https://archiveprogram.github.com",
+    "https://code.claude.com/docs/en/mcp",
+    "https://code.visualstudio.com/docs/copilot/customization/mcp-servers",
+    "https://community.glean.com",
+    "https://cursor.com/docs/context/mcp",
+    "https://developers.glean.com",
+    "https://developers.glean.com/",
+    "https://developers.glean.com/#",
+    "https://developers.glean.com/#__docusaurus_skipToContent_fallback",
+    "https://developers.glean.com/#advanced-token-features",
+    "https://developers.glean.com/#api-types-and-implementation-guides",
+    "https://developers.glean.com/#authentication-header",
+    "https://developers.glean.com/#authentication-headers",
+    "https://developers.glean.com/#authentication-headers-reference",
+    "https://developers.glean.com/#authentication-methods",
+    "https://developers.glean.com/#available-scopes",
+    "https://developers.glean.com/#available-tools",
+    "https://developers.glean.com/#best-practices",
+    "https://developers.glean.com/#chat-with-glean-token",
+    "https://developers.glean.com/#choose-glean-tokens-if-you",
+    "https://developers.glean.com/#choose-oauth-if-you",
+    "https://developers.glean.com/#common-authentication-errors",
+    "https://developers.glean.com/#common-token-errors",
+    "https://developers.glean.com/#common-use-cases",
+    "https://developers.glean.com/#creating-indexing-api-tokens",
+    "https://developers.glean.com/#creating-tokens",
+    "https://developers.glean.com/#debugging-steps",
+    "https://developers.glean.com/#developer-workflow",
+    "https://developers.glean.com/#development",
+    "https://developers.glean.com/#documentation",
+    "https://developers.glean.com/#example",
+    "https://developers.glean.com/#example-requests",
+    "https://developers.glean.com/#expected-response",
+    "https://developers.glean.com/#finding-your-server-url",
+    "https://developers.glean.com/#get-started",
+    "https://developers.glean.com/#glean-issued-tokens",
+    "https://developers.glean.com/#header-details",
+    "https://developers.glean.com/#how-to-find-your-server-url",
+    "https://developers.glean.com/#implementation-examples",
+    "https://developers.glean.com/#implementation-guides",
+    "https://developers.glean.com/#install",
+    "https://developers.glean.com/#ip-address-restrictions",
+    "https://developers.glean.com/#key-capabilities",
+    "https://developers.glean.com/#monitoring",
+    "https://developers.glean.com/#need-help",
+    "https://developers.glean.com/#next-steps",
+    "https://developers.glean.com/#oauth-authentication-recommended",
+    "https://developers.glean.com/#prerequisites",
+    "https://developers.glean.com/#production",
+    "https://developers.glean.com/#quick-decision-guide",
+    "https://developers.glean.com/#quick-setup-overview",
+    "https://developers.glean.com/#quick-start",
+    "https://developers.glean.com/#quick-test-commands",
+    "https://developers.glean.com/#quick-verification",
+    "https://developers.glean.com/#related",
+    "https://developers.glean.com/#request",
+    "https://developers.glean.com/#responses",
+    "https://developers.glean.com/#search-with-global-token",
+    "https://developers.glean.com/#search-with-user-scoped-token",
+    "https://developers.glean.com/#security",
+    "https://developers.glean.com/#security-best-practices",
+    "https://developers.glean.com/#setup",
+    "https://developers.glean.com/#support--community",
+    "https://developers.glean.com/#test-commands",
+    "https://developers.glean.com/#test-document-indexing",
+    "https://developers.glean.com/#testing-glean-tokens",
+    "https://developers.glean.com/#testing-your-authentication",
+    "https://developers.glean.com/#token-creation-process",
+    "https://developers.glean.com/#token-management-best-practices",
+    "https://developers.glean.com/#token-properties",
+    "https://developers.glean.com/#token-rotation",
+    "https://developers.glean.com/#token-types",
+    "https://developers.glean.com/#troubleshooting",
+    "https://developers.glean.com/#troubleshooting-glean-tokens",
+    "https://developers.glean.com/#troubleshooting-oauth",
+    "https://developers.glean.com/#usage-examples",
+    "https://developers.glean.com/#usage-in-apis",
+    "https://developers.glean.com/#user-roles-and-permissions",
+    "https://developers.glean.com/#using-indexing-api-tokens",
+    "https://developers.glean.com/api-info/client/authentication/datasource-oauth",
+    "https://developers.glean.com/api-info/client/authentication/glean-issued",
+    "https://developers.glean.com/api-info/client/authentication/oauth",
+    "https://developers.glean.com/api-info/client/authentication/overview",
+    "https://developers.glean.com/api-info/client/getting-started/basic-usage",
+    "https://developers.glean.com/api-info/client/getting-started/choosing-a-retrieval-interface",
+    "https://developers.glean.com/api-info/client/getting-started/overview",
+    "https://developers.glean.com/api-info/indexing/authentication/overview",
+    "https://developers.glean.com/api-info/indexing/authentication/token-rotation",
+    "https://developers.glean.com/api-info/indexing/custom-metadata/overview",
+    "https://developers.glean.com/api-info/indexing/getting-started/overview",
+    "https://developers.glean.com/api/client-api/activity/overview",
+    "https://developers.glean.com/api/client-api/agents/overview",
+    "https://developers.glean.com/api/client-api/authentication/checkdatasourceauth",
+    "https://developers.glean.com/api/client-api/authentication/createauthtoken",
+    "https://developers.glean.com/api/client-api/authentication/glean-api-authentication#authentication",
+    "https://developers.glean.com/api/client-api/authentication/overview",
+    "https://developers.glean.com/api/client-api/chat/overview",
+    "https://developers.glean.com/changelog/",
+    "https://developers.glean.com/docs-mcp",
+    "https://developers.glean.com/get-started/authentication",
+    "https://developers.glean.com/get-started/authentication#finding-your-server-url",
+    "https://developers.glean.com/get-started/key-terms",
+    "https://developers.glean.com/get-started/rate-limits",
+    "https://developers.glean.com/guides/actions/faq",
+    "https://developers.glean.com/guides/agents/overview",
+    "https://developers.glean.com/guides/chat/chatbot-example",
+    "https://developers.glean.com/guides/mcp",
+    "https://developers.glean.com/guides/mcp/",
+    "https://developers.glean.com/guides/mcp/claude-code",
+    "https://developers.glean.com/guides/mcp/cursor",
+    "https://developers.glean.com/guides/mcp/supported-hosts",
+    "https://developers.glean.com/guides/search/filtering-results",
+    "https://developers.glean.com/indexing/documents/bulk-indexing/choosing-indexdocuments-vs-bulkindexdocuments",
+    "https://developers.glean.com/indexing/documents/bulk-upload-model",
+    "https://developers.glean.com/libraries/api-clients",
+    "https://developers.glean.com/libraries/api-clients/go#oauth-access-tokens",
+    "https://developers.glean.com/libraries/api-clients/java",
+    "https://developers.glean.com/libraries/api-clients/java#oauth-access-tokens",
+    "https://developers.glean.com/libraries/api-clients/python#oauth-access-tokens",
+    "https://developers.glean.com/libraries/api-clients/typescript#oauth-access-tokens",
+    "https://developers.glean.com/libraries/web-sdk/overview",
+    "https://developers.glean.com/mcp",
+    "https://developers.glean.com/oas/client",
+    "https://developers.glean.com/oas/indexing",
+    "https://developers.glean.com/web",
+    "https://developers.openai.com/codex/mcp",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.glean.com",
+    "https://docs.glean.com/#",
+    "https://docs.glean.com/#__docusaurus_skipToContent_fallback",
+    "https://docs.glean.com/#choosing-the-right-glean-interface",
+    "https://docs.glean.com/#common-use-cases",
+    "https://docs.glean.com/#examples-by-role",
+    "https://docs.glean.com/#glean-mcp-server-capabilities",
+    "https://docs.glean.com/#glean-tools-available-through-mcp",
+    "https://docs.glean.com/#install-via-mcp-configurator",
+    "https://docs.glean.com/#key-benefits-of-glean-mcp-integration",
+    "https://docs.glean.com/#mcp-architecture",
+    "https://docs.glean.com/#mcp-configurator",
+    "https://docs.glean.com/#supported-hosts",
+    "https://docs.glean.com/#tips-for-effective-prompts",
+    "https://docs.glean.com/#troubleshooting",
+    "https://docs.glean.com/#what-is-mcp",
+    "https://docs.glean.com/administration/about",
+    "https://docs.glean.com/administration/developer/api-tokens",
+    "https://docs.glean.com/administration/developer/keycloak-credentials",
+    "https://docs.glean.com/administration/feature-rollouts",
+    "https://docs.glean.com/administration/gce-logs/insights-production-queries",
+    "https://docs.glean.com/administration/identity/sso/configuration/entra-id-oidc",
+    "https://docs.glean.com/administration/identity/sso/configuration/generic-saml",
+    "https://docs.glean.com/administration/identity/sso/configuration/google-oidc",
+    "https://docs.glean.com/administration/identity/sso/configuration/okta-saml",
+    "https://docs.glean.com/administration/insights/agents",
+    "https://docs.glean.com/administration/insights/departments-and-managers/",
+    "https://docs.glean.com/administration/insights/glean-in-support-applications",
+    "https://docs.glean.com/administration/insights/how-glean-calculates-active-teammates",
+    "https://docs.glean.com/administration/insights/insights-chat",
+    "https://docs.glean.com/administration/insights/llm-insights",
+    "https://docs.glean.com/administration/insights/mcp-insights",
+    "https://docs.glean.com/administration/insights/overview",
+    "https://docs.glean.com/administration/management/admin-chat",
+    "https://docs.glean.com/administration/management/audit-logs/admin-audit-logs",
+    "https://docs.glean.com/administration/management/flexcredits-dashboard",
+    "https://docs.glean.com/administration/management/gleancoresuite-dashboard",
+    "https://docs.glean.com/administration/management/maintenance-windows",
+    "https://docs.glean.com/administration/managing-agents/agent-access",
+    "https://docs.glean.com/administration/managing-agents/agent-group-sharing",
+    "https://docs.glean.com/administration/managing-agents/agent-routing",
+    "https://docs.glean.com/administration/managing-agents/deleting-and-restoring-agents",
+    "https://docs.glean.com/administration/managing-agents/how-an-app-is-translated-to-an-agent",
+    "https://docs.glean.com/administration/managing-agents/managing-agent-library",
+    "https://docs.glean.com/administration/managing-skills/share-skills",
+    "https://docs.glean.com/administration/managing-skills/skills-roles",
+    "https://docs.glean.com/administration/oauth/authorization-server",
+    "https://docs.glean.com/administration/oauth/dynamic-client-registration",
+    "https://docs.glean.com/administration/oauth/oauth-idp",
+    "https://docs.glean.com/administration/platform/a2a-server",
+    "https://docs.glean.com/administration/platform/embedded-integrations/",
+    "https://docs.glean.com/administration/platform/embedded-integrations/glean-in-gemini-chat",
+    "https://docs.glean.com/administration/platform/mcp/about",
+    "https://docs.glean.com/administration/platform/mcp/about#choosing-the-right-glean-interface",
+    "https://docs.glean.com/administration/platform/mcp/agents-as-tools",
+    "https://docs.glean.com/administration/platform/mcp/analytics",
+    "https://docs.glean.com/administration/platform/mcp/best-practices",
+    "https://docs.glean.com/administration/platform/mcp/enable-mcp-servers",
+    "https://docs.glean.com/administration/platform/mcp/mcp-gateway",
+    "https://docs.glean.com/administration/platform/mcp/security",
+    "https://docs.glean.com/administration/platform/mcp/troubleshooting",
+    "https://docs.glean.com/administration/protect/overview",
+    "https://docs.glean.com/administration/protect/plus-quickstart",
+    "https://docs.glean.com/administration/search/about",
+    "https://docs.glean.com/administration/search/access-verification",
+    "https://docs.glean.com/administration/search/faq",
+    "https://docs.glean.com/administration/search/hiding-content",
+    "https://docs.glean.com/administration/search/troubleshooting",
+    "https://docs.glean.com/administration/tenant-id",
+    "https://docs.glean.com/administration/tools/",
+    "https://docs.glean.com/administration/tools/connect-remote-mcp-servers-to-glean",
+    "https://docs.glean.com/administration/tools/mcp-custom-headers",
+    "https://docs.glean.com/administration/tools/setup-tools/",
+    "https://docs.glean.com/administration/tools/supported-mcp-servers",
+    "https://docs.glean.com/administration/tools/tools-oauth-reference",
+    "https://docs.glean.com/mcp",
+    "https://docs.glean.com/user-guide/about/accessibility",
+    "https://docs.glean.com/user-guide/about/end-user-quick-start-guide",
+    "https://docs.glean.com/user-guide/about/what-is-glean",
+    "https://docs.glean.com/user-guide/advanced/configuring-dark-mode",
+    "https://docs.glean.com/user-guide/advanced/customizing-home-page",
+    "https://docs.glean.com/user-guide/advanced/keyboard-shortcuts",
+    "https://docs.glean.com/user-guide/apps/chat-first-experience",
+    "https://docs.glean.com/user-guide/apps/extension-sidebar",
+    "https://docs.glean.com/user-guide/apps/glean-companion",
+    "https://docs.glean.com/user-guide/apps/glean-extension-via-company-push",
+    "https://docs.glean.com/user-guide/apps/glean-for-desktop",
+    "https://docs.glean.com/user-guide/apps/installing-the-browser-extension",
+    "https://docs.glean.com/user-guide/apps/why-does-the-chrome-extension-ask-for-those-permissions",
+    "https://docs.glean.com/user-guide/assistant/assistant-library",
+    "https://docs.glean.com/user-guide/assistant/best-practices",
+    "https://docs.glean.com/user-guide/assistant/deep-research",
+    "https://docs.glean.com/user-guide/assistant/file-upload",
+    "https://docs.glean.com/user-guide/assistant/glean-chat/",
+    "https://docs.glean.com/user-guide/assistant/how-glean-accesses-info",
+    "https://docs.glean.com/user-guide/assistant/real-time-voice",
+    "https://docs.glean.com/user-guide/embedded-integrations/",
+    "https://docs.glean.com/user-guide/mcp/data-analytics",
+    "https://docs.glean.com/user-guide/mcp/engineering",
+    "https://docs.glean.com/user-guide/mcp/operations",
+    "https://docs.glean.com/user-guide/mcp/overview",
+    "https://docs.glean.com/user-guide/mcp/product-management",
+    "https://docs.glean.com/user-guide/mcp/sales",
+    "https://docs.glean.com/user-guide/mcp/support",
+    "https://docs.glean.com/user-guide/mcp/usage",
+    "https://docs.glean.com/user-guide/people/customizing-your-glean-profile",
+    "https://docs.glean.com/user-guide/people/teams/setting-up-team-pages",
+    "https://docs.windsurf.com/windsurf/cascade/mcp",
+    "https://example.com",
+    "https://example.com/",
+    "https://example.com/document",
+    "https://example.com/search?q=query",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#-glean-cli",
+    "https://github.com/#acknowledgments",
+    "https://github.com/#agent-skills",
+    "https://github.com/#agent-workflow",
+    "https://github.com/#api-namespace-commands",
+    "https://github.com/#api-token-cicd",
+    "https://github.com/#authentication",
+    "https://github.com/#commands",
+    "https://github.com/#contents",
+    "https://github.com/#contributing",
+    "https://github.com/#core",
+    "https://github.com/#credential-resolution-order",
+    "https://github.com/#environment-variables",
+    "https://github.com/#example-payloads",
+    "https://github.com/#exit-codes",
+    "https://github.com/#file-attachments",
+    "https://github.com/#glean-api",
+    "https://github.com/#glean-chat",
+    "https://github.com/#glean-search",
+    "https://github.com/#install",
+    "https://github.com/#installation",
+    "https://github.com/#interactive-tui",
+    "https://github.com/#keyboard-shortcuts",
+    "https://github.com/#license",
+    "https://github.com/#migrating-from-per-command-skills",
+    "https://github.com/#quick-start",
+    "https://github.com/#shell-completions",
+    "https://github.com/#slash-commands",
+    "https://github.com/#start-of-content",
+    "https://github.com/#why-glean-cli",
+    "https://github.com/accelerator",
+    "https://github.com/actions/checkout",
+    "https://github.com/actions/checkout/blob/main/CHANGELOG.md",
+    "https://github.com/actions/checkout/compare/v6...v7",
+    "https://github.com/actions/checkout/releases",
+    "https://github.com/block/goose",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/gleanwork",
+    "https://github.com/gleanwork/.github/blob/main/docs/repository-stability.md#prerelease",
+    "https://github.com/gleanwork/api-client-go",
+    "https://github.com/gleanwork/api-client-java",
+    "https://github.com/gleanwork/api-client-python",
+    "https://github.com/gleanwork/api-client-typescript",
+    "https://github.com/gleanwork/claude-plugins",
+    "https://github.com/gleanwork/cursor-plugins",
+    "https://github.com/gleanwork/glean-cli",
+    "https://github.com/gleanwork/glean-cli/actions",
+    "https://github.com/gleanwork/glean-cli/actions/workflows/ci.yml",
+    "https://github.com/gleanwork/glean-cli/blob/main/.gitattributes",
+    "https://github.com/gleanwork/glean-cli/blob/main/.gitignore",
+    "https://github.com/gleanwork/glean-cli/blob/main/.golangci.yml",
+    "https://github.com/gleanwork/glean-cli/blob/main/.goreleaser.yml",
+    "https://github.com/gleanwork/glean-cli/blob/main/LICENSE",
+    "https://github.com/gleanwork/glean-cli/blob/main/README.md",
+    "https://github.com/gleanwork/glean-cli/branches",
+    "https://github.com/gleanwork/glean-cli/commit/186f84eca45a5ca172c77c73d3aec52b9b7bb507",
+    "https://github.com/gleanwork/glean-cli/commit/3f137e4d6e6cf6799a86fffcd56513e5e02dc95b",
+    "https://github.com/gleanwork/glean-cli/commit/70b0735da0465643d83ecde55c86896c3b12e1e0",
+    "https://github.com/gleanwork/glean-cli/commit/adf1913e22d302498bd2e8c1d2570f3b237e6c96",
+    "https://github.com/gleanwork/glean-cli/commit/cc1600ed8037a17444e134c4a938ae10143b397e",
+    "https://github.com/gleanwork/glean-cli/commit/eb205682b5831465c940110cc18e88b098b53fc7",
+    "https://github.com/gleanwork/glean-cli/commit/f5afbdfc18d9a361a3db68bb5f448e90108b7c1d",
+    "https://github.com/gleanwork/glean-cli/commit/fd4b3c05344f51da195534e5d2868fef85e56ef4",
+    "https://github.com/gleanwork/glean-cli/commits/main/",
+    "https://github.com/gleanwork/glean-cli/commits/main/README.md",
+    "https://github.com/gleanwork/glean-cli/commits?author=claude",
+    "https://github.com/gleanwork/glean-cli/commits?author=glean-cli-release%5Bbot%5D",
+    "https://github.com/gleanwork/glean-cli/commits?author=steve-calvert-glean",
+    "https://github.com/gleanwork/glean-cli/issues",
+    "https://github.com/gleanwork/glean-cli/projects",
+    "https://github.com/gleanwork/glean-cli/pull/110",
+    "https://github.com/gleanwork/glean-cli/pull/120",
+    "https://github.com/gleanwork/glean-cli/pull/123",
+    "https://github.com/gleanwork/glean-cli/pull/80",
+    "https://github.com/gleanwork/glean-cli/pulls",
+    "https://github.com/gleanwork/glean-cli/pulse",
+    "https://github.com/gleanwork/glean-cli/raw/main/README.md",
+    "https://github.com/gleanwork/glean-cli/raw/refs/heads/main/README.md",
+    "https://github.com/gleanwork/glean-cli/releases",
+    "https://github.com/gleanwork/glean-cli/security",
+    "https://github.com/gleanwork/glean-cli/tags",
+    "https://github.com/gleanwork/glean-cli/tree/main",
+    "https://github.com/gleanwork/glean-cli/tree/main/.github",
+    "https://github.com/gleanwork/glean-cli/tree/main/cmd",
+    "https://github.com/gleanwork/glean-cli/tree/main/demo",
+    "https://github.com/gleanwork/glean-cli/tree/main/internal",
+    "https://github.com/gleanwork/glean-cli/tree/main/skills/glean-cli",
+    "https://github.com/gleanwork/glean-cli/tree/main/snippets",
+    "https://github.com/gleanwork/glean-developer-site/edit/main/docs/api-info/client/authentication/overview.mdx",
+    "https://github.com/gleanwork/glean-developer-site/edit/main/docs/api-info/client/getting-started/overview.mdx",
+    "https://github.com/gleanwork/glean-developer-site/edit/main/docs/docs-mcp.mdx",
+    "https://github.com/gleanwork/glean-developer-site/edit/main/docs/get-started/authentication.mdx",
+    "https://github.com/gleanwork/glean-developer-site/edit/main/docs/get-started/home.mdx",
+    "https://github.com/gleanwork/glean-developer-site/edit/main/docs/guides/mcp/mcp.mdx",
+    "https://github.com/google-gemini/gemini-cli",
+    "https://github.com/login?return_to=%2Fgleanwork%2Fglean-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fgleanwork%2Fglean-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fgleanwork%2Fglean-cli%2Fblob%2Fmain%2FREADME.md",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fblob%2Fshow&source=header-repo&source_repo=gleanwork%2Fglean-cli",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=gleanwork%2Fglean-cli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://img.shields.io/badge/-Prerelease-F6F3EB?style=flat-square&logo=data:image/svg+xml;base64",
+    "https://img.shields.io/github/actions/workflow/status/gleanwork/glean-cli/ci.yml?branch=main&label=CI",
+    "https://img.shields.io/github/license/gleanwork/glean-cli",
+    "https://img.shields.io/github/v/release/gleanwork/glean-cli",
+    "https://instance-be.glean.com/api/index/v1/adddatasource",
+    "https://instance-be.glean.com/api/index/v1/bulkindexdocuments",
+    "https://instance-be.glean.com/api/index/v1/getdocumentcount",
+    "https://instance-be.glean.com/api/index/v1/indexdocument",
+    "https://instance-be.glean.com/api/index/v1/rotatetoken",
+    "https://instance-be.glean.com/rest/api/v1/chat",
+    "https://instance-be.glean.com/rest/api/v1/search",
+    "https://instance-name-be.glean.com",
+    "https://instance-name-be.glean.com/rest/api/v1/createauthtoken",
+    "https://jira.example.com/browse/{arg}",
+    "https://junie.jetbrains.com/docs/junie-cli-mcp-configuration.html",
+    "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-existing-server-to-agent",
+    "https://maintainers.github.com",
+    "https://modelcontextprotocol.io/",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://mycompany-be.glean.com",
+    "https://opencode.ai/docs/mcp-servers/",
+    "https://platform.openai.com/docs/mcp#test-and-connect-your-mcp-server",
+    "https://raw.githubusercontent.com/gleanwork/glean-cli/main/install.sh",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://status.glean.com",
+    "https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp",
+    "https://support.github.com",
+    "https://support.glean.com",
+    "https://tenant",
+    "https://tenant_id-be.glean.com",
+    "https://tenant_id-be.glean.com/mcp/%5Byour-mcp-server-name",
+    "https://tenant_id-be.glean.com/mcp/[your-mcp-server-name",
+    "https://trust.glean.com",
+    "https://www.jetbrains.com/help/ai-assistant/mcp.html",
+    "https://your-server-url",
+    "https://{instance}-be.glean.com"
+  ]
+}

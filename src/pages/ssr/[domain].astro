@@ -20,8 +20,10 @@ const domain = decodeURIComponent(Astro.params.domain ?? "").trim().toLowerCase(
 const raw = runtime ? await runtime.env.DISCOVERY.get(domain) : null;
 // Parsed KV JSON — the envelope is StoredDiscovery, but old rows predate strict
 // typing, so read it as the loose render shape and let the island stay lenient.
-const stored = raw ? (JSON.parse(raw) as { result?: DiscoverData }) : null;
-let initialData: DiscoverData | null = stored?.result?.surfaces ? stored.result : null;
+const stored = raw ? (JSON.parse(raw) as { result?: DiscoverData; discoveredAt?: string }) : null;
+let initialData: DiscoverData | null = stored?.result?.surfaces
+  ? { ...stored.result, discoveredAt: stored.result.discoveredAt ?? stored.discoveredAt }
+  : null;
 
 if (!initialData && runtime) {
   const res = await runtime.env.ASSETS.fetch(

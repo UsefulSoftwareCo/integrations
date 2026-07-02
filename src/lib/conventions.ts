@@ -65,11 +65,11 @@ function wasProbed(detect: RecordLike | null, key: ProbeKey): boolean {
 }
 
 function missingDetail(path: string): string {
-  return `Nothing at ${path}. Publish one and re-run discovery to update this entry.`;
+  return `Nothing at ${path}`;
 }
 
 function unprobedDetail(): string {
-  return "This stored result predates this probe. Re-run discovery to update this entry.";
+  return "Not probed yet";
 }
 
 function row(
@@ -90,6 +90,7 @@ function row(
 
 export function buildConventionRows(detectValue: unknown, domain: string): ConventionRow[] {
   const detect = isRecord(detectValue) ? detectValue : null;
+  const docsHref = "/own-your-page/";
 
   return [
     row(
@@ -103,13 +104,13 @@ export function buildConventionRows(detectValue: unknown, domain: string): Conve
         const url = typeof value.url === "string" ? value.url : pathUrl(domain, INTEGRATIONS_JSON_PATH);
         return { detail: url, valueUrl: url };
       },
-      "/own-your-page/",
+      docsHref,
     ),
     row(detect, PROBE_KEYS.llmsTxt, "llms.txt", LLMS_TXT_PATH, () => {
       if (detect?.llmsTxt !== true) return null;
       const url = pathUrl(domain, LLMS_TXT_PATH);
       return { detail: url, valueUrl: url };
-    }),
+    }, docsHref),
     row(detect, PROBE_KEYS.apiCatalog, "API catalog", `${API_CATALOG_PATH} (RFC 9727)`, () => {
       const catalog = isRecord(detect?.apiCatalog) ? detect.apiCatalog : null;
       if (!catalog) return null;
@@ -121,21 +122,21 @@ export function buildConventionRows(detectValue: unknown, domain: string): Conve
       ].filter(Boolean);
       const url = pathUrl(domain, API_CATALOG_PATH);
       return { detail: counts.length ? `${url} (${counts.join(", ")})` : url, valueUrl: url };
-    }),
+    }, docsHref),
     row(detect, PROBE_KEYS.openapiSchema, "OpenAPI document", pathsText(OPENAPI_PROBE_PATHS), () => {
       const schema = isRecord(detect?.apiSchema) ? detect.apiSchema : null;
       const url = typeof schema?.url === "string" ? schema.url : undefined;
       if (!url) return null;
       const version = typeof schema?.version === "string" ? ` (${schema.version})` : "";
       return { detail: `${url}${version}`, valueUrl: url };
-    }),
+    }, docsHref),
     row(detect, PROBE_KEYS.mcpServerCard, "MCP server card", MCP_SERVER_CARD_PATH, () => {
       const mcp = Array.isArray(detect?.mcp) ? detect.mcp : [];
       const serverCard = mcp.find((item) => isRecord(item) && item.source === "server-card") as RecordLike | undefined;
       const endpoint = typeof serverCard?.url === "string" ? serverCard.url : undefined;
       if (!endpoint) return null;
       return { detail: endpoint, valueUrl: endpoint };
-    }),
+    }, docsHref),
     row(detect, PROBE_KEYS.oauthProtectedResource, "OAuth protected resource", OAUTH_PROTECTED_RESOURCE_PATH, () => {
       const auth = isRecord(detect?.auth) ? detect.auth : null;
       const oauth = isRecord(auth?.oauth) ? auth.oauth : null;
@@ -143,14 +144,14 @@ export function buildConventionRows(detectValue: unknown, domain: string): Conve
       const protectedResourceUrl = typeof oauth.protectedResourceUrl === "string" ? oauth.protectedResourceUrl : pathUrl(domain, OAUTH_PROTECTED_RESOURCE_PATH);
       const servers = stringArray(oauth.authorizationServers);
       return { detail: servers.length ? `${protectedResourceUrl} -> ${servers.join(", ")}` : protectedResourceUrl, valueUrl: protectedResourceUrl };
-    }),
+    }, docsHref),
     row(detect, PROBE_KEYS.agentCard, "Agent card", AGENT_CARD_PATH, () => {
       const card = isRecord(detect?.agentCard) ? detect.agentCard : null;
       if (!card) return null;
       const url = typeof card.url === "string" ? card.url : pathUrl(domain, AGENT_CARD_PATH);
       const name = typeof card.name === "string" ? card.name : "agent card";
       return { detail: `${name} (${url})`, valueUrl: url };
-    }),
+    }, docsHref),
     row(detect, PROBE_KEYS.agentSkills, "Agent skills", AGENT_SKILLS_PATH, () => {
       const skills = isRecord(detect?.agentSkills) ? detect.agentSkills : null;
       const count = typeof skills?.count === "number" ? skills.count : 0;
@@ -158,6 +159,6 @@ export function buildConventionRows(detectValue: unknown, domain: string): Conve
       const names = stringArray(skills.names).slice(0, 4);
       const url = pathUrl(domain, AGENT_SKILLS_PATH);
       return { detail: names.length ? `${plural(count, "skill")}: ${names.join(", ")}` : plural(count, "skill"), valueUrl: url };
-    }),
+    }, docsHref),
   ];
 }

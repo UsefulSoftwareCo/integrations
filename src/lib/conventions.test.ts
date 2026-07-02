@@ -22,11 +22,12 @@ describe("buildConventionRows", () => {
     });
     expect(rows.find((row) => row.key === PROBE_KEYS.llmsTxt)).toMatchObject({
       status: "missing",
-      detail: "Nothing at /llms.txt. Publish one and re-run discovery to update this entry.",
+      detail: "Nothing at /llms.txt",
+      docsHref: "/own-your-page/",
     });
     expect(rows.find((row) => row.key === PROBE_KEYS.agentCard)).toMatchObject({
       status: "unprobed",
-      detail: "This stored result predates this probe. Re-run discovery to update this entry.",
+      detail: "Not probed yet",
     });
   });
 });

@@ -12,11 +12,12 @@
 import { useEffect, useState } from "react";
 import { buildConventionRows, type ConventionRow } from "../lib/conventions.ts";
 import type { Credential, DiscoveryResult } from "../lib/discovery-schema.ts";
-import { buildSections, type DiscoverData, type SurfaceEntry } from "../lib/surface-sections.ts";
+import { buildSections, discoveryFreshness, type DiscoverData, type SurfaceEntry } from "../lib/surface-sections.ts";
 import { cliLoginFor, credCta, hostOf, type AuthStatus, type Basis, type Surface } from "../lib/surface-view.ts";
 import Setup from "./surface/Setup.tsx";
 
 type Creds = DiscoveryResult["credentials"];
+type StoredDiscoveryEnvelope = { result?: DiscoverData; discoveredAt?: string };
 
 function Prov({ p }: { p: Basis }) {
   if (!p) return null;
@@ -42,7 +43,7 @@ function Prov({ p }: { p: Basis }) {
   );
 }
 
-function ConventionDetail({ row, onRun }: { row: ConventionRow; onRun: () => void }) {
+function ConventionDetail({ row }: { row: ConventionRow }) {
   if (row.status === "found") {
     return row.valueUrl ? (
       <a className="conv-link" href={row.valueUrl} target="_blank" rel="noopener noreferrer">
@@ -52,32 +53,24 @@ function ConventionDetail({ row, onRun }: { row: ConventionRow; onRun: () => voi
       <span>{row.detail}</span>
     );
   }
-  const learn = row.docsHref && row.status === "missing";
   if (row.status === "unprobed") {
-    return (
-      <span>
-        This stored result predates this probe. <button className="conv-action" onClick={onRun}>Map integration surface</button> to update this entry.
-      </span>
-    );
+    return <span>{row.detail}</span>;
   }
   return (
     <span>
-      {learn ? (
-        <>
-          Nothing at {row.path}. <a className="conv-link" href={row.docsHref}>Publish one</a> and{" "}
-          <button className="conv-action" onClick={onRun}>Map integration surface</button> to update this entry.
-        </>
+      Nothing at{" "}
+      {row.docsHref ? (
+        <a className="conv-link" href={row.docsHref}>
+          {row.path}
+        </a>
       ) : (
-        <>
-          Nothing at {row.path}. Publish one and{" "}
-          <button className="conv-action" onClick={onRun}>Map integration surface</button> to update this entry.
-        </>
+        row.path
       )}
     </span>
   );
 }
 
-function Conventions({ rows, onRun }: { rows: ConventionRow[]; onRun: () => void }) {
+function Conventions({ rows }: { rows: ConventionRow[] }) {
   const found = rows.filter((row) => row.status === "found").length;
   return (
     <section className="disc-sec disc-conv" id="conventions">
@@ -93,7 +86,7 @@ function Conventions({ rows, onRun }: { rows: ConventionRow[]; onRun: () => void
               {row.status === "found" ? "✓" : row.status === "missing" ? "✗" : "—"}
             </span>
             <span className="conv-detail">
-              <ConventionDetail row={row} onRun={onRun} />
+              <ConventionDetail row={row} />
             </span>
           </li>
         ))}
@@ -120,6 +113,28 @@ function EntryRow({ e }: { e: SurfaceEntry }) {
   );
 }
 
+function DiscoveryMeta({ discoveredAt, hasSurfaces, onRun }: { discoveredAt?: string; hasSurfaces: boolean; onRun: () => void }) {
+  const freshness = discoveryFreshness(discoveredAt, hasSurfaces);
+  return (
+    <div className="disc-freshness" title={freshness.title}>
+      <span>discovered {freshness.label}</span>
+      {freshness.shouldRegenerate && (
+        <button className="conv-action disc-regenerate" onClick={onRun}>
+          regenerate
+        </button>
+      )}
+    </div>
+  );
+}
+
+function normalizeStoredDiscovery(stored: StoredDiscoveryEnvelope): DiscoverData | null {
+  if (!stored?.result?.surfaces) return null;
+  return {
+    ...stored.result,
+    discoveredAt: stored.result.discoveredAt ?? stored.discoveredAt,
+  };
+}
+
 export default function Surfaces({
   domain,
   initialData = null,
@@ -144,9 +159,9 @@ export default function Surfaces({
     fetch(`/api/${encodeURIComponent(domain)}/discovery`)
       .then(async (r) => {
         if (cancelled || !r.ok) return;
-        const stored = (await r.json()) as { result?: DiscoverData };
-        if (stored?.result?.surfaces) {
-          setData(stored.result);
+        const result = normalizeStoredDiscovery((await r.json()) as StoredDiscoveryEnvelope);
+        if (result) {
+          setData(result);
           setState("done");
         }
       })
@@ -225,6 +240,7 @@ export default function Surfaces({
   const built = buildSections(activeData, domain);
   const conventions = buildConventionRows(activeData?.detect, domain);
   const creds: Creds = activeData?.credentials ?? {};
+  const hasSurfaceData = (data?.surfaces?.length ?? 0) > 0;
   const credIdsOf = (auth?: AuthStatus): string[] =>
     auth?.status === "required" ? auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
   const usedCredIds = new Set<string>(built.flatMap((sec) => sec.entries.flatMap((e) => credIdsOf(e.surface.auth))));
@@ -261,6 +277,7 @@ export default function Surfaces({
         </div>
       )}
       {state === "done" && data?.summary && <p className="disc-summary">{data.summary}</p>}
+      {state === "done" && hasSurfaceData && <DiscoveryMeta discoveredAt={data?.discoveredAt} hasSurfaces={hasSurfaceData} onRun={run} />}
 
       {built.map((sec) => (
         <section className="disc-sec" id={sec.kind} key={sec.kind}>
@@ -276,7 +293,7 @@ export default function Surfaces({
         </section>
       ))}
 
-      <Conventions rows={conventions} onRun={run} />
+      <Conventions rows={conventions} />
 
       {credList.length > 0 && (
         <section className="disc-sec disc-creds">

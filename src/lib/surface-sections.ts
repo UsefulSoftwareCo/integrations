@@ -2,7 +2,9 @@ import { KIND_ORDER, SECTION_LABEL } from "./domain-labels.ts";
 import type { DiscoveryResult } from "./discovery-schema.ts";
 import type { DiscoveryDoc, Surface } from "./surface-view.ts";
 
-export type DiscoverData = Partial<Pick<DiscoveryResult, "summary" | "description">> & DiscoveryDoc & { detect?: unknown };
+export type DiscoverData = Partial<Pick<DiscoveryResult, "summary" | "description" | "discoveredAt">> & DiscoveryDoc & { detect?: unknown };
+
+export const DISCOVERY_STALE_MS = 12 * 60 * 60 * 1000;
 
 type SectionKind = (typeof KIND_ORDER)[number];
 
@@ -18,6 +20,14 @@ export interface SurfaceSection {
   kind: SectionKind;
   label: string;
   entries: SurfaceEntry[];
+}
+
+export interface DiscoveryFreshness {
+  label: string;
+  title?: string;
+  known: boolean;
+  stale: boolean;
+  shouldRegenerate: boolean;
 }
 
 /** surface.type -> page section kind. v3 `http` and legacy openapi/rest share
@@ -65,4 +75,41 @@ export function buildSections(data: DiscoverData | null, domain: string): Surfac
   }
 
   return out;
+}
+
+function compactAge(ageMs: number): string {
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const month = 30 * day;
+  const year = 365 * day;
+
+  if (ageMs < minute) return "just now";
+  if (ageMs < hour) return `${Math.max(1, Math.floor(ageMs / minute))}m ago`;
+  if (ageMs < day) return `${Math.max(1, Math.floor(ageMs / hour))}h ago`;
+  if (ageMs < month) return `${Math.max(1, Math.floor(ageMs / day))}d ago`;
+  if (ageMs < year) return `${Math.max(1, Math.floor(ageMs / month))}mo ago`;
+  return `${Math.max(1, Math.floor(ageMs / year))}y ago`;
+}
+
+export function discoveryFreshness(discoveredAt: string | undefined, hasSurfaces: boolean, nowMs = Date.now()): DiscoveryFreshness {
+  const parsed = discoveredAt ? Date.parse(discoveredAt) : Number.NaN;
+  if (!Number.isFinite(parsed)) {
+    return {
+      label: "unknown age",
+      known: false,
+      stale: true,
+      shouldRegenerate: hasSurfaces,
+    };
+  }
+
+  const rawAgeMs = nowMs - parsed;
+  const stale = rawAgeMs > DISCOVERY_STALE_MS;
+  return {
+    label: compactAge(Math.max(0, rawAgeMs)),
+    title: new Date(parsed).toISOString(),
+    known: true,
+    stale,
+    shouldRegenerate: hasSurfaces && stale,
+  };
 }

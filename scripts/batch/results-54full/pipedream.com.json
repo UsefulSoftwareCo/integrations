@@ -1,0 +1,531 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "pipedream.com",
+    "detect": {
+      "domain": "pipedream.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:44:56.461Z",
+    "summary": "Pipedream exposes a project-scoped Connect REST API, a hosted remote MCP server endpoint for app-specific tools, and the `pd` CLI; all developer surfaces require authentication.",
+    "description": "Pipedream is an integration platform for connecting apps, APIs, and AI agents with managed authentication, reusable actions, triggers, and workflows. It lets developers build product integrations and agent tool access across thousands of third-party services.",
+    "credentials": {
+      "pd_oauth_client": {
+        "type": "oauth2_cc",
+        "label": "Pipedream OAuth client (client ID + client secret)",
+        "generateUrl": "https://pipedream.com/settings/api",
+        "setup": "In your Pipedream workspace, open [API settings](https://pipedream.com/settings/api), click **New OAuth Client**, name the client, and click **Create**. Copy the `client_secret` immediately because it is shown only once, then copy the `client_id` from the client list. The Connect quickstart also provisions these credentials for you when you run [`pd init connect`](https://pipedream.com/docs/connect/quickstart)."
+      },
+      "pd_connect_token": {
+        "type": "bearer",
+        "label": "Pipedream Connect token",
+        "generateUrl": "https://pipedream.com/docs/connect/api-reference/create-connect-token",
+        "setup": "Create a short-lived Connect token on your server by calling [Create Connect token](https://pipedream.com/docs/connect/api-reference/create-connect-token) with your Pipedream OAuth access token, the target `external_user_id`, and the `x-pd-environment` header. The response returns a temporary bearer `token` and a `connect_link_url` for that end user."
+      },
+      "pd_cli_api_key": {
+        "type": "api_key",
+        "label": "Pipedream CLI API key",
+        "generateUrl": "https://pipedream.com/docs/cli/login",
+        "setup": "Install the CLI, then run [`pd login`](https://pipedream.com/docs/cli/login) or `pd signup`. The browser login links the CLI to your Pipedream account and writes your API key to the `pd` config file. Running `pd logout` removes it from the config file."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "pipedream-connect-api",
+        "name": "Pipedream Connect API",
+        "type": "http",
+        "docs": "https://pipedream.com/docs/connect/api-reference/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://pipedream.com/docs/connect/api-reference/introduction",
+            "https://pipedream.com/docs/connect/api-reference/authentication",
+            "https://pipedream.com/docs/connect/api-reference/create-connect-token"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "pd_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://pipedream.com/docs/connect/api-reference/authentication",
+                  "https://pipedream.com/docs/connect/api-reference/create-oauth-token"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "pd_connect_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://pipedream.com/docs/connect/api-reference/authentication",
+                  "https://pipedream.com/docs/connect/api-reference/create-connect-token"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.pipedream.com/v1/connect/{project_id}",
+        "variables": [
+          {
+            "name": "project_id",
+            "resolveFrom": "Pipedream project settings",
+            "description": "Project-scoped Connect API base URL segment."
+          }
+        ]
+      },
+      {
+        "slug": "pipedream-remote-mcp-server",
+        "name": "Pipedream Remote MCP server",
+        "type": "mcp",
+        "docs": "https://pipedream.com/docs/connect/mcp/developers",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://pipedream.com/docs/connect/mcp",
+            "https://pipedream.com/docs/connect/mcp/developers",
+            "https://pipedream.com/docs/connect/mcp/ai-frameworks/openai"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "pd_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://pipedream.com/docs/connect/mcp/developers",
+                  "https://pipedream.com/docs/connect/mcp/ai-frameworks/openai"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://remote.mcp.pipedream.net/v3",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ]
+      },
+      {
+        "slug": "pipedream-cli",
+        "name": "Pipedream CLI",
+        "type": "cli",
+        "docs": "https://pipedream.com/docs/cli/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://pipedream.com/docs/connect/quickstart",
+            "https://pipedream.com/docs/cli/reference",
+            "https://pipedream.com/docs/cli/login"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "pd_cli_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "pd login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://pipedream.com/docs/cli/login"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "pipedreamhq/pd-cli/pipedream"
+          },
+          {
+            "registryType": "other",
+            "identifier": "https://cli.pipedream.com/install",
+            "runtimeHint": "shell installer"
+          }
+        ],
+        "command": "pd"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:44:56.461Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 118609,
+    "completion_tokens": 1667,
+    "total_tokens": 120276
+  },
+  "visited": [
+    "https://mcp.pipedream.com/app/slack",
+    "https://pipedream.com/docs/changelog",
+    "https://pipedream.com/docs/cli/login",
+    "https://pipedream.com/docs/cli/reference",
+    "https://pipedream.com/docs/connect",
+    "https://pipedream.com/docs/connect/api-reference/authentication",
+    "https://pipedream.com/docs/connect/api-reference/create-connect-token",
+    "https://pipedream.com/docs/connect/api-reference/create-oauth-token",
+    "https://pipedream.com/docs/connect/api-reference/introduction",
+    "https://pipedream.com/docs/connect/mcp",
+    "https://pipedream.com/docs/connect/mcp/ai-frameworks/openai",
+    "https://pipedream.com/docs/connect/mcp/developers",
+    "https://pipedream.com/docs/connect/quickstart",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://localhost:3000",
+    "https://api.pipedream.com/v1/connect/{project_id}",
+    "https://api.pipedream.com/v1/connect/{project_id}/tokens",
+    "https://api.pipedream.com/v1/oauth/token",
+    "https://auth0.com/",
+    "https://central.sonatype.com/artifact/com.pipedream/pipedream",
+    "https://chat.pipedream.com",
+    "https://clerk.com/",
+    "https://cli.pipedream.com/install",
+    "https://cli.pipedream.com/windows/amd64/latest/pd.zip",
+    "https://firebase.google.com/",
+    "https://github.com/PipedreamHQ/mcp-chat",
+    "https://github.com/PipedreamHQ/pipedream",
+    "https://github.com/PipedreamHQ/pipedream-connect-examples/tree/master/connect-react-demo",
+    "https://github.com/PipedreamHQ/pipedream-connect-examples/tree/master/managed-auth-basic-next-app",
+    "https://github.com/PipedreamHQ/pipedream-connect-examples/tree/master/mcp",
+    "https://github.com/PipedreamHQ/pipedream-sdk-typescript",
+    "https://github.com/PipedreamHQ/pipedream/blob/master/components/http/sources/new-requests/new-requests.js",
+    "https://github.com/PipedreamHQ/pipedream/tree/master/components",
+    "https://github.com/philschmid/gemini-samples/blob/main/scripts/gemini-mcp-pipedream.py",
+    "https://mcp.pipedream.com",
+    "https://mcp.pipedream.com/",
+    "https://mcp.pipedream.com/app/github",
+    "https://mcp.pipedream.com/app/google-sheets",
+    "https://mcp.pipedream.com/app/slack",
+    "https://modelcontextprotocol.io/",
+    "https://modelcontextprotocol.io/specification/2025-06-18/server/tools#error-handling",
+    "https://modelcontextprotocol.io/tools/inspector",
+    "https://modelcontextprotocol.io/tools/inspector/",
+    "https://myapp.com",
+    "https://myendpoint.m.pipedream.net",
+    "https://newsroom.workday.com/2025-11-19-Workday-Signs-Definitive-Agreement-to-Acquire-Pipedream",
+    "https://pipedream.com/#add-a-button-in-your-ui",
+    "https://pipedream.com/#additional-resources",
+    "https://pipedream.com/#ai-frameworks",
+    "https://pipedream.com/#analytics",
+    "https://pipedream.com/#api-authentication",
+    "https://pipedream.com/#authentication",
+    "https://pipedream.com/#authorization-authorization",
+    "https://pipedream.com/#auto-upgrade",
+    "https://pipedream.com/#available-integrations-and-tools",
+    "https://pipedream.com/#base-url",
+    "https://pipedream.com/#body-allow-progressive-scopes",
+    "https://pipedream.com/#body-allowed-origins",
+    "https://pipedream.com/#body-client-id",
+    "https://pipedream.com/#body-client-secret",
+    "https://pipedream.com/#body-error-redirect-uri",
+    "https://pipedream.com/#body-expires-in",
+    "https://pipedream.com/#body-external-user-id",
+    "https://pipedream.com/#body-grant-type",
+    "https://pipedream.com/#body-scope",
+    "https://pipedream.com/#body-success-redirect-uri",
+    "https://pipedream.com/#body-webhook-uri",
+    "https://pipedream.com/#cli-config-file",
+    "https://pipedream.com/#command-reference",
+    "https://pipedream.com/#connect-token-scopes",
+    "https://pipedream.com/#connect-token-ttl",
+    "https://pipedream.com/#connect-tokens",
+    "https://pipedream.com/#content-area",
+    "https://pipedream.com/#creating-a-connect-token",
+    "https://pipedream.com/#creating-a-new-profile",
+    "https://pipedream.com/#creating-a-profile-for-a-workspace",
+    "https://pipedream.com/#creating-an-oauth-client",
+    "https://pipedream.com/#data-storage-and-privacy",
+    "https://pipedream.com/#demos",
+    "https://pipedream.com/#developer-authentication",
+    "https://pipedream.com/#discover-available-integrations",
+    "https://pipedream.com/#environment",
+    "https://pipedream.com/#error-handling",
+    "https://pipedream.com/#example-request",
+    "https://pipedream.com/#examples",
+    "https://pipedream.com/#existing-pipedream-account",
+    "https://pipedream.com/#external-users",
+    "https://pipedream.com/#general-notes",
+    "https://pipedream.com/#generate-responses-with-pipedream-mcp",
+    "https://pipedream.com/#getting-started",
+    "https://pipedream.com/#glossary-of-terms",
+    "https://pipedream.com/#how-to-get-an-access-token",
+    "https://pipedream.com/#how-to-secure-your-connect-apps",
+    "https://pipedream.com/#installing-the-cli",
+    "https://pipedream.com/#iterating-on-a-component-with-dev",
+    "https://pipedream.com/#key-pipedream-concepts-to-understand",
+    "https://pipedream.com/#logging-out-of-the-cli",
+    "https://pipedream.com/#make-requests-on-behalf-of-your-users",
+    "https://pipedream.com/#managed-auth",
+    "https://pipedream.com/#next-steps",
+    "https://pipedream.com/#oauth-access-tokens",
+    "https://pipedream.com/#oauth-scopes",
+    "https://pipedream.com/#oauth-security",
+    "https://pipedream.com/#overview",
+    "https://pipedream.com/#parameter-project-id",
+    "https://pipedream.com/#parameter-x-pd-environment",
+    "https://pipedream.com/#params",
+    "https://pipedream.com/#pd-delete",
+    "https://pipedream.com/#pd-deploy",
+    "https://pipedream.com/#pd-describe",
+    "https://pipedream.com/#pd-dev",
+    "https://pipedream.com/#pd-events",
+    "https://pipedream.com/#pd-help",
+    "https://pipedream.com/#pd-init",
+    "https://pipedream.com/#pd-init-action",
+    "https://pipedream.com/#pd-init-app",
+    "https://pipedream.com/#pd-init-connect",
+    "https://pipedream.com/#pd-init-source",
+    "https://pipedream.com/#pd-list",
+    "https://pipedream.com/#pd-login",
+    "https://pipedream.com/#pd-logout",
+    "https://pipedream.com/#pd-logs",
+    "https://pipedream.com/#pd-oauth-client-create",
+    "https://pipedream.com/#pd-project-create",
+    "https://pipedream.com/#pd-publish",
+    "https://pipedream.com/#pd-signup",
+    "https://pipedream.com/#pd-unpublish",
+    "https://pipedream.com/#pd-update",
+    "https://pipedream.com/#plans-and-pricing",
+    "https://pipedream.com/#prerequisites",
+    "https://pipedream.com/#pricing",
+    "https://pipedream.com/#profiles",
+    "https://pipedream.com/#publishing-custom-tools-for-connect",
+    "https://pipedream.com/#response-access-token",
+    "https://pipedream.com/#response-connect-link-url",
+    "https://pipedream.com/#response-expires-at",
+    "https://pipedream.com/#response-expires-in",
+    "https://pipedream.com/#response-token",
+    "https://pipedream.com/#response-token-type",
+    "https://pipedream.com/#rest-api-base-url",
+    "https://pipedream.com/#return-a-link",
+    "https://pipedream.com/#revoking-a-client-secret",
+    "https://pipedream.com/#security",
+    "https://pipedream.com/#set-up-connect-with-the-cli",
+    "https://pipedream.com/#set-up-your-environment",
+    "https://pipedream.com/#signing-up-for-pipedream-via-the-cli",
+    "https://pipedream.com/#storing-user-credentials-token-refresh",
+    "https://pipedream.com/#supported-tools",
+    "https://pipedream.com/#supported-transport-types",
+    "https://pipedream.com/#testing-in-openai%E2%80%99s-api-playground",
+    "https://pipedream.com/#testing-in-openai’s-api-playground",
+    "https://pipedream.com/#use-cases",
+    "https://pipedream.com/#use-pipedream%E2%80%99s-remote-mcp-server",
+    "https://pipedream.com/#use-pipedream’s-remote-mcp-server",
+    "https://pipedream.com/#user-account-connections",
+    "https://pipedream.com/#using-custom-tools",
+    "https://pipedream.com/#using-pipedream-mcp-in-your-app",
+    "https://pipedream.com/#using-profiles",
+    "https://pipedream.com/#using-the-cli-to-manage-multiple-accounts",
+    "https://pipedream.com/#using-the-mcp-inspector",
+    "https://pipedream.com/#version",
+    "https://pipedream.com/_static/connect.html?token=ctok_xxxxxxx&connectLink=true&app={appSlug}",
+    "https://pipedream.com/apps",
+    "https://pipedream.com/auth/signup",
+    "https://pipedream.com/connect",
+    "https://pipedream.com/connect/demo",
+    "https://pipedream.com/docs",
+    "https://pipedream.com/docs/ai-tooling",
+    "https://pipedream.com/docs/apps",
+    "https://pipedream.com/docs/apps/connected-accounts",
+    "https://pipedream.com/docs/changelog",
+    "https://pipedream.com/docs/cli/install",
+    "https://pipedream.com/docs/cli/login",
+    "https://pipedream.com/docs/cli/login#signing-up-for-pipedream-via-the-cli",
+    "https://pipedream.com/docs/cli/reference",
+    "https://pipedream.com/docs/cli/reference#cli-config-file",
+    "https://pipedream.com/docs/cli/reference#creating-a-profile-for-a-workspace",
+    "https://pipedream.com/docs/cli/reference#pd-init-connect",
+    "https://pipedream.com/docs/cli/reference#profiles",
+    "https://pipedream.com/docs/components/contributing#actions",
+    "https://pipedream.com/docs/components/contributing/api#db",
+    "https://pipedream.com/docs/components/contributing/api#http",
+    "https://pipedream.com/docs/components/contributing/api#timer",
+    "https://pipedream.com/docs/components/contributing/guidelines#app-files",
+    "https://pipedream.com/docs/components/contributing/sources-quickstart",
+    "https://pipedream.com/docs/connect",
+    "https://pipedream.com/docs/connect/api-proxy",
+    "https://pipedream.com/docs/connect/api-reference/authentication",
+    "https://pipedream.com/docs/connect/api-reference/authentication#connect-token-scopes",
+    "https://pipedream.com/docs/connect/api-reference/authentication#oauth-scopes",
+    "https://pipedream.com/docs/connect/api-reference/configure-action-prop",
+    "https://pipedream.com/docs/connect/api-reference/configure-component-prop",
+    "https://pipedream.com/docs/connect/api-reference/configure-trigger-prop",
+    "https://pipedream.com/docs/connect/api-reference/create-connect-token",
+    "https://pipedream.com/docs/connect/api-reference/create-oauth-token",
+    "https://pipedream.com/docs/connect/api-reference/create-project",
+    "https://pipedream.com/docs/connect/api-reference/delete-account",
+    "https://pipedream.com/docs/connect/api-reference/delete-accounts-by-app",
+    "https://pipedream.com/docs/connect/api-reference/delete-deployed-trigger",
+    "https://pipedream.com/docs/connect/api-reference/delete-external-user",
+    "https://pipedream.com/docs/connect/api-reference/delete-project",
+    "https://pipedream.com/docs/connect/api-reference/delete-project-environment-webhook",
+    "https://pipedream.com/docs/connect/api-reference/deploy-trigger",
+    "https://pipedream.com/docs/connect/api-reference/download-file",
+    "https://pipedream.com/docs/connect/api-reference/get-deployed-trigger",
+    "https://pipedream.com/docs/connect/api-reference/get-project-environment-webhook",
+    "https://pipedream.com/docs/connect/api-reference/get-project-info",
+    "https://pipedream.com/docs/connect/api-reference/get-trigger-webhook",
+    "https://pipedream.com/docs/connect/api-reference/introduction",
+    "https://pipedream.com/docs/connect/api-reference/introduction#available-sdks",
+    "https://pipedream.com/docs/connect/api-reference/list-accounts-for-external-user",
+    "https://pipedream.com/docs/connect/api-reference/list-actions",
+    "https://pipedream.com/docs/connect/api-reference/list-app-categories",
+    "https://pipedream.com/docs/connect/api-reference/list-apps",
+    "https://pipedream.com/docs/connect/api-reference/list-components",
+    "https://pipedream.com/docs/connect/api-reference/list-deployed-triggers",
+    "https://pipedream.com/docs/connect/api-reference/list-projects",
+    "https://pipedream.com/docs/connect/api-reference/list-trigger-events",
+    "https://pipedream.com/docs/connect/api-reference/list-trigger-webhooks",
+    "https://pipedream.com/docs/connect/api-reference/list-triggers",
+    "https://pipedream.com/docs/connect/api-reference/list-usage-records",
+    "https://pipedream.com/docs/connect/api-reference/list-users",
+    "https://pipedream.com/docs/connect/api-reference/rate-limits",
+    "https://pipedream.com/docs/connect/api-reference/regenerate-trigger-webhook-signing-key",
+    "https://pipedream.com/docs/connect/api-reference/regenerate-webhook-signing-key",
+    "https://pipedream.com/docs/connect/api-reference/reload-action-props",
+    "https://pipedream.com/docs/connect/api-reference/reload-component-props",
+    "https://pipedream.com/docs/connect/api-reference/reload-trigger-props",
+    "https://pipedream.com/docs/connect/api-reference/retrieve-account",
+    "https://pipedream.com/docs/connect/api-reference/retrieve-action",
+    "https://pipedream.com/docs/connect/api-reference/retrieve-app",
+    "https://pipedream.com/docs/connect/api-reference/retrieve-component",
+    "https://pipedream.com/docs/connect/api-reference/retrieve-project",
+    "https://pipedream.com/docs/connect/api-reference/retrieve-trigger",
+    "https://pipedream.com/docs/connect/api-reference/run-action",
+    "https://pipedream.com/docs/connect/api-reference/sdk-migration",
+    "https://pipedream.com/docs/connect/api-reference/sdks",
+    "https://pipedream.com/docs/connect/api-reference/set-project-environment-webhook",
+    "https://pipedream.com/docs/connect/api-reference/update-deployed-trigger",
+    "https://pipedream.com/docs/connect/api-reference/update-project",
+    "https://pipedream.com/docs/connect/api-reference/update-project-logo",
+    "https://pipedream.com/docs/connect/api-reference/update-trigger-webhooks",
+    "https://pipedream.com/docs/connect/app-discovery",
+    "https://pipedream.com/docs/connect/components",
+    "https://pipedream.com/docs/connect/components/actions#error-responses",
+    "https://pipedream.com/docs/connect/components/custom-tools",
+    "https://pipedream.com/docs/connect/components/troubleshooting",
+    "https://pipedream.com/docs/connect/managed-auth/environments",
+    "https://pipedream.com/docs/connect/managed-auth/oauth-clients",
+    "https://pipedream.com/docs/connect/managed-auth/quickstart#or-use-connect-link",
+    "https://pipedream.com/docs/connect/managed-auth/quickstart#use-the-pipedream-sdk-in-your-frontend",
+    "https://pipedream.com/docs/connect/managed-auth/tokens",
+    "https://pipedream.com/docs/connect/managed-auth/users",
+    "https://pipedream.com/docs/connect/mcp",
+    "https://pipedream.com/docs/connect/mcp/ai-frameworks/anthropic",
+    "https://pipedream.com/docs/connect/mcp/ai-frameworks/gemini",
+    "https://pipedream.com/docs/connect/mcp/ai-frameworks/openai",
+    "https://pipedream.com/docs/connect/mcp/ai-frameworks/vercel-ai-sdk",
+    "https://pipedream.com/docs/connect/mcp/developers",
+    "https://pipedream.com/docs/connect/mcp/developers#api-authentication",
+    "https://pipedream.com/docs/connect/mcp/users",
+    "https://pipedream.com/docs/connect/quickstart",
+    "https://pipedream.com/docs/connect/use-cases",
+    "https://pipedream.com/docs/connect/webhooks",
+    "https://pipedream.com/docs/connect/workflows",
+    "https://pipedream.com/docs/glossary",
+    "https://pipedream.com/docs/llms.txt",
+    "https://pipedream.com/docs/privacy-and-security",
+    "https://pipedream.com/docs/privacy-and-security#data-storage-and-logging",
+    "https://pipedream.com/docs/privacy-and-security#hipaa",
+    "https://pipedream.com/docs/privacy-and-security#pipedream-connect",
+    "https://pipedream.com/docs/privacy-and-security#pipedream-rest-api-security-oauth-clients",
+    "https://pipedream.com/docs/privacy-and-security#reporting-a-vulnerability",
+    "https://pipedream.com/docs/privacy-and-security#soc-2",
+    "https://pipedream.com/docs/privacy-and-security#third-party-oauth-grants-api-keys-and-environment-variables",
+    "https://pipedream.com/docs/privacy-and-security/best-practices",
+    "https://pipedream.com/docs/projects",
+    "https://pipedream.com/docs/projects#creating-projects",
+    "https://pipedream.com/docs/rest-api/auth#oauth",
+    "https://pipedream.com/docs/troubleshooting",
+    "https://pipedream.com/docs/workflows",
+    "https://pipedream.com/docs/workflows/building-workflows",
+    "https://pipedream.com/docs/workflows/building-workflows/triggers",
+    "https://pipedream.com/docs/workflows/data-management/destinations/sse",
+    "https://pipedream.com/docs/workflows/domains",
+    "https://pipedream.com/docs/workflows/environment-variables",
+    "https://pipedream.com/docs/workflows/event-history",
+    "https://pipedream.com/docs/workflows/git",
+    "https://pipedream.com/docs/workflows/limits",
+    "https://pipedream.com/docs/workflows/quickstart",
+    "https://pipedream.com/docs/workflows/vpc",
+    "https://pipedream.com/explore#popular-actions",
+    "https://pipedream.com/join-slack",
+    "https://pipedream.com/pricing?plan=Connect",
+    "https://pipedream.com/privacy",
+    "https://pipedream.com/settings/api",
+    "https://pipedream.com/support",
+    "https://pipedream.com/terms",
+    "https://platform.openai.com/chat/edit",
+    "https://platform.openai.com/guides/tools-remote-mcp",
+    "https://pypi.org/project/pipedream",
+    "https://remote.mcp.pipedream.net/v3",
+    "https://remote.mcp.pipedream.net/v3?externalUserId={external_user_id}&app={app_slug}",
+    "https://status.pipedream.com",
+    "https://twitter.com/pipedream",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=pipedream",
+    "https://www.npmjs.com/package/@pipedream/sdk",
+    "https://www.oauth.com/oauth2-servers/access-tokens/client-credentials/",
+    "https://www.youtube.com/c/pipedreamhq",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://x.com/_philschmid/status/1948025573403492621"
+  ]
+}

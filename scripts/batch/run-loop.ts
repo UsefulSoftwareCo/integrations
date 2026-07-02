@@ -198,6 +198,13 @@ async function runDomain(domain: string, opts: { apiKey: string; contextKey: str
         return urls;
       },
     };
+    // detect() reads llms.txt/manifests itself — their contents ground URLs
+    // the model cites without a separate scrape (craime.se → api.lagenta.ai).
+    if (d.llmsTxt) {
+      try {
+        noteUrls(await (await fetch(`https://${d.domain}/llms.txt`, { signal: AbortSignal.timeout(10_000) })).text());
+      } catch { /* grounding enrichment only */ }
+    }
     const disc = await discover(d.domain, d, createChat(opts.apiKey, opts.model, stats), web, (event) => events.push(event));
     if (!disc) throw new Error("discovery loop returned null");
 

@@ -22,7 +22,7 @@ import { McpDurableObject } from "./mcp-do.ts";
 
 // Bump when detect/discover output shape or logic changes, so the edge Cache API
 // (which survives deploys) stops serving results produced by the old code.
-const CACHE_VERSION = "14"; // 14: v3 payload (slugs, http surface type, split mechanics)
+const CACHE_VERSION = "15"; // 15: discovery prompt bans default/shared logins as credentials
 
 // The discovery-loop model. gpt-5.4-mini drives the agentic tool-calling loop
 // (search/sitemap/scrape/report) — ~1s per tool-decision turn on chat/completions.

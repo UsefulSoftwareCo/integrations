@@ -230,6 +230,7 @@ const SYSTEM =
   "- After a batch of reads, record_credential / record_surface for what those pages revealed before reading more. Pass `evidence` (the doc URLs you read) on each surface and auth entry.\n" +
   "- Capture spec/schema URLs as POINTERS; never inline a spec. Only state URLs/endpoints you actually saw. Never invent them.\n" +
   "- Exotic auth (AWS SigV4, GitHub-App JWT exchange) — name the credential `type` (signature/aws_sigv4/app/two_step) and write the flow in `setup`; you don't need to model its execution. Use mechanics.source 'http', 'cli', or 'unknown'.\n" +
+  "- A credential is something the user MINTS FOR THEMSELVES (their API key, their OAuth app). NEVER record shared, default, or example logins — a self-hosted product's factory password (admin/admin) is a security footgun, not a credential; use authStatus 'unknown' instead. Admin consoles of self-hosted installs are not public integration surfaces; omit them.\n" +
   "- When done, call finish with a one-line summary. Omit surface types that don't exist.";
 
 const MAX_STEPS = 16;

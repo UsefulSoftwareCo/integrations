@@ -182,7 +182,10 @@ export function checklist(
       // cli mechanics may legitimately document the service's OAuth endpoints.
       const mech = use.mechanics as { source?: string; command?: string; env?: string[] } | undefined;
       const acquiredByCli = mech?.source === "cli" && !!mech.command && !/[<{$]/.test(mech.command) && !mech.env?.length;
-      return acquiredByCli && typeof use.id === "string" && typeof setup === "string" && /\/oauth\//i.test(setup);
+      // Only when the CLI is the WHOLE acquisition story: setup that walks a
+      // dashboard/app-creation path legitimately cites OAuth endpoints.
+      const cliIsWholeStory = typeof setup === "string" && /\brun\b[^.]*`[^`]*login/i.test(setup) && !/dashboard|console|applications tab|create an? (oauth )?(app|application|client)/i.test(setup);
+      return acquiredByCli && cliIsWholeStory && typeof use.id === "string" && typeof setup === "string" && /\/oauth\//i.test(setup);
     })
     .map((use) => use.id!)
     .filter((id, index, ids) => ids.indexOf(id) === index);

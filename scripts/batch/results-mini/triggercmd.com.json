@@ -1,0 +1,279 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "triggercmd.com",
+    "detect": {
+      "domain": "triggercmd.com",
+      "found": [
+        "mcp",
+        "mcp-self-onboard",
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://triggercmd.com"
+          ],
+          "authorizationEndpoint": "https://triggercmd.com/oauth/authorize",
+          "tokenEndpoint": "https://triggercmd.com/oauth/token",
+          "registrationEndpoint": "https://triggercmd.com/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        },
+        "mcp": [
+          {
+            "url": "https://triggercmd.com/mcp",
+            "type": "oauth2",
+            "authorizationServer": "https://triggercmd.com",
+            "dcr": true,
+            "cimd": false
+          }
+        ]
+      },
+      "mcp": [
+        {
+          "url": "https://triggercmd.com/mcp",
+          "source": "probe",
+          "auth": "oauth2",
+          "authorizationServer": "https://triggercmd.com",
+          "dcr": true,
+          "cimd": false
+        }
+      ],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T09:30:25.234Z",
+    "summary": "TRIGGERcmd exposes an OAuth2-protected MCP server, a Bearer-token REST API, and the `tcmd` CLI with pair-code or token auth.",
+    "credentials": {
+      "triggercmd_oauth_client": {
+        "type": "oauth2",
+        "label": "TRIGGERcmd OAuth client",
+        "generateUrl": "https://triggercmd.com/register",
+        "setup": "Register an OAuth client at [TRIGGERcmd OAuth registration](https://triggercmd.com/register) if you are building your own app/connector. The docs confirm the MCP server uses standard OAuth2 and redirect users to a TRIGGERcmd sign-in/authorize page. Keep the client credentials from your app registration; you will use them with the OAuth authorize/token endpoints.",
+        "acquisition": "manual"
+      },
+      "triggercmd_user_token": {
+        "type": "bearer",
+        "label": "TRIGGERcmd user access token",
+        "generateUrl": "https://www.triggercmd.com/user/computer/create",
+        "setup": "Go to [Instructions](https://www.triggercmd.com/user/computer/create) and create or view your TRIGGERcmd token for API/CLI access. The API docs show using `Authorization: Bearer <your token>` against the REST endpoints, and the `tcmd` CLI can also read the token from `TRIGGERCMD_TOKEN` or `~/.TRIGGERcmdData/token.tkn`.",
+        "acquisition": "manual"
+      },
+      "triggercmd_pair_code": {
+        "type": "oauth2",
+        "label": "TRIGGERcmd pair code",
+        "generateUrl": "https://docs.triggercmd.com/#/./tcmdCLI",
+        "setup": "For the `tcmd` CLI, run `tcmd --pair` and follow the prompts to obtain a pair-code-based login. This is the easiest CLI login path documented for `tcmd`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "mcp-server",
+        "name": "MCP server",
+        "type": "mcp",
+        "url": "https://triggercmd.com/mcp",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T09:30:25.234Z"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "triggercmd_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "detected",
+                "signal": "oauth-protected-resource",
+                "verifiedAt": "2026-07-02T09:30:25.234Z"
+              }
+            }
+          ]
+        },
+        "notes": "Self-onboarding (DCR/CIMD)"
+      },
+      {
+        "slug": "triggercmd-mcp-server",
+        "name": "TRIGGERcmd MCP server",
+        "type": "mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.triggercmd.com/#/./MCPServer"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "triggercmd_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.triggercmd.com/#/./MCPServer"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.triggercmd.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "triggercmd-rest-api",
+        "name": "TRIGGERcmd REST API",
+        "type": "http",
+        "docs": "https://docs.triggercmd.com/#/./API/TriggerCommand",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.triggercmd.com/#/./API/TriggerCommand",
+            "https://docs.triggercmd.com/#/./API/ListCommands"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "triggercmd_user_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.triggercmd.com/#/./API/TriggerCommand",
+                  "https://docs.triggercmd.com/#/./API/ListCommands"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "tcmd-cli",
+        "name": "tcmd CLI",
+        "type": "cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.triggercmd.com/#/./tcmdCLI"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "triggercmd_pair_code",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "tcmd --pair"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.triggercmd.com/#/./tcmdCLI"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "triggercmd_user_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "TRIGGERCMD_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.triggercmd.com/#/./tcmdCLI"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "tcmd"
+      },
+      {
+        "slug": "triggercmd-web-dashboard",
+        "name": "TRIGGERcmd web dashboard",
+        "type": "http",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://triggercmd.com/"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://www.triggercmd.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T09:30:25.235Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 45521,
+    "completion_tokens": 1217,
+    "total_tokens": 46738
+  },
+  "visited": [
+    "https://composio.dev/toolkits/triggercmd/framework/hermes-agent",
+    "https://curity.io/resources/learn/implementing-mcp-authorization-apis/",
+    "https://docs.domaintools.com/mcp/oauth/",
+    "https://docs.tiro.ooo/en/guide/notes/api-mcp-cli",
+    "https://docs.triggercmd.com",
+    "https://docs.triggercmd.com/#/./API/ListCommands",
+    "https://docs.triggercmd.com/#/./API/TriggerCommand",
+    "https://docs.triggercmd.com/#/./MCPServer",
+    "https://docs.triggercmd.com/#/./tcmdCLI",
+    "https://docs.triggercmd.com/search?q=api",
+    "https://docs.triggercmd.com/search?q=mcp",
+    "https://github.com/chrishayuk/mcp-cli/blob/main/docs/OAUTH.md",
+    "https://trigger.dev/docs/mcp-introduction",
+    "https://triggercmd.com/",
+    "https://triggercmd.com/mcp",
+    "https://triggercmd.com/oauth/authorize",
+    "https://triggercmd.com/register"
+  ]
+}

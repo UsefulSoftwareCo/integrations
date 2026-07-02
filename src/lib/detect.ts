@@ -12,6 +12,8 @@
  * endpoint), Bun (normalize batch ingestion), and tests.
  */
 
+import { sniffOpenApiHead } from "./spec-validate.ts";
+
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
 export interface McpDetection {
@@ -185,9 +187,7 @@ async function checkApiSchema(fetchImpl: FetchLike, domain: string) {
     const hit = await peek(fetchImpl, url);
     if (!hit || !hit.res.ok) return undefined;
     const ct = hit.res.headers.get("content-type") ?? "";
-    if (/text\/html/i.test(ct)) return undefined; // SPA fallback
-    const isOpenapi = /openapi|swagger/i.test(ct) || /["']?(?:openapi|swagger)["']?\s*:/.test(hit.head);
-    if (!isOpenapi) return undefined;
+    if (!sniffOpenApiHead(ct, hit.head)) return undefined;
     const version = /["']?(?:openapi|swagger)["']?\s*:\s*["']([^"']+)["']/.exec(hit.head)?.[1];
     return { url, format: "openapi" as const, version };
   }));

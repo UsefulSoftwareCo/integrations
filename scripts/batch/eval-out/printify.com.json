@@ -1,0 +1,162 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "printify.com",
+    "summary": "Printify exposes a REST API for merchants and platforms, authenticated either with a personal access token or OAuth 2.0 bearer tokens.",
+    "credentials": {
+      "printify_personal_access_token": {
+        "type": "api_key",
+        "label": "Printify personal access token",
+        "generateUrl": "https://developers.printify.com/",
+        "setup": "Create a Printify account, then in the Printify app go to Connections from the flow described in the [Printify API docs](https://developers.printify.com/). Generate a Personal Access Token, choose its access scopes, and copy it immediately because it is shown only once. Send it as `Authorization: Bearer {token}`.",
+        "acquisition": "manual"
+      },
+      "printify_oauth_app": {
+        "type": "compound",
+        "label": "Printify OAuth app credentials",
+        "generateUrl": "https://developers.printify.com/",
+        "setup": "Register your integration using the application form linked from the [Printify API docs](https://developers.printify.com/). If approved, Printify emails you instructions for receiving your app ID and setting required access scopes. You then use that `app_id` in the OAuth flow at [https://printify.com/](https://printify.com/) to obtain merchant tokens.",
+        "acquisition": "manual",
+        "fields": {
+          "app_id": {
+            "secret": false,
+            "description": "Application ID provided by Printify after app approval."
+          }
+        }
+      },
+      "printify_oauth_access_token": {
+        "type": "oauth2",
+        "label": "Printify OAuth 2.0 access token",
+        "generateUrl": "https://developers.printify.com/",
+        "setup": "First register your app as described in the [Printify API docs](https://developers.printify.com/). Then send the merchant through the OAuth flow described there to obtain an access token and refresh token from the Printify OAuth endpoints. Use the access token as `Authorization: Bearer {token}`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "type": "http",
+        "url": "https://api.printify.com/v1/",
+        "slug": "printify-rest-api",
+        "name": "Printify REST API",
+        "docs": "https://developers.printify.com/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.printify.com/",
+            "https://printify.com/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "printify_personal_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.printify.com/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "printify_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.printify.com/"
+                ]
+              }
+            }
+          ]
+        },
+        "requiredHeaders": [
+          {
+            "name": "User-Agent",
+            "source": {
+              "kind": "static",
+              "value": "your-app-name"
+            },
+            "description": "Required on all requests; docs say every request must specify a `User-Agent` header with the client type or application name."
+          }
+        ],
+        "variables": [
+          {
+            "name": "shop_id",
+            "in": "url",
+            "description": "Shop identifier used in paths like `/v1/shops/{shop_id}/...`; retrieve it by listing shops first, as described in the docs."
+          }
+        ],
+        "notes": "The docs state that unless otherwise mentioned, all endpoints support both Personal Access Token and OAuth 2.0 authentication. Requests are JSON responses over HTTPS, with form-encoded request bodies in V1."
+      }
+    ]
+  },
+  "checklist": {
+    "passed": true,
+    "checks": {
+      "noDefaultCredentialSetup": {
+        "passed": true,
+        "offenders": []
+      },
+      "outputUrlsInCorpus": {
+        "passed": true,
+        "offenders": []
+      },
+      "authUseIdsResolve": {
+        "passed": true,
+        "offenders": []
+      },
+      "cliMechanicsSetupHasNoOauthPath": {
+        "passed": true,
+        "offenders": []
+      },
+      "specUrlsLookMachineReadable": {
+        "passed": true,
+        "offenders": []
+      },
+      "noDuplicateSurfaceKeys": {
+        "passed": true,
+        "offenders": []
+      },
+      "noRequiredAuthWithEmptyEntries": {
+        "passed": true,
+        "offenders": []
+      }
+    }
+  },
+  "usage": {
+    "prompt_tokens": 16342,
+    "completion_tokens": 748,
+    "total_tokens": 17090,
+    "prompt_tokens_details": {
+      "cached_tokens": 8448,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "model": "gpt-5.4"
+}

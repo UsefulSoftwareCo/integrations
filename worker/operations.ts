@@ -97,9 +97,46 @@ const coerceCredentials = (creds: Record<string, { type: string }> | undefined) 
   );
 };
 
+/** A surface's locator — the stable thing it points at, independent of its
+ * display name. Used to carry slugs across re-discovery. */
+type SlugSurface = {
+  slug: string;
+  type: string;
+  url?: string;
+  spec?: string;
+  command?: string;
+  packages?: readonly { identifier?: string }[];
+};
+
+export const locatorOf = (s: SlugSurface): string | undefined => {
+  const loc = s.type === "cli" ? (s.command ?? s.packages?.[0]?.identifier) : (s.url ?? s.spec);
+  return loc ? `${s.type}|${loc.toLowerCase()}` : undefined;
+};
+
+/** Slug continuity: a fresh result's surface that matches a PRIOR surface by
+ * locator keeps the prior slug, even if the model renamed it — /{domain}/{slug}/
+ * links never break across re-runs. Collisions re-suffix deterministically. */
+export function preserveSlugs<T extends SlugSurface>(surfaces: T[], prior: readonly SlugSurface[]): void {
+  const bySlugLoc = new Map<string, string>();
+  for (const p of prior) {
+    const loc = locatorOf(p);
+    if (loc && p.slug) bySlugLoc.set(loc, p.slug);
+  }
+  const taken = new Set<string>();
+  for (const s of surfaces) {
+    const loc = locatorOf(s);
+    const inherited = loc ? bySlugLoc.get(loc) : undefined;
+    let slug = inherited ?? s.slug;
+    const base = slug || "surface";
+    for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+    s.slug = slug;
+    taken.add(slug);
+  }
+}
+
 /** Flatten the engine's DiscoveryResult into the JSON-clean wire shape (v3:
  * versioned; a global credentials registry + a typed, slugged surfaces list). */
-const pack = (domain: string, detect: unknown, disc: Awaited<ReturnType<typeof discover>>, usedLlm: boolean) =>
+export const packDiscovery = (domain: string, detect: unknown, disc: Awaited<ReturnType<typeof discover>>, usedLlm: boolean) =>
   JSON.parse(
     JSON.stringify({
       version: DISCOVERY_VERSION,
@@ -118,9 +155,9 @@ const pack = (domain: string, detect: unknown, disc: Awaited<ReturnType<typeof d
 export const runDiscover = (domain: string): Effect.Effect<typeof DiscoverResult.Type> =>
   Effect.promise(async () => {
     const d = await detect(domain.trim().toLowerCase());
-    if (!chatFn) return pack(d.domain, d, null, false);
+    if (!chatFn) return packDiscovery(d.domain, d, null, false);
     const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb()).catch(() => null);
-    return pack(d.domain, d, disc, true);
+    return packDiscovery(d.domain, d, disc, true);
   });
 
 /** Same pipeline as runDiscover, but emits events as it goes — status `progress`
@@ -134,7 +171,7 @@ export const discoverWithProgress = async (
   emit({ kind: "progress", message: "Checking well-known endpoints…" });
   const d = await detect(domain.trim().toLowerCase());
   emit({ kind: "progress", message: d.found.length ? `Detected: ${d.found.join(", ")}` : "No standard signals — searching" });
-  if (!chatFn) return pack(d.domain, d, null, false);
+  if (!chatFn) return packDiscovery(d.domain, d, null, false);
   const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb(), emit).catch(() => null);
-  return pack(d.domain, d, disc, true);
+  return packDiscovery(d.domain, d, disc, true);
 };

@@ -1,0 +1,152 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "sentry.dev",
+    "summary": "Sentry exposes a REST API at `https://sentry.io/api/0/` and an MCP server at `https://mcp.sentry.dev/mcp`; both are authenticated with OAuth 2.0 per published metadata, while the docs also advertise a `sentry-cli` CLI but its auth flow is not documented in this corpus.",
+    "credentials": {
+      "sentry_oauth_app": {
+        "type": "oauth2",
+        "label": "Sentry OAuth 2.0 app/session",
+        "setup": "Use Sentry's OAuth 2.0 flow against [`https://sentry.io`](https://sentry.io): authorize at [`https://sentry.io/oauth/authorize/`](https://sentry.io/oauth/authorize/) and exchange the code at [`https://sentry.io/oauth/token/`](https://sentry.io/oauth/token/). Request only the scopes you need, such as `org:read`, `project:read`, or `event:read`. Send the resulting access token as `Authorization: Bearer …`.",
+        "acquisition": "manual"
+      },
+      "sentry_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Sentry MCP OAuth 2.0 session",
+        "setup": "Connect an MCP client to [`https://mcp.sentry.dev/mcp`](https://mcp.sentry.dev/mcp). The server advertises OAuth 2.0 with authorization server [`https://mcp.sentry.dev`](https://mcp.sentry.dev) and supports dynamic client registration, so the MCP client can onboard and complete login with that server automatically.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "type": "http",
+        "url": "https://sentry.io/api/0/",
+        "slug": "sentry-rest-api",
+        "name": "Sentry REST API",
+        "docs": "https://docs.sentry.io/api/",
+        "basis": {
+          "via": "detected",
+          "signal": "api-catalog"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sentry_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "detected",
+                "signal": "oauth-protected-resource"
+              }
+            }
+          ]
+        },
+        "notes": "The protected resource metadata at `https://sentry.dev/.well-known/oauth-protected-resource` identifies `https://sentry.io` as the resource, `https://sentry.io` as the authorization server, and bearer tokens in the header as the supported method."
+      },
+      {
+        "type": "mcp",
+        "url": "https://mcp.sentry.dev/mcp",
+        "slug": "sentry-mcp-server",
+        "name": "Sentry MCP server",
+        "docs": "https://docs.sentry.dev/",
+        "basis": {
+          "via": "detected",
+          "signal": "server-card"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sentry_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "detected",
+                "signal": "mcp oauth2 server-card"
+              }
+            }
+          ]
+        },
+        "notes": "Detected as an MCP endpoint with OAuth 2.0 authentication and dynamic client registration support. The server card at `https://sentry.dev/.well-known/mcp/server-card.json` also points to this endpoint."
+      },
+      {
+        "type": "cli",
+        "command": "sentry-cli",
+        "slug": "sentry-cli",
+        "name": "Sentry CLI",
+        "docs": "https://docs.sentry.dev/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.sentry.dev/",
+            "https://sentry.dev/docs"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "notes": "The docs homepage advertises a `sentry-cli` command-line interface, but this corpus does not include installation or login/authentication details."
+      }
+    ]
+  },
+  "checklist": {
+    "passed": true,
+    "checks": {
+      "noDefaultCredentialSetup": {
+        "passed": true,
+        "offenders": []
+      },
+      "outputUrlsInCorpus": {
+        "passed": true,
+        "offenders": []
+      },
+      "authUseIdsResolve": {
+        "passed": true,
+        "offenders": []
+      },
+      "cliMechanicsSetupHasNoOauthPath": {
+        "passed": true,
+        "offenders": []
+      },
+      "specUrlsLookMachineReadable": {
+        "passed": true,
+        "offenders": []
+      },
+      "noDuplicateSurfaceKeys": {
+        "passed": true,
+        "offenders": []
+      },
+      "noRequiredAuthWithEmptyEntries": {
+        "passed": true,
+        "offenders": []
+      }
+    }
+  },
+  "usage": {
+    "prompt_tokens": 11970,
+    "completion_tokens": 802,
+    "total_tokens": 12772,
+    "prompt_tokens_details": {
+      "cached_tokens": 8448,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "model": "gpt-5.4"
+}

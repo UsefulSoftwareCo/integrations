@@ -13,7 +13,7 @@ import type { SSRManifest } from "astro";
 import { App } from "astro/app";
 import { handle } from "@astrojs/cloudflare/handler";
 import { apiHandler } from "./api.ts";
-import { setChat, setWebBackend, discoverWithProgress } from "./operations.ts";
+import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
 import { registrableDomain } from "../src/lib/favicon.ts";
 import type { Surface } from "../src/lib/surface-view.ts";
@@ -22,7 +22,7 @@ import { McpDurableObject } from "./mcp-do.ts";
 
 // Bump when detect/discover output shape or logic changes, so the edge Cache API
 // (which survives deploys) stops serving results produced by the old code.
-const CACHE_VERSION = "15"; // 15: discovery prompt bans default/shared logins as credentials
+const CACHE_VERSION = "16"; // 16: live spec validation changes discover output
 
 // The discovery-loop model. gpt-5.4-mini drives the agentic tool-calling loop
 // (search/sitemap/scrape/report) — ~1s per tool-decision turn on chat/completions.
@@ -75,34 +75,6 @@ function wireAi(env: Env): void {
     const toolCalls = (message.tool_calls ?? []).map((tc) => ({ id: tc.id, name: tc.function.name, arguments: parseArgs(tc.function.arguments) }));
     return { message, toolCalls };
   });
-}
-
-/** A surface's locator — the stable thing it points at, independent of its
- * display name. Used to carry slugs across re-discovery. */
-const locatorOf = (s: Surface): string | undefined => {
-  const loc = s.type === "cli" ? (s.command ?? s.packages?.[0]?.identifier) : (s.url ?? s.spec);
-  return loc ? `${s.type}|${loc.toLowerCase()}` : undefined;
-};
-
-/** Slug continuity: a fresh result's surface that matches a PRIOR surface by
- * locator keeps the prior slug, even if the model renamed it — /{domain}/{slug}/
- * links never break across re-runs. Collisions re-suffix deterministically. */
-function preserveSlugs(surfaces: Surface[], prior: Surface[]): void {
-  const bySlugLoc = new Map<string, string>();
-  for (const p of prior) {
-    const loc = locatorOf(p);
-    if (loc && p.slug) bySlugLoc.set(loc, p.slug);
-  }
-  const taken = new Set<string>();
-  for (const s of surfaces) {
-    const loc = locatorOf(s);
-    const inherited = loc ? bySlugLoc.get(loc) : undefined;
-    let slug = inherited ?? s.slug;
-    const base = slug;
-    for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
-    s.slug = slug;
-    taken.add(slug);
-  }
 }
 
 /** Prior surfaces for a domain: the stored KV result, else the static-catalog

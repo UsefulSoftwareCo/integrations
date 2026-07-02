@@ -28,6 +28,7 @@
  * are injected, so it runs identically in the Worker, Bun, and tests.
  */
 import type { DetectionResult } from "./detect.ts";
+import { validateSpecUrl, type SpecValidationResult } from "./spec-validate.ts";
 
 // ── injected model (OpenAI-style tool-calling) ────────────────────────────────
 
@@ -112,6 +113,7 @@ export interface Surface {
   auth: AuthStatus;
   // http / graphql:
   spec?: string; // OpenAPI URL, or "introspection" / SDL URL for graphql
+  specAlternates?: string[]; // same API, alternate machine-readable spec formats
   url?: string; // endpoint (required for graphql/mcp; http without spec)
   patch?: unknown; // securityScheme overrides
   // mcp:
@@ -176,6 +178,7 @@ const SURFACE_PROPS = {
   type: { type: "string", description: "http (REST/OpenAPI) | graphql | mcp | cli" },
   docs: { type: "string" },
   spec: { type: "string", description: "OpenAPI URL, or 'introspection'/SDL URL for graphql — a POINTER, never inline a spec" },
+  specAlternates: { type: "array", items: { type: "string" }, description: "Additional machine-readable spec documents for the SAME API in other formats (e.g. the YAML twin of a JSON OpenAPI doc)." },
   url: { type: "string", description: "endpoint/home URL — required for graphql & mcp" },
   transports: { type: "array", items: { type: "string" }, description: "mcp: streamable-http | sse" },
   packages: { type: "array", items: { type: "object", properties: { registryType: { type: "string" }, identifier: { type: "string" }, runtimeHint: { type: "string" } }, required: ["registryType", "identifier"], additionalProperties: false }, description: "cli: install packages" },
@@ -229,6 +232,9 @@ const SYSTEM =
   "- Start with web_search to find the key developer pages. Then read the most relevant with scrape_page — issue SEVERAL scrape_page calls in the SAME turn so they run in parallel; don't read one, wait, read the next.\n" +
   "- After a batch of reads, record_credential / record_surface for what those pages revealed before reading more. Pass `evidence` (the doc URLs you read) on each surface and auth entry.\n" +
   "- Capture spec/schema URLs as POINTERS; never inline a spec. Only state URLs/endpoints you actually saw. Never invent them.\n" +
+  "- `spec` must be a MACHINE-READABLE document URL (ends .json/.yaml/.yml, or contains openapi/swagger; graphql: SDL URL or 'introspection'). A docs portal or API-reference page is NOT a spec — leave spec unset and put the page in `docs`.\n" +
+  "- A surface is something a developer INTEGRATES WITH. OAuth authorize/token/device endpoints, webhook delivery URLs, and status pages are NOT surfaces — OAuth mechanics belong in the credential's setup, webhooks in the API surface's notes. One API = one http surface, not one per endpoint.\n" +
+  "- Write each credential's `setup` around the EASIEST acquisition path. When a CLI login acquires it (`mint login`, `wrangler login`), setup says 'run `x login`' and the binding is mechanics 'cli' with that command — do NOT walk through raw OAuth authorize/token/register endpoints anywhere in setup.\n" +
   "- Exotic auth (AWS SigV4, GitHub-App JWT exchange) — name the credential `type` (signature/aws_sigv4/app/two_step) and write the flow in `setup`; you don't need to model its execution. Use mechanics.source 'http', 'cli', or 'unknown'.\n" +
   "- A credential is something the user MINTS FOR THEMSELVES (their API key, their OAuth app). NEVER record shared, default, or example logins — a self-hosted product's factory password (admin/admin) is a security footgun, not a credential; use authStatus 'unknown' instead. Admin consoles of self-hosted installs are not public integration surfaces; omit them.\n" +
   "- When done, call finish with a one-line summary. Omit surface types that don't exist.";
@@ -262,6 +268,7 @@ export async function discover(
   const credentials: Record<string, Credential> = {};
   const surfaces: Surface[] = [];
   const surfaceKeys = new Set<string>();
+  const specValidations = new Map<string, SpecValidationResult>();
   const visited: string[] = [];
   let scrapes = 0;
   const progress = (m: string) => emit?.({ kind: "progress", message: m });
@@ -300,6 +307,15 @@ export async function discover(
       case "record_surface": {
         const s = normalizeSurface(call.arguments);
         if (!s) return "Ignored: a surface needs at least type and name.";
+        if ((s.type === "http" || s.type === "graphql") && s.spec && isSpecUrl(s.spec)) {
+          const cached = specValidations.get(s.spec);
+          const result = cached ?? await validateSpecUrl(s.spec, s.type);
+          if (!cached) specValidations.set(s.spec, result);
+          if (result.ok === false) {
+            return `spec rejected: ${result.reason}. Either find the real machine-readable spec URL (look for a link to openapi.json/swagger.json/.yaml on the docs page), or re-record this surface WITHOUT spec and put that page URL in docs instead.`;
+          }
+          progress(`Validated spec ${hostPath(s.spec)} (${result.kind})`);
+        }
         const key = `${s.type}|${(s.spec || s.url || s.name).toLowerCase()}`;
         if (surfaceKeys.has(key)) return `Already recorded ${s.name}.`;
         surfaceKeys.add(key);
@@ -389,6 +405,10 @@ export function slugifyName(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function isSpecUrl(spec: string): boolean {
+  return /^https?:\/\//i.test(spec);
 }
 
 /** Server-assigned surface slug: slugified name, deduped within the result
@@ -506,6 +526,7 @@ function normalizeSurface(o: Record<string, unknown>): Surface | null {
     basis: normalizeBasis(o.evidence),
     auth: normalizeAuthStatus(o),
     spec: str(o.spec),
+    specAlternates: strArr(o.specAlternates).length ? strArr(o.specAlternates) : undefined,
     url: str(o.url),
     transports: strArr(o.transports).length ? strArr(o.transports) : undefined,
     packages: packages.length ? packages : undefined,

@@ -188,6 +188,7 @@ export const Surface = Schema.Union([
   Schema.Struct({
     type: Schema.Literal("http"),
     spec: Schema.optional(Schema.String.annotate({ description: "OpenAPI doc URL — a POINTER, never inlined. Absent = specless REST; auth mechanics are then http/unknown, not spec." })),
+    specAlternates: Schema.optional(Schema.Array(Schema.String).annotate({ description: "Additional machine-readable spec documents for the SAME API in other formats (e.g. the YAML twin of a JSON OpenAPI doc)." })),
     url: Schema.optional(Schema.String.annotate({ description: "Base URL — when there's no spec, or not derivable from the spec's `servers`." })),
     patch: Schema.optional(Schema.Unknown.annotate({ description: "securityScheme overrides for when the spec is wrong or missing a scheme." })),
     ...surfaceBase,
@@ -196,6 +197,7 @@ export const Surface = Schema.Union([
     type: Schema.Literal("graphql"),
     url: Schema.optional(Schema.String.annotate({ description: "Expected — a GraphQL schema has no endpoint, so this is how you reach it." })),
     spec: Schema.optional(Schema.String.annotate({ description: "'introspection' or an SDL URL." })),
+    specAlternates: Schema.optional(Schema.Array(Schema.String).annotate({ description: "Additional machine-readable spec documents for the SAME API in other formats (e.g. the YAML twin of a JSON OpenAPI doc)." })),
     ...surfaceBase,
   }),
   Schema.Struct({

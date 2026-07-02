@@ -1,0 +1,240 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "vercel.com",
+    "summary": "Vercel exposes a REST API authenticated with Bearer access tokens, an AI Gateway HTTP API authenticated with a Bearer API key, a CLI for deploying and managing projects, and Sign in with Vercel OAuth endpoints for apps.",
+    "credentials": {
+      "vercel_access_token": {
+        "type": "bearer",
+        "label": "Vercel Access Token",
+        "generateUrl": "https://vercel.com/docs",
+        "setup": "Create an access token from the page linked as [Get an API key](https://vercel.com/docs). The REST API docs state that Vercel Access Tokens are required and must be sent as `Authorization: Bearer <token>`.",
+        "acquisition": "manual"
+      },
+      "vercel_ai_gateway_api_key": {
+        "type": "api_key",
+        "label": "Vercel AI Gateway API key",
+        "generateUrl": "https://vercel.com/docs",
+        "setup": "Create an AI Gateway key from the page linked as [Get an API key](https://vercel.com/docs). The docs examples send it as `Authorization: Bearer $AI_GATEWAY_API_KEY` to `https://ai-gateway.vercel.sh/v1`.",
+        "acquisition": "manual"
+      },
+      "vercel_cli_session": {
+        "type": "oauth2",
+        "label": "Vercel CLI session",
+        "setup": "Install the Vercel CLI from [Vercel Documentation](https://vercel.com/docs) and sign in with the CLI using `vercel login`. The docs describe deploying in three steps starting with installing the CLI.",
+        "acquisition": "manual"
+      },
+      "vercel_oauth_client": {
+        "type": "oauth2",
+        "label": "Sign in with Vercel OAuth client",
+        "generateUrl": "https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard",
+        "setup": "Create and manage your OAuth app from the [Manage from Dashboard](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard) section of Sign in with Vercel. Vercel publishes OAuth endpoints for authorization, token exchange, and dynamic client registration.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "type": "http",
+        "url": "https://api.vercel.com",
+        "slug": "vercel-rest-api",
+        "name": "Vercel REST API",
+        "docs": "https://api.vercel.com/docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.vercel.com/docs",
+            "https://vercel.com/api",
+            "https://vercel.com/docs/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "vercel_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.vercel.com/docs",
+                  "https://vercel.com/api",
+                  "https://vercel.com/docs/api"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "Team-scoped access can require adding `teamId` as a query parameter when accessing team-owned resources."
+      },
+      {
+        "type": "http",
+        "url": "https://ai-gateway.vercel.sh/v1",
+        "slug": "vercel-ai-gateway-api",
+        "name": "Vercel AI Gateway API",
+        "docs": "https://vercel.com/docs/ai-gateway/sdks-and-apis",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.vercel.com/",
+            "https://vercel.com/docs",
+            "https://vercel.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "vercel_ai_gateway_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.vercel.com/",
+                  "https://vercel.com/docs"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "Docs examples show OpenAI-compatible requests such as `POST /chat/completions` under this base URL."
+      },
+      {
+        "type": "cli",
+        "command": "vercel",
+        "slug": "vercel-cli",
+        "name": "Vercel CLI",
+        "docs": "https://vercel.com/docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://vercel.com/docs",
+            "https://docs.vercel.com/",
+            "https://vercel.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "vercel_cli_session",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "vercel login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://vercel.com/docs",
+                  "https://docs.vercel.com/"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The docs position the CLI as the primary way to install and deploy to Vercel."
+      },
+      {
+        "type": "http",
+        "url": "https://vercel.com/oauth/authorize",
+        "slug": "sign-in-with-vercel-oauth-authorization-server",
+        "name": "Sign in with Vercel OAuth authorization server",
+        "docs": "https://vercel.com/docs/sign-in-with-vercel/authorization-server-api",
+        "basis": {
+          "via": "detected",
+          "signal": "auth"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "vercel_oauth_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "detected",
+                "signal": "auth"
+              }
+            }
+          ]
+        },
+        "notes": "Detected OAuth endpoints include authorization at `https://vercel.com/oauth/authorize`, token exchange at `https://api.vercel.com/login/oauth/token`, and dynamic client registration at `https://api.vercel.com/login/oauth/register`. Published scopes: `openid`, `email`, `profile`. Grant types: `authorization_code`, `client_credentials`, `refresh_token`, `urn:ietf:params:oauth:grant-type:device_code`."
+      }
+    ]
+  },
+  "checklist": {
+    "passed": true,
+    "checks": {
+      "noDefaultCredentialSetup": {
+        "passed": true,
+        "offenders": []
+      },
+      "outputUrlsInCorpus": {
+        "passed": true,
+        "offenders": []
+      },
+      "authUseIdsResolve": {
+        "passed": true,
+        "offenders": []
+      },
+      "cliMechanicsSetupHasNoOauthPath": {
+        "passed": true,
+        "offenders": []
+      },
+      "specUrlsLookMachineReadable": {
+        "passed": true,
+        "offenders": []
+      },
+      "noDuplicateSurfaceKeys": {
+        "passed": true,
+        "offenders": []
+      },
+      "noRequiredAuthWithEmptyEntries": {
+        "passed": true,
+        "offenders": []
+      }
+    }
+  },
+  "usage": {
+    "prompt_tokens": 19420,
+    "completion_tokens": 1200,
+    "total_tokens": 20620,
+    "prompt_tokens_details": {
+      "cached_tokens": 8448,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "model": "gpt-5.4"
+}

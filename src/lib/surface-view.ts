@@ -26,6 +26,7 @@ export interface Surface {
   basis: Basis;
   auth: AuthStatus;
   spec?: string;
+  specAlternates?: readonly string[];
   url?: string;
   transports?: readonly string[];
   packages?: readonly { registryType: string; identifier: string; runtimeHint?: string }[];

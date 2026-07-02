@@ -1,0 +1,181 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "resend.com",
+    "summary": "Resend exposes a REST email API with an OpenAPI spec, plus a CLI and an MCP server; the documented user-minted credential is a Bearer API key, and OAuth endpoints are detected for the API but not documented enough here to define a user-minted OAuth app credential.",
+    "credentials": {
+      "resend_api_key": {
+        "type": "api_key",
+        "label": "Resend API key",
+        "generateUrl": "https://resend.com/docs/create-an-api-key",
+        "setup": "Create a key using the [Create an API key](https://resend.com/docs/create-an-api-key) flow in Resend docs. The CLI docs also show that you can store it locally or set `RESEND_API_KEY` in CI/CD, and the MCP example shows the value format `re_xxxxxxxxx`. Send it as `Authorization: Bearer re_…`, or provide it as `RESEND_API_KEY` for CLI/MCP tooling.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "type": "http",
+        "spec": "https://resend.com/openapi.json",
+        "url": "https://api.resend.com",
+        "slug": "resend-api",
+        "name": "Resend API",
+        "docs": "https://resend.com/docs",
+        "basis": {
+          "via": "detected",
+          "signal": "openapi-schema"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "resend_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://resend.com/openapi.json",
+                  "https://resend.com/.well-known/oauth-protected-resource"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "Detected OAuth authorization, token, and dynamic client registration endpoints exist at `https://api.resend.com`, but the corpus does not provide a user-facing acquisition flow for minting an OAuth client credential, so only the documented API-key path is recorded."
+      },
+      {
+        "type": "cli",
+        "command": "resend",
+        "slug": "resend-cli",
+        "name": "Resend CLI",
+        "docs": "https://resend.com/features/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://resend.com/llms.txt",
+            "https://resend.com/features/cli",
+            "https://resend.com/docs/sitemap.xml"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "resend_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "RESEND_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://resend.com/features/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The CLI page says to authenticate by storing your API key locally and to set `RESEND_API_KEY` in CI/CD environments. No separate `login` command is documented in this corpus."
+      },
+      {
+        "type": "mcp",
+        "slug": "resend-mcp-server",
+        "name": "Resend MCP Server",
+        "docs": "https://resend.com/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://resend.com/llms.txt",
+            "https://resend.com/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "resend_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "RESEND_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://resend.com/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The corpus confirms an MCP server exists and shows local MCP client configuration using `npx -y resend-mcp` with `RESEND_API_KEY`. The actual MCP connect endpoint URL is not present in the corpus, so the surface is represented without a URL."
+      }
+    ]
+  },
+  "checklist": {
+    "passed": true,
+    "checks": {
+      "noDefaultCredentialSetup": {
+        "passed": true,
+        "offenders": []
+      },
+      "outputUrlsInCorpus": {
+        "passed": true,
+        "offenders": []
+      },
+      "authUseIdsResolve": {
+        "passed": true,
+        "offenders": []
+      },
+      "cliMechanicsSetupHasNoOauthPath": {
+        "passed": true,
+        "offenders": []
+      },
+      "specUrlsLookMachineReadable": {
+        "passed": true,
+        "offenders": []
+      },
+      "noDuplicateSurfaceKeys": {
+        "passed": true,
+        "offenders": []
+      },
+      "noRequiredAuthWithEmptyEntries": {
+        "passed": true,
+        "offenders": []
+      }
+    }
+  },
+  "usage": {
+    "prompt_tokens": 28667,
+    "completion_tokens": 771,
+    "total_tokens": 29438,
+    "prompt_tokens_details": {
+      "cached_tokens": 28416,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "model": "gpt-5.4"
+}

@@ -74,6 +74,17 @@ const credList = usedCredIds
   .map((id) => ({ cred: creds[id], cliLogin: cliLoginFor(id, [surface.auth]) }));
 
 const detailRows: { label: string; value: string; kind: "code" | "link" | "text"; linkLabel?: string }[] = [];
+const specFormatLabel = (url: string) => {
+  const path = (() => {
+    try {
+      return new URL(url).pathname;
+    } catch {
+      return url;
+    }
+  })();
+  const match = path.match(/\.([a-z0-9]+)$/i);
+  return match?.[1]?.toLowerCase() || hostOf(url) || "alt";
+};
 if (surface.url) detailRows.push({ label: surface.type === "mcp" || surface.type === "graphql" ? "Endpoint" : "URL", value: surface.url, kind: "code" });
 if (surface.transports?.length) detailRows.push({ label: "Transport", value: surface.transports.join(", "), kind: "text" });
 if (surface.spec)
@@ -82,6 +93,11 @@ if (surface.spec)
       ? { label: "Spec", value: "introspection", kind: "text" }
       : { label: "Spec", value: surface.spec, kind: "link", linkLabel: hostOf(surface.spec) || "spec" },
   );
+for (const spec of surface.specAlternates ?? []) {
+  if (!spec || spec === surface.spec) continue;
+  const format = specFormatLabel(spec);
+  detailRows.push({ label: `Spec (${format})`, value: spec, kind: "link", linkLabel: hostOf(spec) || format });
+}
 if (surface.command) detailRows.push({ label: "Command", value: surface.command, kind: "code" });
 if (surface.docs && surface.docs !== surface.spec) detailRows.push({ label: "Docs", value: surface.docs, kind: "link" });
 

@@ -1,0 +1,261 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "zapier.com",
+    "summary": "Zapier exposes a TypeScript SDK and CLI for app actions/connections, a remote MCP server, and Powered by Zapier HTTP APIs including the Workflow API; authentication is via CLI login, user-minted client credentials, or OAuth-based MCP access depending on surface.",
+    "credentials": {
+      "zapier_sdk_cli_session": {
+        "type": "oauth2",
+        "label": "Zapier SDK CLI session",
+        "setup": "Run `npx zapier-sdk signup` or `npx zapier-sdk login` as described in the [SDK API reference](https://docs.zapier.com/sdk/reference). The CLI authenticates in-browser and the SDK automatically uses that authentication when the CLI package is installed.",
+        "acquisition": "manual"
+      },
+      "zapier_sdk_client_credentials": {
+        "type": "oauth2_cc",
+        "label": "Zapier SDK client credentials",
+        "setup": "Run `npx zapier-sdk create-client-credentials` as described in the [SDK API reference](https://docs.zapier.com/sdk/reference). This mints a `clientId` and `clientSecret` for server or serverless use with the Zapier SDK.",
+        "acquisition": "manual",
+        "fields": {
+          "clientId": {
+            "secret": false,
+            "description": "OAuth client ID for the Zapier SDK."
+          },
+          "clientSecret": {
+            "secret": true,
+            "description": "OAuth client secret for the Zapier SDK."
+          }
+        }
+      },
+      "zapier_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Zapier MCP OAuth access",
+        "setup": "Start the MCP authorization flow from the Zapier MCP server described in the [server card](https://zapier.com/.well-known/mcp/server-card.json). The server advertises OAuth 2.0 with scopes `mcp:run` and `offline_access` for access to Zapier MCP.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "type": "http",
+        "spec": "https://actions.zapier.com/api/v1/dynamic/openapi.json",
+        "url": "https://actions.zapier.com/api/v1/",
+        "slug": "zapier-sdk-actions-api",
+        "name": "Zapier SDK Actions API",
+        "docs": "https://docs.zapier.com/sdk/reference",
+        "basis": {
+          "via": "detected",
+          "signal": "openapi"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zapier_sdk_cli_session",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx zapier-sdk login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.zapier.com/sdk/reference"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "zapier_sdk_client_credentials",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.zapier.com/sdk/reference"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The SDK reference documents initialization via CLI authentication or client credentials. It also mentions a direct token for partner OAuth or internal Zapier use, but the corpus does not describe a user-minted flow for that token, so it is omitted as a credential."
+      },
+      {
+        "type": "mcp",
+        "url": "https://mcp.zapier.com/mcp",
+        "transports": [
+          "streamable-http"
+        ],
+        "slug": "zapier-mcp",
+        "name": "Zapier MCP",
+        "docs": "https://docs.zapier.com/mcp/home",
+        "basis": {
+          "via": "detected",
+          "signal": "agent-card/server-card"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zapier_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://zapier.com/.well-known/mcp/server-card.json"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The MCP server card advertises OAuth 2.0 with authorization URL `https://mcp.zapier.com/oauth/authorize`, token URL `https://mcp.zapier.com/api/v1/oauth/token`, and scopes `mcp:run` and `offline_access`."
+      },
+      {
+        "type": "http",
+        "url": "https://zapier.com/api/",
+        "slug": "powered-by-zapier-workflow-api",
+        "name": "Powered by Zapier Workflow API",
+        "docs": "https://docs.zapier.com/powered-by-zapier/workflow-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://zapier.com/.well-known/api-catalog",
+            "https://docs.zapier.com/",
+            "https://zapier.com/developers"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "notes": "The corpus confirms the Workflow API surface exists and that Zapier provides authentication for embed partners, but it does not include the authentication details page content or a user-minted credential acquisition flow."
+      },
+      {
+        "type": "cli",
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@zapier/zapier-sdk-cli",
+            "runtimeHint": "npx"
+          }
+        ],
+        "command": "zapier-sdk",
+        "slug": "zapier-sdk-cli",
+        "name": "Zapier SDK CLI",
+        "docs": "https://docs.zapier.com/sdk/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.zapier.com/sdk/reference",
+            "https://zapier.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zapier_sdk_cli_session",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx zapier-sdk login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.zapier.com/sdk/reference"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The CLI also supports `npx zapier-sdk signup` for first-time authentication."
+      },
+      {
+        "type": "cli",
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "zapier-platform-cli"
+          }
+        ],
+        "command": "zapier-platform",
+        "slug": "zapier-platform-cli",
+        "name": "Zapier Platform CLI",
+        "docs": "https://docs.zapier.com/integrations/index.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://zapier.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "notes": "The corpus confirms the Platform CLI exists via the developer docs index, but does not include a page describing how it authenticates."
+      }
+    ]
+  },
+  "checklist": {
+    "passed": true,
+    "checks": {
+      "noDefaultCredentialSetup": {
+        "passed": true,
+        "offenders": []
+      },
+      "outputUrlsInCorpus": {
+        "passed": true,
+        "offenders": []
+      },
+      "authUseIdsResolve": {
+        "passed": true,
+        "offenders": []
+      },
+      "cliMechanicsSetupHasNoOauthPath": {
+        "passed": true,
+        "offenders": []
+      },
+      "specUrlsLookMachineReadable": {
+        "passed": true,
+        "offenders": []
+      },
+      "noDuplicateSurfaceKeys": {
+        "passed": true,
+        "offenders": []
+      },
+      "noRequiredAuthWithEmptyEntries": {
+        "passed": true,
+        "offenders": []
+      }
+    }
+  },
+  "usage": {
+    "prompt_tokens": 21291,
+    "completion_tokens": 1279,
+    "total_tokens": 22570,
+    "prompt_tokens_details": {
+      "cached_tokens": 8448,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "model": "gpt-5.4"
+}

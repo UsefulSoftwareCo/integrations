@@ -1,0 +1,824 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "binance.com",
+    "detect": {
+      "domain": "binance.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:55:47.477Z",
+    "summary": "Binance exposes multiple developer-facing trading/payment interfaces: Spot REST, Spot WebSocket Streams, Spot WebSocket API, USDⓈ-M Futures REST, USDⓈ-M Futures WebSocket API, and Binance Pay HTTP APIs; docs also mention a FIX API but it is outside the supported surface types here.",
+    "description": "Binance is a cryptocurrency exchange and payments platform. It provides APIs for spot and derivatives trading, market data streaming, account operations, and merchant crypto payments.",
+    "credentials": {
+      "binance_api_key": {
+        "type": "compound",
+        "label": "Binance API key and signing secret/private key",
+        "generateUrl": "https://www.binance.com/en/support/faq/360002502072",
+        "setup": "In Binance account [API Management](https://www.binance.com/en/support/faq/360002502072), create an API key for your account. Binance supports `Ed25519` (recommended), `RSA`, and deprecated `HMAC` key types for signed API requests. Enable the needed permissions on the key (for example `TRADE`, `USER_DATA`, `USER_STREAM`, or `FIX_API` / `FIX_API_READ_ONLY` where applicable). Keep the API key plus its corresponding secret or private key material so you can sign requests.",
+        "acquisition": "manual"
+      },
+      "binance_pay_key": {
+        "type": "compound",
+        "label": "Binance Pay API identity key and secret key",
+        "generateUrl": "https://merchant.binance.com/en/help",
+        "setup": "For Binance Pay merchant integrations, contact [Binance Merchant Operation](https://merchant.binance.com/en/help) to set up API authentication credentials. Binance issues an API identity key used as `BinancePay-Certificate-SN` and a secret key used to generate the `BinancePay-Signature` with `HMAC-SHA512`, as described in the [API Common Rules](https://developers.binance.com/legacy-docs/binance-pay/api-common).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "binance-spot-rest-api",
+        "name": "Binance Spot REST API",
+        "type": "http",
+        "docs": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.binance.com/docs/binance-spot-api-docs/rest-api",
+            "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/request-security"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "binance_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-MBX-APIKEY"
+                  }
+                },
+                {
+                  "id": "binance_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "signature"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/request-security"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.binance.com",
+        "notes": "Public market-data endpoints exist with security type `NONE`, and market-data-only traffic can use `https://data-api.binance.vision`; authenticated trading/account/user-stream management endpoints require signed requests."
+      },
+      {
+        "slug": "binance-spot-websocket-streams",
+        "name": "Binance Spot WebSocket Streams",
+        "type": "http",
+        "docs": "https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams"
+            ]
+          }
+        },
+        "url": "wss://stream.binance.com:9443"
+      },
+      {
+        "slug": "binance-spot-websocket-api",
+        "name": "Binance Spot WebSocket API",
+        "type": "http",
+        "docs": "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/general-api-information",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/general-api-information",
+            "https://developers.binance.com/docs/binance-spot-api-docs/user-data-stream",
+            "https://developers.binance.com/docs/binance-spot-api-docs/faqs/api_key_types"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "binance_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "apiKey"
+                  }
+                },
+                {
+                  "id": "binance_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "signature"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-api-general-info",
+                  "https://developers.binance.com/docs/binance-spot-api-docs/user-data-stream"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "wss://ws-api.binance.com:443/ws-api/v3"
+      },
+      {
+        "slug": "binance-usd-m-futures-rest-api",
+        "name": "Binance USDⓈ-M Futures REST API",
+        "type": "http",
+        "docs": "https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "binance_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                },
+                {
+                  "id": "binance_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://fapi.binance.com"
+      },
+      {
+        "slug": "binance-usd-m-futures-websocket-api",
+        "name": "Binance USDⓈ-M Futures WebSocket API",
+        "type": "http",
+        "docs": "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-api-general-info",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-api-general-info"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "binance_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "apiKey"
+                  }
+                },
+                {
+                  "id": "binance_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "signature"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-api-general-info"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "wss://ws-fapi.binance.com/ws-fapi/v1"
+      },
+      {
+        "slug": "binance-pay-api",
+        "name": "Binance Pay API",
+        "type": "http",
+        "docs": "https://developers.binance.com/docs/binance-pay/api-common",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.binance.com/docs/binance-pay/introduction",
+            "https://developers.binance.com/docs/binance-pay/api-common"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "binance_pay_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "BinancePay-Certificate-SN"
+                  }
+                },
+                {
+                  "id": "binance_pay_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "BinancePay-Signature"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.binance.com/docs/binance-pay/api-common"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://bpay.binanceapi.com",
+        "requiredHeaders": [
+          {
+            "name": "content-type",
+            "source": {
+              "kind": "static",
+              "value": "application/json"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:55:47.478Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 341287,
+    "completion_tokens": 2131,
+    "total_tokens": 343418
+  },
+  "visited": [
+    "https://developers.binance.com/docs/binance-pay/api-common",
+    "https://developers.binance.com/docs/binance-pay/introduction",
+    "https://developers.binance.com/docs/binance-spot-api-docs/faqs/api_key_types",
+    "https://developers.binance.com/docs/binance-spot-api-docs/fix-api",
+    "https://developers.binance.com/docs/binance-spot-api-docs/rest-api",
+    "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/request-security",
+    "https://developers.binance.com/docs/binance-spot-api-docs/user-data-stream",
+    "https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams",
+    "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/general-api-information",
+    "https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info",
+    "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-api-general-info",
+    "https://developers.binance.com/docs/login/web-integration",
+    "https://developers.binance.com/en",
+    "https://developers.binance.com/en/docs",
+    "https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md",
+    "https://mcpservers.org/servers/ethancod1ng/binance-mcp-server",
+    "https://socket.dev/pypi/package/binance-futures-mcp",
+    "https://www.binance.com/en/binance-api"
+  ],
+  "grounding": [
+    "https://academy.binance.com/en",
+    "https://accounts.binance.com/en/login?loginChannel=header_binance_api&return_to=aHR0cHM6Ly93d3cuYmluYW5jZS5jb20vZW4vYmluYW5jZS1hcGk%3D",
+    "https://accounts.binance.com/en/register?registerChannel=header_binance_api&return_to=aHR0cHM6Ly93d3cuYmluYW5jZS5jb20vZW4vYmluYW5jZS1hcGk%3D",
+    "https://api-gcp.binance.com",
+    "https://api.binance.com",
+    "https://api.binance.com/api/v3/order?$payload&signature=$signature",
+    "https://api.binance.com/api/v3/order?symbol=%EF%BC%91%EF%BC%92%EF%BC%93%EF%BC%94%EF%BC%95%EF%BC%96&side=BUY&type=LIMIT&timeInForce=GTC&quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559&signature=e1353ec6b14d888f1164ae9af8228a3dbd508bc82eb867db8ab6046442f33ef3",
+    "https://api.binance.com/api/v3/order?symbol=LTCBTC&side=BUY&type=LIMIT&timeInForce=GTC&quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559&signature=c8db56825ae71d6d79447849e617115f4a920fa2acdcab2b053c4b2838bd6b71",
+    "https://api1.binance.com",
+    "https://api2.binance.com",
+    "https://api3.binance.com",
+    "https://api4.binance.com",
+    "https://archiveprogram.github.com",
+    "https://bin.bnbstatic.com/static/images/common/favicon.ico",
+    "https://binance-docs.github.io/apidocs/futures/en/#user-data-streams",
+    "https://bpay.binanceapi.com",
+    "https://c2c.binance.com/en/merc",
+    "https://cdn.zudoku.dev/",
+    "https://data-api.binance.vision",
+    "https://demo-fapi.binance.com",
+    "https://dev.binance.vision",
+    "https://developers.binance.com/#__docusaurus_skipToContent_fallback",
+    "https://developers.binance.com/docs/advanced_earn/change-log",
+    "https://developers.binance.com/docs/algo/Introduction",
+    "https://developers.binance.com/docs/algo/change-log",
+    "https://developers.binance.com/docs/algo/spot-algo",
+    "https://developers.binance.com/docs/alpha/change-log",
+    "https://developers.binance.com/docs/babt/introduction",
+    "https://developers.binance.com/docs/binance-open-api/apis",
+    "https://developers.binance.com/docs/binance-pay/api-common",
+    "https://developers.binance.com/docs/binance-pay/introduction",
+    "https://developers.binance.com/docs/binance-spot-api-docs",
+    "https://developers.binance.com/docs/binance-spot-api-docs/CHANGELOG",
+    "https://developers.binance.com/docs/binance-spot-api-docs/demo-mode/general-info",
+    "https://developers.binance.com/docs/binance-spot-api-docs/faqs/api_key_types",
+    "https://developers.binance.com/docs/binance-spot-api-docs/fix-api",
+    "https://developers.binance.com/docs/binance-spot-api-docs/rest-api",
+    "https://developers.binance.com/docs/binance-spot-api-docs/rest-api#market-data-endpoints",
+    "https://developers.binance.com/docs/binance-spot-api-docs/rest-api/request-security",
+    "https://developers.binance.com/docs/binance-spot-api-docs/user-data-stream",
+    "https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams",
+    "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/authentication-requests#log-in-with-api-key-signed",
+    "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/authentication-requests#log-out-of-the-session",
+    "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/general-api-information",
+    "https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/user-data-stream-requests#unsubscribe-from-user-data-stream",
+    "https://developers.binance.com/docs/binance-w3w/evm-compatible-provider",
+    "https://developers.binance.com/docs/binance_link/change-log",
+    "https://developers.binance.com/docs/c2c/change-log",
+    "https://developers.binance.com/docs/c2c/introduction",
+    "https://developers.binance.com/docs/cms/cms-log",
+    "https://developers.binance.com/docs/convert/Introduction",
+    "https://developers.binance.com/docs/convert/change-log",
+    "https://developers.binance.com/docs/copy_trading/change-log",
+    "https://developers.binance.com/docs/crypto_loan/Introduction",
+    "https://developers.binance.com/docs/crypto_loan/change-log",
+    "https://developers.binance.com/docs/derivatives/change-log",
+    "https://developers.binance.com/docs/derivatives/coin-margined-futures/general-info",
+    "https://developers.binance.com/docs/derivatives/options-trading/general-info",
+    "https://developers.binance.com/docs/derivatives/usds-margined-futures/general-info",
+    "https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-api-general-info",
+    "https://developers.binance.com/docs/fiat/change-log",
+    "https://developers.binance.com/docs/fiat/introduction",
+    "https://developers.binance.com/docs/fund_account/change-log",
+    "https://developers.binance.com/docs/gift_card/change-log",
+    "https://developers.binance.com/docs/institutional_loan/Introduction",
+    "https://developers.binance.com/docs/link_plus/change-log",
+    "https://developers.binance.com/docs/login/introduction",
+    "https://developers.binance.com/docs/login/web-integration",
+    "https://developers.binance.com/docs/margin_trading/Introduction",
+    "https://developers.binance.com/docs/margin_trading/trade-data-stream/Listen-Token-Websocket-API#subscribe-to-user-data-stream-using-listentoken-user_stream",
+    "https://developers.binance.com/docs/mini-program/quick-start",
+    "https://developers.binance.com/docs/mining/Introduction",
+    "https://developers.binance.com/docs/mining/change-log",
+    "https://developers.binance.com/docs/onchainpay-x402/introduction",
+    "https://developers.binance.com/docs/pay/change-log",
+    "https://developers.binance.com/docs/rebate/change-log",
+    "https://developers.binance.com/docs/simple_earn/Introduction",
+    "https://developers.binance.com/docs/simple_earn/change-log",
+    "https://developers.binance.com/docs/spot_block_match/change-log",
+    "https://developers.binance.com/docs/staking/Introduction",
+    "https://developers.binance.com/docs/staking/change-log",
+    "https://developers.binance.com/docs/sub_account/Introduction",
+    "https://developers.binance.com/docs/sub_account/change-log",
+    "https://developers.binance.com/docs/vip_loan/change-log",
+    "https://developers.binance.com/docs/vip_services/change-log",
+    "https://developers.binance.com/docs/w3w_open_platform/self-listing-op",
+    "https://developers.binance.com/docs/w3w_task_verification_api/apis",
+    "https://developers.binance.com/docs/w3w_web3_dapp/self-listing",
+    "https://developers.binance.com/docs/wallet/change-log",
+    "https://developers.binance.com/docs/wallet/introduction",
+    "https://developers.binance.com/en",
+    "https://developers.binance.com/en/docs",
+    "https://developers.binance.com/en/landingpage/dapps",
+    "https://developers.binance.com/en/landingpage/mpp",
+    "https://developers.binance.com/en/landingpage/oauth",
+    "https://developers.binance.com/legacy-docs/binance-pay/api-common",
+    "https://developers.binance.com/legacy-docs/binance-pay/api-common#build-the-content",
+    "https://developers.binance.com/legacy-docs/binance-pay/api-common#common-business-errors",
+    "https://developers.binance.com/legacy-docs/binance-pay/api-common#hosts",
+    "https://developers.binance.com/legacy-docs/binance-pay/api-common#protocol-rules",
+    "https://developers.binance.com/legacy-docs/binance-pay/api-common#request-header",
+    "https://developers.binance.com/legacy-docs/binance-pay/api-common#sign-the-content",
+    "https://developers.binance.com/legacy-docs/binance-pay/api-common#signature",
+    "https://developers.binance.com/legacy-docs/binance-pay/app-integration",
+    "https://developers.binance.com/legacy-docs/binance-pay/faq",
+    "https://developers.binance.com/legacy-docs/binance-pay/introduction",
+    "https://developers.binance.com/legacy-docs/binance-pay/introduction#merchant-acquiring-c2b---payment-by-qr-code",
+    "https://developers.binance.com/legacy-docs/binance-pay/introduction#transfer-or-send-cryptos-c2c",
+    "https://developers.binance.com/legacy-docs/binance-pay/webhook-common",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/PROD-TERMS-OF-USE",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/README",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/demo-mode",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/enums",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/errors",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/errors#-1007-timeout",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/errors#other-errors",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/api_key_types",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/api_key_types#ed25519",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/api_key_types#hmac",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/api_key_types#rsa",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/commission_faq",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/market_data_only",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/opo",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/order_amend_keep_priority",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/order_count_decrement",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/pegged_orders",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/price_range_execution_rules",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/sbe_faq",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/sor_faq",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/spot_glossary",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/stp_faq",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/faqs/trailing-stop-faq",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/filters",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#api-key-permissions",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#executionreport",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#fix-api-drop-copy-sessions",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#fix-api-market-data-sessions",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#fix-api-order-entry-sessions",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#fix-connection-lifecycle",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#general-api-information",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#heartbeat",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#how-to-sign-logon-a-request",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#liststatus",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#logon-main",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#logon-request",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#news",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#nodejs",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#on-message-processing-order",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#other-languagescustom-tls-implementations",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#response-mode",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#signaturecomputation",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#testrequest",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/fix-api#timing-security",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/account-endpoints",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/data-sources",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/error-codes",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/general-api-information",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/general-endpoints",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/general-information-on-endpoints",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/http-return-codes",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/limits",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/market-data-endpoints",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#ed25519-keys",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#general-api-information",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#hmac-keys",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#new-order-trade",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#rsa-keys",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#signature-case-sensitivity",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#signed-endpoint-examples-for-post-apiv3order",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#signed-endpoint-security",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/request-security#timing-security",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/rest-api/trading-endpoints",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/sbe-market-data-streams",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/testnet",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#account-update",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#balance-update",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#conditional-fields-in-execution-report",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#event-stream-terminated",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#external-lock-update",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#general-information",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#order-expiry-reason",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#order-reject-reason",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#order-update",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/user-data-stream#user-data-stream-events",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#aggregate-trade-streams",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#all-market-mini-tickers-stream",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#all-market-rolling-window-statistics-streams",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#block-trade-streams",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#error-messages",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#general-wss-information",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#kline-intervals",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#klinecandlestick-streams-for-utc",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#klinecandlestick-streams-with-timezone-offset",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#listing-subscriptions",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#live-subscribingunsubscribing-to-streams",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#reference-price-streams",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#retrieving-properties",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#server-shutdown",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#serverShutdown",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#setting-properties",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#subscribe-to-a-stream",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#trade-streams",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#unsubscribe-to-a-stream",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/web-socket-streams#websocket-limits",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/account-requests",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/authentication-requests",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/connection-events",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/connection-events#serverShutdown",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/data-sources",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/event-format",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/general-api-information",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/general-requests",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/market-data-requests",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/rate-limits",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/request-format",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/request-security",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/response-format",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/session-authentication",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/trading-requests",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/user-data-stream-requests",
+    "https://developers.binance.com/legacy-docs/binance-spot-api-docs/websocket-api/user-data-stream-requests#user-data-stream-subscribe",
+    "https://developers.binance.com/legacy-docs/derivatives/Introduction",
+    "https://developers.binance.com/legacy-docs/derivatives/change-log",
+    "https://developers.binance.com/legacy-docs/derivatives/coin-margined-futures",
+    "https://developers.binance.com/legacy-docs/derivatives/options-trading/general-info",
+    "https://developers.binance.com/legacy-docs/derivatives/portfolio-margin-pro/general-info",
+    "https://developers.binance.com/legacy-docs/derivatives/portfolio-margin/general-info",
+    "https://developers.binance.com/legacy-docs/derivatives/quick-start",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/account/rest-api",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/common-definition",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/convert",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/error-code",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/faq/stp-faq",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#a-unknown-error-please-check-your-request-or-try-again-later-execution-status-unknown",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#b-service-unavailable-failure",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#c-request-throttled-by-system-level-protection-reduce-onlyclose-position-orders-are-exempt-please-try-again--1008-failure",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#endpoint-security-type",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#error-codes",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#error-codes-and-messages",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#general-api-information",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#general-information-on-endpoints",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#http-503-status-message-variants--handling",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#http-return-codes",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#ip-limits",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#java",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#limits",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#order-rate-limits",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#python3",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#sdk-and-code-demonstration",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#signed-trade-and-user_data-endpoint-security",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#testnet-api-information",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/general-info#timing-security",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/market-data/rest-api",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/portfolio-margin-endpoints",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/trade/rest-api",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/user-data-streams",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#log-in-with-api-key-signed",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#log-out-of-the-session",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#query-session-status",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#response-format",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#signed-request-example-ed25519",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#signed-trade-and-user_data-endpoint-security",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#websocket-api-api-key-revocation",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#websocket-api-authenticate-after-connection",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#websocket-api-authentication-request",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#websocket-api-authorize-ad-hoc-requests",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#websocket-api-rate-limits",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-api-general-info#websocket-api-request-format",
+    "https://developers.binance.com/legacy-docs/derivatives/usds-margined-futures/websocket-market-streams",
+    "https://developers.binance.com/legacy-docs/docs/login/web-integration",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-pay/api-common",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-pay/introduction",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-spot-api-docs/faqs/api_key_types",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-spot-api-docs/fix-api",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-spot-api-docs/rest-api",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-spot-api-docs/rest-api/request-security",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-spot-api-docs/user-data-stream",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-spot-api-docs/web-socket-streams",
+    "https://developers.binance.com/legacy-docs/zh-CN/binance-spot-api-docs/websocket-api/general-api-information",
+    "https://developers.binance.com/legacy-docs/zh-CN/derivatives/usds-margined-futures/general-info",
+    "https://developers.binance.com/legacy-docs/zh-CN/derivatives/usds-margined-futures/websocket-api-general-info",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://fapi.binance.com",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#24hr-ticker-price-change-statistics",
+    "https://github.com/#account-endpoints",
+    "https://github.com/#account-information-user_data",
+    "https://github.com/#account-trade-list-user_data",
+    "https://github.com/#all-orders-user_data",
+    "https://github.com/#cancel-all-open-orders-on-a-symbol-trade",
+    "https://github.com/#cancel-an-existing-order-and-send-a-new-order-trade",
+    "https://github.com/#cancel-order-list-trade",
+    "https://github.com/#cancel-order-trade",
+    "https://github.com/#check-server-time",
+    "https://github.com/#compressedaggregate-trades-list",
+    "https://github.com/#current-average-price",
+    "https://github.com/#current-open-orders-user_data",
+    "https://github.com/#data-sources",
+    "https://github.com/#ed25519-keys",
+    "https://github.com/#error-codes",
+    "https://github.com/#exchange-information",
+    "https://github.com/#general-api-information",
+    "https://github.com/#general-endpoints",
+    "https://github.com/#general-info-on-limits",
+    "https://github.com/#general-information-on-endpoints",
+    "https://github.com/#historical-block-trades",
+    "https://github.com/#hmac-keys",
+    "https://github.com/#http-return-codes",
+    "https://github.com/#ip-limits",
+    "https://github.com/#klinecandlestick-data",
+    "https://github.com/#limits",
+    "https://github.com/#market-data-endpoints",
+    "https://github.com/#new-oco---deprecated-trade",
+    "https://github.com/#new-order-list---oco-trade",
+    "https://github.com/#new-order-list---opo-trade",
+    "https://github.com/#new-order-list---opoco-trade",
+    "https://github.com/#new-order-list---oto-trade",
+    "https://github.com/#new-order-list---otoco-trade",
+    "https://github.com/#new-order-trade",
+    "https://github.com/#new-order-using-sor-trade",
+    "https://github.com/#old-trade-lookup",
+    "https://github.com/#order-amend-keep-priority-trade",
+    "https://github.com/#order-book",
+    "https://github.com/#order-lists",
+    "https://github.com/#public-api-endpoints",
+    "https://github.com/#public-rest-api-for-binance",
+    "https://github.com/#query-all-order-lists-user_data",
+    "https://github.com/#query-allocations-user_data",
+    "https://github.com/#query-commission-rates-user_data",
+    "https://github.com/#query-execution-rules",
+    "https://github.com/#query-open-order-lists-user_data",
+    "https://github.com/#query-order-amendments-user_data",
+    "https://github.com/#query-order-list-user_data",
+    "https://github.com/#query-order-user_data",
+    "https://github.com/#query-prevented-matches-user_data",
+    "https://github.com/#query-reference-price",
+    "https://github.com/#query-reference-price-calculation",
+    "https://github.com/#query-relevant-filters-user_data",
+    "https://github.com/#query-unfilled-order-count-user_data",
+    "https://github.com/#recent-trades-list",
+    "https://github.com/#request-security",
+    "https://github.com/#rolling-window-price-change-statistics",
+    "https://github.com/#rsa-keys",
+    "https://github.com/#signature-case-sensitivity",
+    "https://github.com/#signed-endpoint-examples-for-post-apiv3order",
+    "https://github.com/#signed-endpoint-security",
+    "https://github.com/#sor",
+    "https://github.com/#start-of-content",
+    "https://github.com/#symbol-order-book-ticker",
+    "https://github.com/#symbol-price-ticker",
+    "https://github.com/#test-connectivity",
+    "https://github.com/#test-new-order-trade",
+    "https://github.com/#test-new-order-using-sor-trade",
+    "https://github.com/#timing-security",
+    "https://github.com/#trading-day-ticker",
+    "https://github.com/#trading-endpoints",
+    "https://github.com/#uiklines",
+    "https://github.com/#unfilled-order-count",
+    "https://github.com/accelerator",
+    "https://github.com/binance",
+    "https://github.com/binance/binance-connector-java",
+    "https://github.com/binance/binance-connector-java.git",
+    "https://github.com/binance/binance-connector-python",
+    "https://github.com/binance/binance-spot-api-docs",
+    "https://github.com/binance/binance-spot-api-docs/actions",
+    "https://github.com/binance/binance-spot-api-docs/blob/master/faqs/api_key_types.md",
+    "https://github.com/binance/binance-spot-api-docs/blob/master/faqs/market_data_only.md",
+    "https://github.com/binance/binance-spot-api-docs/blob/master/faqs/sbe_faq.md",
+    "https://github.com/binance/binance-spot-api-docs/blob/master/faqs/spot_g",
+    "https://github.com/binance/binance-spot-api-docs/blob/master/fix/schemas/spot-fix-md.xml",
+    "https://github.com/binance/binance-spot-api-docs/blob/master/fix/schemas/spot-fix-oe.xml",
+    "https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md",
+    "https://github.com/binance/binance-spot-api-docs/commit/4987e707f84f20d736ee6a2bcb71396111cffee1",
+    "https://github.com/binance/binance-spot-api-docs/commits/master/rest-api.md",
+    "https://github.com/binance/binance-spot-api-docs/commits?author=adderall-prozac",
+    "https://github.com/binance/binance-spot-api-docs/pulls",
+    "https://github.com/binance/binance-spot-api-docs/pulse",
+    "https://github.com/binance/binance-spot-api-docs/raw/refs/heads/master/rest-api.md",
+    "https://github.com/binance/binance-spot-api-docs/security",
+    "https://github.com/binance/binance-spot-api-docs/tree/master",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fbinance%2Fbinance-spot-api-docs",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fbinance%2Fbinance-spot-api-docs%2Fblob%2Fmaster%2Frest-api.md",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fblob%2Fshow&source=header-repo&source_repo=binance%2Fbinance-spot-api-docs",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://maintainers.github.com",
+    "https://mcpservers.org/servers/ethancod1ng/binance-mcp-server",
+    "https://merchant.binance.com/en/help",
+    "https://nodejs.org/api/tls.html#tlsconnectoptions-callback",
+    "https://pay.binance.com/en",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://socket.dev/pypi/package/binance-futures-mcp",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://t.me/binance_api_english",
+    "https://testnet.binance.vision/",
+    "https://www.binance.charity",
+    "https://www.binance.com/en/BABT?source=footer",
+    "https://www.binance.com/en/about",
+    "https://www.binance.com/en/about-legal/privacy-portal",
+    "https://www.binance.com/en/auto-invest",
+    "https://www.binance.com/en/binance-api",
+    "https://www.binance.com/en/binance-junior",
+    "https://www.binance.com/en/blog",
+    "https://www.binance.com/en/capital-connect",
+    "https://www.binance.com/en/cards/dashboard",
+    "https://www.binance.com/en/careers",
+    "https://www.binance.com/en/community",
+    "https://www.binance.com/en/crypto/buy",
+    "https://www.binance.com/en/desktop-download",
+    "https://www.binance.com/en/download",
+    "https://www.binance.com/en/eth2",
+    "https://www.binance.com/en/gift-card",
+    "https://www.binance.com/en/land/building_trust",
+    "https://www.binance.com/en/launchpool",
+    "https://www.binance.com/en/legal/home",
+    "https://www.binance.com/en/my/wallet/account/payment",
+    "https://www.binance.com/en/press",
+    "https://www.binance.com/en/research",
+    "https://www.binance.com/en/risk-warning",
+    "https://www.binance.com/en/square/news/all",
+    "https://www.binance.com/en/support/announcement",
+    "https://www.binance.com/en/support/articles/360002502072",
+    "https://www.binance.com/en/support/faq/360002502072",
+    "https://www.binance.com/en/support/faq/detail/360004492232",
+    "https://www.binance.com/en/support/faq/how-to-generate-an-ed25519-key-pair-to-send-api-requests-on-binance-6b9a63f1e3384cf48a2eedb82767a69a",
+    "https://www.binance.com/en/support/list/notices",
+    "https://www.binance.com/en/terms",
+    "https://www.binance.com/en/trade",
+    "https://www.binance.com/en/whistleblowing/welcome",
+    "https://www.binance.com/legal/terms-binance-api",
+    "https://www.binance.com/link",
+    "https://www.binance.com/support/faq/360002502072",
+    "https://www.binance.com/support/faq/538e05e2fd394c489b4cf89e92c55f70",
+    "https://www.binance.com/support/faq/api?c=6",
+    "https://www.binance.com/support/faq/c-6",
+    "https://www.binance.com/survey/c9e68565ede84cabbf6f85872f431c93?ns=prd-feedback",
+    "https://www.binance.com/vip-institutional-services",
+    "https://www.stunnel.org/"
+  ]
+}

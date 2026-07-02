@@ -103,21 +103,23 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T20:50:23.369Z",
-    "summary": "Sentry exposes a REST Web API, an OAuth-protected MCP server at `https://mcp.sentry.dev/mcp`, and two CLIs (`sentry` and `sentry-cli`), authenticated with Sentry auth tokens or OAuth depending on the surface.",
-    "description": "Sentry is an application monitoring and observability platform for tracking errors, performance, logs, traces, and related debugging data in software projects. It provides hosted services and tooling for developers to inspect and act on issues across their applications.",
+    "discoveredAt": "2026-07-02T23:18:31.024Z",
+    "summary": "Sentry exposes a documented REST API on `https://{region}.sentry.io/api/0/` with an OpenAPI spec, plus an OAuth-protected MCP server at `https://mcp.sentry.dev/mcp` over streamable HTTP.",
+    "description": "Sentry is an application monitoring and observability platform for tracking errors, performance, releases, and related operational data. It helps development teams inspect issues and system behavior across their applications.",
     "credentials": {
       "sentry_auth_token": {
         "type": "bearer",
-        "label": "Sentry auth token (organization/personal/internal integration token)",
-        "generateUrl": "https://sentry.io/orgredirect/organizations/:orgslug/settings/auth-tokens/",
-        "setup": "Create a token in Sentry from [Auth Tokens docs](https://docs.sentry.io/account/auth-tokens/). For CI and most CLI/API use, create an organization token under [Organization Tokens](https://sentry.io/orgredirect/organizations/:orgslug/settings/auth-tokens/). For user-bound API access, create a personal token from **User settings → Personal Tokens** as described in [API authentication](https://docs.sentry.io/api/auth/). For custom organization-scoped API permissions, create an internal integration as described in [Internal Integrations](https://docs.sentry.io/integrations/integration-platform/#internal-integrations). Use the token as `Authorization: Bearer <token>`."
+        "label": "Sentry auth token",
+        "generateUrl": "https://docs.sentry.io/api/guides/create-auth-token/",
+        "setup": "Create an internal integration in [Sentry](https://sentry.io/) via **Settings → Custom Integrations** (or **Settings → Developer Settings** for integrations), choose the needed scopes, save, then copy the generated token from **Tokens**. For user-specific endpoints, create a personal token from **User settings → Personal Tokens** as described in [Authentication](https://docs.sentry.io/api/auth/) and [Tutorial: Create a Sentry Authentication Token](https://docs.sentry.io/api/guides/create-auth-token/).",
+        "acquisition": "manual"
       },
       "sentry_oauth_app": {
         "type": "oauth2",
-        "label": "Sentry OAuth app (client ID and client secret)",
-        "generateUrl": "https://docs.sentry.io/product/partnership-platform/oauth-integration/",
-        "setup": "To get OAuth client credentials, Sentry must register your application. Follow [OAuth Integration](https://docs.sentry.io/product/partnership-platform/oauth-integration/) and contact `partnership-platform@sentry.io` with your client name, redirect URIs, allowed origins, home page URL, privacy policy URL, terms URL, and required scopes. Sentry then provides your `client_id` and `client_secret`. Users authorize at `https://sentry.io/oauth/authorize/`, and your app exchanges the code at `https://sentry.io/oauth/token/` as described in [API authentication](https://docs.sentry.io/api/auth/#oauth2)."
+        "label": "Sentry OAuth app/client",
+        "generateUrl": "https://docs.sentry.io/integrations/integration-platform/",
+        "setup": "In [Sentry](https://sentry.io/), go to **Settings → Developer Settings** and create a **Public Integration** if you need third-party OAuth access for users, or an **Internal Integration** for org-only use. Configure redirect URI and scopes, then use the client ID at `https://sentry.io/oauth/authorize/` and exchange the code with your client secret at `https://sentry.io/oauth/token/` as documented in [Authentication](https://docs.sentry.io/api/auth/) and [Integration Platform](https://docs.sentry.io/integrations/integration-platform/).",
+        "acquisition": "manual"
       }
     },
     "surfaces": [
@@ -125,11 +127,11 @@
         "slug": "sentry-mcp-server",
         "name": "Sentry MCP server",
         "type": "mcp",
-        "docs": "https://mcp.sentry.dev/",
+        "docs": "https://docs.sentry.io/product/sentry-mcp/",
         "basis": {
           "via": "detected",
           "signal": "mcp:initialize",
-          "verifiedAt": "2026-07-02T20:50:23.369Z"
+          "verifiedAt": "2026-07-02T23:18:31.024Z"
         },
         "auth": {
           "status": "required",
@@ -146,8 +148,8 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://mcp.sentry.dev/",
-                  "https://docs.sentry.io/api/auth/"
+                  "https://docs.sentry.io/product/sentry-mcp/",
+                  "https://mcp.sentry.dev/"
                 ]
               }
             }
@@ -159,102 +161,17 @@
         ]
       },
       {
-        "slug": "sentry-cli",
-        "name": "Sentry CLI",
-        "type": "cli",
-        "docs": "https://cli.sentry.dev/",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://cli.sentry.dev/"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "sentry_oauth_app",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "sentry auth login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://cli.sentry.dev/"
-                ]
-              }
-            }
-          ]
-        },
-        "packages": [
-          {
-            "registryType": "npm",
-            "identifier": "@sentry/cli",
-            "runtimeHint": "npx"
-          },
-          {
-            "registryType": "homebrew",
-            "identifier": "sentry-cli/tap/sentry-cli"
-          }
-        ],
-        "command": "sentry"
-      },
-      {
-        "slug": "sentry-cli-2",
-        "name": "sentry-cli",
-        "type": "cli",
-        "docs": "https://docs.sentry.io/cli/",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.sentry.io/cli/",
-            "https://docs.sentry.io/cli/configuration/"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "sentry_auth_token",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "sentry-cli login",
-                    "env": [
-                      "SENTRY_AUTH_TOKEN"
-                    ]
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.sentry.io/cli/configuration/"
-                ]
-              }
-            }
-          ]
-        },
-        "command": "sentry-cli"
-      },
-      {
-        "slug": "sentry-web-api",
-        "name": "Sentry Web API",
+        "slug": "sentry-rest-api",
+        "name": "Sentry REST API",
         "type": "http",
         "docs": "https://docs.sentry.io/api/",
         "basis": {
           "via": "discovered",
           "evidence": [
             "https://docs.sentry.io/api/",
-            "https://docs.sentry.io/api/auth/",
             "https://docs.sentry.io/api/requests/",
-            "https://github.com/getsentry/sentry-api-schema"
+            "https://docs.sentry.io/api/auth/",
+            "https://raw.githubusercontent.com/getsentry/sentry/master/api-docs/openapi.json"
           ]
         },
         "auth": {
@@ -265,17 +182,16 @@
                 {
                   "id": "sentry_auth_token",
                   "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
+                    "source": "spec",
+                    "scheme": "auth_token"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.sentry.io/api/auth/"
+                  "https://docs.sentry.io/api/auth/",
+                  "https://raw.githubusercontent.com/getsentry/sentry/master/api-docs/openapi.json"
                 ]
               }
             },
@@ -294,117 +210,119 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.sentry.io/api/auth/",
-                  "https://docs.sentry.io/product/partnership-platform/oauth-integration/"
+                  "https://docs.sentry.io/api/auth/"
                 ]
               }
             }
           ]
         },
-        "url": "https://sentry.io/api/0/"
+        "spec": "https://raw.githubusercontent.com/getsentry/sentry/master/api-docs/openapi.json",
+        "url": "https://{region}.sentry.io/api/0/",
+        "variables": [
+          {
+            "name": "region",
+            "in": "url",
+            "resolveFrom": "your organization's data-storage region; docs list `us`, `us2`, and `de`, while the OpenAPI server template enumerates `us` and `de`",
+            "description": "Sentry region subdomain to call for your organization."
+          }
+        ]
       }
     ]
   },
-  "discoveredAt": "2026-07-02T20:50:23.369Z",
+  "discoveredAt": "2026-07-02T23:18:31.024Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 134892,
-    "completion_tokens": 1872,
-    "total_tokens": 136764
+    "prompt_tokens": 77988,
+    "completion_tokens": 1318,
+    "total_tokens": 79306
   },
   "visited": [
-    "https://blog.sentry.io/yes-sentry-has-an-mcp-server-and-its-pretty-good/",
+    "https://apitracker.io/a/sentry",
     "https://cli.sentry.dev/",
-    "https://docs.sentry.io/account/auth-tokens/",
+    "https://develop.sentry.dev/getting-started/",
+    "https://docs.sentry.dev/platforms/javascript/guides/nextjs/ai-agent-monitoring/",
+    "https://docs.sentry.io/",
     "https://docs.sentry.io/api/",
     "https://docs.sentry.io/api/auth/",
     "https://docs.sentry.io/api/crons/create-a-monitor/",
     "https://docs.sentry.io/api/events/retrieve-an-issue/",
+    "https://docs.sentry.io/api/guides/create-auth-token/",
+    "https://docs.sentry.io/api/permissions/",
     "https://docs.sentry.io/api/requests/",
-    "https://docs.sentry.io/cli/",
-    "https://docs.sentry.io/cli/configuration/",
+    "https://docs.sentry.io/integrations/integration-platform/#internal-integrations",
     "https://docs.sentry.io/integrations/integration-platform/webhooks/",
-    "https://docs.sentry.io/platforms/javascript/configuration/apis/",
-    "https://docs.sentry.io/product/partnership-platform/oauth-integration/",
-    "https://github.com/getsentry/sentry-api-schema",
-    "https://github.com/getsentry/sentry-api-schema/blob/main/openapi-derefed.json",
-    "https://github.com/getsentry/sentry-api-schema/blob/main/package.json",
-    "https://github.com/getsentry/sentry/actions/workflows/openapi-diff.yml",
+    "https://docs.sentry.io/product/sentry-mcp/",
+    "https://getsentry.github.io/sentry-python/apidocs.html",
     "https://github.com/getsentry/sentry/blob/master/api-docs/openapi.json",
-    "https://github.com/getsentry/sentry/blob/master/src/sentry/apidocs/build.py",
     "https://mcp.sentry.dev/",
-    "https://raw.githubusercontent.com/getsentry/sentry-api-schema/main/openapi-derefed.json",
-    "https://sentry.dev/llms.txt",
-    "https://sentry.io/cookbook/performance-bot-sentry-claude/"
+    "https://raw.githubusercontent.com/getsentry/sentry/master/api-docs/openapi.json",
+    "https://sentry-build-ai.sentry.dev/new-feature-pr-review/",
+    "https://sentry.dev/",
+    "https://sentry.dev/llms.txt"
   ],
   "grounding": [
     "http://sentry.io/terms/",
     "http://www.apache.org/licenses/LICENSE-2.0.html",
+    "http://www.simplecloud.info/",
     "https://ampcode.com/manual#mcp",
+    "https://apitracker.io/a/sentry",
     "https://archiveprogram.github.com",
-    "https://blog.sentry.io/yes-sentry-has-an-mcp-server-and-its-pretty-good/",
     "https://cli.sentry.dev/",
-    "https://cli.sentry.dev/#_top",
-    "https://cli.sentry.dev/./getting-started/",
-    "https://cli.sentry.dev/getting-started/",
-    "https://cli.sentry.dev/install",
     "https://datatracker.ietf.org/doc/html/rfc8628",
+    "https://develop.sentry.dev/getting-started/",
     "https://develop.sentry.dev/sdk/overview/",
     "https://discord.com/invite/sentry",
     "https://docs.anthropic.com/en/docs/claude-code/mcp",
     "https://docs.github.com",
     "https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository",
     "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.sentry.dev/platforms/javascript/guides/nextjs/ai-agent-monitoring/",
     "https://docs.sentry.io/",
+    "https://docs.sentry.io/#alerts",
     "https://docs.sentry.io/#auth-tokens",
     "https://docs.sentry.io/#authorization-request",
     "https://docs.sentry.io/#choosing-the-right-api-base-domain",
-    "https://docs.sentry.io/#config-defaults",
-    "https://docs.sentry.io/#configuration-file",
-    "https://docs.sentry.io/#configuration-values",
+    "https://docs.sentry.io/#continuous-integration-ci",
+    "https://docs.sentry.io/#create-a-api-authentication-token",
+    "https://docs.sentry.io/#create-an-internal-integration",
+    "https://docs.sentry.io/#creating-an-integration",
     "https://docs.sentry.io/#device-authorization-flow",
     "https://docs.sentry.io/#device-flow-error-responses",
     "https://docs.sentry.io/#device-flow-example",
-    "https://docs.sentry.io/#environment-variables",
-    "https://docs.sentry.io/#explicit-options",
+    "https://docs.sentry.io/#example-app",
     "https://docs.sentry.io/#getting-started",
     "https://docs.sentry.io/#http-verbs",
-    "https://docs.sentry.io/#internal-integrations",
+    "https://docs.sentry.io/#issues--events",
+    "https://docs.sentry.io/#learn-more",
     "https://docs.sentry.io/#main",
+    "https://docs.sentry.io/#members",
     "https://docs.sentry.io/#oauth2",
     "https://docs.sentry.io/#organization-scoping",
-    "https://docs.sentry.io/#organization-tokens",
+    "https://docs.sentry.io/#organizations",
     "https://docs.sentry.io/#parameters-and-data",
-    "https://docs.sentry.io/#partner-registration",
-    "https://docs.sentry.io/#personal-tokens",
-    "https://docs.sentry.io/#properties-files",
+    "https://docs.sentry.io/#permissions",
+    "https://docs.sentry.io/#prerequisites",
+    "https://docs.sentry.io/#projects",
     "https://docs.sentry.io/#refreshing-tokens",
-    "https://docs.sentry.io/#revoking-access",
+    "https://docs.sentry.io/#releases",
     "https://docs.sentry.io/#sentry-api-tutorials",
     "https://docs.sentry.io/#step-1-request-device-code",
     "https://docs.sentry.io/#step-2-display-instructions-to-user",
     "https://docs.sentry.io/#step-3-poll-for-token",
     "https://docs.sentry.io/#step-4-receive-access-token",
-    "https://docs.sentry.io/#support",
-    "https://docs.sentry.io/#to-authenticate-manually",
-    "https://docs.sentry.io/#to-use-the-automatic-option",
+    "https://docs.sentry.io/#teams",
     "https://docs.sentry.io/#token-exchange",
-    "https://docs.sentry.io/#types-of-auth-tokens",
+    "https://docs.sentry.io/#ui-components",
     "https://docs.sentry.io/#user-authentication-tokens",
-    "https://docs.sentry.io/#user-experience",
     "https://docs.sentry.io/#using-access-tokens",
-    "https://docs.sentry.io/#validating-the-config",
     "https://docs.sentry.io/#versioning",
-    "https://docs.sentry.io/#what-oauth-enables",
-    "https://docs.sentry.io/#when-should-i-use-which",
-    "https://docs.sentry.io/#working-with-projects",
+    "https://docs.sentry.io/#webhooks",
     "https://docs.sentry.io/account/",
     "https://docs.sentry.io/account/auth-tokens/",
     "https://docs.sentry.io/account/user-settings/",
     "https://docs.sentry.io/ai/",
     "https://docs.sentry.io/api/",
     "https://docs.sentry.io/api/auth/",
-    "https://docs.sentry.io/api/auth/#oauth2",
     "https://docs.sentry.io/api/crons/",
     "https://docs.sentry.io/api/crons/create-a-monitor/",
     "https://docs.sentry.io/api/dashboards/",
@@ -425,6 +343,7 @@
     "https://docs.sentry.io/api/permissions/",
     "https://docs.sentry.io/api/profiling/",
     "https://docs.sentry.io/api/projects/",
+    "https://docs.sentry.io/api/projects/create-a-new-project/",
     "https://docs.sentry.io/api/ratelimits/",
     "https://docs.sentry.io/api/releases/",
     "https://docs.sentry.io/api/replays/",
@@ -436,22 +355,7 @@
     "https://docs.sentry.io/api/teams/",
     "https://docs.sentry.io/api/users/",
     "https://docs.sentry.io/cli/",
-    "https://docs.sentry.io/cli/code-mappings/",
-    "https://docs.sentry.io/cli/configuration/",
-    "https://docs.sentry.io/cli/crons/",
-    "https://docs.sentry.io/cli/dif/",
-    "https://docs.sentry.io/cli/installation/",
-    "https://docs.sentry.io/cli/logs/",
     "https://docs.sentry.io/cli/releases/",
-    "https://docs.sentry.io/cli/send-event/",
-    "https://docs.sentry.io/cli/snapshots/",
-    "https://docs.sentry.io/concepts/",
-    "https://docs.sentry.io/concepts/data-management/",
-    "https://docs.sentry.io/concepts/key-terms/",
-    "https://docs.sentry.io/concepts/key-terms/dsn-explainer/",
-    "https://docs.sentry.io/concepts/migration/",
-    "https://docs.sentry.io/concepts/otlp/",
-    "https://docs.sentry.io/concepts/search/",
     "https://docs.sentry.io/contributing/",
     "https://docs.sentry.io/guides/",
     "https://docs.sentry.io/integrations/",
@@ -464,7 +368,14 @@
     "https://docs.sentry.io/integrations/feature-flag/",
     "https://docs.sentry.io/integrations/integration-platform/",
     "https://docs.sentry.io/integrations/integration-platform/#internal-integrations",
+    "https://docs.sentry.io/integrations/integration-platform/#permissions",
+    "https://docs.sentry.io/integrations/integration-platform/internal-integration/",
+    "https://docs.sentry.io/integrations/integration-platform/public-integration/",
+    "https://docs.sentry.io/integrations/integration-platform/ui-components/",
+    "https://docs.sentry.io/integrations/integration-platform/ui-components/alert-rule-action/",
     "https://docs.sentry.io/integrations/integration-platform/webhooks/",
+    "https://docs.sentry.io/integrations/integration-platform/webhooks/issue-alerts/",
+    "https://docs.sentry.io/integrations/integration-platform/webhooks/metric-alerts/",
     "https://docs.sentry.io/integrations/issue-tracking/",
     "https://docs.sentry.io/integrations/notification-incidents/",
     "https://docs.sentry.io/integrations/session-replay/",
@@ -480,53 +391,29 @@
     "https://docs.sentry.io/organization/getting-started/",
     "https://docs.sentry.io/organization/integrations/notification-incidents/slack/",
     "https://docs.sentry.io/organization/membership/",
+    "https://docs.sentry.io/organization/membership/#open-membership",
     "https://docs.sentry.io/platforms/",
-    "https://docs.sentry.io/platforms/java/",
     "https://docs.sentry.io/platforms/javascript/",
-    "https://docs.sentry.io/platforms/javascript/configuration/apis/",
     "https://docs.sentry.io/platforms/javascript/guides/nextjs/",
     "https://docs.sentry.io/platforms/javascript/guides/react/",
     "https://docs.sentry.io/platforms/php/guides/laravel/",
     "https://docs.sentry.io/platforms/python/",
-    "https://docs.sentry.io/platforms/react-native/",
     "https://docs.sentry.io/pricing/",
     "https://docs.sentry.io/pricing/quotas/",
     "https://docs.sentry.io/product/",
-    "https://docs.sentry.io/product/ai-in-sentry/",
-    "https://docs.sentry.io/product/build-distribution/",
-    "https://docs.sentry.io/product/dashboards/",
-    "https://docs.sentry.io/product/discover-queries/",
-    "https://docs.sentry.io/product/drains/",
     "https://docs.sentry.io/product/integrations/github/",
-    "https://docs.sentry.io/product/issues/",
-    "https://docs.sentry.io/product/logs/",
-    "https://docs.sentry.io/product/metrics/",
-    "https://docs.sentry.io/product/monitors-and-alerts/",
-    "https://docs.sentry.io/product/notifications/",
-    "https://docs.sentry.io/product/partnership-platform/",
-    "https://docs.sentry.io/product/partnership-platform/oauth-integration/",
-    "https://docs.sentry.io/product/profiling/",
-    "https://docs.sentry.io/product/projects/",
-    "https://docs.sentry.io/product/relay/",
-    "https://docs.sentry.io/product/releases/",
-    "https://docs.sentry.io/product/sentry-basics/",
-    "https://docs.sentry.io/product/sentry-toolbar/",
-    "https://docs.sentry.io/product/session-replay/",
-    "https://docs.sentry.io/product/size-analysis/",
-    "https://docs.sentry.io/product/snapshots/",
-    "https://docs.sentry.io/product/stats/",
-    "https://docs.sentry.io/product/trace-explorer/",
-    "https://docs.sentry.io/product/user-feedback/",
+    "https://docs.sentry.io/product/sentry-mcp/",
     "https://docs.sentry.io/security-legal-pii/",
     "https://docs.sentry.io/security-legal-pii/scrubbing/",
     "https://docs.sentry.io/security-legal-pii/security/",
     "https://docs.warp.dev/knowledge-and-collaboration/mcp",
+    "https://getsentry.github.io/sentry-python/apidocs.html",
     "https://github.blog",
     "https://github.blog/changelog",
     "https://github.com/#start-of-content",
     "https://github.com/accelerator",
     "https://github.com/collections",
-    "https://github.com/contact/report-abuse?report=getsentry%2Fsentry-api-schema+%28Repository+Funding+Links%29",
+    "https://github.com/contact/report-abuse?report=getsentry%2Fsentry+%28Repository+Funding+Links%29",
     "https://github.com/customer-stories",
     "https://github.com/enterprise",
     "https://github.com/enterprise/startups",
@@ -539,36 +426,41 @@
     "https://github.com/features/copilot/copilot-business",
     "https://github.com/features/issues",
     "https://github.com/getsentry",
-    "https://github.com/getsentry/cli",
-    "https://github.com/getsentry/sentry-api-schema",
-    "https://github.com/getsentry/sentry-api-schema/actions",
-    "https://github.com/getsentry/sentry-api-schema/blob/main/openapi-derefed.json",
-    "https://github.com/getsentry/sentry-api-schema/blob/main/package.json",
-    "https://github.com/getsentry/sentry-api-schema/branches",
-    "https://github.com/getsentry/sentry-api-schema/commit/4a1800884eec06255645e6013d40ad8ffb310e39",
-    "https://github.com/getsentry/sentry-api-schema/commit/f05ae4ecf731add79108b7128bb985e453aa688f",
-    "https://github.com/getsentry/sentry-api-schema/commits/main/",
-    "https://github.com/getsentry/sentry-api-schema/commits?author=amy-chen23",
-    "https://github.com/getsentry/sentry-api-schema/commits?author=sentry-api-schema-updater%5Bbot%5D",
-    "https://github.com/getsentry/sentry-api-schema/issues",
-    "https://github.com/getsentry/sentry-api-schema/projects",
-    "https://github.com/getsentry/sentry-api-schema/pulls",
-    "https://github.com/getsentry/sentry-api-schema/pulse",
-    "https://github.com/getsentry/sentry-api-schema/security",
-    "https://github.com/getsentry/sentry-api-schema/tags",
-    "https://github.com/getsentry/sentry-api-schema/tree/main/.github",
-    "https://github.com/getsentry/sentry-docs/edit/master/docs/account/auth-tokens/index.mdx",
-    "https://github.com/getsentry/sentry-docs/edit/master/docs/cli/configuration.mdx",
-    "https://github.com/getsentry/sentry-docs/edit/master/docs/cli/index.mdx",
-    "https://github.com/getsentry/sentry-docs/edit/master/docs/product/partnership-platform/oauth-integration.mdx",
+    "https://github.com/getsentry/integration-platform-example",
+    "https://github.com/getsentry/sentry",
+    "https://github.com/getsentry/sentry-docs/edit/master/docs/integrations/integration-platform/index.mdx",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/events/&template=api",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/events/&template=api_error_template.md",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/integration-platform/&template=api",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/integration-platform/&template=api_error_template.md",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/organizations/&temp",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/organizations/&template=api",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/organizations/&template=api_error_template.md",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/projects/&template=api",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/projects/&template=api_error_template.md",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/releases/&template=api",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/releases/&template=api_error_template.md",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/teams/&template=api",
+    "https://github.com/getsentry/sentry-docs/issues/new/?title=API%20Documentation%20Error:%20/api/teams/&template=api_error_template.md",
     "https://github.com/getsentry/sentry-docs/issues/new/choose",
     "https://github.com/getsentry/sentry-mcp",
-    "https://github.com/getsentry/sentry/actions/workflows/openapi-diff.yml",
+    "https://github.com/getsentry/sentry/actions",
     "https://github.com/getsentry/sentry/blob/master/api-docs/openapi.json",
-    "https://github.com/getsentry/sentry/blob/master/src/sentry/apidocs/build.py",
+    "https://github.com/getsentry/sentry/commit/60a852ad0a7b2a24505a7d340ebbfe185cbb46f9",
+    "https://github.com/getsentry/sentry/commits/master/api-docs/openapi.json",
+    "https://github.com/getsentry/sentry/commits?author=betegon",
+    "https://github.com/getsentry/sentry/discussions",
+    "https://github.com/getsentry/sentry/issues",
+    "https://github.com/getsentry/sentry/projects",
+    "https://github.com/getsentry/sentry/pulls",
+    "https://github.com/getsentry/sentry/pulse",
+    "https://github.com/getsentry/sentry/raw/refs/heads/master/api-docs/openapi.json",
+    "https://github.com/getsentry/sentry/security",
+    "https://github.com/getsentry/sentry/tree/master",
+    "https://github.com/getsentry/sentry/tree/master/api-docs",
     "https://github.com/google-gemini/gemini-cli",
-    "https://github.com/login?return_to=%2Fgetsentry%2Fsentry-api-schema",
-    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fgetsentry%2Fsentry-api-schema",
+    "https://github.com/login?return_to=%2Fgetsentry%2Fsentry",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fgetsentry%2Fsentry%2Fblob%2Fmaster%2Fapi-docs%2Fopenapi.json",
     "https://github.com/marketplace",
     "https://github.com/mcp",
     "https://github.com/orgs/community/discussions",
@@ -586,7 +478,7 @@
     "https://github.com/security/advanced-security",
     "https://github.com/security/advanced-security/code-security",
     "https://github.com/security/advanced-security/secret-protection",
-    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=getsentry%2Fsentry-api-schema",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fblob%2Fshow&source=header-repo&source_repo=getsentry%2Fsentry",
     "https://github.com/solutions",
     "https://github.com/solutions/executive-insights",
     "https://github.com/solutions/industry",
@@ -610,25 +502,24 @@
     "https://mcp.sentry.dev/",
     "https://mcp.sentry.dev/mcp",
     "https://mcp.sentry.dev/mcp**",
-    "https://mysentry.invalid/",
-    "https://myserver.invalid/",
     "https://opencode.ai/config.json",
     "https://opencode.ai/docs/mcp-servers",
-    "https://raw.githubusercontent.com/getsentry/sentry-api-schema/main/openapi-derefed.json",
+    "https://raw.githubusercontent.com/getsentry/sentry/master/api-docs/openapi.json",
     "https://sandbox.sentry.io/",
     "https://securitylab.github.com",
+    "https://sentry-build-ai.sentry.dev/new-feature-pr-review/",
+    "https://sentry.dev/",
     "https://sentry.dev/llms.txt",
     "https://sentry.io",
     "https://sentry.io/",
+    "https://sentry.io/api/",
     "https://sentry.io/api/0/",
     "https://sentry.io/api/0/organizations/",
     "https://sentry.io/api/0/organizations/acme/projects/",
     "https://sentry.io/api/0/organizations/acme/projects/1/groups/",
     "https://sentry.io/api/0/organizations/acme/projects/1/groups/?status=unresolved",
     "https://sentry.io/api/0/organizations/{organization_slug}/projects/",
-    "https://sentry.io/auth/login/?next=https://sentry-docs-next.sentry.dev//cli/configuration/",
     "https://sentry.io/changelog/",
-    "https://sentry.io/cookbook/performance-bot-sentry-claude/",
     "https://sentry.io/demo/",
     "https://sentry.io/for/enterprise/",
     "https://sentry.io/for/full-stack/",
@@ -638,7 +529,6 @@
     "https://sentry.io/oauth/device/?user_code=ABCD-EFGH",
     "https://sentry.io/oauth/device/code/",
     "https://sentry.io/oauth/token/",
-    "https://sentry.io/orgredirect/organizations/:orgslug/settings/auth-tokens/",
     "https://sentry.io/pricing",
     "https://sentry.io/pricing/",
     "https://sentry.io/product/cron-monitoring/",
@@ -649,7 +539,6 @@
     "https://sentry.io/product/session-replay/",
     "https://sentry.io/product/tracing/",
     "https://sentry.io/product/uptime-monitoring/",
-    "https://sentry.io/settings/account/api/auth-tokens/",
     "https://sentry.io/signup/",
     "https://sentry.io/solutions/ai-observability/",
     "https://sentry.io/solutions/application-performance-monitoring/",
@@ -661,10 +550,9 @@
     "https://skills.github.com",
     "https://stars.github.com",
     "https://support.github.com",
-    "https://the-interstellar-jurisdiction.sentry.io",
-    "https://us.sentry.io",
     "https://warp.dev",
     "https://www.sentry.help/en/",
-    "https://your-app.com/callback?code={AUTHORIZATION_CODE}"
+    "https://your-app.com/callback?code={AUTHORIZATION_CODE}",
+    "https://{region}.sentry.io"
   ]
 }

@@ -1,0 +1,635 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "cognito-idp.us-east-1.amazonaws.com",
+    "detect": {
+      "domain": "cognito-idp.us-east-1.amazonaws.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T23:04:36.586Z",
+    "summary": "Amazon Cognito User Pools exposes a regional HTTPS API at `https://cognito-idp.us-east-1.amazonaws.com` plus the `aws cognito-idp` CLI; the API supports IAM SigV4-signed admin operations, app-client-based public auth flows, and access-token-authorized user self-service operations.",
+    "description": "Amazon Cognito is AWS’s managed identity service for web and mobile applications. The `cognito-idp.us-east-1.amazonaws.com` host is the US East (N. Virginia) regional endpoint for Cognito User Pools, which store users and handle sign-in, authentication challenges, and token issuance.",
+    "credentials": {
+      "aws_iam_sigv4": {
+        "type": "aws_sigv4",
+        "label": "AWS IAM credentials for Signature Version 4 signing",
+        "generateUrl": "https://console.aws.amazon.com/iam/",
+        "setup": "Create or use an AWS IAM principal in the [AWS IAM console](https://console.aws.amazon.com/iam/) and obtain access key credentials, or use temporary credentials from STS. Grant the principal Cognito user-pool permissions as needed. Requests are signed with AWS Signature Version 4 as described in [Signing AWS API requests](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html). For CLI use, configure them with `aws configure` or another supported AWS credential source.",
+        "acquisition": "manual"
+      },
+      "cognito_app_client": {
+        "type": "compound",
+        "label": "Cognito user pool app client credentials",
+        "generateUrl": "https://console.aws.amazon.com/cognito/",
+        "setup": "In the [Amazon Cognito console](https://console.aws.amazon.com/cognito/), open a user pool and create or select an app client under application settings. This yields a `client_id`; confidential clients can also have a `client_secret`. Use the app client in public API flows like `InitiateAuth`, and on the user-pool domain `/oauth2/token` endpoint with `client_secret_basic` or `client_secret_post` when a secret exists.",
+        "acquisition": "manual"
+      },
+      "cognito_access_token": {
+        "type": "bearer",
+        "label": "Cognito user access token",
+        "generateUrl": "https://console.aws.amazon.com/cognito/",
+        "setup": "Create a user pool app client in the [Amazon Cognito console](https://console.aws.amazon.com/cognito/), then authenticate a user through Cognito sign-in flows such as `InitiateAuth` or the user-pool domain OAuth 2.0 endpoints. Use the resulting access token for token-authorized self-service API operations; it must include any required scopes such as `aws.cognito.signin.user.admin` for `GetUser`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "amazon-cognito-user-pools-api",
+        "name": "Amazon Cognito User Pools API",
+        "type": "http",
+        "docs": "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/Welcome.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.aws.amazon.com/general/latest/gr/cognito.html",
+            "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pools-API-operations.html",
+            "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html",
+            "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminInitiateAuth.html",
+            "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUser.html",
+            "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/CommonParameters.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "aws_iam_sigv4",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "AWS4-HMAC-SHA256"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pools-API-operations.html",
+                  "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminInitiateAuth.html",
+                  "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/CommonParameters.html"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cognito_app_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pools-API-operations.html",
+                  "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cognito_access_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pools-API-operations.html",
+                  "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUser.html"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://cognito-idp.us-east-1.amazonaws.com"
+      },
+      {
+        "slug": "aws-cli-cognito-idp",
+        "name": "AWS CLI cognito-idp",
+        "type": "cli",
+        "docs": "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "aws_iam_sigv4",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "aws configure",
+                    "env": [
+                      "AWS_ACCESS_KEY_ID",
+                      "AWS_SECRET_ACCESS_KEY",
+                      "AWS_SESSION_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cognito_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "aws cognito-idp get-user --access-token <token>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/",
+                  "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUser.html"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cognito_app_client",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "aws cognito-idp initiate-auth --client-id <client_id> ..."
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/",
+                  "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "awscli"
+          },
+          {
+            "registryType": "pip",
+            "identifier": "awscli",
+            "runtimeHint": "Python"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "aws-cli-js",
+            "runtimeHint": "Node.js"
+          }
+        ],
+        "command": "aws cognito-idp"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T23:04:36.586Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 156914,
+    "completion_tokens": 1950,
+    "total_tokens": 158864
+  },
+  "visited": [
+    "https://awscli.amazonaws.com/v2/documentation/api/2.8.7/reference/cognito-identity/describe-identity-pool.html",
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-authorizer.html",
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-enable-cognito-user-pool.html",
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-integrate-with-cognito.html",
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-open-api.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/get-user.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/initiate-auth.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/list-user-pools.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/sign-up.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/tag-resource.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminInitiateAuth.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AssociateSoftwareToken.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUser.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_RespondToAuthChallenge.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/CommonParameters.html",
+    "https://docs.aws.amazon.com/cognito/",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-the-access-token.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/authentication-flows-selection-managedlogin.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-assign-domain.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-define-resource-servers.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-identity-provider.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-oidc-idp.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-userpools-server-contract-reference.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/federation-endpoints.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/token-endpoint.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pools-API-operations.html",
+    "https://docs.aws.amazon.com/cognitoidentity/latest/APIReference/cognito-identity-api.pdf",
+    "https://docs.aws.amazon.com/general/latest/gr/cognito.html",
+    "https://github.com/aws-amplify/amplify-js/issues/4658",
+    "https://repost.aws/questions/QU1mJx_3xGTiqtV3mrg2YiIQ/custom-domain-for-cognito-idp-us-east-1-amazonaws-com",
+    "https://stackoverflow.com/questions/71014126/custom-domain-for-cognito-idp-us-east-1-amazonaws-com",
+    "https://www.reddit.com/r/aws/comments/1751dzj/cant_connect_to_cognito_from_within_aws_ecs/"
+  ],
+  "grounding": [
+    "http://aws.amazon.com/developer/tools/",
+    "http://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint",
+    "https://aws.amazon.com/developer/tools/",
+    "https://awscli.amazonaws.com/v2/documentation/api/2.8.7/reference/cognito-identity/describe-identity-pool.html",
+    "https://console.aws.amazon.com/pinpoint/home/",
+    "https://console.aws.amazon.com/servicequotas/home/services/cognito-idp/quotas/L-026ADBA3",
+    "https://console.aws.amazon.com/servicequotas/home/services/cognito-idp/quotas/L-1B44D826",
+    "https://console.aws.amazon.com/servicequotas/home/services/cognito-idp/quotas/L-5987B8A0",
+    "https://console.aws.amazon.com/servicequotas/home/services/cognito-idp/quotas/L-5EAB0605",
+    "https://console.aws.amazon.com/servicequotas/home/services/cognito-idp/quotas/L-BB3E7CCF",
+    "https://datatracker.ietf.org/doc/html/rfc7636",
+    "https://docs.amplify.aws/javascript/start/getting-started/",
+    "https://docs.aws.amazon.com/#",
+    "https://docs.aws.amazon.com/#API_AdminInitiateAuth_Errors",
+    "https://docs.aws.amazon.com/#API_AdminInitiateAuth_Examples",
+    "https://docs.aws.amazon.com/#API_AdminInitiateAuth_RequestParameters",
+    "https://docs.aws.amazon.com/#API_AdminInitiateAuth_RequestSyntax",
+    "https://docs.aws.amazon.com/#API_AdminInitiateAuth_ResponseElements",
+    "https://docs.aws.amazon.com/#API_AdminInitiateAuth_ResponseSyntax",
+    "https://docs.aws.amazon.com/#API_AdminInitiateAuth_SeeAlso",
+    "https://docs.aws.amazon.com/#API_GetUser_Errors",
+    "https://docs.aws.amazon.com/#API_GetUser_Examples",
+    "https://docs.aws.amazon.com/#API_GetUser_RequestParameters",
+    "https://docs.aws.amazon.com/#API_GetUser_RequestSyntax",
+    "https://docs.aws.amazon.com/#API_GetUser_ResponseElements",
+    "https://docs.aws.amazon.com/#API_GetUser_ResponseSyntax",
+    "https://docs.aws.amazon.com/#API_GetUser_SeeAlso",
+    "https://docs.aws.amazon.com/#API_InitiateAuth_Errors",
+    "https://docs.aws.amazon.com/#API_InitiateAuth_Examples",
+    "https://docs.aws.amazon.com/#API_InitiateAuth_RequestParameters",
+    "https://docs.aws.amazon.com/#API_InitiateAuth_RequestSyntax",
+    "https://docs.aws.amazon.com/#API_InitiateAuth_ResponseElements",
+    "https://docs.aws.amazon.com/#API_InitiateAuth_ResponseSyntax",
+    "https://docs.aws.amazon.com/#API_InitiateAuth_SeeAlso",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-request-AnalyticsMetadata",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-request-AuthFlow",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-request-AuthParameters",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-request-ClientId",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-request-ClientMetadata",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-request-ContextData",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-request-Session",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-request-UserPoolId",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-response-AuthenticationResult",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-response-AvailableChallenges",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-response-ChallengeName",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-response-ChallengeParameters",
+    "https://docs.aws.amazon.com/#CognitoUserPools-AdminInitiateAuth-response-Se",
+    "https://docs.aws.amazon.com/#CognitoUserPools-GetUser-request-AccessToken",
+    "https://docs.aws.amazon.com/#CognitoUserPools-GetUser-response-MFAOptions",
+    "https://docs.aws.amazon.com/#CognitoUserPools-GetUser-response-PreferredMfaSetting",
+    "https://docs.aws.amazon.com/#CognitoUserPools-GetUser-response-UserAttributes",
+    "https://docs.aws.amazon.com/#CognitoUserPools-GetUser-response-UserMFASettingList",
+    "https://docs.aws.amazon.com/#CognitoUserPools-GetUser-response-Username",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-request-AnalyticsMetadata",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-request-AuthFlow",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-request-AuthParameters",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-request-ClientId",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-request-ClientMetadata",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-request-Session",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-request-UserContextData",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-response-AuthenticationResult",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-response-AvailableChallenges",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-response-ChallengeName",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-response-ChallengeParameters",
+    "https://docs.aws.amazon.com/#CognitoUserPools-InitiateAuth-response-Session",
+    "https://docs.aws.amazon.com/#amazon-cognito-user-pools-client-side-authentication-flow",
+    "https://docs.aws.amazon.com/#amazon-cognito-user-pools-server-side-authentication-flow",
+    "https://docs.aws.amazon.com/#available-commands",
+    "https://docs.aws.amazon.com/#cognito-idp",
+    "https://docs.aws.amazon.com/#cognito-quotas",
+    "https://docs.aws.amazon.com/#cognito-region",
+    "https://docs.aws.amazon.com/#description",
+    "https://docs.aws.amazon.com/#exchanging-client-credentials-for-an-access-token-in-request-body",
+    "https://docs.aws.amazon.com/#post-token",
+    "https://docs.aws.amazon.com/#post-token-negative",
+    "https://docs.aws.amazon.com/#post-token-positive-exchanging-a-refresh-token-for-tokens",
+    "https://docs.aws.amazon.com/#post-token-positive-exchanging-authorization-code-for-tokens",
+    "https://docs.aws.amazon.com/#post-token-positive-exchanging-authorization-code-grant-with-pkce-for-tokens",
+    "https://docs.aws.amazon.com/#post-token-positive-exchanging-client-credentials-for-an-access-token-in-request-body",
+    "https://docs.aws.amazon.com/#post-token-positive-refresh-token-rotation",
+    "https://docs.aws.amazon.com/#user-pool-apis-auth-unauth",
+    "https://docs.aws.amazon.com/#user-pools-API-operations",
+    "https://docs.aws.amazon.com/../../genindex.html",
+    "https://docs.aws.amazon.com/../../index.html",
+    "https://docs.aws.amazon.com/../cognito-identity/update-identity-pool.html",
+    "https://docs.aws.amazon.com/../index.html",
+    "https://docs.aws.amazon.com/../index.html#cli-aws",
+    "https://docs.aws.amazon.com/./API_AnalyticsMetadataType.html",
+    "https://docs.aws.amazon.com/./API_AnalyticsMetadataType.html#CognitoUserPools-Type-AnalyticsMetadataType-AnalyticsEndpointId",
+    "https://docs.aws.amazon.com/./API_AttributeType.html",
+    "https://docs.aws.amazon.com/./API_AttributeType.html#CognitoUserPools-Type-AttributeType-Name",
+    "https://docs.aws.amazon.com/./API_AttributeType.html#CognitoUserPools-Type-AttributeType-Value",
+    "https://docs.aws.amazon.com/./API_AuthenticationResultType.html",
+    "https://docs.aws.amazon.com/./API_AuthenticationResultType.html#CognitoUserPools-Type-AuthenticationResultType-AccessToken",
+    "https://docs.aws.amazon.com/./API_AuthenticationResultType.html#CognitoUserPools-Type-AuthenticationResultType-ExpiresIn",
+    "https://docs.aws.amazon.com/./API_AuthenticationResultType.html#CognitoUserPools-Type-AuthenticationResultType-IdToken",
+    "https://docs.aws.amazon.com/./API_AuthenticationResultType.html#CognitoUserPools-Type-AuthenticationResultType-NewDeviceMetadata",
+    "https://docs.aws.amazon.com/./API_AuthenticationResultType.html#CognitoUserPools-Type-AuthenticationResultType-RefreshToken",
+    "https://docs.aws.amazon.com/./API_AuthenticationResultType.html#CognitoUserPools-Type-AuthenticationResultType-TokenType",
+    "https://docs.aws.amazon.com/./API_ContextDataType.html",
+    "https://docs.aws.amazon.com/./API_ContextDataType.html#CognitoUserPools-Type-ContextDataType-EncodedData",
+    "https://docs.aws.amazon.com/./API_ContextDataType.html#CognitoUserPools-Type-ContextDataType-HttpHeaders",
+    "https://docs.aws.amazon.com/./API_ContextDataType.html#CognitoUserPools-Type-ContextDataType-IpAddress",
+    "https://docs.aws.amazon.com/./API_ContextDataType.html#CognitoUserPools-Type-ContextDataType-ServerName",
+    "https://docs.aws.amazon.com/./API_ContextDataType.html#CognitoUserPools-Type-ContextDataType-ServerPath",
+    "https://docs.aws.amazon.com/./API_HttpHeader.html#CognitoUserPools-Type-HttpHeader-headerName",
+    "https://docs.aws.amazon.com/./API_HttpHeader.html#CognitoUserPools-Type-HttpHeader-headerValue",
+    "https://docs.aws.amazon.com/./API_InitiateAuth.html",
+    "https://docs.aws.amazon.com/./API_MFAOptionType.html",
+    "https://docs.aws.amazon.com/./API_MFAOptionType.html#CognitoUserPools-Type-MFAOptionType-AttributeName",
+    "https://docs.aws.amazon.com/./API_MFAOptionType.html#CognitoUserPools-Type-MFAOptionType-DeliveryMedium",
+    "https://docs.aws.amazon.com/./API_NewDeviceMetadataType.html#CognitoUserPools-Type-NewDeviceMetadataType-DeviceGroupKey",
+    "https://docs.aws.amazon.com/./API_NewDeviceMetadataType.html#CognitoUserPools-Type-NewDeviceMetadataType-DeviceKey",
+    "https://docs.aws.amazon.com/./API_UserContextDataType.html",
+    "https://docs.aws.amazon.com/./API_UserContextDataType.html#CognitoUserPools-Type-UserContextDataType-EncodedData",
+    "https://docs.aws.amazon.com/./API_UserContextDataType.html#CognitoUserPools-Type-UserContextDataType-IpAddress",
+    "https://docs.aws.amazon.com/./CommonErrors.html",
+    "https://docs.aws.amazon.com/./CommonParameters.html",
+    "https://docs.aws.amazon.com/./amazon-cognito-user-pools-device-tracking.html",
+    "https://docs.aws.amazon.com/./amazon-cognito-user-pools-using-the-refresh-token.html#using-the-refresh-token-api",
+    "https://docs.aws.amazon.com/./amazon-cognito-user-pools-using-the-refresh-token.html#using-the-refresh-token-rotation",
+    "https://docs.aws.amazon.com/./aws_service_limits.html",
+    "https://docs.aws.amazon.com/./cognito-user-pools-assign-domain.html",
+    "https://docs.aws.amazon.com/./cognito-user-pools-define-resource-servers.html",
+    "https://docs.aws.amazon.com/./cognito-user-pools-define-resource-servers.html#cognito-user-pools-resource-binding",
+    "https://docs.aws.amazon.com/./cognito-user-pools-managed-login.html",
+    "https://docs.aws.amazon.com/./federation-endpoints.html",
+    "https://docs.aws.amazon.com/./managed-login-endpoints.html",
+    "https://docs.aws.amazon.com/./rande.html",
+    "https://docs.aws.amazon.com/./user-pool-lambda-pre-token-generation.html",
+    "https://docs.aws.amazon.com/./user-pool-settings-client-apps.html",
+    "https://docs.aws.amazon.com/./userinfo-endpoint.html",
+    "https://docs.aws.amazon.com/./using-pkce-in-authorization-code.html",
+    "https://docs.aws.amazon.com/API_AdminInitiateAuth.md",
+    "https://docs.aws.amazon.com/API_GetUser.md",
+    "https://docs.aws.amazon.com/API_InitiateAuth.md",
+    "https://docs.aws.amazon.com/CommonParameters.md",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_aws-services-that-work-with-iam.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_aws-signing.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-signing-elements.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html",
+    "https://docs.aws.amazon.com/Welcome.html",
+    "https://docs.aws.amazon.com/add-custom-attributes.html",
+    "https://docs.aws.amazon.com/add-user-pool-client-secret.html",
+    "https://docs.aws.amazon.com/admin-add-user-to-group.html",
+    "https://docs.aws.amazon.com/admin-confirm-sign-up.html",
+    "https://docs.aws.amazon.com/admin-create-user.html",
+    "https://docs.aws.amazon.com/admin-delete-user-attributes.html",
+    "https://docs.aws.amazon.com/admin-delete-user.html",
+    "https://docs.aws.amazon.com/admin-disable-provider-for-user.html",
+    "https://docs.aws.amazon.com/admin-disable-user.html",
+    "https://docs.aws.amazon.com/admin-enable-user.html",
+    "https://docs.aws.amazon.com/admin-forget-device.html",
+    "https://docs.aws.amazon.com/admin-get-device.html",
+    "https://docs.aws.amazon.com/admin-get-user.html",
+    "https://docs.aws.amazon.com/admin-initiate-auth.html",
+    "https://docs.aws.amazon.com/admin-link-provider-for-user.html",
+    "https://docs.aws.amazon.com/admin-list-devices.html",
+    "https://docs.aws.amazon.com/admin-list-groups-for-user.html",
+    "https://docs.aws.amazon.com/admin-list-user-auth-events.html",
+    "https://docs.aws.amazon.com/admin-remove-user-from-group.html",
+    "https://docs.aws.amazon.com/admin-reset-user-password.html",
+    "https://docs.aws.amazon.com/admin-respond-to-auth-challenge.html",
+    "https://docs.aws.amazon.com/admin-set-user-mfa-preference.html",
+    "https://docs.aws.amazon.com/admin-set-user-password.html",
+    "https://docs.aws.amazon.com/admin-set-user-settings.html",
+    "https://docs.aws.amazon.com/admin-update-auth-event-feedback.html",
+    "https://docs.aws.amazon.com/admin-update-device-status.html",
+    "https://docs.aws.amazon.com/admin-update-user-attributes.html",
+    "https://docs.aws.amazon.com/admin-user-global-sign-out.html",
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-authorizer.html",
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-enable-cognito-user-pool.html",
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-integrate-with-cognito.html",
+    "https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-open-api.html",
+    "https://docs.aws.amazon.com/associate-software-token.html",
+    "https://docs.aws.amazon.com/authentication-flows-public-server-side.md",
+    "https://docs.aws.amazon.com/change-password.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/get-user.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/initiate-auth.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/list-user-pools.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/sign-up.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/tag-resource.html",
+    "https://docs.aws.amazon.com/cli/latest/userguide/",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminInitiateAuth.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminInitiateAuth.html#API_AdminInitiateAuth_ResponseSyntax",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminLinkProviderForUser.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminRespondToAuthChallenge.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUpdateDeviceStatus.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUpdateUserAttributes.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUpdateUserAttributes.html#CognitoUserPools-AdminUpdateUserAttributes-request-UserAttributes",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AssociateSoftwareToken.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ConfirmDevice.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUser.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_InitiateAuth.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_RespondToAuthChallenge.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_UpdateUserAttributes.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_VerifyUserAttribute.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/CommonParameters.html",
+    "https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/Welcome.html",
+    "https://docs.aws.amazon.com/cognito.md",
+    "https://docs.aws.amazon.com/cognito/",
+    "https://docs.aws.amazon.com/cognito/index.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-authentication-flow-methods.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-authentication-flow.html#Using-SRP-password-verification-in-custom-authentication-flow",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-device-tracking.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-the-access-token.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-the-refresh-token.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/authentication-flows-public-server-side.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/authentication-flows-public-server-side.html#user-pools-API-operations",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/authentication-flows-selection-managedlogin.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/authentication-flows-selection-sdk.html#authentication-flows-selection-choice",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/authentication.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-assign-domain.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-define-resource-servers.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-identity-federation-consolidate-users.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-identity-federation.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-identity-provider.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-oidc-idp.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-working-with-lambda-triggers.html#lambda-triggers-by-event",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-userpools-server-contract-reference.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/feature-plans-features-essentials.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/federation-endpoints.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/limits.html#category",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/service_code_examples_cognito-identity-provider.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/signing-up-users-in-your-app.html#cognito-user-pools-computing-secret-hash",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/token-endpoint.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-lambda-challenge.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-viewing-threat-protection-app.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-sms-settings.html",
+    "https://docs.aws.amazon.com/cognito/latest/developerguide/user-pools-API-operations.html",
+    "https://docs.aws.amazon.com/cognitoidentity/latest/APIReference/cognito-identity-api.pdf",
+    "https://docs.aws.amazon.com/complete-web-authn-registration.html",
+    "https://docs.aws.amazon.com/confirm-device.html",
+    "https://docs.aws.amazon.com/confirm-forgot-password.html",
+    "https://docs.aws.amazon.com/confirm-sign-up.html",
+    "https://docs.aws.amazon.com/create-group.html",
+    "https://docs.aws.amazon.com/create-identity-provider.html",
+    "https://docs.aws.amazon.com/create-managed-login-branding.html",
+    "https://docs.aws.amazon.com/create-resource-server.html",
+    "https://docs.aws.amazon.com/create-terms.html",
+    "https://docs.aws.amazon.com/create-user-import-job.html",
+    "https://docs.aws.amazon.com/create-user-pool-client.html",
+    "https://docs.aws.amazon.com/create-user-pool-domain.html",
+    "https://docs.aws.amazon.com/create-user-pool-replica.html",
+    "https://docs.aws.amazon.com/create-user-pool.html",
+    "https://docs.aws.amazon.com/delete-group.html",
+    "https://docs.aws.amazon.com/delete-identity-provider.html",
+    "https://docs.aws.amazon.com/delete-managed-login-branding.html",
+    "https://docs.aws.amazon.com/delete-resource-server.html",
+    "https://docs.aws.amazon.com/delete-terms.html",
+    "https://docs.aws.amazon.com/delete-user-attributes.html",
+    "https://docs.aws.amazon.com/delete-user-pool-client-secret.html",
+    "https://docs.aws.amazon.com/delete-user-pool-client.html",
+    "https://docs.aws.amazon.com/delete-user-pool-domain.html",
+    "https://docs.aws.amazon.com/delete-user-pool-replica.html",
+    "https://docs.aws.amazon.com/delete-user-pool.html",
+    "https://docs.aws.amazon.com/delete-user.html",
+    "https://docs.aws.amazon.com/delete-web-authn-credential.html",
+    "https://docs.aws.amazon.com/describe-identity-provider.html",
+    "https://docs.aws.amazon.com/describe-managed-login-branding-by-client.html",
+    "https://docs.aws.amazon.com/describe-managed-login-branding.html",
+    "https://docs.aws.amazon.com/describe-resource-server.html",
+    "https://docs.aws.amazon.com/describe-risk-configuration.html",
+    "https://docs.aws.amazon.com/describe-terms.html",
+    "https://docs.aws.amazon.com/describe-user-import-job.html",
+    "https://docs.aws.amazon.com/describe-user-pool-client.html",
+    "https://docs.aws.amazon.com/describe-user-pool-domain.html",
+    "https://docs.aws.amazon.com/describe-user-pool.html",
+    "https://docs.aws.amazon.com/forget-device.html",
+    "https://docs.aws.amazon.com/forgot-password.html",
+    "https://docs.aws.amazon.com/forms/aws-doc-feedback?hidden_service_name=AWS%20Command%20Line%20Interface&hidden_guide_name=Reference&topic_url=https%3A%2F%2Fdocs.aws.amazon.com%2Fcli%2Flatest%2Freference/cognito-idp/index.html",
+    "https://docs.aws.amazon.com/general/latest/gr/cognito.html",
+    "https://docs.aws.amazon.com/general/latest/gr/cognito_identity.html",
+    "https://docs.aws.amazon.com/general/latest/gr/cognito_identity.html#cognito_identity_your_user_pools_region",
+    "https://docs.aws.amazon.com/general/latest/gr/docconventions.html",
+    "https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html",
+    "https://docs.aws.amazon.com/get-csv-header.html",
+    "https://docs.aws.amazon.com/get-device.html",
+    "https://docs.aws.amazon.com/get-group.html",
+    "https://docs.aws.amazon.com/get-identity-provider-by-identifier.html",
+    "https://docs.aws.amazon.com/get-log-delivery-configuration.html",
+    "https://docs.aws.amazon.com/get-provisioned-limit.html",
+    "https://docs.aws.amazon.com/get-signing-certificate.html",
+    "https://docs.aws.amazon.com/get-tokens-from-refresh-token.html",
+    "https://docs.aws.amazon.com/get-ui-customization.html",
+    "https://docs.aws.amazon.com/get-user-attribute-verification-code.html",
+    "https://docs.aws.amazon.com/get-user-auth-factors.html",
+    "https://docs.aws.amazon.com/get-user-pool-mfa-config.html",
+    "https://docs.aws.amazon.com/get-user.html",
+    "https://docs.aws.amazon.com/global-sign-out.html",
+    "https://docs.aws.amazon.com/goto/DotNetSDKV4/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/SdkForCpp/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/SdkForGoV2/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/SdkForJavaScriptV3/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/SdkForJavaV2/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/SdkForKotlin/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/SdkForPHPV3/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/SdkForRubyV3/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/boto3/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/goto/cli2/cognito-idp-2016-04-18/GetUser",
+    "https://docs.aws.amazon.com/index.html",
+    "https://docs.aws.amazon.com/initiate-auth.html",
+    "https://docs.aws.amazon.com/list-devices.html",
+    "https://docs.aws.amazon.com/list-groups.html",
+    "https://docs.aws.amazon.com/list-identity-providers.html",
+    "https://docs.aws.amazon.com/list-resource-servers.html",
+    "https://docs.aws.amazon.com/list-tags-for-resource.html",
+    "https://docs.aws.amazon.com/list-terms.html",
+    "https://docs.aws.amazon.com/list-user-import-jobs.html",
+    "https://docs.aws.amazon.com/list-user-pool-client-secrets.html",
+    "https://docs.aws.amazon.com/list-user-pool-clients.html",
+    "https://docs.aws.amazon.com/list-user-pool-replicas.html",
+    "https://docs.aws.amazon.com/list-user-pools.html",
+    "https://docs.aws.amazon.com/list-users-in-group.html",
+    "https://docs.aws.amazon.com/list-users.html",
+    "https://docs.aws.amazon.com/list-web-authn-credentials.html",
+    "https://docs.aws.amazon.com/resend-confirmation-code.html",
+    "https://docs.aws.amazon.com/respond-to-auth-challenge.html",
+    "https://docs.aws.amazon.com/revoke-token.html",
+    "https://docs.aws.amazon.com/set-log-delivery-configuration.html",
+    "https://docs.aws.amazon.com/set-risk-configuration.html",
+    "https://docs.aws.amazon.com/set-ui-customization.html",
+    "https://docs.aws.amazon.com/set-user-mfa-preference.html",
+    "https://docs.aws.amazon.com/set-user-pool-mfa-config.html",
+    "https://docs.aws.amazon.com/set-user-settings.html",
+    "https://docs.aws.amazon.com/sign-up.html",
+    "https://docs.aws.amazon.com/sns/latest/dg/sns-sms-sandbox.html",
+    "https://docs.aws.amazon.com/start-user-import-job.html",
+    "https://docs.aws.amazon.com/start-web-authn-registration.html",
+    "https://docs.aws.amazon.com/stop-user-import-job.html",
+    "https://docs.aws.amazon.com/tag-resource.html",
+    "https://docs.aws.amazon.com/token-endpoint.md",
+    "https://docs.aws.amazon.com/untag-resource.html",
+    "https://docs.aws.amazon.com/update-auth-event-feedback.html",
+    "https://docs.aws.amazon.com/update-device-status.html",
+    "https://docs.aws.amazon.com/update-group.html",
+    "https://docs.aws.amazon.com/update-identity-provider.html",
+    "https://docs.aws.amazon.com/update-managed-login-branding.html",
+    "https://docs.aws.amazon.com/update-provisioned-limit.html",
+    "https://docs.aws.amazon.com/update-resource-server.html",
+    "https://docs.aws.amazon.com/update-terms.html",
+    "https://docs.aws.amazon.com/update-user-attributes.html",
+    "https://docs.aws.amazon.com/update-user-pool-client.html",
+    "https://docs.aws.amazon.com/update-user-pool-domain.html",
+    "https://docs.aws.amazon.com/update-user-pool-replica.html",
+    "https://docs.aws.amazon.com/update-user-pool.html",
+    "https://docs.aws.amazon.com/verify-software-token.html",
+    "https://docs.aws.amazon.com/verify-user-attribute.html",
+    "https://docs.aws.amazon.com/what-is-amazon-cognito.html",
+    "https://en.wikipedia.org/wiki/Basic_access_authentication#Client_side",
+    "https://forums.aws.amazon.com/forum.jspa?forumID=150",
+    "https://github.com/aws-amplify/amplify-js/issues/4658",
+    "https://github.com/aws/aws-cli",
+    "https://github.com/aws/aws-cli/blob/develop/CONTRIBUTING.md",
+    "https://mydomain.auth.us-east-1.amazoncognito.com/oauth2/token",
+    "https://mydomain.auth.us-east-1.amazoncognito.com/oauth2/token&",
+    "https://openid.net/developers/certified-openid-connect-implementations/",
+    "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication",
+    "https://repost.aws/questions/QU1mJx_3xGTiqtV3mrg2YiIQ/custom-domain-for-cognito-idp-us-east-1-amazonaws-com",
+    "https://stackoverflow.com/questions/71014126/custom-domain-for-cognito-idp-us-east-1-amazonaws-com",
+    "https://www.reddit.com/r/aws/comments/1751dzj/cant_connect_to_cognito_from_within_aws_ecs/",
+    "https://www.rfc-editor.org/rfc/rfc6749#section-3.2"
+  ]
+}

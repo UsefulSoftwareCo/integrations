@@ -1,0 +1,379 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "stablebaseline.io",
+    "detect": {
+      "domain": "stablebaseline.io",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:30:04.956Z",
+    "summary": "Stable Baseline exposes a REST API, a remote MCP server, and an `sb` CLI/SDK toolchain; developer auth is via Stable Baseline API keys or OAuth 2.1.",
+    "description": "Stable Baseline is a documentation and project workspace where humans and AI agents collaborate on documents, diagrams, plans, and a shared knowledge graph. It is designed to let MCP-compatible agents operate across workspace content and organization administration with scoped permissions.",
+    "credentials": {
+      "sb_api_key": {
+        "type": "bearer",
+        "label": "Stable Baseline MCP/API key",
+        "generateUrl": "https://app.stablebaseline.io/settings/mcp-keys",
+        "setup": "In the Stable Baseline web app, go to **Settings → MCP keys** (project-scoped from **Project settings → MCP keys**, or personal/global from **Account settings → MCP keys**) and click **Generate new key**. Scope it to the needed workspaces/projects and capabilities, then copy the `sta_…` key when shown; it is shown once. Docs: [MCP setup](https://stablebaseline.io/docs/mcp/setup), [Quickstart](https://stablebaseline.io/docs/quickstart)."
+      },
+      "sb_oauth": {
+        "type": "oauth2",
+        "label": "Stable Baseline OAuth 2.1 client/user authorization",
+        "generateUrl": "https://stablebaseline.io/.well-known/mcp.json",
+        "setup": "Use an MCP client that supports OAuth 2.1 with Dynamic Client Registration and point it at the Stable Baseline MCP server. The machine-readable manifest is [mcp.json](https://stablebaseline.io/.well-known/mcp.json), which advertises the OAuth endpoints and supported scopes. End users can also initiate this through hosts like ChatGPT by clicking **Connect** for Stable Baseline and authorizing at [app.stablebaseline.io](https://app.stablebaseline.io). Docs: [Setup & auth](https://stablebaseline.io/docs/mcp/setup), [ChatGPT recipe](https://stablebaseline.io/docs/recipes/chatgpt)."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "stable-baseline-mcp-server",
+        "name": "Stable Baseline MCP server",
+        "type": "mcp",
+        "docs": "https://stablebaseline.io/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://stablebaseline.io/docs/mcp",
+            "https://stablebaseline.io/docs/mcp/setup",
+            "https://stablebaseline.io/.well-known/mcp.json",
+            "https://api.stablebaseline.io/functions/v1/cloud-serve/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sb_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://stablebaseline.io/.well-known/mcp.json",
+                  "https://stablebaseline.io/docs/mcp/setup",
+                  "https://stablebaseline.io/docs/recipes/chatgpt"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sb_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "sb_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://stablebaseline.io/docs/mcp/setup",
+                  "https://stablebaseline.io/docs/quickstart",
+                  "https://stablebaseline.io/agents"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.stablebaseline.io/functions/v1/cloud-serve/mcp",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ]
+      },
+      {
+        "slug": "stable-baseline-cli",
+        "name": "Stable Baseline CLI",
+        "type": "cli",
+        "docs": "https://stablebaseline.io/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://stablebaseline.io/docs/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sb_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://stablebaseline.io/docs/mcp"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sb_oauth",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://stablebaseline.io/docs/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@stablebaseline/cli",
+            "runtimeHint": "Node.js"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "@stablebaseline/sdk",
+            "runtimeHint": "Node.js"
+          },
+          {
+            "registryType": "pypi",
+            "identifier": "stablebaseline",
+            "runtimeHint": "Python"
+          }
+        ],
+        "command": "sb"
+      },
+      {
+        "slug": "stable-baseline-rest-api",
+        "name": "Stable Baseline REST API",
+        "type": "http",
+        "docs": "https://stablebaseline.io/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://stablebaseline.io/docs/mcp",
+            "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/openapi.json",
+            "https://stablebaseline.io/agents"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sb_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/openapi.json"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sb_oauth",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/openapi.json"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:30:04.957Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 188463,
+    "completion_tokens": 2073,
+    "total_tokens": 190536
+  },
+  "visited": [
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/openapi.json",
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/tools/pollSignupStatus",
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/tools/startSignup",
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/mcp",
+    "https://app.stablebaseline.io/oauth/authorize",
+    "https://app.stablebaseline.io/oauth/register",
+    "https://app.stablebaseline.io/oauth/token",
+    "https://docs.firecrawl.dev/developer-guides/mcp-setup-guides/oauth",
+    "https://docs.scalekit.com/authenticate/mcp/quickstart/",
+    "https://github.com/avelino/mcp",
+    "https://libraries.io/pypi/stablebaseline",
+    "https://stablebaseline.io",
+    "https://stablebaseline.io/.well-known/mcp.json",
+    "https://stablebaseline.io/agents",
+    "https://stablebaseline.io/docs",
+    "https://stablebaseline.io/docs/mcp",
+    "https://stablebaseline.io/docs/mcp/setup",
+    "https://stablebaseline.io/docs/quickstart",
+    "https://stablebaseline.io/docs/recipes/chatgpt",
+    "https://stablebaseline.io/docs/recipes/claude",
+    "https://stablebaseline.io/docs/recipes/generic",
+    "https://stablebaseline.io/llms.txt",
+    "https://www.solo.io/resources/lab/secure-your-mcp-servers-with-oauth",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers"
+  ],
+  "grounding": [
+    "http://api.stablebaseline.io/cloud-serve/api/v1",
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/",
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/openapi.json",
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/tools/pollSignupStatus",
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/api/v1/tools/startSignup",
+    "https://api.stablebaseline.io/functions/v1/cloud-serve/mcp",
+    "https://api.stablebaseline.io/functions/v1/mcp-signup",
+    "https://api.stablebaseline.io/oauth/register",
+    "https://api.stablebaseline.io/oauth/token",
+    "https://app.stablebaseline.io",
+    "https://app.stablebaseline.io/",
+    "https://app.stablebaseline.io/login",
+    "https://app.stablebaseline.io/oauth/authorize",
+    "https://app.stablebaseline.io/oauth/register",
+    "https://app.stablebaseline.io/oauth/token",
+    "https://app.stablebaseline.io/settings/mcp-keys",
+    "https://app.stablebaseline.io/setup",
+    "https://app.stablebaseline.io/signup",
+    "https://chatgpt.com",
+    "https://chatgpt.com/apps/stable-baseline/asdk_app_69cf378964308191aafb2dfac6472779",
+    "https://docs.firecrawl.dev/developer-guides/mcp-setup-guides/oauth",
+    "https://docs.scalekit.com/authenticate/mcp/quickstart/",
+    "https://github.com/avelino/mcp",
+    "https://github.com/stablebaseline/mcp",
+    "https://glama.ai/mcp/servers/stablebaseline/mcp",
+    "https://libraries.io/pypi/stablebaseline",
+    "https://pypi.org/project/stablebaseline/",
+    "https://registry.modelcontextprotocol.io/v0/servers?search=io.stablebaseline",
+    "https://smithery.ai/servers/stablebaseline/sb-mcp",
+    "https://stablebaseline.io",
+    "https://stablebaseline.io/",
+    "https://stablebaseline.io/#",
+    "https://stablebaseline.io/#agents",
+    "https://stablebaseline.io/#apps",
+    "https://stablebaseline.io/#documents",
+    "https://stablebaseline.io/#path-a",
+    "https://stablebaseline.io/#path-b",
+    "https://stablebaseline.io/#path-c",
+    "https://stablebaseline.io/#platform",
+    "https://stablebaseline.io/#recipes",
+    "https://stablebaseline.io/#solutions",
+    "https://stablebaseline.io/#work",
+    "https://stablebaseline.io/.well-known/mcp.json",
+    "https://stablebaseline.io/agents",
+    "https://stablebaseline.io/changelog",
+    "https://stablebaseline.io/contact",
+    "https://stablebaseline.io/diagrams",
+    "https://stablebaseline.io/docs",
+    "https://stablebaseline.io/docs/agent",
+    "https://stablebaseline.io/docs/compliance",
+    "https://stablebaseline.io/docs/concepts",
+    "https://stablebaseline.io/docs/diagrams",
+    "https://stablebaseline.io/docs/documents",
+    "https://stablebaseline.io/docs/knowledge-graph",
+    "https://stablebaseline.io/docs/mcp",
+    "https://stablebaseline.io/docs/mcp/permissions",
+    "https://stablebaseline.io/docs/mcp/setup",
+    "https://stablebaseline.io/docs/mcp/tools",
+    "https://stablebaseline.io/docs/mcp/tools/billing",
+    "https://stablebaseline.io/docs/mcp/tools/data",
+    "https://stablebaseline.io/docs/mcp/tools/diagrams",
+    "https://stablebaseline.io/docs/mcp/tools/documents",
+    "https://stablebaseline.io/docs/mcp/tools/folders",
+    "https://stablebaseline.io/docs/mcp/tools/images",
+    "https://stablebaseline.io/docs/mcp/tools/improvements",
+    "https://stablebaseline.io/docs/mcp/tools/kg_admin",
+    "https://stablebaseline.io/docs/mcp/tools/knowledge_graph",
+    "https://stablebaseline.io/docs/mcp/tools/members",
+    "https://stablebaseline.io/docs/mcp/tools/navigation",
+    "https://stablebaseline.io/docs/mcp/tools/organization",
+    "https://stablebaseline.io/docs/mcp/tools/permissions",
+    "https://stablebaseline.io/docs/mcp/tools/plans",
+    "https://stablebaseline.io/docs/mcp/tools/settings",
+    "https://stablebaseline.io/docs/mcp/tools/signup",
+    "https://stablebaseline.io/docs/mcp/tools/teams",
+    "https://stablebaseline.io/docs/mcp/tools/whiteboards",
+    "https://stablebaseline.io/docs/plans",
+    "https://stablebaseline.io/docs/quickstart",
+    "https://stablebaseline.io/docs/recipes",
+    "https://stablebaseline.io/docs/recipes/",
+    "https://stablebaseline.io/docs/recipes/antigravity",
+    "https://stablebaseline.io/docs/recipes/chatgpt",
+    "https://stablebaseline.io/docs/recipes/claude",
+    "https://stablebaseline.io/docs/recipes/codex",
+    "https://stablebaseline.io/docs/recipes/cursor",
+    "https://stablebaseline.io/docs/recipes/gemini",
+    "https://stablebaseline.io/docs/recipes/generic",
+    "https://stablebaseline.io/docs/recipes/opencode",
+    "https://stablebaseline.io/docs/recipes/vscode",
+    "https://stablebaseline.io/docs/recipes/warp",
+    "https://stablebaseline.io/docs/recipes/windsurf",
+    "https://stablebaseline.io/docs/versions",
+    "https://stablebaseline.io/docs/whiteboards",
+    "https://stablebaseline.io/llms.txt",
+    "https://stablebaseline.io/pricing",
+    "https://stablebaseline.io/privacy",
+    "https://stablebaseline.io/request",
+    "https://stablebaseline.io/robots.txt",
+    "https://stablebaseline.io/security",
+    "https://stablebaseline.io/sitemap.xml",
+    "https://stablebaseline.io/terms",
+    "https://status.stablebaseline.io",
+    "https://www.npmjs.com/package/@stablebaseline/cli",
+    "https://www.npmjs.com/package/@stablebaseline/sdk",
+    "https://www.solo.io/resources/lab/secure-your-mcp-servers-with-oauth",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers"
+  ]
+}

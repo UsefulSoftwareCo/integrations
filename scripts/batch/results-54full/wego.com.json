@@ -1,0 +1,413 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "wego.com",
+    "detect": {
+      "domain": "wego.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:43:55.008Z",
+    "summary": "Wego exposes a public no-auth MCP server plus documented HTTP APIs for Affiliate search, OAuth token issuance, and B2B Distribution flight/hotel integrations; no GraphQL API or CLI was found.",
+    "description": "Wego is a travel metasearch and distribution platform for flights and hotels. It provides affiliate search APIs, partner distribution APIs, and provider integration documentation for travel suppliers and marketplaces.",
+    "credentials": {
+      "affiliate_client_id": {
+        "type": "app",
+        "label": "Wego Affiliate client ID",
+        "generateUrl": "https://developers.wego.com/docs/affiliate/get-started",
+        "setup": "Contact Wego to obtain Affiliate API credentials, as stated in the [Affiliate Get Started](https://developers.wego.com/docs/affiliate/get-started) guide (`Please contact us to get API Credentials`). The affiliate token request shown in [Affiliate Authentication](https://developers.wego.com/docs/affiliate/guides/authentication) requires a `client_id` and no self-service registration page is documented."
+      },
+      "distribution_client_credentials": {
+        "type": "compound",
+        "label": "Wego Distribution API client credentials (client ID + client secret)",
+        "generateUrl": "https://developers.wego.com/docs/distribution/getting-started",
+        "setup": "Obtain Distribution API client credentials from Wego. The [Distribution Getting Started](https://developers.wego.com/docs/distribution/getting-started) guide says you must `obtain client credentials from Wego`, then exchange `client_id` and `client_secret` at [`https://api.wego.com/oauth/token`](https://developers.wego.com/docs/distribution/getting-started). The detailed token API is documented in [Generate an access token](https://developers.wego.com/docs/oauth/api/gen-access-token)."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "wego-mcp-server",
+        "name": "Wego MCP Server",
+        "type": "mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://mcp.wego.com/chatgpt-app/v1/mcp"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "Catalog fact from OpenAI registries: Known MCP server at https://mcp.wego.com/chatgpt-app/v1/mcp with authTypes NONE"
+            ]
+          }
+        },
+        "url": "https://mcp.wego.com/chatgpt-app/v1/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "wego-affiliate-api",
+        "name": "Wego Affiliate API",
+        "type": "http",
+        "docs": "https://developers.wego.com/docs/affiliate/get-started",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.wego.com/docs/affiliate/get-started",
+            "https://developers.wego.com/docs/affiliate/guides/authentication",
+            "https://developers.wego.com/docs/affiliate/references/authentication",
+            "https://developers.wego.com/docs/affiliate/references/flights",
+            "https://developers.wego.com/docs/affiliate/references/hotels"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "affiliate_client_id",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.wego.com/docs/affiliate/guides/authentication",
+                  "https://developers.wego.com/docs/affiliate/references/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://affiliate-api.wego.com",
+        "requiredHeaders": [
+          {
+            "name": "X-Wego-Version",
+            "source": {
+              "kind": "static",
+              "value": "1"
+            },
+            "description": "Shown on the affiliate token request example."
+          }
+        ]
+      },
+      {
+        "slug": "wego-oauth-api",
+        "name": "Wego OAuth API",
+        "type": "http",
+        "docs": "https://developers.wego.com/docs/oauth/api/index",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.wego.com/docs/oauth/api/wego-oauth-api",
+            "https://developers.wego.com/docs/oauth/api/gen-access-token"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "distribution_client_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.wego.com/docs/oauth/api/gen-access-token"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.wegostaging.com"
+      },
+      {
+        "slug": "wego-flight-b2b-distribution-api",
+        "name": "Wego Flight B2B Distribution API",
+        "type": "http",
+        "docs": "https://developers.wego.com/docs/distribution/flight/api/index",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.wego.com/docs/distribution/getting-started",
+            "https://developers.wego.com/docs/distribution/flight/api/flight-b-2-b-distribution-apis-v-3",
+            "https://developers.wego.com/docs/distribution/flight/api/search-flight-prices"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "distribution_client_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.wego.com/docs/distribution/getting-started",
+                  "https://developers.wego.com/docs/distribution/flight/api/flight-b-2-b-distribution-apis-v-3"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "wego-hotel-b2b-distribution-api",
+        "name": "Wego Hotel B2B Distribution API",
+        "type": "http",
+        "docs": "https://developers.wego.com/docs/distribution/hotel/api/index",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.wego.com/docs/distribution/getting-started",
+            "https://developers.wego.com/docs/distribution/hotel/api/hotel-b-2-b-distribution-apis",
+            "https://developers.wego.com/docs/distribution/hotel/api/fetch-cheapest-rates",
+            "https://developers.wego.com/docs/distribution/hotel/api/price-check"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "distribution_client_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.wego.com/docs/distribution/getting-started",
+                  "https://developers.wego.com/docs/distribution/hotel/api/price-check"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:43:55.009Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 189023,
+    "completion_tokens": 2599,
+    "total_tokens": 191622
+  },
+  "visited": [
+    "https://awslabs.github.io/mcp/servers/openapi-mcp-server",
+    "https://developers.google.com/knowledge/reference/mcp",
+    "https://developers.wego.com/",
+    "https://developers.wego.com/docs/affiliate/get-started",
+    "https://developers.wego.com/docs/affiliate/guides/authentication",
+    "https://developers.wego.com/docs/affiliate/references/authentication",
+    "https://developers.wego.com/docs/affiliate/references/error-responses",
+    "https://developers.wego.com/docs/affiliate/references/flight-objects",
+    "https://developers.wego.com/docs/affiliate/references/flights",
+    "https://developers.wego.com/docs/affiliate/references/general-objects",
+    "https://developers.wego.com/docs/affiliate/references/hotel-objects",
+    "https://developers.wego.com/docs/affiliate/references/hotels",
+    "https://developers.wego.com/docs/distribution/flight/api/flight-b-2-b-distribution-apis-v-3",
+    "https://developers.wego.com/docs/distribution/flight/api/index",
+    "https://developers.wego.com/docs/distribution/flight/api/search-flight-prices",
+    "https://developers.wego.com/docs/distribution/getting-started",
+    "https://developers.wego.com/docs/distribution/hotel/api/fetch-cheapest-rates",
+    "https://developers.wego.com/docs/distribution/hotel/api/hotel-b-2-b-distribution-apis",
+    "https://developers.wego.com/docs/distribution/hotel/api/index",
+    "https://developers.wego.com/docs/distribution/hotel/api/price-check",
+    "https://developers.wego.com/docs/oauth/api/gen-access-token",
+    "https://developers.wego.com/docs/oauth/api/index",
+    "https://developers.wego.com/docs/oauth/api/wego-oauth-api",
+    "https://developers.wego.com/docs/provider/pre-conversion-tracking",
+    "https://developers.wego.com/docs/provider/welcome",
+    "https://developers.wego.com/flight-3.0.0.yaml",
+    "https://developers.wego.com/hotel-1.0.0.yaml",
+    "https://developers.wego.com/oauth-1.0.0.yaml",
+    "https://github.com/IBM/mcp-cli",
+    "https://mcp.wego.com/chatgpt-app/v1/mcp",
+    "https://mcpservers.org/servers/elifuzz/api-docs-mcp",
+    "https://www.stainless.com/mcp/mcp-api-documentation-the-complete-guide/"
+  ],
+  "grounding": [
+    "https://affiliate-api.wego.com/api_name/api_action/",
+    "https://affiliate-api.wego.com/apps/oauth/token",
+    "https://affiliate-api.wego.com/metasearch/flights/searches",
+    "https://affiliate-api.wego.com/metasearch/flights/searches/:searchID/results?offset=0&locale=EN&currencyCode=SGD",
+    "https://affiliate-api.wego.com/metasearch/hotels/searches",
+    "https://api.wego.com/oauth/token",
+    "https://api.wego.com/ota/hotels/v1/all-rates",
+    "https://api.wegostaging.com",
+    "https://api.wegostaging.com/oauth/token",
+    "https://api.wegostaging.com/ota",
+    "https://api.wegostaging.com/ota/hotels/v1/cheapest-rates",
+    "https://api.wegostaging.com/ota/hotels/v1/price-check",
+    "https://assets.wego.com/image/upload/v1604675069/P",
+    "https://assets.wego.com/image/upload/v1604994887/Partner/hotels/648083/389704732.jpg",
+    "https://assets.wego.com/image/upload/v1604994887/Partner/hotels/648083/491299948.jpg",
+    "https://assets.wego.com/image/upload/v1610251235/Partner/hotels/1007903/374683205.jpg",
+    "https://assets.wego.com/image/upload/v1610251236/Partner/hotels/1007903/374683207.png",
+    "https://assets.wego.com/image/upload/v1610251236/Partner/hotels/944684/491292108.jpg",
+    "https://assets.wego.com/image/upload/v1610251236/Partner/hotels/944684/515634049.jpg",
+    "https://assets.wego.com/image/upload/v1610251283/Partner/hotels/1840524/406573201.jpg",
+    "https://assets.wego.com/image/upload/v1610251283/Partner/hotels/1840524/468069517.jpg",
+    "https://assets.wego.com/image/upload/v1610251284/Partner/hotels/1840524/453545951.jpg",
+    "https://assets.wego.com/image/upload/v1610251314/Partner/hotels/2270348/440264282.jpg",
+    "https://assets.wego.com/image/upload/v1610251314/Partner/hotels/2270348/462871907.jpg",
+    "https://assets.wego.com/image/upload/v1610251314/Partner/hotels/2270348/462871913.jpg",
+    "https://assets.wego.com/image/upload/v1620707879/Partner/hotels/1007903/567608691.jpg",
+    "https://assets.wego.com/image/upload/v1620707880/Partner/hotels/648083/532254787.jpg",
+    "https://assets.wego.com/image/upload/v1620707882/Partner/hotels/944684/554920231.jpg",
+    "https://awslabs.github.io/mcp/servers/openapi-mcp-server",
+    "https://developers.google.com/knowledge/reference/mcp",
+    "https://developers.wego.com/",
+    "https://developers.wego.com/#",
+    "https://developers.wego.com/#1-javascript-pixel-library",
+    "https://developers.wego.com/#2-image-pixel-implementation",
+    "https://developers.wego.com/#3-server-to-server-implementation-recommended",
+    "https://developers.wego.com/#__docusaurus_skipToContent_fallback",
+    "https://developers.wego.com/#authentication",
+    "https://developers.wego.com/#call-api",
+    "https://developers.wego.com/#contacts",
+    "https://developers.wego.com/#create-search",
+    "https://developers.wego.com/#credentials",
+    "https://developers.wego.com/#error-codes",
+    "https://developers.wego.com/#error-handling",
+    "https://developers.wego.com/#example-request",
+    "https://developers.wego.com/#faq",
+    "https://developers.wego.com/#for-importing-static-data",
+    "https://developers.wego.com/#for-integrating-as-metasearch-partners",
+    "https://developers.wego.com/#for-integrating-as-ota-partners",
+    "https://developers.wego.com/#get-search-results",
+    "https://developers.wego.com/#how-it-works",
+    "https://developers.wego.com/#how-to-test-the-pre-conversion-pixel",
+    "https://developers.wego.com/#http-status-codes",
+    "https://developers.wego.com/#img-pixel-example",
+    "https://developers.wego.com/#implementation-options",
+    "https://developers.wego.com/#ip-whitelisting-for-accessing-staging-endpoints",
+    "https://developers.wego.com/#js-pixel-example",
+    "https://developers.wego.com/#mobile-websites",
+    "https://developers.wego.com/#more-parameters-in-api-response-in-future",
+    "https://developers.wego.com/#oauth-20-protocol-for-authentication-and-authorization",
+    "https://developers.wego.com/#parameters",
+    "https://developers.wego.com/#pixel-implementation",
+    "https://developers.wego.com/#policy",
+    "https://developers.wego.com/#pre-conversion-tracking",
+    "https://developers.wego.com/#process-flow-steps",
+    "https://developers.wego.com/#query-params",
+    "https://developers.wego.com/#rate-limiting",
+    "https://developers.wego.com/#request",
+    "https://developers.wego.com/#request-body",
+    "https://developers.wego.com/#response",
+    "https://developers.wego.com/#response-1",
+    "https://developers.wego.com/#responses",
+    "https://developers.wego.com/#sample-request",
+    "https://developers.wego.com/#sample-response",
+    "https://developers.wego.com/#sample-trigger-and-requests",
+    "https://developers.wego.com/#server-to-server-example",
+    "https://developers.wego.com/#solutions-for-common-implementation-problems",
+    "https://developers.wego.com/#supported-amenities",
+    "https://developers.wego.com/#technical-requirements",
+    "https://developers.wego.com/#testing-in-staging",
+    "https://developers.wego.com/#workflow",
+    "https://developers.wego.com/docs/affiliate/get-started",
+    "https://developers.wego.com/docs/affiliate/guides/authentication",
+    "https://developers.wego.com/docs/affiliate/guides/flights",
+    "https://developers.wego.com/docs/affiliate/guides/hotels",
+    "https://developers.wego.com/docs/affiliate/references/authentication",
+    "https://developers.wego.com/docs/affiliate/references/error-responses",
+    "https://developers.wego.com/docs/affiliate/references/flight-objects",
+    "https://developers.wego.com/docs/affiliate/references/flights",
+    "https://developers.wego.com/docs/affiliate/references/general-objects",
+    "https://developers.wego.com/docs/affiliate/references/hotel-objects",
+    "https://developers.wego.com/docs/affiliate/references/hotels",
+    "https://developers.wego.com/docs/affiliate/terms-of-service",
+    "https://developers.wego.com/docs/distribution/flight/api/flight-b-2-b-distribution-apis-v-3",
+    "https://developers.wego.com/docs/distribution/flight/api/index",
+    "https://developers.wego.com/docs/distribution/flight/api/schemas/apierror",
+    "https://developers.wego.com/docs/distribution/flight/api/schemas/flightsearchrequest",
+    "https://developers.wego.com/docs/distribution/flight/api/search-flight-prices",
+    "https://developers.wego.com/docs/distribution/getting-started",
+    "https://developers.wego.com/docs/distribution/hotel/api/cancel",
+    "https://developers.wego.com/docs/distribution/hotel/api/confirm-a-hotel-booking",
+    "https://developers.wego.com/docs/distribution/hotel/api/fetch-all-rates",
+    "https://developers.wego.com/docs/distribution/hotel/api/fetch-cheapest-rates",
+    "https://developers.wego.com/docs/distribution/hotel/api/hotel-b-2-b-distribution-apis",
+    "https://developers.wego.com/docs/distribution/hotel/api/hotel-b-2-b-distribution-apis#authentication",
+    "https://developers.wego.com/docs/distribution/hotel/api/index",
+    "https://developers.wego.com/docs/distribution/hotel/api/price-check",
+    "https://developers.wego.com/docs/distribution/hotel/api/retrieve",
+    "https://developers.wego.com/docs/distribution/hotel/api/retrieve-all-countries-information",
+    "https://developers.wego.com/docs/distribution/hotel/api/retrieve-list-of-all-rooms-for-a-given-hotel",
+    "https://developers.wego.com/docs/distribution/hotel/api/schemas/countriesresponse",
+    "https://developers.wego.com/docs/oauth/api/gen-access-token",
+    "https://developers.wego.com/docs/oauth/api/index",
+    "https://developers.wego.com/docs/oauth/api/schemas/apierror",
+    "https://developers.wego.com/docs/oauth/api/schemas/tokenrequest",
+    "https://developers.wego.com/docs/oauth/api/wego-oauth-api",
+    "https://developers.wego.com/docs/provider/conversion-tracking",
+    "https://developers.wego.com/docs/provider/flights-integration-requirements",
+    "https://developers.wego.com/docs/provider/flights-partner-rating",
+    "https://developers.wego.com/docs/provider/hotels-integration-requirements",
+    "https://developers.wego.com/docs/provider/pre-conversion-tracking",
+    "https://developers.wego.com/docs/provider/welcome",
+    "https://developers.wego.com/flight-3.0.0.yaml",
+    "https://developers.wego.com/hotel-1.0.0.yaml",
+    "https://developers.wego.com/oauth-1.0.0.yaml",
+    "https://github.com/IBM/mcp-cli",
+    "https://github.com/wego",
+    "https://mcp.wego.com/chatgpt-app/v1/mcp",
+    "https://mcpservers.org/servers/elifuzz/api-docs-mcp",
+    "https://srv.wego.com/analytics/v3/landings/event",
+    "https://support.wan.travel/attachments/token/1lqxwnftpoy0l2u/?name=Agtreement_API.pdf",
+    "https://twitter.com/wego",
+    "https://www.facebook.com/wego",
+    "https://www.instagram.com/wego_travel",
+    "https://www.linkedin.com/company/wego-com",
+    "https://www.stainless.com/mcp/mcp-api-documentation-the-complete-guide/",
+    "https://www.wego.com/hotels/searches/goi/2024-07-24/2024-07-26/104921?guests=2&search_id=6e19cb14b19e7323",
+    "https://zen.wego.com/partner/js/wegoevents.js"
+  ]
+}

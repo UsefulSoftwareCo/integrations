@@ -1,0 +1,382 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "cdc.gov",
+    "detect": {
+      "domain": "cdc.gov",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:57:18.179Z",
+    "summary": "CDC exposes several HTTP APIs: two public no-auth endpoints (Content Services at tools.cdc.gov/api and CDC WONDER POST queries at wonder.cdc.gov/controller/datarequest/{database ID}), one documented API-key-protected endpoint (NIO Autocoder via `Ocp-Apim-Subscription-Key` obtained by emailing NIOCCS), and additional listed HTTP APIs (MVPS Reports External API, HAIC CDI API, and EWS Person API) whose exact auth mechanics remain undocumented in the recorded sources.",
+    "credentials": {
+      "nio_api_key": {
+        "type": "api_key",
+        "label": "NIO Autocoder API subscription key",
+        "generateUrl": "https://developer.cdc.gov/docs/nio-autocoder/access",
+        "setup": "Request access by emailing the NIOCCS team at [nioccs@cdc.gov](mailto:nioccs@cdc.gov) as described in the [NIO Autocoder Access](https://developer.cdc.gov/docs/nio-autocoder/access) page. Include your organization name, contact name, email, phone, and purpose, with subject `NIO Autocoder Access`. CDC responds with a secure file transfer link containing your API key; note the documented 6-month rotation period."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "cdc-content-services-api",
+        "name": "CDC Content Services API",
+        "type": "http",
+        "docs": "https://tools.cdc.gov/api/docs/info.aspx",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tools.cdc.gov/api/docs/info.aspx",
+            "https://tools.cdc.gov/api/docs/v1/info.aspx"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://tools.cdc.gov/api/docs/info.aspx",
+              "https://tools.cdc.gov/api/docs/v1/info.aspx"
+            ]
+          }
+        },
+        "url": "https://tools.cdc.gov/api"
+      },
+      {
+        "slug": "cdc-wonder-api-for-data-query-web-service",
+        "name": "CDC WONDER API for Data Query Web Service",
+        "type": "http",
+        "docs": "https://wonder.cdc.gov/wonder/help/wonder-api.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://wonder.cdc.gov/wonder/help/wonder-api.html"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://wonder.cdc.gov/wonder/help/wonder-api.html"
+            ]
+          }
+        },
+        "url": "https://wonder.cdc.gov/controller/datarequest/{database ID}",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/x-www-form-urlencoded"
+            },
+            "description": "The docs describe POST parameters `request_xml` and optional `accept_datause_restrictions`, implying form-style POST submission."
+          }
+        ],
+        "variables": [
+          {
+            "name": "database ID",
+            "resolveFrom": "Choose the target online database; each WONDER database has a unique ID documented on its site/help pages.",
+            "description": "Unique CDC WONDER database identifier used in the POST path."
+          }
+        ]
+      },
+      {
+        "slug": "nio-autocoder-api",
+        "name": "NIO Autocoder API",
+        "type": "http",
+        "docs": "https://developer.cdc.gov/docs/nio-autocoder/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.cdc.gov/docs/nio-autocoder/api",
+            "https://developer.cdc.gov/docs/nio-autocoder/access",
+            "https://developer.cdc.gov/apis"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "nio_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Ocp-Apim-Subscription-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.cdc.gov/docs/nio-autocoder/api",
+                  "https://developer.cdc.gov/docs/nio-autocoder/access",
+                  "https://developer.cdc.gov/apis"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.cdc.gov/nioautocoder/"
+      },
+      {
+        "slug": "mvps-reports-external-api",
+        "name": "MVPS Reports External API",
+        "type": "http",
+        "docs": "https://developer.cdc.gov/docs/mvps-external-api/documentation",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.cdc.gov/docs/mvps-external-api/documentation",
+            "https://developer.cdc.gov/apis"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://api.cdc.gov/mvps/1.0.0/",
+        "variables": [
+          {
+            "name": "environment",
+            "resolveFrom": "Use the environment URL table in the documentation to choose develop, test, stage, or production.",
+            "description": "Deployment environment determines the host: `apidev.cdc.gov`, `apitst.cdc.gov`, `apistg.cdc.gov`, or `api.cdc.gov`."
+          }
+        ]
+      },
+      {
+        "slug": "haic-cdi-api",
+        "name": "HAIC CDI API",
+        "type": "http",
+        "docs": "https://developer.cdc.gov/apis",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.cdc.gov/apis"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "enterprise-web-services-ews-person-api",
+        "name": "Enterprise Web Services (EWS) Person API",
+        "type": "http",
+        "docs": "https://developer.cdc.gov/apis",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.cdc.gov/apis"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:57:18.179Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 268645,
+    "completion_tokens": 1912,
+    "total_tokens": 270557
+  },
+  "visited": [
+    "https://developer.cdc.gov/",
+    "https://developer.cdc.gov/apis",
+    "https://developer.cdc.gov/docs/mvps-external-api/documentation",
+    "https://developer.cdc.gov/docs/mvps-external-api/swagger/mvps-rpts-1-0-0",
+    "https://developer.cdc.gov/docs/nio-autocoder/access",
+    "https://developer.cdc.gov/docs/nio-autocoder/api",
+    "https://developer.cdc.gov/docs/nio-autocoder/guidance",
+    "https://developer.cdc.gov/docs/nio-autocoder/purpose",
+    "https://developer.cdc.gov/docs/nio-autocoder/swagger/nio-autocoder-1-0-0",
+    "https://developer.cdc.gov/help/become-provider",
+    "https://developer.cdc.gov/support-ticket/submit-support-ticket",
+    "https://github.com/CDCgov/opencdc/blob/master/_data/apis.yml",
+    "https://tools.cdc.gov/api/docs/info.aspx",
+    "https://tools.cdc.gov/api/docs/v1/info.aspx",
+    "https://wonder.cdc.gov/wonder/help/wonder-api.html"
+  ],
+  "grounding": [
+    "http://twitter.com/share?url=undefined&text=",
+    "http://www.cdc.gov/mmwr/preview/mmwrhtml/mm6120a3.htm",
+    "http://www.cdc.gov/winnablebattles/Tobacco/index.html",
+    "http://www.fda.gov/",
+    "https://**",
+    "https://api.cdc.gov/mvps/1.0.0/",
+    "https://api.cdc.gov/nioautocoder/",
+    "https://api.cdc.gov/nioautocoder/1.0.0/IOCode",
+    "https://api.cdc.gov/nioautocoder/1.0.0/IOCode?i=healthcare&o=nurse&n=2",
+    "https://apidev.cdc.gov/mvps/1.0.0/",
+    "https://apidev.cdc.gov/mvps/1.0.0/api/Lookups/Categories",
+    "https://apidev.cdc.gov/mvps/1.0.0/api/Lookups/EventCodes",
+    "https://apidev.cdc.gov/mvps/1.0.0/api/Reports/ErrorAndWarning",
+    "https://apidev.cdc.gov/mvps/1.0.0/api/Reports/ErrorAndWarning/{caseId}",
+    "https://apidev.cdc.gov/mvps/1.0.0/api/Reports/LineList",
+    "https://apistg.cdc.gov/mvps/1.0.0/",
+    "https://apitst.cdc.gov/mvps/1.0.0/",
+    "https://archive.cdc.gov/",
+    "https://developer.cdc.gov/",
+    "https://developer.cdc.gov/#apiresponse",
+    "https://developer.cdc.gov/#industryresponse",
+    "https://developer.cdc.gov/#occupationresponse",
+    "https://developer.cdc.gov/about-us",
+    "https://developer.cdc.gov/access",
+    "https://developer.cdc.gov/apidocs/mvps-external-api/openapi.json",
+    "https://developer.cdc.gov/apis",
+    "https://developer.cdc.gov/docs/mvps-external-api/documentation",
+    "https://developer.cdc.gov/docs/mvps-external-api/swagger/mvps-rpts-1-0-0",
+    "https://developer.cdc.gov/docs/nio-autocoder/CHANGELOG",
+    "https://developer.cdc.gov/docs/nio-autocoder/access",
+    "https://developer.cdc.gov/docs/nio-autocoder/api",
+    "https://developer.cdc.gov/docs/nio-autocoder/guidance",
+    "https://developer.cdc.gov/docs/nio-autocoder/purpose",
+    "https://developer.cdc.gov/docs/nio-autocoder/swagger/nio-autocoder-1-0-0",
+    "https://developer.cdc.gov/drs",
+    "https://developer.cdc.gov/help",
+    "https://developer.cdc.gov/help/become-provider",
+    "https://developer.cdc.gov/help/become-provider/publishing-apis",
+    "https://developer.cdc.gov/help/become-provider/working-with-cdc-apis",
+    "https://developer.cdc.gov/nioautocoder",
+    "https://developer.cdc.gov/support-ticket/submit-support-ticket",
+    "https://developer.cdc.gov/tel:800-232-4636",
+    "https://docs.cdc.gov/docs/dgw",
+    "https://github.com/CDCgov/opencdc/blob/master/_data/apis.yml",
+    "https://jobs.cdc.gov/index.html",
+    "https://login.microsoftonline.com/9ce70869-60db-44fd-abe8-d2767077fc8f/oauth2/v2.0/token",
+    "https://oig.hhs.gov/",
+    "https://servicedesk.cdc.gov/esc?id=sc_cat_item&table=sc_cat_item&sys_id=6c00be721be286d06aa6ece2604bcb33",
+    "https://stacks.cdc.gov/",
+    "https://tools.cdc.gov/#api_change_log",
+    "https://tools.cdc.gov/#api_upgrades",
+    "https://tools.cdc.gov/#audiences",
+    "https://tools.cdc.gov/#embed_media",
+    "https://tools.cdc.gov/#intro",
+    "https://tools.cdc.gov/#language_upgrades",
+    "https://tools.cdc.gov/#languages",
+    "https://tools.cdc.gov/#media",
+    "https://tools.cdc.gov/#media_upgrades",
+    "https://tools.cdc.gov/#mediatypes",
+    "https://tools.cdc.gov/#meta",
+    "https://tools.cdc.gov/#organizations",
+    "https://tools.cdc.gov/#organizationtypes",
+    "https://tools.cdc.gov/#page_media",
+    "https://tools.cdc.gov/#related_tags",
+    "https://tools.cdc.gov/#response",
+    "https://tools.cdc.gov/#retrieve_media",
+    "https://tools.cdc.gov/#retrieve_tag",
+    "https://tools.cdc.gov/#retrieve_tag_media",
+    "https://tools.cdc.gov/#search_media",
+    "https://tools.cdc.gov/#sort_media",
+    "https://tools.cdc.gov/#source",
+    "https://tools.cdc.gov/#sources",
+    "https://tools.cdc.gov/#syndicate_content",
+    "https://tools.cdc.gov/#syndicate_media",
+    "https://tools.cdc.gov/#syndication_upgrades",
+    "https://tools.cdc.gov/#tags",
+    "https://tools.cdc.gov/#tagtypes",
+    "https://tools.cdc.gov/#topics",
+    "https://tools.cdc.gov/../info.aspx",
+    "https://tools.cdc.gov/api",
+    "https://tools.cdc.gov/api/docs/info.aspx",
+    "https://tools.cdc.gov/api/docs/v1/info.aspx",
+    "https://tools.cdc.gov/api/v1/resources/media",
+    "https://tools.cdc.gov/api/v1/resources/media/16/thumbnail",
+    "https://tools.cdc.gov/api/v1/resources/media/{ID}?showchildlevel={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/api/v1/resources/media/{ID}?showparentlevel={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/api/v1/resources/media/{MEDIA_ID}",
+    "https://tools.cdc.gov/api/v1/resources/media/{MEDIA_ID}/content",
+    "https://tools.cdc.gov/api/v1/resources/media/{MEDIA_ID}/embed",
+    "https://tools.cdc.gov/api/v1/resources/media/{MEDIA_ID}/syndicate",
+    "https://tools.cdc.gov/api/v1/resources/media?audience={STRING}",
+    "https://tools.cdc.gov/api/v1/resources/media?language={STRING}",
+    "https://tools.cdc.gov/api/v1/resources/media?max={POSITIVE_INTEGER}&offset={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/api/v1/resources/media?max={POSITIVE_INTEGER}&offset={POSITIVE_INTEGER}&pagenum={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/api/v1/resources/media?max={POSITIVE_INTEGER}&pagenum={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/api/v1/resources/media?mediatype=html&max=20&offset=20&pagenum=3",
+    "https://tools.cdc.gov/api/v1/resources/media?mediatype={MEDIA_TYPE_NAME}",
+    "https://tools.cdc.gov/api/v1/resources/media?q={STRING}",
+    "https://tools.cdc.gov/api/v1/resources/media?sort={ATTRIBUTE_NAME}",
+    "https://tools.cdc.gov/api/v1/resources/media?sort=—{ATTRIBUTE_NAME}",
+    "https://tools.cdc.gov/api/v1/resources/media?title={STRING}",
+    "https://tools.cdc.gov/api/v1/resources/media?topic={STRING}",
+    "https://tools.cdc.gov/api/v1/resources/media?ttl={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/api/v1/resources/mediatypes",
+    "https://tools.cdc.gov/api/v2/resources/links/4.png",
+    "https://tools.cdc.gov/api/v2/resources/media",
+    "https://tools.cdc.gov/api/v2/resources/media/16/thumbnail",
+    "https://tools.cdc.gov/api/v2/resources/media/{ID}?showchildlevel={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/api/v2/resources/media/{ID}?showparentlevel={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/api/v2/resources/media/{MEDIA_ID}",
+    "https://tools.cdc.gov/api/v2/resources/media?audience={STRING}",
+    "https://tools.cdc.gov/api/v2/resources/media?languageisocode={STRING}",
+    "https://tools.cdc.gov/api/v2/resources/media?languagename={STRING}",
+    "https://tools.cdc.gov/api/v2/resources/media?mediatype=html&max=20&offset=20&pagenum=3",
+    "https://tools.cdc.gov/api/v2/resources/media?mediatypes={MEDIA_TYPE_NAME}",
+    "https://tools.cdc.gov/api/v2/resources/media?name={STRING}",
+    "https://tools.cdc.gov/api/v2/resources/media?q={STRING}",
+    "https://tools.cdc.gov/api/v2/resources/media?sort={ATTRIBUTE_NAME}",
+    "https://tools.cdc.gov/api/v2/resources/media?sourceacronym={STRING}",
+    "https://tools.cdc.gov/api/v2/resources/media?sourcename={STRING}",
+    "https://tools.cdc.gov/api/v2/resources/media?topic={STRING}",
+    "https://tools.cdc.gov/api/v2/resources/media?topicids={CSV}",
+    "https://tools.cdc.gov/api/v2/resources/media?ttl={POSITIVE_INTEGER}",
+    "https://tools.cdc.gov/javascript:void(0",
+    "https://tools.cdc.gov/medialibrary/index.aspx#/sharecontent/https://wonder.cdc.gov/wonder/help/wonder-api.html",
+    "https://tools.cdc.gov/v1/info.aspx",
+    "https://wonder.cdc.gov/",
+    "https://wonder.cdc.gov/#",
+    "https://wonder.cdc.gov/#API-Examples",
+    "https://wonder.cdc.gov/#FAQ",
+    "https://wonder.cdc.gov/#More",
+    "https://wonder.cdc.gov/#accept_datause_restrictions",
+    "https://wonder.cdc.gov/#request",
+    "https://wonder.cdc.gov/#share-nav",
+    "https://wonder.cdc.gov/api-examples",
+    "https://wonder.cdc.gov/api-utility/api-utility.html",
+    "https://wonder.cdc.gov/controller/datarequest",
+    "https://wonder.cdc.gov/controller/datarequest/",
+    "https://wonder.cdc.gov/controller/datarequest/D76",
+    "https://wonder.cdc.gov/controller/datarequest?stage=contactus&action=start",
+    "https://wonder.cdc.gov/controller/datarequest?stage=search&action=current",
+    "https://wonder.cdc.gov/datause.html",
+    "https://wonder.cdc.gov/ucd-icd10.html",
+    "https://wonder.cdc.gov/wonder/help/faq.html",
+    "https://wonder.cdc.gov/wonder/help/main.html",
+    "https://wonder.cdc.gov/wonder/help/wonder-api.html",
+    "https://www.cdc.gov/",
+    "https://www.cdc.gov/Other/disclaimer.html#exit-notification",
+    "https://www.cdc.gov/Other/policies.html",
+    "https://www.cdc.gov/about/",
+    "https://www.cdc.gov/about/organization/",
+    "https://www.cdc.gov/budget/",
+    "https://www.cdc.gov/cdc-info/forms/contact-us.html",
+    "https://www.cdc.gov/od/foia/",
+    "https://www.cdc.gov/oeeowe/nofearact/",
+    "https://www.cdc.gov/other/accessibility.html",
+    "https://www.cdc.gov/other/nondiscrimination.html",
+    "https://www.cdc.gov/other/privacy.html",
+    "https://www.facebook.com/sharer/sharer.php?u=undefined",
+    "https://www.hhs.gov/vulnerabili",
+    "https://www.hhs.gov/vulnerability-disclosure-policy/index.html",
+    "https://www.linkedin.com/shareArticle?url=undefined&title="
+  ]
+}

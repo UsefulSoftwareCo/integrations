@@ -1,0 +1,484 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "omniapp.co",
+    "detect": {
+      "domain": "omniapp.co",
+      "found": [
+        "openapi-schema",
+        "oauth-protected-resource",
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "apiSchema": {
+        "url": "https://omniapp.co/openapi.json",
+        "format": "openapi",
+        "version": "3.1.0"
+      },
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://omniapp.co"
+          ],
+          "authorizationEndpoint": "https://omniapp.co/oauth/authorize",
+          "tokenEndpoint": "https://omniapp.co/oauth/token",
+          "protectedResourceUrl": "https://omniapp.co/.well-known/oauth-protected-resource",
+          "scopes": [
+            "mcp:access"
+          ],
+          "registrationEndpoint": "https://omniapp.co/oauth/register",
+          "dcr": true,
+          "cimd": true,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:12:22.351Z",
+    "summary": "Omni exposes a bearer-token HTTP API, an OAuth- or API-key-authenticated MCP server at callbacks.omniapp.co, and an installable Omni CLI with OAuth or API-token auth.",
+    "description": "Omni is a business intelligence and semantic-layer platform for querying data, managing models and content, and powering analytics workflows. It also provides an AI-oriented MCP server so external AI clients can query Omni data and search Omni documentation.",
+    "credentials": {
+      "omni_api_token": {
+        "type": "bearer",
+        "label": "Omni API token (Organization API key or Personal Access Token)",
+        "generateUrl": "https://docs.omni.co/api/authentication",
+        "setup": "Create a token in Omni using the easiest path described in [API authentication](https://docs.omni.co/api/authentication). For an organization-wide key, an Organization Admin goes to **Settings > API access > Organization keys** and clicks **Generate new key**. For a user-scoped PAT, first have an admin enable **Settings > API access > Personal tokens**, then the user opens **Profile > Manage account > Generate token**. Use the resulting token as `Authorization: Bearer <token>`.",
+        "acquisition": "manual"
+      },
+      "omni_oauth_client": {
+        "type": "oauth2",
+        "label": "Omni OAuth client for MCP/CLI OAuth",
+        "generateUrl": "https://omniapp.co/oauth/register",
+        "setup": "Register an OAuth client against Omni’s dynamic client registration endpoint at [registration endpoint](https://omniapp.co/oauth/register). Omni publishes its authorization server metadata at [oauth-authorization-server](https://omniapp.co/.well-known/oauth-authorization-server): use `authorization_code` with PKCE `S256`, scope `mcp:access`, and note that `token_endpoint_auth_methods_supported` is `none` (public client). For MCP clients, use the protected resource metadata discovered from the server; Omni’s auth docs describe this browser-based OAuth flow in [MCP authentication](https://docs.omni.co/ai/mcp/authentication).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "omni-analytics-mcp-server",
+        "name": "Omni Analytics MCP server",
+        "type": "mcp",
+        "docs": "https://docs.omni.co/ai/mcp/authentication",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://callbacks.omniapp.co/callback/mcp",
+            "https://callbacks.omniapp.co/.well-known/oauth-protected-resource",
+            "https://docs.omni.co/ai/mcp/authentication",
+            "https://docs.omni.co/ai/mcp/codex",
+            "https://omniapp.co/.well-known/oauth-authorization-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "omni_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://callbacks.omniapp.co/callback/mcp",
+                  "https://callbacks.omniapp.co/.well-known/oauth-protected-resource",
+                  "https://omniapp.co/.well-known/oauth-authorization-server",
+                  "https://docs.omni.co/ai/mcp/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "omni_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.omni.co/ai/mcp/authentication",
+                  "https://docs.omni.co/ai/mcp/codex"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://callbacks.omniapp.co/callback/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "omni-cli",
+        "name": "Omni CLI",
+        "type": "cli",
+        "docs": "https://docs.omni.co/developers/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.omni.co/developers/cli",
+            "https://docs.omni.co/developers/cli/install",
+            "https://docs.omni.co/developers/cli/authentication",
+            "https://docs.omni.co/developers/cli/quickstart"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "omni_oauth_client",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "omni config login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.omni.co/developers/cli/authentication",
+                  "https://docs.omni.co/developers/cli/quickstart"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "omni_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "omni config init",
+                    "env": [
+                      "OMNI_API_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.omni.co/developers/cli/authentication",
+                  "https://docs.omni.co/developers/cli/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "exploreomni/tap/omni"
+          },
+          {
+            "registryType": "github",
+            "identifier": "exploreomni/cli"
+          }
+        ],
+        "command": "omni"
+      },
+      {
+        "slug": "omni-api",
+        "name": "Omni API",
+        "type": "http",
+        "docs": "https://docs.omni.co/api/authentication",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://omniapp.co/openapi.json",
+            "https://docs.omni.co/api/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "omni_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://omniapp.co/openapi.json",
+                  "https://docs.omni.co/api/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{your-omni-org}.omniapp.co/api"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:12:22.352Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 135807,
+    "completion_tokens": 2046,
+    "total_tokens": 137853
+  },
+  "visited": [
+    "https://callbacks.omniapp.co/.well-known/oauth-protected-resource",
+    "https://callbacks.omniapp.co/callback/mcp",
+    "https://developers.google.com/knowledge/mcp",
+    "https://docs.omni.co/ai/mcp",
+    "https://docs.omni.co/ai/mcp/authentication",
+    "https://docs.omni.co/ai/mcp/codex",
+    "https://docs.omni.co/api/api-tokens/enable-or-disable-api-token",
+    "https://docs.omni.co/api/api-tokens/list-api-tokens",
+    "https://docs.omni.co/api/authentication",
+    "https://docs.omni.co/api/connections/create-connection",
+    "https://docs.omni.co/api/documents-v2/get-document-state",
+    "https://docs.omni.co/api/models/list-models",
+    "https://docs.omni.co/api/users/list-users",
+    "https://docs.omni.co/changelog",
+    "https://docs.omni.co/developers/cli",
+    "https://docs.omni.co/developers/cli/authentication",
+    "https://docs.omni.co/developers/cli/commands",
+    "https://docs.omni.co/developers/cli/install",
+    "https://docs.omni.co/developers/cli/quickstart",
+    "https://docs.omni.co/guides/modeling/local-development",
+    "https://omniapp.co/.well-known/oauth-authorization-server",
+    "https://omniapp.co/oauth/authorize",
+    "https://omniapp.co/oauth/register",
+    "https://omniapp.co/openapi.json",
+    "https://www.scalekit.com/connectors/swaggermcp",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
+    "https://www.youtube.com/watch?v=AxemUGYjJQM"
+  ],
+  "grounding": [
+    "https://acme.omniapp.co/models/9d9440e5-8522-4507-b092-1ac26ba26673/ide/model",
+    "https://callbacks.omniapp.co",
+    "https://callbacks.omniapp.co/.well-known/oauth-protected-resource",
+    "https://callbacks.omniapp.co/callback/mcp",
+    "https://community.omni.co",
+    "https://developers.google.com/knowledge/mcp",
+    "https://docs.omni.co/",
+    "https://docs.omni.co/#advanced-agentic-queries",
+    "https://docs.omni.co/#api-key-authentication",
+    "https://docs.omni.co/#api-key-issues",
+    "https://docs.omni.co/#auth-header",
+    "https://docs.omni.co/#authenticating-with-an-api-key",
+    "https://docs.omni.co/#authenticating-with-oauth",
+    "https://docs.omni.co/#authentication",
+    "https://docs.omni.co/#available-commands",
+    "https://docs.omni.co/#build-from-source",
+    "https://docs.omni.co/#cli-oauth-pats",
+    "https://docs.omni.co/#connection-url",
+    "https://docs.omni.co/#connection-url-2",
+    "https://docs.omni.co/#content-area",
+    "https://docs.omni.co/#create",
+    "https://docs.omni.co/#data-access-and-security",
+    "https://docs.omni.co/#documentation-search",
+    "https://docs.omni.co/#enable-disable",
+    "https://docs.omni.co/#expiration",
+    "https://docs.omni.co/#features",
+    "https://docs.omni.co/#general-issues",
+    "https://docs.omni.co/#get-started",
+    "https://docs.omni.co/#getting-started",
+    "https://docs.omni.co/#github-releases-macos-linux-windows",
+    "https://docs.omni.co/#homebrew-cannot-find-omni",
+    "https://docs.omni.co/#homebrew-macos-linux-preferred",
+    "https://docs.omni.co/#how-it-works",
+    "https://docs.omni.co/#how-it-works-2",
+    "https://docs.omni.co/#improving-results",
+    "https://docs.omni.co/#install-script-macos-linux",
+    "https://docs.omni.co/#mcp-oauth-pats",
+    "https://docs.omni.co/#next-steps",
+    "https://docs.omni.co/#oauth-authentication",
+    "https://docs.omni.co/#oauth-issues",
+    "https://docs.omni.co/#omni-command-not-found",
+    "https://docs.omni.co/#output",
+    "https://docs.omni.co/#pat-endpoint-limitations",
+    "https://docs.omni.co/#permission-denied-when-installing",
+    "https://docs.omni.co/#prerequisites",
+    "https://docs.omni.co/#querying",
+    "https://docs.omni.co/#requirements",
+    "https://docs.omni.co/#revoke",
+    "https://docs.omni.co/#rotate",
+    "https://docs.omni.co/#setup",
+    "https://docs.omni.co/#steps",
+    "https://docs.omni.co/#token-comparison",
+    "https://docs.omni.co/#token-types",
+    "https://docs.omni.co/#tools",
+    "https://docs.omni.co/#troubleshooting",
+    "https://docs.omni.co/#using-the-mcp",
+    "https://docs.omni.co/#what-you-can-do",
+    "https://docs.omni.co/#whoami",
+    "https://docs.omni.co/administration",
+    "https://docs.omni.co/administration/users/attributes",
+    "https://docs.omni.co/administration/users/your-account",
+    "https://docs.omni.co/ai",
+    "https://docs.omni.co/ai/chat",
+    "https://docs.omni.co/ai/dashboard-assistant",
+    "https://docs.omni.co/ai/mcp",
+    "https://docs.omni.co/ai/mcp/authentication",
+    "https://docs.omni.co/ai/mcp/authentication#oauth-authentication",
+    "https://docs.omni.co/ai/mcp/chatgpt",
+    "https://docs.omni.co/ai/mcp/claude-code",
+    "https://docs.omni.co/ai/mcp/claude-desktop",
+    "https://docs.omni.co/ai/mcp/codex",
+    "https://docs.omni.co/ai/mcp/cursor",
+    "https://docs.omni.co/ai/mcp/microsoft-copilot",
+    "https://docs.omni.co/ai/mcp/vscode",
+    "https://docs.omni.co/ai/security",
+    "https://docs.omni.co/ai/settings/features#mcp-server",
+    "https://docs.omni.co/analyze-explore",
+    "https://docs.omni.co/analyze-explore/spreadsheet-tabs",
+    "https://docs.omni.co/analyze-explore/workbook-basics",
+    "https://docs.omni.co/analyze-explore/workbook-inspector",
+    "https://docs.omni.co/api",
+    "https://docs.omni.co/api/api-explorer",
+    "https://docs.omni.co/api/api-tokens/delete-api-token",
+    "https://docs.omni.co/api/api-tokens/enable-or-disable-api-token",
+    "https://docs.omni.co/api/api-tokens/list-api-tokens",
+    "https://docs.omni.co/api/authentication",
+    "https://docs.omni.co/api/authentication#create",
+    "https://docs.omni.co/api/authentication#token-types",
+    "https://docs.omni.co/api/cli",
+    "https://docs.omni.co/api/connections/create-connection",
+    "https://docs.omni.co/api/content-migration/export-dashboard",
+    "https://docs.omni.co/api/content-migration/import-dashboard",
+    "https://docs.omni.co/api/documents-v2/get-document-state",
+    "https://docs.omni.co/api/models/list-models",
+    "https://docs.omni.co/api/rate-limits",
+    "https://docs.omni.co/api/schedule-recipients/bulk-manage-email-only-users",
+    "https://docs.omni.co/api/schedule-recipients/manage-email-only-user",
+    "https://docs.omni.co/api/users/list-users",
+    "https://docs.omni.co/api/who-am-i",
+    "https://docs.omni.co/changelog",
+    "https://docs.omni.co/content/archive-restore",
+    "https://docs.omni.co/content/develop/branch-mode",
+    "https://docs.omni.co/content/organize",
+    "https://docs.omni.co/developers/agent-skills",
+    "https://docs.omni.co/developers/cli",
+    "https://docs.omni.co/developers/cli/authentication",
+    "https://docs.omni.co/developers/cli/authentication#oauth-authentication",
+    "https://docs.omni.co/developers/cli/commands",
+    "https://docs.omni.co/developers/cli/install",
+    "https://docs.omni.co/developers/cli/quickstart",
+    "https://docs.omni.co/docs/dashboards/filters",
+    "https://docs.omni.co/getting-started/best-practices",
+    "https://docs.omni.co/getting-started/developers",
+    "https://docs.omni.co/getting-started/keyboard-shortcuts",
+    "https://docs.omni.co/getting-started/viewers",
+    "https://docs.omni.co/guides",
+    "https://docs.omni.co/guides/ai/improve-ai-answer-quality",
+    "https://docs.omni.co/guides/ai/tuning-cost-quality",
+    "https://docs.omni.co/guides/api/bulk-update-model-yaml",
+    "https://docs.omni.co/guides/api/connection-environments",
+    "https://docs.omni.co/guides/api/data-lineage-integration",
+    "https://docs.omni.co/guides/api/port-sql-queries-omni-api",
+    "https://docs.omni.co/guides/api/run-document-queries",
+    "https://docs.omni.co/guides/connections/enforce-database-rbac",
+    "https://docs.omni.co/guides/dashboards/calculated-field-filter",
+    "https://docs.omni.co/guides/dashboards/dashboarding-best-practices",
+    "https://docs.omni.co/guides/embed/ai-chat-agent",
+    "https://docs.omni.co/guides/embed/embed-development-production-setup",
+    "https://docs.omni.co/guides/embed/omni-in-internal-app",
+    "https://docs.omni.co/guides/embed/omni-in-notion",
+    "https://docs.omni.co/guides/embed/omni-in-salesforce",
+    "https://docs.omni.co/guides/errors/failed-to-fetch",
+    "https://docs.omni.co/guides/errors/fan-out-without-pk",
+    "https://docs.omni.co/guides/modeling/date-flexibility-templated-filters",
+    "https://docs.omni.co/guides/modeling/join-to-same-table",
+    "https://docs.omni.co/guides/modeling/local-development",
+    "https://docs.omni.co/guides/modeling/nested-field-groups",
+    "https://docs.omni.co/guides/modeling/preview-dbt-changes",
+    "https://docs.omni.co/guides/modeling/push-to-databricks-metric-views",
+    "https://docs.omni.co/guides/modeling/scaled-deployments-shared-model-extensions",
+    "https://docs.omni.co/guides/modeling/single-field-filter",
+    "https://docs.omni.co/guides/patterns/build-cohort-analysis-using-level-of-detail",
+    "https://docs.omni.co/guides/patterns/cohort-analysis-month-offset-ai",
+    "https://docs.omni.co/guides/patterns/dynamic-pivot-query-view",
+    "https://docs.omni.co/guides/patterns/opening-closing-balances",
+    "https://docs.omni.co/guides/patterns/optimizing-ai-context-for-fintech",
+    "https://docs.omni.co/guides/patterns/optimizing-ai-context-for-retail-and-ecommerce",
+    "https://docs.omni.co/guides/patterns/optimizing-ai-context-for-saas-and-sales-operations",
+    "https://docs.omni.co/guides/patterns/optimizing-ai-context-for-support-operations",
+    "https://docs.omni.co/guides/patterns/optimizing-ai-context-media-and-adtech",
+    "https://docs.omni.co/guides/patterns/simple-cohort-analysis-pivot",
+    "https://docs.omni.co/guides/patterns/spine-cohort-analysis",
+    "https://docs.omni.co/guides/patterns/thin-dimension-spine",
+    "https://docs.omni.co/guides/visualizations/add-links",
+    "https://docs.omni.co/guides/workbooks/custom-drill-fields",
+    "https://docs.omni.co/guides/workbooks/snapshots-with-parameters",
+    "https://docs.omni.co/integrations/git",
+    "https://docs.omni.co/integrations/git/settings",
+    "https://docs.omni.co/integrations/git/settings#always-create-branches",
+    "https://docs.omni.co/integrations/git/settings#pull-request-required",
+    "https://docs.omni.co/integrations/git/troubleshooting",
+    "https://docs.omni.co/integrations/omni-slack-agent",
+    "https://docs.omni.co/llms.txt",
+    "https://docs.omni.co/modeling/develop/ai-optimization",
+    "https://docs.omni.co/modeling/develop/model-management",
+    "https://docs.omni.co/modeling/models/ai-settings#param-query-all-views-and-fields",
+    "https://docs.omni.co/modeling/templated-filters",
+    "https://docs.omni.co/share",
+    "https://docs.omni.co/share/deliveries",
+    "https://docs.omni.co/share/deliveries/amazon-s3",
+    "https://docs.omni.co/share/deliveries/dynamic-content",
+    "https://docs.omni.co/share/deliveries/google-sheets",
+    "https://docs.omni.co/share/deliveries/sftp",
+    "https://docs.omni.co/share/deliveries/slack",
+    "https://docs.omni.co/share/deliveries/troubleshooting",
+    "https://docs.omni.co/share/deliveries/webhooks",
+    "https://docs.omni.co/visualize-present",
+    "https://docs.omni.co/visualize-present/apps",
+    "https://github.com/exploreomni/cli",
+    "https://github.com/exploreomni/cli.git",
+    "https://github.com/exploreomni/cli/releases",
+    "https://myorg.omni.co/w/abc123/1",
+    "https://omni.co/demo",
+    "https://omniapp.co",
+    "https://omniapp.co/.well-known/oauth-authorization-server",
+    "https://omniapp.co/oauth/authorize",
+    "https://omniapp.co/oauth/register",
+    "https://omniapp.co/oauth/token",
+    "https://omniapp.co/openapi.json",
+    "https://openai.com/index/codex/",
+    "https://raw.githubusercontent.com/exploreomni/cli/main/install.sh",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=omni-e7402367",
+    "https://www.npmjs.com/package/@omni-co/model-local-editor",
+    "https://www.scalekit.com/connectors/swaggermcp",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
+    "https://www.youtube.com/watch?v=AxemUGYjJQM",
+    "https://your-omni-org.omniapp.co/api/scim/v2/users",
+    "https://your-org.omniapp.co"
+  ]
+}

@@ -1,0 +1,651 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "zillow.com",
+    "detect": {
+      "domain": "zillow.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:44:57.719Z",
+    "summary": "Zillow exposes a public no-auth MCP server at https://mcp.zillow.com/api/v1 plus several partner HTTP APIs, authenticated either with a Zillow mortgage `partnerId`, Bridge Interactive access token/password credentials for Bridge-backed data APIs, dotloop OAuth 2.0 for transaction management, or Mortech-issued third-party-name/license-key credentials where Zillow documents them.",
+    "credentials": {
+      "zillow_partner_id": {
+        "type": "api_key",
+        "label": "Zillow mortgage partner ID",
+        "generateUrl": "https://www.zillowgroup.com/developers/api/mortgage/get-current-rates/",
+        "setup": "Go to Zillow Group's [Get Current Rates API page](https://www.zillowgroup.com/developers/api/mortgage/get-current-rates/) or the [Mortgage Partner APIs page](https://www.zillow.com/mortgage/api/) and use **Request Access / Request Partner ID**. Zillow states you'll need a partner ID first, and the API docs describe `partnerId` values like `RD-EXAMPLE` passed on each call.",
+        "acquisition": "manual"
+      },
+      "bridge_api_token": {
+        "type": "api_key",
+        "label": "Bridge Interactive API access token",
+        "generateUrl": "https://bridgedataoutput.com/register",
+        "setup": "Create an account on the [Bridge Interactive Platform](https://bridgedataoutput.com/register), then request the relevant Zillow Group dataset from the Bridge dashboard as Zillow's docs describe: `API Access > Request Data Access > Zillow Group Datasets > Agree to the Zillow Data Terms of Use > Locate the dataset > Click Apply`. Zillow says your access tokens are available on the Bridge dashboard under `Data Access > API Access Tokens`.",
+        "acquisition": "manual"
+      },
+      "bridge_password": {
+        "type": "basic",
+        "label": "Bridge Interactive account password",
+        "generateUrl": "https://bridgedataoutput.com/register",
+        "setup": "Register on the [Bridge Interactive Platform](https://bridgedataoutput.com/register) and complete dataset approval for the Zillow/Bridge data you need. Zillow's API directory says several Bridge-backed Zillow datasets use 'Password and access token authentication', so your Bridge account password is one part of that login.",
+        "acquisition": "manual"
+      },
+      "dotloop_oauth_app": {
+        "type": "oauth2",
+        "label": "dotloop OAuth app",
+        "generateUrl": "https://www.zillowgroup.com/developers/api/transactions/transaction-management/",
+        "setup": "Request access from Zillow via the [Transaction Management API page](https://www.zillowgroup.com/developers/api/transactions/transaction-management/). That page points developers to the [dotloop Public API guide](https://dotloop.github.io/public-api/), which says Public API v2 uses OAuth 2.0 (3-legged OAuth) and requires client registration for your application.",
+        "acquisition": "manual"
+      },
+      "mortech_license": {
+        "type": "compound",
+        "label": "Mortech third-party name and license key",
+        "generateUrl": "https://www.zillowgroup.com/developers/api/mortgage/prospect-sync-api/",
+        "setup": "Use the relevant Zillow mortgage partner API request form, such as [Prospect Sync API](https://www.zillowgroup.com/developers/api/mortgage/prospect-sync-api/), [Prospect Trigger API](https://www.zillowgroup.com/developers/api/mortgage/prospect-trigger-api/), [Rate Cloud API](https://www.zillowgroup.com/developers/api/mortgage/rate-cloud-api/), [LOS Plug-In Integration API](https://www.zillowgroup.com/developers/api/mortgage/los-plug-in-integration-api/), or [Lead Posting API](https://www.zillowgroup.com/developers/api/mortgage/lead-posting-api/). Zillow documents the authentication model for these as `Third Party Name, License Key`; the exact issuance and transport mechanics are not publicly documented on the pages scraped.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "zillow-mcp-server",
+        "name": "Zillow MCP server",
+        "type": "mcp",
+        "docs": "https://mcp.zillow.com/api/v1",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://mcp.zillow.com/api/v1"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://mcp.zillow.com/api/v1"
+            ]
+          }
+        },
+        "url": "https://mcp.zillow.com/api/v1",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "zillow-mortgage-get-rates-api",
+        "name": "Zillow Mortgage Get Rates API",
+        "type": "http",
+        "docs": "https://www.zillowgroup.com/developers/api/mortgage/get-current-rates/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.zillowgroup.com/developers/api/mortgage/get-current-rates/",
+            "https://www.zillow.com/mortgage/api/",
+            "https://mortgageapi.zillow.com/api/getRates"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zillow_partner_id",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "partnerId"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.zillowgroup.com/developers/api/mortgage/get-current-rates/",
+                  "https://mortgageapi.zillow.com/api/getRates"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mortgageapi.zillow.com/getRates"
+      },
+      {
+        "slug": "zillow-mortgage-lender-reviews-api",
+        "name": "Zillow Mortgage Lender Reviews API",
+        "type": "http",
+        "docs": "https://www.zillowgroup.com/developers/api/mortgage/zillow-lender-reviews/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.zillowgroup.com/developers/api/mortgage/zillow-lender-reviews/",
+            "https://mortgageapi.zillow.com/api/zillowLenderReviews"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zillow_partner_id",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "partnerId"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.zillowgroup.com/developers/api/mortgage/zillow-lender-reviews/",
+                  "https://mortgageapi.zillow.com/api/zillowLenderReviews"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mortgageapi.zillow.com/zillowLenderReviews"
+      },
+      {
+        "slug": "zillow-agent-reviews-api",
+        "name": "Zillow Agent Reviews API",
+        "type": "http",
+        "docs": "https://www.zillowgroup.com/developers/api/agents/agent-reviews/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.zillowgroup.com/developers/api/agents/agent-reviews/",
+            "https://bridgedataoutput.com/docs/platform/API/zg-data#agent-reviews"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bridge_api_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.zillowgroup.com/developers/api/agents/agent-reviews/"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "zillow-public-records-api",
+        "name": "Zillow Public Records API",
+        "type": "http",
+        "docs": "https://www.zillowgroup.com/developers/api/public-data/public-records-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.zillowgroup.com/developers/api/public-data/public-records-api/",
+            "https://bridgedataoutput.com/docs/platform/#parcels"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bridge_password",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                },
+                {
+                  "id": "bridge_api_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.zillowgroup.com/developers/api/public-data/public-records-api/"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:44:57.720Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 477750,
+    "completion_tokens": 2545,
+    "total_tokens": 480295
+  },
+  "visited": [
+    "https://apify.com/api/zillow-api",
+    "https://bridgedataoutput.com/docs/platform/#parcels",
+    "https://bridgedataoutput.com/docs/platform/#zestimates",
+    "https://bridgedataoutput.com/docs/platform/API/zg-data#agent-reviews",
+    "https://dotloop.github.io/public-api/",
+    "https://github.com/sap156/zillow-mcp-server",
+    "https://mcp.zillow.com/api/v1",
+    "https://mcpservers.org/servers/nikhonit/zillow-api",
+    "https://mortgageapi.zillow.com/api/getRates",
+    "https://mortgageapi.zillow.com/api/zillowLenderReviews",
+    "https://www.zillow.com/mortgage/api/",
+    "https://www.zillow.com/news/zillow-api-in-action/",
+    "https://www.zillowgroup.com/developers/",
+    "https://www.zillowgroup.com/developers/api/agents/agent-reviews/",
+    "https://www.zillowgroup.com/developers/api/mls-broker-data/mls-listings/",
+    "https://www.zillowgroup.com/developers/api/mls-broker-data/performance-reporting/",
+    "https://www.zillowgroup.com/developers/api/mls-broker-data/reviews-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/get-current-rates/",
+    "https://www.zillowgroup.com/developers/api/mortgage/lead-posting-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/los-plug-in-integration-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/prospect-sync-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/prospect-trigger-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/rate-cloud-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/zillow-lender-reviews/",
+    "https://www.zillowgroup.com/developers/api/public-data/public-records-api/",
+    "https://www.zillowgroup.com/developers/api/rentals/lead-api/",
+    "https://www.zillowgroup.com/developers/api/rentals/rentals-feed-integrations/",
+    "https://www.zillowgroup.com/developers/api/transactions/transaction-management/",
+    "https://www.zillowgroup.com/developers/api/zestimate/zestimates-api/"
+  ],
+  "grounding": [
+    "http://info.dotloop.com/developers",
+    "http://www.facebook.com/Zillow",
+    "http://www.twobotechnologies.com/blog/2014/02/importance-of-state-in-oauth2.html",
+    "http://www.zillow.com/howto/api/APIOverview.htm",
+    "http://www.zillow.com/howto/api/APITerms.htm",
+    "http://youtu.be/m",
+    "http://youtu.be/tnxXTEpvk54",
+    "https://aaronparecki.com/2012/07/29/2/oauth2-simplified#web-server-apps",
+    "https://advocacy.zillowgroup.com/",
+    "https://airtable.com/applHBWfeLWM2IU2c/pagyjtn8jbLuhkYP0/form",
+    "https://api-gateway.dotloop.com/public/v2/",
+    "https://api-gateway.dotloop.com/public/v2/loop-it",
+    "https://api.bridgedataoutput.com/api/v2/OData/dataset",
+    "https://apify.com/api/zillow-api",
+    "https://auth.dotloop.com/oauth/authorize?response",
+    "https://auth.dotloop.com/oauth/token/revoke?token=",
+    "https://auth.dotloop.com/oauth/token?grant",
+    "https://bridgedataoutput.com/#bridge",
+    "https://bridgedataoutput.com/#reso-web-api",
+    "https://bridgedataoutput.com/#rets",
+    "https://bridgedataoutput.com/docs/explorer/mls-data",
+    "https://bridgedataoutput.com/docs/explorer/public-data",
+    "https://bridgedataoutput.com/docs/explorer/reso-web-api",
+    "https://bridgedataoutput.com/docs/explorer/zestimates",
+    "https://bridgedataoutput.com/docs/explorer/zillow-agent-reviews",
+    "https://bridgedataoutput.com/docs/explorer/zillow-group-econ-data",
+    "https://bridgedataoutput.com/docs/platform",
+    "https://bridgedataoutput.com/docs/platform/#parcels",
+    "https://bridgedataoutput.com/docs/platform/#zestimates",
+    "https://bridgedataoutput.com/docs/platform/API",
+    "https://bridgedataoutput.com/docs/platform/API/bridge",
+    "https://bridgedataoutput.com/docs/platform/API/reso-web-api",
+    "https://bridgedataoutput.com/docs/platform/API/rets",
+    "https://bridgedataoutput.com/docs/platform/API/zg-data",
+    "https://bridgedataoutput.com/docs/platform/API/zg-data#agent-reviews",
+    "https://bridgedataoutput.com/docs/platform/Dashboard",
+    "https://bridgedataoutput.com/docs/platform/Dashboard/data-access",
+    "https://bridgedataoutput.com/docs/platform/Dashboard/registration",
+    "https://bridgedataoutput.com/docs/platform/Dashboard/using-apis",
+    "https://bridgedataoutput.com/docs/platform/FAQ",
+    "https://bridgedataoutput.com/docs/platform/FAQ/faq",
+    "https://bridgedataoutput.com/docs/platform/FAQ/glossary",
+    "https://bridgedataoutput.com/docs/platform/Introduction",
+    "https://bridgedataoutput.com/docs/platform/Introduction/Support",
+    "https://bridgedataoutput.com/login",
+    "https://bridgedataoutput.com/register",
+    "https://delivery.digitalassets.zillowgroup.com/api/public/content/TREC_ZINC_pdf.pdf",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication",
+    "https://dotloop.github.io/#account",
+    "https://dotloop.github.io/#add-a-loop-participant",
+    "https://dotloop.github.io/#addendum",
+    "https://dotloop.github.io/#authentication",
+    "https://dotloop.github.io/#authorization-header",
+    "https://dotloop.github.io/#changelog",
+    "https://dotloop.github.io/#client-errors",
+    "https://dotloop.github.io/#contacts",
+    "https://dotloop.github.io/#content-type",
+    "https://dotloop.github.io/#create-a-contact",
+    "https://dotloop.github.io/#create-a-folder",
+    "https://dotloop.github.io/#create-a-loop",
+    "https://dotloop.github.io/#create-a-profile",
+    "https://dotloop.github.io/#create-a-subscription",
+    "https://dotloop.github.io/#delete-a-contact",
+    "https://dotloop.github.io/#delete-a-loop-participant",
+    "https://dotloop.github.io/#delete-a-subscription",
+    "https://dotloop.github.io/#design-guidelines",
+    "https://dotloop.github.io/#endpoint",
+    "https://dotloop.github.io/#error-responses",
+    "https://dotloop.github.io/#example",
+    "https://dotloop.github.io/#faq",
+    "https://dotloop.github.io/#get-a-contact",
+    "https://dotloop.github.io/#get-a-document",
+    "https://dotloop.github.io/#get-a-folder",
+    "https://dotloop.github.io/#get-a-loop",
+    "https://dotloop.github.io/#get-a-loop-participant",
+    "https://dotloop.github.io/#get-a-loop-task-list",
+    "https://dotloop.github.io/#get-a-loop-task-list-item",
+    "https://dotloop.github.io/#get-a-profile",
+    "https://dotloop.github.io/#get-a-subscription",
+    "https://dotloop.github.io/#get-account-details",
+    "https://dotloop.github.io/#get-an-event",
+    "https://dotloop.github.io/#get-loop-details",
+    "https://dotloop.github.io/#http-status-codes",
+    "https://dotloop.github.io/#list-all-contacts",
+    "https://dotloop.github.io/#list-all-documents",
+    "https://dotloop.github.io/#list-all-events",
+    "https://dotloop.github.io/#list-all-folders",
+    "https://dotloop.github.io/#list-all-loop-activities",
+    "https://dotloop.github.io/#list-all-loop-participants",
+    "https://dotloop.github.io/#list-all-loop-task-list-items",
+    "https://dotloop.github.io/#list-all-loop-task-lists",
+    "https://dotloop.github.io/#list-all-loop-templates",
+    "https://dotloop.github.io/#list-all-loops",
+    "https://dotloop.github.io/#list-all-profiles",
+    "https://dotloop.github.io/#list-all-subscriptions",
+    "https://dotloop.github.io/#loop-activities",
+    "https://dotloop.github.io/#loop-details",
+    "https://dotloop.github.io/#loop-documents",
+    "https://dotloop.github.io/#loop-folders",
+    "https://dotloop.github.io/#loop-it",
+    "https://dotloop.github.io/#loop-participants",
+    "https://dotloop.github.io/#loop-summaries",
+    "https://dotloop.github.io/#loop-tasks",
+    "https://dotloop.github.io/#loop-templates",
+    "https://dotloop.github.io/#overview",
+    "https://dotloop.github.io/#parameters-2",
+    "https://dotloop.github.io/#profiles",
+    "https://dotloop.github.io/#receiving-webhook-events",
+    "https://dotloop.github.io/#response-3",
+    "https://dotloop.github.io/#retrieve-an-individual-loop-template",
+    "https://dotloop.github.io/#subscriptions-overview",
+    "https://dotloop.github.io/#types-constants",
+    "https://dotloop.github.io/#update-a-contact",
+    "https://dotloop.github.io/#update-a-folder",
+    "https://dotloop.github.io/#update-a-loop",
+    "https://dotloop.github.io/#update-a-loop-participant",
+    "https://dotloop.github.io/#update-a-profile",
+    "https://dotloop.github.io/#update-a-subscription",
+    "https://dotloop.github.io/#update-loop-details",
+    "https://dotloop.github.io/#upload-a-document",
+    "https://dotloop.github.io/#webhook-events",
+    "https://dotloop.github.io/#webhook-events-related-api-resources",
+    "https://dotloop.github.io/#webhook-subscriptions",
+    "https://dotloop.github.io/#webhooks-initial-release",
+    "https://dotloop.github.io/#webhooks-overview",
+    "https://dotloop.github.io/#whats-new",
+    "https://dotloop.github.io/index.pdf",
+    "https://dotloop.github.io/public-api/",
+    "https://github.com/leozc/zTalkbot",
+    "https://github.com/leozc/zToolbox",
+    "https://github.com/leozc/zToolbox/tree/master/zToolBoxInstaller/Release",
+    "https://github.com/sap156/zillow-mcp-server",
+    "https://help.zillowrentalmanager.com/hc/en-us",
+    "https://help.zillowrentalmanager.com/hc/en-us/",
+    "https://hotpads.com/",
+    "https://investors.zillowgroup.com/investors/overview/default.aspx",
+    "https://mcp.zillow.com/api/v1",
+    "https://mcpservers.org/servers/nikhonit/zillow-api",
+    "https://mortgageapi.zillow.com/#CreditScoreRateBucket",
+    "https://mortgageapi.zillow.com/#EmailAddress",
+    "https://mortgageapi.zillow.com/#IndividualName",
+    "https://mortgageapi.zillow.com/#LenderReviewDetail",
+    "https://mortgageapi.zillow.com/#LenderReviewId",
+    "https://mortgageapi.zillow.com/#LenderReviewPublic",
+    "https://mortgageapi.zillow.com/#LenderReviewRating",
+    "https://mortgageapi.zillow.com/#LenderReviewResponsePublic",
+    "https://mortgageapi.zillow.com/#LenderReviewSatisfaction",
+    "https://mortgageapi.zillow.com/#LenderReviewServiceProvided",
+    "https://mortgageapi.zillow.com/#LenderReviewSubject",
+    "https://mortgageapi.zillow.com/#LenderReviewer",
+    "https://mortgageapi.zillow.com/#LoanAmountRateBucket",
+    "https://mortgageapi.zillow.com/#LoanProgram",
+    "https://mortgageapi.zillow.com/#LoanPurpose",
+    "https://mortgageapi.zillow.com/#LoanToValueRateBucket",
+    "https://mortgageapi.zillow.com/#LoanType",
+    "https://mortgageapi.zillow.com/#NMLSID",
+    "https://mortgageapi.zillow.com/#NMLSType",
+    "https://mortgageapi.zillow.com/#PartnerId",
+    "https://mortgageapi.zillow.com/#PropertyRateBucket",
+    "https://mortgageapi.zillow.com/#RateAggregation",
+    "https://mortgageapi.zillow.com/#RateData",
+    "https://mortgageapi.zillow.com/#RateLocation",
+    "https://mortgageapi.zillow.com/#RateQuery",
+    "https://mortgageapi.zillow.com/#RateQueryOutput",
+    "https://mortgageapi.zillow.com/#RateSample",
+    "https://mortgageapi.zillow.com/#RegionId",
+    "https://mortgageapi.zillow.com/#RegionInformation",
+    "https://mortgageapi.zillow.com/#RegionType",
+    "https://mortgageapi.zillow.com/#StateAbbreviation",
+    "https://mortgageapi.zillow.com/#StateAbbreviationWithUS",
+    "https://mortgageapi.zillow.com/#UserId",
+    "https://mortgageapi.zillow.com/#ZIPCode",
+    "https://mortgageapi.zillow.com/#int32",
+    "https://mortgageapi.zillow.com/api/getCurrentRates",
+    "https://mortgageapi.zillow.com/api/getRates",
+    "https://mortgageapi.zillow.com/api/zillowLenderContactNotification",
+    "https://mortgageapi.zillow.com/api/zillowLenderReviews",
+    "https://mortgageapi.zillow.com/getRates",
+    "https://mortgageapi.zillow.com/zillowLenderReviews",
+    "https://oauth.net/2/",
+    "https://outeast.com/",
+    "https://premieragent.zillow.com/products/advertising/?itc=paw_z_sitewide-agentfinder_subnav-advertising_pa-ads_a_null",
+    "https://privacy.zillowgroup.com/cookie",
+    "https://rets.ly/docs",
+    "https://rettc.org/mits-data-models",
+    "https://s3.amazonaws.com/files.hotpads.com/+guides/Lead+API+Guide.pdf",
+    "https://s3.amazonaws.com/files.hotpads.com/+guides/Rental+Listing+Bulk+Feed+Guide.pdf",
+    "https://s3.amazonaws.com/files.hotpads.com/+guides/Rental+Listing+Real-Time+Listing+Guide.pdf",
+    "https://showingtimeplus.com/",
+    "https://streeteasy.com/",
+    "https://support.dotloop.com/hc/en-us/articles/204407013-Dotloop-REST-API-Developer-s-Guide",
+    "https://tools.ietf.org/html/rfc6749",
+    "https://www.aryeo.com/",
+    "https://www.bridgeinteractive.com/bridge-platform-updates/",
+    "https://www.facebook.com/Zillow/",
+    "https://www.followupboss.com/",
+    "https://www.hud.gov/program_offices/fair_housing_equal_opp",
+    "https://www.instagram.com/zillow",
+    "https://www.instagram.com/zillow/",
+    "https://www.linkedin.com/company/zillow/",
+    "https://www.retall.org/wp-content/uploads/2019/04/Property-Marketing-ILS-4.1-Supplemental.html",
+    "https://www.tiktok.com/@zillow",
+    "https://www.trec.texas.gov/forms/consumer-protection-notice",
+    "https://www.trulia.com/",
+    "https://www.zillow.com/",
+    "https://www.zillow.com/#",
+    "https://www.zillow.com/#/current-rates-example",
+    "https://www.zillow.com/#/lender-contact-example",
+    "https://www.zillow.com/#/lender-reviews-example",
+    "https://www.zillow.com/#/rates-example",
+    "https://www.zillow.com/#skip-topnav-target",
+    "https://www.zillow.com/#subscribe",
+    "https://www.zillow.com/advertise/?itc=paw_z_sitewide-null_nav-advertising_pa-ads_a_null",
+    "https://www.zillow.com/agent-resources/",
+    "https://www.zillow.com/agent-resources/agent-toolkit/real-estate-business-plan-template/",
+    "https://www.zillow.com/agent-resources/agent-toolkit/real-estate-follow-up-email-templates/",
+    "https://www.zillow.com/agent-resources/agent-toolkit/real-estate-listing-flyer-templates/",
+    "https://www.zillow.com/agents/zillow-pro/",
+    "https://www.zillow.com/browse/b/",
+    "https://www.zillow.com/browse/homes/",
+    "https://www.zillow.com/careers/",
+    "https://www.zillow.com/careers/disclosure/",
+    "https://www.zillow.com/careers/engagement-and-belonging/",
+    "https://www.zillow.com/careers/privacy-notice-zillow-mexico/",
+    "https://www.zillow.com/change-your-address/",
+    "https://www.zillow.com/coming-soon/",
+    "https://www.zillow.com/corporate/policies/",
+    "https://www.zillow.com/corporate/security-disclosure/",
+    "https://www.zillow.com/corporate/supplier-code-of-conduct/",
+    "https://www.zillow.com/corporate/terms-of-use/",
+    "https://www.zillow.com/corporate/zg-privacy-notice/",
+    "https://www.zillow.com/corporate/zg-privacy-notice/#third-party",
+    "https://www.zillow.com/for-sale-by-owner/",
+    "https://www.zillow.com/foreclosures/",
+    "https://www.zillow.com/home-builders/",
+    "https://www.zillow.com/home-buying-guide/",
+    "https://www.zillow.com/home-values/",
+    "https://www.zillow.com/homeloans/",
+    "https://www.zillow.com/homeloans/buyability/",
+    "https://www.zillow.com/homeloans/eligibility/?utm_source=zillow&utm_medium=referral&utm_campaign=Z_Mortgageshovertopnav&source=Zillow&channel=Nav",
+    "https://www.zillow.com/homeloans/mortgage/dashboard/login",
+    "https://www.zillow.com/homes/",
+    "https://www.zillow.com/homes/coming_soon/cmsn_lt/",
+    "https://www.zillow.com/homes/for_rent/",
+    "https://www.zillow.com/homes/for_rent/condo",
+    "https://www.zillow.com/homes/for_sale/",
+    "https://www.zillow.com/homes/for_sale/1_open/",
+    "https://www.zillow.com/homes/for_sale/fore_lt/pmf",
+    "https://www.zillow.com/homes/fsbo/",
+    "https://www.zillow.com/homes/new_homes/0_mmm/",
+    "https://www.zillow.com/homes/recently_sold/",
+    "https://www.zillow.com/how-much-is-my-home-worth/",
+    "https://www.zillow.com/javascript",
+    "https://www.zillow.com/learn/",
+    "https://www.zillow.com/learn/category/financing/",
+    "https://www.zillow.com/make-me-move/",
+    "https://www.zillow.com/mortgage-calculator/",
+    "https://www.zillow.com/mortgage-rates/",
+    "https://www.zillow.com/mortgage/api/",
+    "https://www.zillow.com/mortgage/api/#/current-rates-example",
+    "https://www.zillow.com/mortgage/api/#/lender-reviews-example",
+    "https://www.zillow.com/myzillow/SavedSearches",
+    "https://www.zillow.com/news/",
+    "https://www.zillow.com/news/about/",
+    "https://www.zillow.com/news/advocacy/",
+    "https://www.zillow.com/news/advocacy/real-estate-rights/",
+    "https://www.zillow.com/news/advocacy/rentals/",
+    "https://www.zillow.com/news/advocacy/stories/",
+    "https://www.zillow.com/news/advocacy/transparency/",
+    "https://www.zillow.com/news/category/zillow-culture/",
+    "https://www.zillow.com/news/company-news/",
+    "https://www.zillow.com/news/culture/",
+    "https://www.zillow.com/news/fairness-advocacy/",
+    "https://www.zillow.com/news/industry-partnerships/",
+    "https://www.zillow.com/news/our-business/",
+    "https://www.zillow.com/news/our-leaders/",
+    "https://www.zillow.com/news/our-story/",
+    "https://www.zillow.com/news/press-releases/",
+    "https://www.zillow.com/news/product-innovation/",
+    "https://www.zillow.com/news/social-impact/",
+    "https://www.zillow.com/news/sustainability/",
+    "https://www.zillow.com/news/sustainability/ai-principles/",
+    "https://www.zillow.com/news/sustainability/employees-culture/",
+    "https://www.zillow.com/news/sustainability/environmental-sustainability/",
+    "https://www.zillow.com/news/sustainability/responsible-business-practices/",
+    "https://www.zillow.com/news/tag/api/",
+    "https://www.zillow.com/news/tag/hackweek/",
+    "https://www.zillow.com/news/zillow-api-in-action/",
+    "https://www.zillow.com/post-real-estate-listings/",
+    "https://www.zillow.com/premier-agent/",
+    "https://www.zillow.com/premier-agent/agent-account/?itc=paw_z_sitewide-agentfinder_subnav-createagentaccount_pa-reg_a_null",
+    "https://www.zillow.com/professionals/home-improvement-reviews/",
+    "https://www.zillow.com/professionals/home-inspector-reviews/",
+    "https://www.zillow.com/professionals/photographer-reviews/",
+    "https://www.zillow.com/professionals/property-manager-reviews/",
+    "https://www.zillow.com/professionals/real-estate-agent-reviews/",
+    "https://www.zillow.com/professionals/real-estate-services-reviews/",
+    "https://www.zillow.com/rent-affordability-calculator/",
+    "https://www.zillow.com/rent/rent-payments-reporting/",
+    "https://www.zillow.com/rent/renter-search-center/",
+    "https://www.zillow.com/rent/renters-insurance/",
+    "https://www.zillow.com/rental-manager/",
+    "https://www.zillow.com/rental-manager/?source=topnav&itc=list_zrm_topnav",
+    "https://www.zillow.com/rental-manager/?source=topnav&itc=postbutton_sitenav",
+    "https://www.zillow.com/rental-manager/inbox/",
+    "https://www.zillow.com/rental-manager/post-a-listing/",
+    "https://www.zillow.com/rental-manager/price-my-rental/",
+    "https://www.zillow.com/rental-manager/resources/",
+    "https://www.zillow.com/rental-manager/resources/fair-housing-guide/",
+    "https://www.zillow.com/rental-manager/select-property?type=applications&source=topnav&itc=postbutton_topnav",
+    "https://www.zillow.com/rental-manager/select-property?type=leases&source=topnav&itc=postbutton_topna",
+    "https://www.zillow.com/rental-manager/select-property?type=listings&source=topnav&itc=postbutton_topnav",
+    "https://www.zillow.com/rental-manager/select-property?type=payments&source=topnav&itc=postbutton_topnav",
+    "https://www.zillow.com/renter-hub/applications/",
+    "https://www.zillow.com/renter-hub/inbox/",
+    "https://www.zillow.com/renter-hub/payments?fromWhere=make-a-payment",
+    "https://www.zillow.com/renting/",
+    "https://www.zillow.com/renting/your-rental/",
+    "https://www.zillow.com/research/",
+    "https://www.zillow.com/research/data/",
+    "https://www.zillow.com/sell/",
+    "https://www.zillow.com/sellers-guide/",
+    "https://www.zillow.com/tech/",
+    "https://www.zillow.com/user/Login.htm?redirect=https%3A%2F%2Fwww.zillow.com%2Fnews%2Fzillow-api-in-action%2F",
+    "https://www.zillow.com/user/acct/login/",
+    "https://www.zillow.com/user/acct/register/",
+    "https://www.zillow.com/z/buying/app-download/",
+    "https://www.zillow.com/z/corp/about/",
+    "https://www.zillow.com/z/corp/terms/",
+    "https://www.zillow.com/z/info/contact-us/",
+    "https://www.zillow.com/z/info/real-estate-licenses/",
+    "https://www.zillow.com/z/partners/advertise/",
+    "https://www.zillow.com/z/zestimate/",
+    "https://www.zillow.com/zillow-closing/",
+    "https://www.zillowgroup.com/developers",
+    "https://www.zillowgroup.com/developers/",
+    "https://www.zillowgroup.com/developers/agents/",
+    "https://www.zillowgroup.com/developers/api/agents/agent-reviews/",
+    "https://www.zillowgroup.com/developers/api/mls-broker-data/mls-listings/",
+    "https://www.zillowgroup.com/developers/api/mls-broker-data/performance-reporting/",
+    "https://www.zillowgroup.com/developers/api/mls-broker-data/reviews-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/3rd-party-administration-guide/",
+    "https://www.zillowgroup.com/developers/api/mortgage/3rd-party-integration-guide/",
+    "https://www.zillowgroup.com/developers/api/mortgage/get-current-rates/",
+    "https://www.zillowgroup.com/developers/api/mortgage/lead-posting-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/los-plug-in-integration-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/prospect-sync-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/prospect-trigger-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/rate-cloud-api/",
+    "https://www.zillowgroup.com/developers/api/mortgage/zillow-lender-reviews/",
+    "https://www.zillowgroup.com/developers/api/public-data/neighborhood-data/",
+    "https://www.zillowgroup.com/developers/api/public-data/public-records-api/",
+    "https://www.zillowgroup.com/developers/api/public-data/real-estate-metrics/",
+    "https://www.zillowgroup.com/developers/api/rentals/lead-api/",
+    "https://www.zillowgroup.com/developers/api/rentals/rentals-feed-integrations/",
+    "https://www.zillowgroup.com/developers/api/transactions/transaction-management/",
+    "https://www.zillowgroup.com/developers/api/zestimate/zestimates-api/",
+    "https://www.zillowgroup.com/developers/mls-broker-data/",
+    "https://www.zillowgroup.com/developers/mortgage/",
+    "https://www.zillowgroup.com/developers/public-data/",
+    "https://www.zillowgroup.com/developers/rentals/",
+    "https://www.zillowgroup.com/developers/transactions/",
+    "https://www.zillowgroup.com/developers/zestimate/",
+    "https://www.zillowgroup.com/zg-privacy-policy/",
+    "https://www.zillowstatic.com/s3/pfs/static/SOP_NYS_10-4-23.pdf",
+    "https://www.zillowstatic.com/s3/pfs/static/fairhousingnotice_10-4-23.pdf",
+    "https://x.com/zillow/",
+    "https://zillow.zendesk.com/hc/en-us",
+    "https://zillow.zendesk.com/hc/en-us/requests/new?ticket_form_id=39140"
+  ]
+}

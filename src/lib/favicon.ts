@@ -10,8 +10,15 @@ import { parse } from "tldts";
  * trigger the browser's Local Network Access permission prompt.
  */
 export function faviconUrl(domain: string | null | undefined): string | null {
+  const registrable = registrableDomain(domain);
+  return registrable ? `https://${registrable}/favicon.ico` : null;
+}
+
+/** The registrable domain behind `faviconUrl`'s validation, for callers that
+ * need the domain itself (the /logo proxy route) rather than a favicon URL. */
+export function registrableDomain(domain: string | null | undefined): string | null {
   if (!domain) return null;
   const info = parse(domain, { allowPrivateDomains: true });
   if (info.isIp || !info.domain || !(info.isIcann || info.isPrivate)) return null;
-  return `https://${info.domain}/favicon.ico`;
+  return info.domain;
 }

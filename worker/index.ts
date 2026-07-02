@@ -1,6 +1,7 @@
 import { apiHandler } from "./api.ts";
 import { setChat, setWebBackend, discoverWithProgress } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
+import { registrableDomain } from "../src/lib/favicon.ts";
 import { renderSurfacePage, slugifySurface, type Surface } from "./surface-page.ts";
 
 export { McpDurableObject } from "./mcp-do.ts";
@@ -36,6 +37,11 @@ export interface Env {
   /** OpenAI API key (secret). Powers the discover extraction model, routed
    * through Cloudflare AI Gateway so spend limits + logging apply. */
   OPENAI_API_KEY?: string;
+  /** context.dev Logo Link public client id (brandLL_…) for the /logo proxy.
+   * Frontend-safe by design (access is referrer-restricted upstream), but kept
+   * in env so rotating it is a secret update, not a deploy. Optional: when
+   * missing, /logo serves the Google favicon fallback only. */
+  CONTEXT_DEV_LOGO_CLIENT_ID?: string;
 }
 
 // Bump when detect/discover output shape or logic changes, so the edge Cache API
@@ -195,6 +201,65 @@ export default {
         200,
         { "cache-control": "public, max-age=86400" },
       );
+    }
+
+    // Logo proxy — the single logo source for executor clients (and anything
+    // else): /logo/{domain}?theme=light|dark&sz=64. Proxies context.dev Logo
+    // Link, falling back to Google's favicon service when the client id is
+    // missing or the upstream errors. Logo Link's terms forbid persisting
+    // images in our own storage but explicitly allow header-driven browser/CDN
+    // caching, so this uses the edge Cache API with a TTL matching the
+    // upstream's own 24h Cache-Control — no KV/R2.
+    const logoMatch = /^\/logo\/([^/]+)\/?$/.exec(url.pathname);
+    if (logoMatch) {
+      const domain = registrableDomain(decodeURIComponent(logoMatch[1]).trim().toLowerCase());
+      if (!domain) return json({ error: "not a public registrable domain" }, 400);
+      const theme = url.searchParams.get("theme");
+      const size = Math.min(Math.max(Number(url.searchParams.get("sz")) || 64, 16), 256);
+
+      // Normalized cache key: validated domain + the params that affect bytes.
+      const cache = (caches as unknown as { default: Cache }).default;
+      const keyUrl = new URL(`${url.origin}/logo/${domain}`);
+      if (theme === "light" || theme === "dark") keyUrl.searchParams.set("theme", theme);
+      keyUrl.searchParams.set("sz", String(size));
+      keyUrl.searchParams.set("__cv", CACHE_VERSION);
+      const cacheKey = new Request(keyUrl.toString(), { method: "GET" });
+      const cached = await cache.match(cacheKey);
+      if (cached) return cached;
+
+      const isImage = (r: Response) =>
+        r.ok && (r.headers.get("content-type") ?? "").toLowerCase().startsWith("image/");
+      let upstream: Response | null = null;
+      if (env.CONTEXT_DEV_LOGO_CLIENT_ID) {
+        const logoLink = new URL("https://logos.context.dev/");
+        logoLink.searchParams.set("publicClientId", env.CONTEXT_DEV_LOGO_CLIENT_ID);
+        logoLink.searchParams.set("domain", domain);
+        if (theme === "light" || theme === "dark") logoLink.searchParams.set("theme", theme);
+        upstream = await fetch(logoLink, {
+          // Access to the client id is referrer-restricted; identify as the site.
+          headers: { referer: "https://integrations.sh/" },
+          // Logo Link serves originals (2048px PNGs for some brands) — have
+          // Cloudflare downscale to the requested size. Ignored (originals pass
+          // through) when the zone doesn't have Image Resizing.
+          cf: { image: { width: size, height: size, fit: "scale-down" } },
+        } as RequestInit).catch(() => null);
+      }
+      if (!upstream || !isImage(upstream)) {
+        upstream = await fetch(
+          `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`,
+        ).catch(() => null);
+      }
+      if (!upstream || !isImage(upstream)) return json({ error: "no logo found" }, 404);
+
+      const res = new Response(upstream.body, {
+        headers: {
+          "content-type": upstream.headers.get("content-type") ?? "image/png",
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=86400",
+        },
+      });
+      ctx.waitUntil(cache.put(cacheKey, res.clone()));
+      return res;
     }
 
     // Stored discovery — the durable KV result for a domain, written on the

@@ -15,6 +15,7 @@ import Setup from "~/components/surface/Setup.tsx";
 import { faviconFor } from "~/lib/favicon.ts";
 import {
   SURFACE_TYPE_LABEL,
+  cliLoginFor,
   connectCmd,
   hostOf,
   credCta,
@@ -68,7 +69,9 @@ const typeLabel = SURFACE_TYPE_LABEL[surface.type] ?? surface.type;
 const letter = (surface.name[0] ?? "?").toUpperCase();
 const connect = connectCmd(surface);
 const usedCredIds = surface.auth.status === "required" ? surface.auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
-const credList = usedCredIds.filter((id, i) => usedCredIds.indexOf(id) === i && creds[id]).map((id) => creds[id]);
+const credList = usedCredIds
+  .filter((id, i) => usedCredIds.indexOf(id) === i && creds[id])
+  .map((id) => ({ cred: creds[id], cliLogin: cliLoginFor(id, [surface.auth]) }));
 
 const detailRows: { label: string; value: string; kind: "code" | "link" | "text"; linkLabel?: string }[] = [];
 if (surface.url) detailRows.push({ label: surface.type === "mcp" || surface.type === "graphql" ? "Endpoint" : "URL", value: surface.url, kind: "code" });
@@ -158,18 +161,26 @@ Astro.response.headers.set("cache-control", "public, max-age=60");
     {credList.length > 0 && (
       <section>
         <div class="sec-header"><span class="sec-label">Credentials</span></div>
-        {credList.map((c) => (
+        {credList.map(({ cred: c, cliLogin }) => (
           <div class="disc-cred">
             <div class="disc-cred-head">
               <span class="disc-cred-label">{c.label}</span>
               <span class="disc-ctype">{c.type}</span>
-              {c.generateUrl && (
-                <a class="disc-cred-get" href={c.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(c.generateUrl)}>
-                  {credCta(c.type)} ↗
-                </a>
+              {cliLogin ? (
+                <code class="disc-cred-cli">$ {cliLogin}</code>
+              ) : (
+                c.generateUrl && (
+                  <a class="disc-cred-get" href={c.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(c.generateUrl)}>
+                    {credCta(c.type)} ↗
+                  </a>
+                )
               )}
             </div>
-            {c.setup && <Setup md={c.setup} />}
+            {cliLogin ? (
+              <p class="disc-cred-clinote">Acquired by the CLI — running <code>{cliLogin}</code> opens the auth flow and stores the credential.</p>
+            ) : (
+              c.setup && <Setup md={c.setup} />
+            )}
           </div>
         ))}
       </section>

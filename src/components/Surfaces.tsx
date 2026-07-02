@@ -14,7 +14,7 @@
  */
 import { useEffect, useState } from "react";
 import type { Credential, DiscoveryResult } from "../lib/discovery-schema.ts";
-import { credCta, hostOf, type AuthStatus, type Basis, type DiscoveryDoc, type Surface } from "../lib/surface-view.ts";
+import { cliLoginFor, credCta, hostOf, type AuthStatus, type Basis, type DiscoveryDoc, type Surface } from "../lib/surface-view.ts";
 import Setup from "./surface/Setup.tsx";
 
 export type DiscoverData = Partial<Pick<DiscoveryResult, "summary">> & DiscoveryDoc;
@@ -265,7 +265,10 @@ export default function Surfaces({
   const credIdsOf = (auth?: AuthStatus): string[] =>
     auth?.status === "required" ? auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
   const usedCredIds = new Set<string>(built.flatMap((sec) => sec.entries.flatMap((e) => credIdsOf(e.surface?.auth))));
-  const credList = Object.entries(creds).filter(([id]) => usedCredIds.has(id));
+  const allAuths = built.flatMap((sec) => sec.entries.flatMap((e) => (e.surface?.auth ? [e.surface.auth] : [])));
+  const credList = Object.entries(creds)
+    .filter(([id]) => usedCredIds.has(id))
+    .map(([id, c]) => ({ id, cred: c, cliLogin: cliLoginFor(id, allAuths) }));
 
   return (
     <div className="disc">
@@ -315,18 +318,26 @@ export default function Surfaces({
           <div className="sec-header">
             <span className="sec-label">Credentials</span>
           </div>
-          {credList.map(([id, c]) => (
+          {credList.map(({ id, cred: c, cliLogin }) => (
             <div className="disc-cred" key={id}>
               <div className="disc-cred-head">
                 <span className="disc-cred-label">{c.label}</span>
                 <span className="disc-ctype">{c.type}</span>
-                {c.generateUrl && (
-                  <a className="disc-cred-get" href={c.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(c.generateUrl)}>
-                    {credCta(c.type)} ↗
-                  </a>
+                {cliLogin ? (
+                  <code className="disc-cred-cli">$ {cliLogin}</code>
+                ) : (
+                  c.generateUrl && (
+                    <a className="disc-cred-get" href={c.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(c.generateUrl)}>
+                      {credCta(c.type)} ↗
+                    </a>
+                  )
                 )}
               </div>
-              {c.setup && <Setup md={c.setup} />}
+              {cliLogin ? (
+                <p className="disc-cred-clinote">Acquired by the CLI — running <code>{cliLogin}</code> opens the auth flow and stores the credential.</p>
+              ) : (
+                c.setup && <Setup md={c.setup} />
+              )}
             </div>
           ))}
         </section>

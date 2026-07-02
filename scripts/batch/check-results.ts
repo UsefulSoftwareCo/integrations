@@ -39,6 +39,21 @@ async function main(): Promise<void> {
     // Loop results carry `visited` (live scrape trail) — ground against that,
     // not a corpus file that some earlier one-shot run may have left behind.
     const checks = row.visited ? checklist(result, undefined, row.visited, row.grounding) : checklist(result, corpusText(corpusDir, domain));
+    // outputUrlsGrounded offenders that answer a live probe are real — the
+    // loop read them from a rendering the trail didn't capture verbatim.
+    if (hasFlag(args, "probe") && checks.checks.outputUrlsGrounded && !checks.checks.outputUrlsGrounded.passed) {
+      const still: string[] = [];
+      for (const url of checks.checks.outputUrlsGrounded.offenders ?? []) {
+        try {
+          const res = await fetch(url, { method: "GET", redirect: "manual", signal: AbortSignal.timeout(8000) });
+          if (![200, 301, 302, 307, 308, 401, 403, 405].includes(res.status)) still.push(url);
+        } catch {
+          still.push(url);
+        }
+      }
+      checks.checks.outputUrlsGrounded = { passed: still.length === 0, offenders: still };
+      checks.passed = Object.values(checks.checks).every((check) => check.passed);
+    }
     const bad = Object.entries(checks.checks).filter(([, check]) => !check.passed).map(([name]) => name);
     if (!checks.passed) failed++;
     console.log(`${domain}\t${checks.passed ? "pass" : "fail"}${bad.length ? `\t${bad.join(",")}` : ""}`);

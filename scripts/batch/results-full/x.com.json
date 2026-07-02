@@ -1,0 +1,413 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "x.com",
+    "detect": {
+      "domain": "x.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:30:41.015Z",
+    "summary": "X exposes one REST API (https://api.x.com/2) plus two hosted MCP servers: X MCP at https://api.x.com/mcp and Docs MCP at https://docs.x.com/mcp; auth uses app-only Bearer tokens, OAuth 2.0 client credentials, or OAuth 1.0a user tokens, while Docs MCP is public.",
+    "credentials": {
+      "x_bearer_token": {
+        "type": "bearer",
+        "label": "X app-only Bearer Token",
+        "generateUrl": "https://console.x.com",
+        "setup": "1. Sign in to the [X Developer Console](https://console.x.com) and create an app. 2. Open your app’s **Keys and tokens** page and copy the **Bearer Token**. 3. Save it immediately; the docs say credentials are shown once and can be regenerated later if lost. Use it as `Authorization: Bearer ...` for app-only access.",
+        "acquisition": "manual"
+      },
+      "x_oauth2_client": {
+        "type": "oauth2",
+        "label": "X OAuth 2.0 client credentials",
+        "generateUrl": "https://console.x.com",
+        "setup": "Create an app in the [X Developer Console](https://console.x.com), enable **OAuth 2.0**, and copy the app’s `CLIENT_ID` and `CLIENT_SECRET`. Register your callback/redirect URI in the app settings; the docs mention `http://localhost:8080/callback` for the hosted MCP bridge, and allowlisted callback URLs must match exactly.",
+        "acquisition": "manual"
+      },
+      "x_oauth1a_user_tokens": {
+        "type": "two_step",
+        "label": "X OAuth 1.0a access token and secret",
+        "generateUrl": "https://console.x.com",
+        "setup": "Create an app in the [X Developer Console](https://console.x.com), then generate the **Access Token & Secret** for acting as your own account with OAuth 1.0a. The docs also note the app’s **API Key & Secret** are used to sign OAuth 1.0a requests; keep those in the app’s keys page.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "x-api",
+        "name": "X API",
+        "type": "http",
+        "docs": "https://docs.x.com/x-api/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.x.com/x-api/introduction",
+            "https://docs.x.com/x-api/getting-started/getting-access",
+            "https://docs.x.com/x-api/getting-started/make-your-first-request"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/x-api/introduction",
+                  "https://docs.x.com/x-api/getting-started/getting-access",
+                  "https://docs.x.com/x-api/getting-started/make-your-first-request"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "x_oauth2_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/x-api/getting-started/getting-access",
+                  "https://docs.x.com/fundamentals/developer-apps"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "x_oauth1a_user_tokens",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/x-api/getting-started/getting-access",
+                  "https://docs.x.com/fundamentals/developer-apps"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.x.com/2"
+      },
+      {
+        "slug": "x-mcp",
+        "name": "X MCP",
+        "type": "mcp",
+        "docs": "https://docs.x.com/tools/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.x.com/tools/mcp",
+            "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/tools/mcp"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "x_oauth2_client",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx -y @xdevplatform/xurl mcp https://api.x.com/mcp"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.x.com/tools/mcp",
+                  "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.x.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "docs-mcp",
+        "name": "Docs MCP",
+        "type": "mcp",
+        "docs": "https://docs.x.com/tools/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": []
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.x.com/tools/mcp"
+            ]
+          }
+        },
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:30:41.016Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 69673,
+    "completion_tokens": 1318,
+    "total_tokens": 70991
+  },
+  "visited": [
+    "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558",
+    "https://developer.ibm.com/articles/awb-simplifying-llm-integration-mcp-api-connect-graphql/",
+    "https://docs.x.com/fundamentals/developer-apps",
+    "https://docs.x.com/overview",
+    "https://docs.x.com/tools/mcp",
+    "https://docs.x.com/x-api/getting-started/getting-access",
+    "https://docs.x.com/x-api/getting-started/make-your-first-request",
+    "https://docs.x.com/x-api/introduction",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://127.0.0.1",
+    "http://localhost:8080/callback",
+    "https://api.x.com/2/tweets/1460323737035677698?tweet.fields=created_at",
+    "https://api.x.com/2/tweets/search/all?query=AI%20lang:en",
+    "https://api.x.com/2/tweets/search/recent?query=from:xdevelopers&tweet.fields=created_at",
+    "https://api.x.com/2/tweets/search/stream",
+    "https://api.x.com/2/tweets/search/stream/rules",
+    "https://api.x.com/2/users/2244994945/tweets?max_results=5",
+    "https://api.x.com/2/users/by/username/xdevelopers",
+    "https://api.x.com/2/users/by/username/xdevelopers?user.fields=created_at",
+    "https://api.x.com/mcp",
+    "https://console.x.com",
+    "https://d",
+    "https://devcommunity.x.com",
+    "https://devcommunity.x.com/#main-container",
+    "https://devcommunity.x.com/c/academic-research/62",
+    "https://devcommunity.x.com/c/advertiser-api/27",
+    "https://devcommunity.x.com/c/announcements/22",
+    "https://devcommunity.x.com/c/dev-rules-and-policies/43",
+    "https://devcommunity.x.com/c/developer-portal/50",
+    "https://devcommunity.x.com/c/events/19",
+    "https://devcommunity.x.com/c/libraries-and-sdks/63",
+    "https://devcommunity.x.com/c/oauth/12",
+    "https://devcommunity.x.com/c/publisher/41",
+    "https://devcommunity.x.com/c/x-api/64",
+    "https://devcommunity.x.com/c/x-api/x-api-v2/65",
+    "https://devcommunity.x.com/categories",
+    "https://devcommunity.x.com/g/x-staff",
+    "https://devcommunity.x.com/latest",
+    "https://devcommunity.x.com/t/429-usage-capped-on-pay-per-use-across-multiple-read-endpoints-despite-healthy-rate-limits-and-console-limits/269581/2",
+    "https://devcommunity.x.com/t/access-to-own-account-details/259245",
+    "https://devcommunity.x.com/t/access-to-own-account-details/259245/1",
+    "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558",
+    "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558/1",
+    "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558/3",
+    "https://devcommunity.x.com/t/can-i-include-data-obtained-via-the-x-api-e-g-tweet-body-in-a-prompt-for-a-conversation-with-an-ai-that-includes-grok/242424",
+    "https://devcommunity.x.com/t/can-i-include-data-obtained-via-the-x-api-e-g-tweet-body-in-a-prompt-for-a-conversation-with-an-ai-that-includes-grok/242424/1",
+    "https://devcommunity.x.com/t/can-i-include-data-obtained-via-the-x-api-e-g-tweet-body-in-a-prompt-for-a-conversation-with-an-ai-that-includes-grok/242424/4",
+    "https://devcommunity.x.com/t/request-for-starter-free-credits-building-with-the-x-api-on-record-a-live-verified-media-platform/269619",
+    "https://devcommunity.x.com/t/request-for-starter-free-credits-building-with-the-x-api-on-record-a-live-verified-media-platform/269619/1",
+    "https://devcommunity.x.com/t/request-for-starter-free-credits-building-with-the-x-api-on-record-a-live-verified-media-platform/269619/2",
+    "https://devcommunity.x.com/t/to-know-about-pricing-of-business-api/268251",
+    "https://devcommunity.x.com/t/to-know-about-pricing-of-business-api/268251/1",
+    "https://devcommunity.x.com/t/to-know-about-pricing-of-business-api/268251/2",
+    "https://devcommunity.x.com/t/x-pro-media-apis-documentation/224031",
+    "https://devcommunity.x.com/t/x-pro-media-apis-documentation/224031/1",
+    "https://devcommunity.x.com/tag/ads/119",
+    "https://devcommunity.x.com/tag/api/395",
+    "https://devcommunity.x.com/tag/cards/206",
+    "https://devcommunity.x.com/tag/oauth/34",
+    "https://devcommunity.x.com/tag/python/86",
+    "https://devcommunity.x.com/tag/restapi/7",
+    "https://devcommunity.x.com/tag/webhooks/296",
+    "https://devcommunity.x.com/tags",
+    "https://devcommunity.x.com/u/taycaldwell",
+    "https://developer.ibm.com/articles/awb-simplifying-llm-integration-mcp-api-connect-graphql/",
+    "https://developer.x.com",
+    "https://developer.x.com/en/portal/dashboard",
+    "https://developer.x.com/en/portal/petition/essential/basic-info",
+    "https://developer.x.com/en/support/twitter-api.html",
+    "https://docs.x.ai",
+    "https://docs.x.com",
+    "https://docs.x.com/",
+    "https://docs.x.com/#1-grok-build",
+    "https://docs.x.com/#2-cursor",
+    "https://docs.x.com/#3-claude-desktop",
+    "https://docs.x.com/#4-vs-code-github-copilot-/-agent-mode",
+    "https://docs.x.com/#5-any-mcp-client",
+    "https://docs.x.com/#app-credentials",
+    "https://docs.x.com/#app-only-direct-url-no-bridge",
+    "https://docs.x.com/#app-permissions-oauth-1-0a",
+    "https://docs.x.com/#authentication",
+    "https://docs.x.com/#automated-account-labels",
+    "https://docs.x.com/#available-tools",
+    "https://docs.x.com/#best-practices",
+    "https://docs.x.com/#callback-urls",
+    "https://docs.x.com/#capabilities-at-a-glance",
+    "https://docs.x.com/#configuration",
+    "https://docs.x.com/#configuration-reference",
+    "https://docs.x.com/#connect-your-client",
+    "https://docs.x.com/#content-area",
+    "https://docs.x.com/#creating-an-app",
+    "https://docs.x.com/#credential-security-best-practices",
+    "https://docs.x.com/#disallowed-protocols",
+    "https://docs.x.com/#docs-mcp-—-documentation-search",
+    "https://docs.x.com/#filtered-stream",
+    "https://docs.x.com/#first-run-browser-login",
+    "https://docs.x.com/#full-archive-search",
+    "https://docs.x.com/#full-route-xurl-bridge",
+    "https://docs.x.com/#get-started",
+    "https://docs.x.com/#getting-started",
+    "https://docs.x.com/#headless-/-remote-machines",
+    "https://docs.x.com/#how-it-works",
+    "https://docs.x.com/#key-features",
+    "https://docs.x.com/#metrics",
+    "https://docs.x.com/#more-examples",
+    "https://docs.x.com/#multiple-apps-&-accounts",
+    "https://docs.x.com/#next-steps",
+    "https://docs.x.com/#oauth-2-0-app-types",
+    "https://docs.x.com/#oauth-2-0-user-context-default",
+    "https://docs.x.com/#other-products",
+    "https://docs.x.com/#pricing",
+    "https://docs.x.com/#products",
+    "https://docs.x.com/#quick-start",
+    "https://docs.x.com/#quick-start-with-curl",
+    "https://docs.x.com/#request-more-data-with-fields",
+    "https://docs.x.com/#requirements",
+    "https://docs.x.com/#resources",
+    "https://docs.x.com/#rich-data-objects",
+    "https://docs.x.com/#security-&-best-practices",
+    "https://docs.x.com/#simple-route-app-only-bearer",
+    "https://docs.x.com/#step-1-create-a-developer-account",
+    "https://docs.x.com/#step-2-create-an-app",
+    "https://docs.x.com/#step-3-save-your-credentials",
+    "https://docs.x.com/#step-by-step-guide",
+    "https://docs.x.com/#support",
+    "https://docs.x.com/#tools-&-libraries",
+    "https://docs.x.com/#tools-for-testing",
+    "https://docs.x.com/#troubleshooting",
+    "https://docs.x.com/#using-code-instead-of-curl",
+    "https://docs.x.com/#verify-&-troubleshoot",
+    "https://docs.x.com/#what-you-can-build",
+    "https://docs.x.com/#which-credentials-do-you-need",
+    "https://docs.x.com/#x-mcp-—-x-api",
+    "https://docs.x.com/changelog",
+    "https://docs.x.com/developer-guidelines",
+    "https://docs.x.com/developer-terms",
+    "https://docs.x.com/enterprise-api/getting-started/getting-access",
+    "https://docs.x.com/enterprise-api/introduction",
+    "https://docs.x.com/enterprise/customer-directory",
+    "https://docs.x.com/enterprise/partner-directory",
+    "https://docs.x.com/forms/billing-support",
+    "https://docs.x.com/fundamentals/counting-characters",
+    "https://docs.x.com/fundamentals/developer-apps",
+    "https://docs.x.com/fundamentals/developer-portal",
+    "https://docs.x.com/fundamentals/rate-limits",
+    "https://docs.x.com/fundamentals/security",
+    "https://docs.x.com/fundamentals/x-ids",
+    "https://docs.x.com/livestreams",
+    "https://docs.x.com/llms.txt",
+    "https://docs.x.com/make-your-first-request",
+    "https://docs.x.com/mcp",
+    "https://docs.x.com/newsletter",
+    "https://docs.x.com/overview",
+    "https://docs.x.com/resources/fundamentals/authentication/oauth-2-0/overview",
+    "https://docs.x.com/resources/fundamentals/authentication/overview",
+    "https://docs.x.com/status",
+    "https://docs.x.com/success-stories",
+    "https://docs.x.com/support",
+    "https://docs.x.com/tools-and-libraries",
+    "https://docs.x.com/tools/ai",
+    "https://docs.x.com/tools/llms-txt",
+    "https://docs.x.com/tools/mcp",
+    "https://docs.x.com/tools/mcp#headless--remote-machines",
+    "https://docs.x.com/tools/skill-md",
+    "https://docs.x.com/tutorials",
+    "https://docs.x.com/tutorials/postman-getting-started",
+    "https://docs.x.com/what-to-build",
+    "https://docs.x.com/x-ads-api/introduction",
+    "https://docs.x.com/x-api/direct-messages/lookup/introduction",
+    "https://docs.x.com/x-api/fundamentals/expansions",
+    "https://docs.x.com/x-api/fundamentals/fields",
+    "https://docs.x.com/x-api/fundamentals/response-codes-and-errors",
+    "https://docs.x.com/x-api/getting-started/getting-access",
+    "https://docs.x.com/x-api/getting-started/make-your-first-request",
+    "https://docs.x.com/x-api/getting-started/pricing",
+    "https://docs.x.com/x-api/getting-started/pricing#free-xai-api-credits",
+    "https://docs.x.com/x-api/getting-started/pricing#owned-reads",
+    "https://docs.x.com/x-api/introduction",
+    "https://docs.x.com/x-api/lists/list-lookup/introduction",
+    "https://docs.x.com/x-api/overview",
+    "https://docs.x.com/x-api/posts/create-post",
+    "https://docs.x.com/x-api/posts/filtered-stream/introduction",
+    "https://docs.x.com/x-api/posts/lookup/introduction",
+    "https://docs.x.com/x-api/posts/search/introduction",
+    "https://docs.x.com/x-api/spaces/lookup/introduction",
+    "https://docs.x.com/x-api/trends/trends-by-woeid/introduction",
+    "https://docs.x.com/x-api/users/lookup/introduction",
+    "https://docs.x.com/x-api/what-to-build",
+    "https://docs.x.com/xdks/python/overview",
+    "https://docs.x.com/xdks/typescript/overview",
+    "https://github.com/xdevplatform",
+    "https://github.com/xdevplatform/Twitter-API-v2-sample-code",
+    "https://github.com/xdevplatform/xurl",
+    "https://help.x.com/en/rules-and-policies/x-cookies",
+    "https://help.x.com/forms/platform",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://modelcontextprotocol.io",
+    "https://raw.githubusercontent.com/xdevplatform/xurl/main/install.sh",
+    "https://registry.npmjs.org/",
+    "https://www.postman.com/xapidevelopers/x-api-public-workspace/collection/34902927-2efc5689-99c6-4ab6-8091-996f35c2fd80",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://x.com/en/privacy",
+    "https://x.com/en/tos",
+    "https://x.com/xdevelopers"
+  ]
+}

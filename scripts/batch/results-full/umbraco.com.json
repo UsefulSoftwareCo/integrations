@@ -1,0 +1,431 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "umbraco.com",
+    "detect": {
+      "domain": "umbraco.com",
+      "found": [
+        "agent-skills",
+        "llms.txt"
+      ],
+      "mcp": [],
+      "agentSkills": {
+        "count": 2,
+        "names": [
+          "search-umbraco-com",
+          "discover-site-resources"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:29:26.937Z",
+    "summary": "Umbraco Compose exposes authenticated HTTP APIs for Management, Ingestion, and GraphQL, plus a Developer MCP server and CLI; auth is via project-scoped Personal Access Tokens for Ingestion/GraphQL, OAuth client-credentials for Management, and an API User for the MCP/CLI path.",
+    "credentials": {
+      "compose_api_key": {
+        "type": "api_key",
+        "label": "Umbraco Compose Personal Access Token",
+        "generateUrl": "https://www.s1.umbraco.io/compose/apikeys",
+        "setup": "Go to the [Umbraco Cloud Portal](https://www.s1.umbraco.io/compose/apikeys) and create a Personal Access Token for your Compose project. Choose the project at creation time, then assign the needed scopes such as `ingestion`, `graphql`, or `graphql:introspection`. Use the token as a bearer token in `Authorization: Bearer <token>` when calling Compose APIs.",
+        "acquisition": "manual"
+      },
+      "compose_client_credentials": {
+        "type": "oauth2_cc",
+        "label": "Umbraco Compose OAuth client credentials app",
+        "generateUrl": "https://www.s1.umbraco.io/compose/",
+        "setup": "Create an API application in the [Umbraco Cloud Portal](https://www.s1.umbraco.io/compose/). The portal gives you a `client_id` and `client_secret`; keep the secret सुरक्षित because it is only shown immediately after creation. Exchange them for short-lived access tokens at `https://management.umbracocompose.com/v1/auth/token` using the OAuth client credentials flow.",
+        "acquisition": "manual"
+      },
+      "umbraco_api_user": {
+        "type": "basic",
+        "label": "Umbraco CMS API User",
+        "generateUrl": "https://docs.umbraco.com/umbraco-cms/fundamentals/data/users/api-users",
+        "setup": "Create an API User in your Umbraco CMS backoffice and use that user to authenticate the Developer MCP Server. The MCP docs require an API User before connecting the server. The exact credential mechanics are not fully pinned down in the docs I read, so treat the binding as implementation-specific to the MCP server configuration.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "umbraco-compose-ingestion-api",
+        "name": "Umbraco Compose Ingestion API",
+        "type": "http",
+        "docs": "https://docs.umbraco.com/umbraco-compose/apis/ingestion",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.umbraco.com/umbraco-compose/apis/ingestion",
+            "https://docs.umbraco.com/umbraco-compose/getting-started/access-control"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "compose_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.umbraco.com/umbraco-compose/getting-started/access-control",
+                  "https://docs.umbraco.com/umbraco-compose/apis/ingestion"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://ingestion.umbracocompose.com"
+      },
+      {
+        "slug": "umbraco-compose-graphql-api",
+        "name": "Umbraco Compose GraphQL API",
+        "type": "graphql",
+        "docs": "https://docs.umbraco.com/umbraco-compose/apis/graphql",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.umbraco.com/umbraco-compose/apis/graphql",
+            "https://docs.umbraco.com/umbraco-compose/getting-started/access-control"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "compose_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.umbraco.com/umbraco-compose/getting-started/access-control",
+                  "https://docs.umbraco.com/umbraco-compose/apis/graphql"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://graphql.germanywestcentral.umbracocompose.com"
+      },
+      {
+        "slug": "umbraco-developer-mcp-server",
+        "name": "Umbraco Developer MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp",
+            "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/cli-usage"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "umbraco_api_user",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "umbraco-developer-mcp-cli",
+        "name": "Umbraco Developer MCP CLI",
+        "type": "cli",
+        "docs": "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/cli-usage",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/cli-usage"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "umbraco_api_user",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "umb-cms-dev-cli"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/cli-usage"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "umb-cms-dev-cli"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:29:26.937Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 149869,
+    "completion_tokens": 1817,
+    "total_tokens": 151686
+  },
+  "visited": [
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/management-api/authentication",
+    "https://docs.umbraco.com/umbraco-base-mcp/hosted-mcp/api-reference",
+    "https://docs.umbraco.com/umbraco-compose/apis/api-overview",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql.md",
+    "https://docs.umbraco.com/umbraco-compose/apis/ingestion",
+    "https://docs.umbraco.com/umbraco-compose/apis/ingestion.md",
+    "https://docs.umbraco.com/umbraco-compose/apis/management",
+    "https://docs.umbraco.com/umbraco-compose/apis/management.md",
+    "https://docs.umbraco.com/umbraco-compose/apis/management/api-applications",
+    "https://docs.umbraco.com/umbraco-compose/getting-started/access-control",
+    "https://docs.umbraco.com/umbraco-compose/getting-started/access-control.md",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/base-mcp",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/cli-usage"
+  ],
+  "grounding": [
+    "https://apidocs.umbracocompose.com/",
+    "https://apidocs.umbracocompose.com/?api=ingestion-api",
+    "https://docs.umbraco.com/",
+    "https://docs.umbraco.com/#api-documentation",
+    "https://docs.umbraco.com/#authenticating",
+    "https://docs.umbraco.com/#authentication",
+    "https://docs.umbraco.com/#authentication-method",
+    "https://docs.umbraco.com/#authorization-errors",
+    "https://docs.umbraco.com/#best-practices",
+    "https://docs.umbraco.com/#choosing-your-tools",
+    "https://docs.umbraco.com/#claude-code-plugin",
+    "https://docs.umbraco.com/#cli-reference",
+    "https://docs.umbraco.com/#client-credentials",
+    "https://docs.umbraco.com/#creating-a-public-api",
+    "https://docs.umbraco.com/#creating-an-api-application",
+    "https://docs.umbraco.com/#developer-tooling",
+    "https://docs.umbraco.com/#example-error-response",
+    "https://docs.umbraco.com/#from-backoffice-javascript",
+    "https://docs.umbraco.com/#from-server-side-code",
+    "https://docs.umbraco.com/#getting-an-access-token",
+    "https://docs.umbraco.com/#getting-started",
+    "https://docs.umbraco.com/#host-setup",
+    "https://docs.umbraco.com/#how-it-works",
+    "https://docs.umbraco.com/#id-401-unauthorized",
+    "https://docs.umbraco.com/#id-403-forbidden",
+    "https://docs.umbraco.com/#ingesting-data",
+    "https://docs.umbraco.com/#intended-audience",
+    "https://docs.umbraco.com/#making-authenticated-requests",
+    "https://docs.umbraco.com/#openapi",
+    "https://docs.umbraco.com/#personal-access-tokens",
+    "https://docs.umbraco.com/#prerequisites",
+    "https://docs.umbraco.com/#queries-and-collections",
+    "https://docs.umbraco.com/#required-permissions",
+    "https://docs.umbraco.com/#scopes",
+    "https://docs.umbraco.com/#scopes-1",
+    "https://docs.umbraco.com/#umbraco-setup",
+    "https://docs.umbraco.com/#usage",
+    "https://docs.umbraco.com/#using-npx",
+    "https://docs.umbraco.com/#version-checking",
+    "https://docs.umbraco.com/#version-compatibility",
+    "https://docs.umbraco.com/#working-with-the-mcp-server",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/add-ons/add-ons",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/add-ons/agent",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/add-ons/agent-copilot",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/add-ons/deploy",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/add-ons/prompt",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/add-ons/search",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/audit-logs",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/backoffice",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/managing-connections",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/managing-contexts",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/managing-guardrails",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/managing-profiles",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/managing-settings",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/usage-analytics",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/backoffice/version-history",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/capabilities",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/concepts",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/connections",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/context-picker",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/contexts",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/guardrails",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/middleware",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/observability",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/profiles",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/providers",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/settings",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/concepts/versioning",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/extending/extending",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/extending/guardrails",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/extending/middleware",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/extending/notifications",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/extending/providers",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/extending/tools",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/frontend/chat-controller",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/frontend/chat-repository",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/frontend/embeddings-controller",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/frontend/frontend",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/frontend/speech-to-text-controller",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/frontend/tool-controller",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/frontend/types",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/getting-started/first-connection",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/getting-started/first-profile",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/getting-started/getting-started",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/getting-started/installation",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/analytics",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/audit-logs",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/chat",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/connections",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/context-resource-types",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/contexts",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/embeddings",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/guardrails",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/management-api",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/management-api/authentication",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/management-api/authentication.md",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/profiles",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/providers",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/settings",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/tools",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/management-api/versions",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/providers/amazon",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/providers/anthropic",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/providers/google",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/providers/microsoft-foundry",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/providers/openai",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/providers/providers",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/reference/configuration",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/reference/models",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/reference/reference",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/reference/services",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/testing-and-evaluation/api",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/testing-and-evaluation/concepts",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/testing-and-evaluation/getting-started",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/testing-and-evaluation/graders",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/testing-and-evaluation/tests",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/testing-and-evaluation/variations",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/using-the-api/chat",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/using-the-api/embeddings",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/using-the-api/speech-to-text",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/using-the-api/tools",
+    "https://docs.umbraco.com/ai-in-umbraco/17.latest/using-the-api/using-the-api",
+    "https://docs.umbraco.com/llms.txt",
+    "https://docs.umbraco.com/umbraco-base-mcp/hosted-mcp/api-reference",
+    "https://docs.umbraco.com/umbraco-cms",
+    "https://docs.umbraco.com/umbraco-cms/17.latest",
+    "https://docs.umbraco.com/umbraco-cms/fundamentals/data/users/api-users",
+    "https://docs.umbraco.com/umbraco-compose",
+    "https://docs.umbraco.com/umbraco-compose/apis",
+    "https://docs.umbraco.com/umbraco-compose/apis/api-overview",
+    "https://docs.umbraco.com/umbraco-compose/apis/api-overview.md",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql.md",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql.md?ask=",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql/filtering",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql/pagination",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql/persisted-documents",
+    "https://docs.umbraco.com/umbraco-compose/apis/graphql/sorting",
+    "https://docs.umbraco.com/umbraco-compose/apis/ingestion",
+    "https://docs.umbraco.com/umbraco-compose/apis/ingestion.md",
+    "https://docs.umbraco.com/umbraco-compose/apis/ingestion.md?ask=",
+    "https://docs.umbraco.com/umbraco-compose/apis/ingestion/functions",
+    "https://docs.umbraco.com/umbraco-compose/apis/ingestion/ingestion-structure",
+    "https://docs.umbraco.com/umbraco-compose/apis/ingestion/restful-ingestion",
+    "https://docs.umbraco.com/umbraco-compose/apis/management",
+    "https://docs.umbraco.com/umbraco-compose/apis/management.md",
+    "https://docs.umbraco.com/umbraco-compose/apis/management.md?ask=",
+    "https://docs.umbraco.com/umbraco-compose/apis/management/aliases",
+    "https://docs.umbraco.com/umbraco-compose/apis/management/api-applications",
+    "https://docs.umbraco.com/umbraco-compose/apis/management/api-applications.md",
+    "https://docs.umbraco.com/umbraco-compose/content-orchestration/collections",
+    "https://docs.umbraco.com/umbraco-compose/content-orchestration/environments",
+    "https://docs.umbraco.com/umbraco-compose/content-orchestration/outbound-traffic",
+    "https://docs.umbraco.com/umbraco-compose/content-orchestration/referenced-content",
+    "https://docs.umbraco.com/umbraco-compose/content-orchestration/type-schemas",
+    "https://docs.umbraco.com/umbraco-compose/content-orchestration/webhooks",
+    "https://docs.umbraco.com/umbraco-compose/getting-started",
+    "https://docs.umbraco.com/umbraco-compose/getting-started/access-control",
+    "https://docs.umbraco.com/umbraco-compose/getting-started/access-control#scopes",
+    "https://docs.umbraco.com/umbraco-compose/getting-started/access-control.md",
+    "https://docs.umbraco.com/umbraco-compose/getting-started/access-control.md?ask=",
+    "https://docs.umbraco.com/umbraco-compose/getting-started/integrating-with-umbraco-cms",
+    "https://docs.umbraco.com/umbraco-compose/getting-started/working-with-content",
+    "https://docs.umbraco.com/umbraco-in-ai",
+    "https://docs.umbraco.com/umbraco-in-ai/agent-skills/backoffice-skills",
+    "https://docs.umbraco.com/umbraco-in-ai/concepts/agent-skills",
+    "https://docs.umbraco.com/umbraco-in-ai/concepts/context-engineering",
+    "https://docs.umbraco.com/umbraco-in-ai/concepts/model-context-protocol",
+    "https://docs.umbraco.com/umbraco-in-ai/concepts/model-context-protocol#host-applications",
+    "https://docs.umbraco.com/umbraco-in-ai/concepts/model-context-protocol#mcp-clients",
+    "https://docs.umbraco.com/umbraco-in-ai/concepts/model-context-protocol#mcp-servers",
+    "https://docs.umbraco.com/umbraco-in-ai/concepts/token-efficiency",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/base-mcp",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/base-mcp/sdk/cli",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/base-mcp/sdk/tool-filtering",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp.md",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/available-tools",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/best-practice",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/best-practice/creating-media",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/cli-usage",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/cli-usage.md",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/configuration",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/excluded-tools",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/cms-developer-mcp/scenarios",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/local-mcp-setup",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/local-mcp-setup/claude-code",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/local-mcp-setup/claude-desktop",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/local-mcp-setup/cursor",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/local-mcp-setup/github-copilot",
+    "https://docs.umbraco.com/umbraco-in-ai/mcp/local-mcp-setup/openai-codex",
+    "https://docs.usebruno.com/auth/oauth2-2.0/client-credentials",
+    "https://github.com/umbraco/UmbracoDocs/issues",
+    "https://graphql.germanywestcentral.umbracocompose.com",
+    "https://learning.postman.com/docs/sending-requests/authorization/oauth-20/#using-client-credentials",
+    "https://localhost:12345",
+    "https://management.umbracocompose.com/v1",
+    "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=eAvcb24lmqdKvNUvRquG&utm_content=site_5jbzT",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=mlRZp8gL4dvE9MukxCip&utm_content=site_5jbzT",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=trzaKUEixDATtGQPGwXB&utm_content=site_5jbzT",
+    "https://www.openapis.org/",
+    "https://www.s1.umbraco.io/compose/",
+    "https://www.s1.umbraco.io/compose/apikeys"
+  ]
+}

@@ -10,28 +10,28 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T12:19:24.147Z",
-    "summary": "Docker Hub exposes one authenticated REST API and one authenticated experimental CLI; auth is via Docker password, PAT, or organization access token.",
+    "discoveredAt": "2026-07-02T16:22:11.791Z",
+    "summary": "Docker.io exposes the Docker Hub HTTP API (OpenAPI at latest.yaml) and the experimental hub-tool CLI; both authenticate with Docker Hub credentials, PATs, or org access tokens.",
     "credentials": {
-      "docker_password": {
+      "docker_username_password": {
         "type": "basic",
-        "label": "Docker Hub password",
+        "label": "Docker Hub username + password",
         "generateUrl": "https://hub.docker.com/",
-        "setup": "Sign in to your Docker account on [Docker Hub](https://hub.docker.com/). Use your account password only if you are not using SSO-enforced org access and you need an initial login credential; Docker recommends a personal access token instead.",
+        "setup": "Use your Docker Hub account credentials. Sign in at [hub.docker.com](https://hub.docker.com/) and use the same username and password when the API or CLI asks for Docker credentials. If your organization enforces SSO, password auth may not work for API login; use a PAT instead.",
         "acquisition": "manual"
       },
       "docker_pat": {
-        "type": "bearer",
-        "label": "Docker Hub personal access token (PAT)",
+        "type": "api_key",
+        "label": "Docker Personal Access Token (PAT)",
         "generateUrl": "https://hub.docker.com/settings/security",
-        "setup": "Go to [Docker Hub Security settings](https://hub.docker.com/settings/security), open the personal access token section, and create a new token. Copy it once and store it securely. Use this token instead of your password for CLI login and API authentication.",
+        "setup": "Go to [Docker Hub Security settings](https://hub.docker.com/settings/security) and create a personal access token. Use this token in place of your password for Docker Hub API login and `docker login`. PATs are the recommended credential for automation and for accounts with SSO enforcement.",
         "acquisition": "manual"
       },
       "docker_oat": {
-        "type": "bearer",
-        "label": "Docker Hub organization access token (OAT)",
+        "type": "api_key",
+        "label": "Docker Organization Access Token (OAT)",
         "generateUrl": "https://hub.docker.com/",
-        "setup": "In the Docker Hub organization you manage, open the organization’s access-token settings and create an organization access token. These tokens are intended for automation and are managed by organization owners.",
+        "setup": "In Docker Hub, open your organization settings and create an Organization Access Token. OATs are managed by organization owners and are intended for automation scoped to organization resources.",
         "acquisition": "manual"
       }
     },
@@ -53,21 +53,27 @@
             {
               "use": [
                 {
-                  "id": "docker_password",
+                  "id": "docker_username_password",
                   "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
+                    "source": "spec",
+                    "scheme": "basicAuth"
                   }
-                },
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.docker.com/reference/api/hub/latest/"
+                ]
+              }
+            },
+            {
+              "use": [
                 {
                   "id": "docker_pat",
                   "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
+                    "source": "spec",
+                    "scheme": "basicAuth"
                   }
                 }
               ],
@@ -83,10 +89,8 @@
                 {
                   "id": "docker_oat",
                   "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
+                    "source": "spec",
+                    "scheme": "basicAuth"
                   }
                 }
               ],
@@ -99,16 +103,18 @@
             }
           ]
         },
-        "spec": "https://docs.docker.com/reference/api/hub/latest.yaml"
+        "spec": "https://docs.docker.com/reference/api/hub/latest.yaml",
+        "url": "https://hub.docker.com/v2"
       },
       {
-        "slug": "docker-hub-cli-tool",
-        "name": "Docker Hub CLI tool",
+        "slug": "docker-hub-cli",
+        "name": "Docker Hub CLI",
         "type": "cli",
         "docs": "https://github.com/docker/hub-tool#readme",
         "basis": {
           "via": "discovered",
           "evidence": [
+            "https://docs.docker.com/reference/api/hub/latest/",
             "https://github.com/docker/hub-tool#readme"
           ]
         },
@@ -118,7 +124,7 @@
             {
               "use": [
                 {
-                  "id": "docker_password",
+                  "id": "docker_username_password",
                   "mechanics": {
                     "source": "cli",
                     "command": "hub-tool login"
@@ -128,6 +134,7 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
+                  "https://docs.docker.com/reference/api/hub/latest/",
                   "https://github.com/docker/hub-tool#readme"
                 ]
               }
@@ -145,23 +152,7 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://github.com/docker/hub-tool#readme"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "docker_oat",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "hub-tool login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
+                  "https://docs.docker.com/reference/api/hub/latest/",
                   "https://github.com/docker/hub-tool#readme"
                 ]
               }
@@ -172,25 +163,25 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T12:19:24.147Z",
+  "discoveredAt": "2026-07-02T16:22:11.792Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 95997,
-    "completion_tokens": 934,
-    "total_tokens": 96931
+    "prompt_tokens": 139514,
+    "completion_tokens": 1043,
+    "total_tokens": 140557
   },
   "visited": [
-    "https://apis.io/apis/docker-hub/docker-hub-api/",
+    "https://docs.docker.com/reference/api/hub/changelog",
     "https://docs.docker.com/reference/api/hub/latest.yaml",
     "https://docs.docker.com/reference/api/hub/latest/",
     "https://docs.docker.com/reference/cli/docker/login/",
     "https://docs.docker.com/security/access-tokens/",
-    "https://github.com/Knuckles-Team/dockerhub-api/blob/main/docs/platform.md",
+    "https://forums.docker.com/t/docker-registry-api-v2-authentication/144841",
+    "https://forums.docker.com/t/rest-api-authentication-for-hub/2308",
     "https://github.com/docker/hub-tool#readme",
     "https://stackoverflow.com/questions/56193110/how-can-i-use-docker-registry-http-api-v2-to-obtain-a-list-of-all-repositories-i"
   ],
   "grounding": [
-    "https://apis.io/apis/docker-hub/docker-hub-api/",
     "https://archiveprogram.github.com",
     "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Retry-After",
     "https://docs.docker.com/#operation/PostUsersLogin",
@@ -508,10 +499,11 @@
     "https://docs.docker.com/security/access-tokens/",
     "https://docs.github.com",
     "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://forums.docker.com/t/docker-registry-api-v2-authentication/144841",
+    "https://forums.docker.com/t/rest-api-authentication-for-hub/2308",
     "https://github.blog",
     "https://github.blog/changelog",
     "https://github.com/#start-of-content",
-    "https://github.com/Knuckles-Team/dockerhub-api/blob/main/docs/platform.md",
     "https://github.com/accelerator",
     "https://github.com/collections",
     "https://github.com/customer-stories",

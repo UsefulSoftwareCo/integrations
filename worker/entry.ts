@@ -16,7 +16,9 @@ import { apiHandler } from "./api.ts";
 import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
 import { registrableDomain } from "../src/lib/favicon.ts";
+import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
 import type { Surface } from "../src/lib/surface-view.ts";
+import type { Credential, DiscoveryDoc } from "../src/lib/surface-view.ts";
 import type { EdgeCaches, Env, ExecutionContext } from "./env.ts";
 import { McpDurableObject } from "./mcp-do.ts";
 
@@ -92,6 +94,119 @@ async function priorSurfaces(env: Env, origin: string, domain: string): Promise<
     /* no priors — fresh slugs stand */
   }
   return [];
+}
+
+async function discoveryDoc(env: Env, origin: string, domain: string): Promise<DiscoveryDoc | null> {
+  try {
+    const raw = await env.DISCOVERY.get(domain);
+    if (raw) {
+      const stored = JSON.parse(raw) as { result?: DiscoveryDoc };
+      if (stored.result?.surfaces?.length) return stored.result;
+    }
+    const res = await env.ASSETS.fetch(`${origin}/disc/${encodeURIComponent(domain)}.json`);
+    if (res.ok) return (await res.json()) as DiscoveryDoc;
+  } catch {
+    /* no OG for unavailable or malformed discovery data */
+  }
+  return null;
+}
+
+let ogFontsPromise: Promise<OgFonts> | null = null;
+const assetBuffer = async (env: Env, origin: string, path: string): Promise<ArrayBuffer> => {
+  const res = await env.ASSETS.fetch(`${origin}${path}`);
+  if (!res.ok) throw new Error(`missing asset: ${path}`);
+  return res.arrayBuffer();
+};
+
+function ogFonts(env: Env, origin: string): Promise<OgFonts> {
+  ogFontsPromise ??= Promise.all([
+    assetBuffer(env, origin, "/fonts/geist-400.woff"),
+    assetBuffer(env, origin, "/fonts/geist-500.woff"),
+    assetBuffer(env, origin, "/fonts/geist-600.woff"),
+    assetBuffer(env, origin, "/fonts/geist-mono-400.woff"),
+    assetBuffer(env, origin, "/fonts/geist-mono-500.woff"),
+    assetBuffer(env, origin, "/fonts/geist-mono-600.woff"),
+  ]).then(([geist400, geist500, geist600, mono400, mono500, mono600]) => ({
+    geist400,
+    geist500,
+    geist600,
+    mono400,
+    mono500,
+    mono600,
+  }));
+  return ogFontsPromise;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function faviconData(origin: string, domain: string): Promise<OgImageData | null> {
+  const res = await fetch(`${origin}/logo/${encodeURIComponent(domain)}?sz=128`).catch(() => null);
+  const contentType = res?.headers.get("content-type") ?? "";
+  if (!res?.ok || !contentType.toLowerCase().startsWith("image/")) return null;
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  return { contentType, dataUri: `data:${contentType};base64,${bytesToBase64(bytes)}` };
+}
+
+async function ogResponse(request: Request, env: Env, ctx: ExecutionContext, cacheVersion: string): Promise<Response | null> {
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+  const url = new URL(request.url);
+  const cache = (caches as unknown as EdgeCaches).default;
+  const keyUrl = new URL(url.origin + url.pathname);
+  keyUrl.searchParams.set("__cv", cacheVersion);
+  const cacheKey = new Request(keyUrl.toString(), { method: "GET" });
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached;
+
+  const png = async () => {
+    const fonts = await ogFonts(env, url.origin);
+    const wasm = assetBuffer(env, url.origin, "/resvg.wasm");
+    if (url.pathname === "/og.png") {
+      return renderOgPng({ kind: "home" }, fonts, wasm);
+    }
+
+    const match = /^\/og\/([^/]+)(?:\/([^/]+))?\.png$/.exec(url.pathname);
+    if (!match) return null;
+    const domain = registrableDomain(decodeURIComponent(match[1]).trim().toLowerCase());
+    if (!domain) return null;
+    const doc = await discoveryDoc(env, url.origin, domain);
+    if (!doc?.surfaces?.length) return null;
+
+    const favicon = await faviconData(url.origin, domain);
+    const slug = match[2] ? decodeURIComponent(match[2]) : "";
+    if (!slug) {
+      return renderOgPng({ kind: "domain", domain, doc, favicon }, fonts, wasm);
+    }
+
+    const surface = doc.surfaces.find((s) => s.slug === slug);
+    if (!surface) return null;
+    return renderOgPng(
+      { kind: "surface", domain, surface, credentials: (doc.credentials ?? {}) as Record<string, Credential>, favicon },
+      fonts,
+      wasm,
+    );
+  };
+
+  const body = await png();
+  if (!body) return new Response(null, { status: 404 });
+  const bodyBuffer = body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer;
+  const cacheable = new Response(bodyBuffer, {
+    headers: {
+      "content-type": "image/png",
+      "cache-control": "public, max-age=86400",
+    },
+  });
+  ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
+  if (request.method === "HEAD") {
+    return new Response(null, { headers: cacheable.headers });
+  }
+  return cacheable;
 }
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -219,6 +334,11 @@ export function createExports(manifest: SSRManifest) {
       });
       ctx.waitUntil(cache.put(cacheKey, res.clone()));
       return res;
+    }
+
+    if (url.pathname === "/og.png" || url.pathname.startsWith("/og/")) {
+      const res = await ogResponse(request, env, ctx, CACHE_VERSION);
+      if (res) return res;
     }
 
     // Self-describe via the same discovery format the catalog indexes: point at

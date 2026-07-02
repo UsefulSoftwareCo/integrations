@@ -15,6 +15,22 @@ const SOURCES = join(ROOT, "sources");
 const OVERRIDES = join(ROOT, "overrides");
 const OUTPUT = join(ROOT, "output");
 
+// Curated developer-tool domains (scripts/batch/seed-domains*.txt) float to
+// the top of the registry list — they're the audience's daily drivers.
+const DEVTOOL_DOMAINS: Set<string> = (() => {
+  const out = new Set<string>();
+  const dir = join(ROOT, "scripts", "batch");
+  if (!existsSync(dir)) return out;
+  for (const name of readdirSync(dir)) {
+    if (!/^seed-domains.*\.txt$/.test(name)) continue;
+    for (const line of readFileSync(join(dir, name), "utf8").split("\n")) {
+      const d = line.trim().toLowerCase();
+      if (d && !d.startsWith("#")) out.add(d);
+    }
+  }
+  return out;
+})();
+
 mkdirSync(OUTPUT, { recursive: true });
 
 const slugify = (s: string) => {
@@ -357,6 +373,96 @@ function buildCli(): Integration[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Discovered: compact overnight batch results -> one record per domain+format
+// ─────────────────────────────────────────────────────────────────────────────
+
+type DiscoveredSurfaceType = "http" | "graphql" | "mcp" | "cli";
+
+interface DiscoveredSurface {
+  slug: string;
+  name: string;
+  type: DiscoveredSurfaceType;
+  url?: string;
+  spec?: string;
+  command?: string;
+  authStatus: "none" | "required" | "unknown";
+}
+
+interface DiscoveredDomain {
+  domain: string;
+  summary?: string;
+  surfaces?: DiscoveredSurface[];
+}
+
+const DISCOVERED_KIND_PRIORITY: Kind[] = ["mcp", "openapi", "graphql", "cli"];
+
+const discoveredKind = (type: DiscoveredSurfaceType): Kind => (type === "http" ? "openapi" : type);
+
+function buildDiscovered(knownDomains: Set<string>): Integration[] {
+  const path = join(SOURCES, "discovered.json");
+  if (!existsSync(path)) return [];
+  const data = readJson<{ domains: DiscoveredDomain[] }>(path);
+  const recs: Integration[] = [];
+
+  for (const d of data.domains ?? []) {
+    const domain = d.domain.trim().toLowerCase();
+    if (!domain || knownDomains.has(domain)) continue;
+    const surfaces = d.surfaces ?? [];
+    const byKind = new Map<Kind, DiscoveredSurface>();
+    for (const surface of surfaces) {
+      const kind = discoveredKind(surface.type);
+      if (!byKind.has(kind)) byKind.set(kind, surface);
+    }
+    const kinds = DISCOVERED_KIND_PRIORITY.filter((kind) => byKind.has(kind));
+    if (kinds.length === 0) continue;
+
+    const domainSlug = slugify(domain);
+    const summary = (d.summary ?? "").replace(/\s+/g, " ").trim().slice(0, 240);
+    kinds.forEach((kind, i) => {
+      const surface = byKind.get(kind)!;
+      const slug = i === 0 ? domainSlug : `${domainSlug}-${kind}`;
+      const rec: Integration = {
+        id: `discovered/${domainSlug}-${kind}`,
+        kind,
+        slug,
+        name: domain,
+        description: summary,
+        url: undefined,
+        icon: faviconUrl(domain) ?? undefined,
+        categories: [],
+        feeds: ["discovered"],
+        raw: { discovered: { domain, surface } },
+      };
+      if (kind === "mcp") {
+        rec.mcp = { remoteUrl: surface.url };
+      } else if (kind === "openapi") {
+        rec.openapi = {
+          provider: domain,
+          version: "discovered",
+          specUrl: surface.spec,
+          docsUrl: surface.url,
+          openapiVer: "",
+        };
+      } else if (kind === "graphql") {
+        rec.graphql = {
+          endpoint: surface.url ?? "",
+          hasSecurity: surface.authStatus === "required",
+          docs: [],
+        };
+      } else {
+        rec.cli = {
+          install: surface.command ?? "",
+          domain,
+        };
+      }
+      recs.push(rec);
+    });
+  }
+
+  return dedupeSlugs(recs);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Overrides: deep-merged onto records by id
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -555,6 +661,8 @@ function recordDomain(r: Integration): string {
   } else {
     url = r.graphql?.endpoint ?? r.url;
   }
+  const discoveredDomain = (r.raw.discovered as { domain?: string } | undefined)?.domain;
+  if (discoveredDomain) return discoveredDomain;
   return (url ? getDomain(url) : null) ?? (r.url ? getDomain(r.url) ?? "" : "");
 }
 
@@ -577,6 +685,7 @@ function buildIndex(all: Integration[]) {
       categories: r.categories,
       feeds: r.feeds,
       popularity: r.popularity,
+      devtool: DEVTOOL_DOMAINS.has(domain) || undefined,
     };
   });
 }
@@ -619,10 +728,21 @@ function main() {
   // Order: build feed records → apply overrides (may add new records) → fill
   // tools from cache → swap broken icons for domain-based fallbacks → keep only
   // publicly-accessible records.
-  const mcp = applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp()))).filter(isPublic);
-  const openapi = applyFavicons(applyToolsCache("openapi", applyOverrides("openapi", buildOpenapi()))).filter(isPublic);
-  const graphql = applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql()))).filter(isPublic);
-  const cli = buildCli().filter(isPublic);
+  const baseMcp = applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp()))).filter(isPublic);
+  const baseOpenapi = applyFavicons(applyToolsCache("openapi", applyOverrides("openapi", buildOpenapi()))).filter(isPublic);
+  const baseGraphql = applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql()))).filter(isPublic);
+  const baseCli = buildCli().filter(isPublic);
+
+  const knownDomains = new Set(
+    [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
+      .map(recordDomain)
+      .filter(Boolean),
+  );
+  const discovered = buildDiscovered(knownDomains).filter(isPublic);
+  const mcp = [...baseMcp, ...discovered.filter((r) => r.kind === "mcp")];
+  const openapi = [...baseOpenapi, ...discovered.filter((r) => r.kind === "openapi")];
+  const graphql = [...baseGraphql, ...discovered.filter((r) => r.kind === "graphql")];
+  const cli = [...baseCli, ...discovered.filter((r) => r.kind === "cli")];
 
   writeFileSync(join(OUTPUT, "mcp.json"), JSON.stringify(mcp, null, 2));
   writeFileSync(join(OUTPUT, "openapi.json"), JSON.stringify(openapi, null, 2));
@@ -641,6 +761,7 @@ function main() {
   console.log(`openapi: ${openapi.length.toString().padStart(5)}  (${withTools(openapi)} with tools)`);
   console.log(`graphql: ${graphql.length.toString().padStart(5)}  (${withTools(graphql)} with tools)`);
   console.log(`cli:     ${cli.length.toString().padStart(5)}`);
+  console.log(`discovered: ${discovered.length.toString().padStart(5)}`);
   console.log(`total:   ${all.length.toString().padStart(5)}`);
 
   const validatedIcons = Object.keys(faviconCache).length;

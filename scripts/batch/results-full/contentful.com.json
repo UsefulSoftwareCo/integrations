@@ -10,50 +10,34 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:48:24.489Z",
-    "summary": "Contentful exposes REST APIs for Delivery, Preview, Management, Images, SCIM, User Management, and Experience, plus GraphQL Content API and the `contentful` CLI; auth is via bearer tokens, per-space access tokens, OAuth-app tokens, or CLI login depending on the surface, with Images public.",
+    "discoveredAt": "2026-07-02T16:21:03.036Z",
+    "summary": "Contentful exposes REST APIs for management, delivery, preview, images, SCIM, and experience, plus a GraphQL Content API and the `contentful` CLI; most require bearer tokens, while Images API is public.",
     "credentials": {
-      "cf_cma_pat": {
+      "cma_personal_access_token": {
         "type": "bearer",
-        "label": "Contentful Personal Access Token / Management token",
+        "label": "Contentful personal access token",
         "generateUrl": "https://app.contentful.com/account/profile/cma_tokens",
-        "setup": "Go to [Contentful web app](https://app.contentful.com/), open `Settings > API keys > Content management tokens` or the [Personal Access Tokens](https://app.contentful.com/account/profile/cma_tokens) area, and create a token. If you prefer CLI onboarding, run `contentful login`; for headless use, create a personal token and pass it to `contentful login --management-token <token>` or use it as a `Bearer` token against Contentful APIs.",
+        "setup": "Go to the [Contentful app](https://app.contentful.com/account/profile/cma_tokens), open your account settings, then under **API Tokens** create a **Personal Access Token** in the **Content management tokens** section. You can also use `contentful login --management-token <token>` if you want the CLI to store it locally.",
         "acquisition": "manual"
       },
-      "cf_cda_token": {
+      "cda_access_token": {
         "type": "bearer",
-        "label": "Contentful CDA / Preview access token",
-        "generateUrl": "https://app.contentful.com/",
-        "setup": "In the [Contentful web app](https://app.contentful.com/), create an API key for the relevant space and copy the delivery or preview access token. Contentful notes these tokens are per-space and can be used either in the `Authorization: Bearer <token>` header or as `access_token=<token>` query parameter. Use delivery tokens for CDA and preview tokens for the Preview API.",
-        "acquisition": "manual"
-      },
-      "cf_oauth_app": {
-        "type": "oauth2",
-        "label": "Contentful OAuth application credentials",
-        "generateUrl": "https://app.contentful.com/account/oauth-apps",
-        "setup": "If you need delegated access via OAuth, create an OAuth application in the Contentful web app under the OAuth applications area, then follow the app registration flow there. Contentful documents OAuth as an authentication option for the Content Management API; use this when you want user-consented access instead of a personal access token.",
-        "acquisition": "manual"
-      },
-      "cf_cli_login": {
-        "type": "oauth2",
-        "label": "Contentful CLI login session",
-        "generateUrl": "https://contentful.com/developers/docs/tutorials/cli/authentication",
-        "setup": "Install `contentful-cli`, then run `contentful login`. If you cannot use a browser, first create a management token in the web app, then run `contentful login --management-token <token>`. The CLI stores the resulting login on your machine for subsequent commands.",
+        "label": "Contentful delivery/preview access token",
+        "generateUrl": "https://app.contentful.com",
+        "setup": "In the [Contentful web app](https://app.contentful.com), open your space settings and create an API key/access token for the environment you want to read. Contentful's docs say the token can be sent as `Authorization: Bearer <token>` or `access_token=<token>`; use separate tokens for delivery and preview environments as needed.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "contentful-content-delivery-api",
-        "name": "Contentful Content Delivery API",
+        "slug": "contentful-content-management-api",
+        "name": "Contentful Content Management API",
         "type": "http",
-        "docs": "https://www.contentful.com/developers/docs/references/content-delivery-api/overview",
+        "docs": "https://contentful.com/developers/docs/references/content-management-api/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.contentful.com/developers/docs/references/api-basics",
-            "https://www.contentful.com/developers/docs/references/authentication",
-            "https://www.contentful.com/developers/docs/references/content-delivery-api/overview"
+            "https://contentful.com/developers/docs/references/content-management-api/overview"
           ]
         },
         "auth": {
@@ -62,7 +46,7 @@
             {
               "use": [
                 {
-                  "id": "cf_cda_token",
+                  "id": "cma_personal_access_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -74,44 +58,62 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.contentful.com/developers/docs/references/authentication",
-                  "https://www.contentful.com/developers/docs/references/content-delivery-api/overview"
+                  "https://contentful.com/developers/docs/references/authentication",
+                  "https://contentful.com/developers/docs/references/content-management-api/overview"
                 ]
               }
-            },
+            }
+          ]
+        },
+        "url": "https://api.contentful.com"
+      },
+      {
+        "slug": "contentful-content-delivery-api",
+        "name": "Contentful Content Delivery API",
+        "type": "http",
+        "docs": "https://contentful.com/developers/docs/references/content-delivery-api/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://contentful.com/developers/docs/references/content-delivery-api/overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
             {
               "use": [
                 {
-                  "id": "cf_cda_token",
+                  "id": "cda_access_token",
                   "mechanics": {
                     "source": "http",
-                    "in": "query",
-                    "paramName": "access_token"
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.contentful.com/developers/docs/references/authentication",
-                  "https://www.contentful.com/developers/docs/references/content-delivery-api/overview"
+                  "https://contentful.com/developers/docs/references/authentication",
+                  "https://contentful.com/developers/docs/references/content-delivery-api/overview"
                 ]
               }
             }
           ]
-        }
+        },
+        "url": "https://cdn.contentful.com"
       },
       {
         "slug": "contentful-content-preview-api",
         "name": "Contentful Content Preview API",
         "type": "http",
-        "docs": "https://www.contentful.com/developers/docs/references/content-preview-api/overview",
+        "docs": "https://contentful.com/developers/docs/references/content-preview-api/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.contentful.com/developers/docs/references/api-basics",
-            "https://www.contentful.com/developers/docs/references/authentication",
-            "https://www.contentful.com/developers/docs/references/content-preview-api/overview"
+            "https://contentful.com/developers/docs/references/content-preview-api/overview"
           ]
         },
         "auth": {
@@ -120,7 +122,7 @@
             {
               "use": [
                 {
-                  "id": "cf_cda_token",
+                  "id": "cda_access_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -132,125 +134,45 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.contentful.com/developers/docs/references/authentication",
-                  "https://www.contentful.com/developers/docs/references/content-preview-api/overview"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "cf_cda_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "paramName": "access_token"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.contentful.com/developers/docs/references/authentication",
-                  "https://www.contentful.com/developers/docs/references/content-preview-api/overview"
+                  "https://contentful.com/developers/docs/references/authentication",
+                  "https://contentful.com/developers/docs/references/content-preview-api/overview"
                 ]
               }
             }
-          ]
-        }
-      },
-      {
-        "slug": "contentful-content-management-api",
-        "name": "Contentful Content Management API",
-        "type": "http",
-        "docs": "https://www.contentful.com/developers/docs/references/content-management-api/overview",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.contentful.com/developers/docs/references/api-basics",
-            "https://www.contentful.com/developers/docs/references/authentication",
-            "https://www.contentful.com/developers/docs/references/content-management-api/overview"
           ]
         },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "cf_cma_pat",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.contentful.com/developers/docs/references/authentication",
-                  "https://www.contentful.com/developers/docs/references/content-management-api/overview"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "cf_oauth_app",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.contentful.com/developers/docs/references/authentication",
-                  "https://www.contentful.com/developers/docs/references/content-management-api/overview"
-                ]
-              }
-            }
-          ]
-        }
+        "url": "https://preview.contentful.com"
       },
       {
         "slug": "contentful-images-api",
         "name": "Contentful Images API",
         "type": "http",
-        "docs": "https://www.contentful.com/developers/docs/references/images-api/overview",
+        "docs": "https://contentful.com/developers/docs/references/images-api/overview",
         "basis": {
           "via": "discovered",
-          "evidence": [
-            "https://www.contentful.com/developers/docs/references/api-basics",
-            "https://www.contentful.com/developers/docs/references/images-api/overview"
-          ]
+          "evidence": []
         },
         "auth": {
           "status": "none",
           "basis": {
             "via": "discovered",
             "evidence": [
-              "https://www.contentful.com/developers/docs/references/authentication",
-              "https://www.contentful.com/developers/docs/references/images-api/overview"
+              "https://contentful.com/developers/docs/references/authentication",
+              "https://contentful.com/developers/docs/references/images-api/overview"
             ]
           }
-        }
+        },
+        "url": "https://images.ctfassets.net"
       },
       {
         "slug": "contentful-scim-api",
         "name": "Contentful SCIM API",
         "type": "http",
-        "docs": "https://www.contentful.com/developers/docs/references/scim-api/overview",
+        "docs": "https://contentful.com/developers/docs/references/scim-api/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.contentful.com/developers/docs/references/scim-api/overview",
-            "https://www.contentful.com/developers/docs/references/authentication"
+            "https://contentful.com/developers/docs/references/scim-api/overview"
           ]
         },
         "auth": {
@@ -259,7 +181,7 @@
             {
               "use": [
                 {
-                  "id": "cf_cma_pat",
+                  "id": "cma_personal_access_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -271,23 +193,39 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.contentful.com/developers/docs/references/scim-api/overview",
-                  "https://www.contentful.com/developers/docs/references/authentication"
+                  "https://contentful.com/developers/docs/references/scim-api/overview"
                 ]
               }
             }
           ]
-        }
+        },
+        "url": "https://api.contentful.com/scim/v2/organizations/{org_id}",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/scim+json"
+            },
+            "description": "Required on all SCIM API requests"
+          }
+        ],
+        "variables": [
+          {
+            "name": "org_id",
+            "description": "Organization ID"
+          }
+        ]
       },
       {
         "slug": "contentful-user-management-api",
         "name": "Contentful User Management API",
         "type": "http",
-        "docs": "https://www.contentful.com/developers/docs/references/user-management-api/overview",
+        "docs": "https://contentful.com/developers/docs/references/user-management-api/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.contentful.com/developers/docs/references/user-management-api/overview"
+            "https://contentful.com/developers/docs/references/user-management-api/overview"
           ]
         },
         "auth": {
@@ -298,11 +236,11 @@
         "slug": "contentful-experience-api",
         "name": "Contentful Experience API",
         "type": "http",
-        "docs": "https://www.contentful.com/developers/docs/references/experience-api/overview",
+        "docs": "https://contentful.com/developers/docs/references/experience-api/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.contentful.com/developers/docs/references/experience-api/overview"
+            "https://contentful.com/developers/docs/references/experience-api/overview"
           ]
         },
         "auth": {
@@ -313,12 +251,11 @@
         "slug": "contentful-graphql-content-api",
         "name": "Contentful GraphQL Content API",
         "type": "graphql",
-        "docs": "https://www.contentful.com/developers/docs/references/graphql/overview",
+        "docs": "https://contentful.com/developers/docs/references/graphql/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.contentful.com/developers/docs/references/graphql/overview",
-            "https://www.contentful.com/developers/docs/references/authentication"
+            "https://contentful.com/developers/docs/references/graphql/overview"
           ]
         },
         "auth": {
@@ -327,7 +264,7 @@
             {
               "use": [
                 {
-                  "id": "cf_cda_token",
+                  "id": "cda_access_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -339,20 +276,25 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.contentful.com/developers/docs/references/graphql/overview",
-                  "https://www.contentful.com/developers/docs/references/authentication"
+                  "https://contentful.com/developers/docs/references/authentication",
+                  "https://contentful.com/developers/docs/references/graphql/overview"
                 ]
               }
             }
           ]
         },
-        "url": "https://www.contentful.com/developers/docs/references/graphql/overview"
+        "url": "https://graphql.contentful.com/content/v1/spaces/{space_id}",
+        "variables": [
+          {
+            "name": "space_id",
+            "description": "Space ID"
+          }
+        ]
       },
       {
         "slug": "contentful-cli",
         "name": "Contentful CLI",
         "type": "cli",
-        "docs": "https://contentful.com/developers/docs/tutorials/cli/authentication",
         "basis": {
           "via": "discovered",
           "evidence": [
@@ -365,7 +307,7 @@
             {
               "use": [
                 {
-                  "id": "cf_cli_login",
+                  "id": "cma_personal_access_token",
                   "mechanics": {
                     "source": "cli",
                     "command": "contentful login"
@@ -392,28 +334,28 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:48:24.489Z",
+  "discoveredAt": "2026-07-02T16:21:03.037Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 168449,
-    "completion_tokens": 2453,
-    "total_tokens": 170902
+    "prompt_tokens": 334094,
+    "completion_tokens": 1872,
+    "total_tokens": 335966
   },
   "visited": [
-    "https://composio.dev/toolkits/contentful_graphql/framework/langchain",
+    "https://composio.dev/toolkits/contentful_graphql/framework/claude-agents-sdk",
+    "https://contentful.com/developers/docs",
+    "https://contentful.com/developers/docs/concepts/apis/",
+    "https://contentful.com/developers/docs/references/authentication",
+    "https://contentful.com/developers/docs/references/content-delivery-api/overview",
+    "https://contentful.com/developers/docs/references/content-management-api/overview",
+    "https://contentful.com/developers/docs/references/content-preview-api/overview",
+    "https://contentful.com/developers/docs/references/experience-api/overview",
     "https://contentful.com/developers/docs/references/graphql/overview",
+    "https://contentful.com/developers/docs/references/images-api/overview",
+    "https://contentful.com/developers/docs/references/scim-api/overview",
+    "https://contentful.com/developers/docs/references/user-management-api/overview",
     "https://contentful.com/developers/docs/tutorials/cli/authentication",
-    "https://github.com/ivo-toby/contentful-mcp-graphql",
-    "https://www.contentful.com/developers/docs/concepts/apis/",
-    "https://www.contentful.com/developers/docs/javascript/tutorials/using-contentful-graphql-with-javascript/",
-    "https://www.contentful.com/developers/docs/references/authentication",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/overview",
-    "https://www.contentful.com/developers/docs/references/content-management-api/overview",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/overview",
-    "https://www.contentful.com/developers/docs/references/experience-api/overview",
-    "https://www.contentful.com/developers/docs/references/images-api/overview",
-    "https://www.contentful.com/developers/docs/references/scim-api/overview",
-    "https://www.contentful.com/developers/docs/references/user-management-api/overview"
+    "https://www.contentful.com/developers/docs/concepts/apis/"
   ],
   "grounding": [
     "http://simplecloud.info/",
@@ -433,36 +375,266 @@
     "https://cdn.contentful.com/spaces/some_other_space/entries?access_token=b4c0n73n7fu1",
     "https://cdn.eu.contentful.com",
     "https://cdn.eu.contentful.com/",
-    "https://composio.dev/toolkits/contentful_graphql/framework/langchain",
+    "https://composio.dev/toolkits/contentful_graphql/framework/claude-agents-sdk",
     "https://contentful.com/#",
+    "https://contentful.com/#additional-notes",
     "https://contentful.com/#advantages",
+    "https://contentful.com/#api-keys-in-the-contentful-web-app",
     "https://contentful.com/#api-rate-limits",
     "https://contentful.com/#authentication",
     "https://contentful.com/#basic-api-information",
     "https://contentful.com/#basic-api-information-1",
+    "https://contentful.com/#collection-resources-and-pagination",
+    "https://contentful.com/#common-resource-attributes",
+    "https://contentful.com/#content-delivery-api",
+    "https://contentful.com/#content-management-api",
+    "https://contentful.com/#content-preview-api",
     "https://contentful.com/#cursor-pagination",
+    "https://contentful.com/#date-and-time-format",
     "https://contentful.com/#enablement-and-access",
+    "https://contentful.com/#error-responses",
     "https://contentful.com/#example-response",
+    "https://contentful.com/#example-usage",
+    "https://contentful.com/#example-usage-1",
+    "https://contentful.com/#example-usage-2",
+    "https://contentful.com/#example-usage-3",
+    "https://contentful.com/#example-usage-4",
+    "https://contentful.com/#filtering-results",
     "https://contentful.com/#get",
+    "https://contentful.com/#getting-a-personal-access-token",
+    "https://contentful.com/#getting-an-oauth-token",
+    "https://contentful.com/#graphql-content-api",
     "https://contentful.com/#how-cursor-pagination-works",
     "https://contentful.com/#http-methods",
+    "https://contentful.com/#images-api",
+    "https://contentful.com/#including-related-resources",
+    "https://contentful.com/#introduction",
     "https://contentful.com/#limitations",
     "https://contentful.com/#login",
     "https://contentful.com/#logout",
+    "https://contentful.com/#managing-access-to-spaces",
     "https://contentful.com/#next-steps",
+    "https://contentful.com/#operators",
+    "https://contentful.com/#overview",
+    "https://contentful.com/#pagination",
     "https://contentful.com/#post",
+    "https://contentful.com/#preview-api-authentication",
+    "https://contentful.com/#preview-api-limitations",
     "https://contentful.com/#previewing-content",
     "https://contentful.com/#query-complexity-limits",
     "https://contentful.com/#query-size-limits",
+    "https://contentful.com/#request",
+    "https://contentful.com/#request-1",
+    "https://contentful.com/#request-parameters",
     "https://contentful.com/#requirements",
+    "https://contentful.com/#response",
+    "https://contentful.com/#response-1",
+    "https://contentful.com/#response-attributes",
+    "https://contentful.com/#response-envelope",
     "https://contentful.com/#rich-text",
+    "https://contentful.com/#scim-api-endpoints",
+    "https://contentful.com/#searching-multiple-attributes",
+    "https://contentful.com/#sorting-results",
     "https://contentful.com/#tags",
+    "https://contentful.com/#the-content-delivery-and-preview-api",
+    "https://contentful.com/#the-content-management-api",
+    "https://contentful.com/#using-the-api",
+    "https://contentful.com/#using-the-preview-api",
+    "https://contentful.com/developers/docs",
+    "https://contentful.com/developers/docs/concepts/apis/",
     "https://contentful.com/developers/docs/concepts/multiple-environments",
+    "https://contentful.com/developers/docs/experiences/overview",
     "https://contentful.com/developers/docs/references/api-basics",
+    "https://contentful.com/developers/docs/references/api-basics#content-delivery-api",
+    "https://contentful.com/developers/docs/references/api-basics#content-management-api",
+    "https://contentful.com/developers/docs/references/api-basics#content-preview-api",
+    "https://contentful.com/developers/docs/references/api-basics#graphql-content-api",
+    "https://contentful.com/developers/docs/references/api-basics#images-api",
+    "https://contentful.com/developers/docs/references/authentication",
+    "https://contentful.com/developers/docs/references/authentication#the-content-management-api",
+    "https://contentful.com/developers/docs/references/content-delivery-api",
+    "https://contentful.com/developers/docs/references/content-delivery-api/asset-keys",
+    "https://contentful.com/developers/docs/references/content-delivery-api/asset-keys/create-an-asset-key",
+    "https://contentful.com/developers/docs/references/content-delivery-api/assets",
+    "https://contentful.com/developers/docs/references/content-delivery-api/assets/get-all-assets",
+    "https://contentful.com/developers/docs/references/content-delivery-api/assets/get-an-asset",
+    "https://contentful.com/developers/docs/references/content-delivery-api/content-types",
+    "https://contentful.com/developers/docs/references/content-delivery-api/content-types/get-a-content-type",
+    "https://contentful.com/developers/docs/references/content-delivery-api/content-types/get-the-content-model-of-a-space",
+    "https://contentful.com/developers/docs/references/content-delivery-api/entries",
+    "https://contentful.com/developers/docs/references/content-delivery-api/entries/get-all-entries",
+    "https://contentful.com/developers/docs/references/content-delivery-api/entries/get-an-entry",
+    "https://contentful.com/developers/docs/references/content-delivery-api/links",
+    "https://contentful.com/developers/docs/references/content-delivery-api/locales",
+    "https://contentful.com/developers/docs/references/content-delivery-api/locales/get-all-locales-of-a-space",
+    "https://contentful.com/developers/docs/references/content-delivery-api/localization",
+    "https://contentful.com/developers/docs/references/content-delivery-api/native-external-references",
     "https://contentful.com/developers/docs/references/content-delivery-api/overview",
+    "https://contentful.com/developers/docs/references/content-delivery-api/resource-links",
+    "https://contentful.com/developers/docs/references/content-delivery-api/search-parameters",
+    "https://contentful.com/developers/docs/references/content-delivery-api/spaces",
+    "https://contentful.com/developers/docs/references/content-delivery-api/spaces/get-a-space",
+    "https://contentful.com/developers/docs/references/content-delivery-api/synchronization",
+    "https://contentful.com/developers/docs/references/content-delivery-api/synchronization/get-synced-content",
+    "https://contentful.com/developers/docs/references/content-delivery-api/tags",
+    "https://contentful.com/developers/docs/references/content-delivery-api/tags/get-a-tag",
+    "https://contentful.com/developers/docs/references/content-delivery-api/tags/get-all-tags",
+    "https://contentful.com/developers/docs/references/content-delivery-api/taxonomy",
+    "https://contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-a-concept",
+    "https://contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-a-concept-scheme",
+    "https://contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-all-concept-schemes",
+    "https://contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-all-concepts",
+    "https://contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-ancestors-of-a-concept",
+    "https://contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-descendants-of-a-concept",
+    "https://contentful.com/developers/docs/references/content-management-api",
+    "https://contentful.com/developers/docs/references/content-management-api/access-tokens",
+    "https://contentful.com/developers/docs/references/content-management-api/ai-actions",
+    "https://contentful.com/developers/docs/references/content-management-api/ai-providers",
+    "https://contentful.com/developers/docs/references/content-management-api/api-keys",
+    "https://contentful.com/developers/docs/references/content-management-api/app-access-grants",
+    "https://contentful.com/developers/docs/references/content-management-api/app-access-token",
+    "https://contentful.com/developers/docs/references/content-management-api/app-action-calls",
+    "https://contentful.com/developers/docs/references/content-management-api/app-action-categories",
+    "https://contentful.com/developers/docs/references/content-management-api/app-actions",
+    "https://contentful.com/developers/docs/references/content-management-api/app-bundles",
+    "https://contentful.com/developers/docs/references/content-management-api/app-definitions",
+    "https://contentful.com/developers/docs/references/content-management-api/app-details",
+    "https://contentful.com/developers/docs/references/content-management-api/app-event-subscriptions",
+    "https://contentful.com/developers/docs/references/content-management-api/app-installations",
+    "https://contentful.com/developers/docs/references/content-management-api/app-keys",
+    "https://contentful.com/developers/docs/references/content-management-api/app-signed-request",
+    "https://contentful.com/developers/docs/references/content-management-api/app-signing-secret",
+    "https://contentful.com/developers/docs/references/content-management-api/app-uploads",
+    "https://contentful.com/developers/docs/references/content-management-api/asset-keys",
+    "https://contentful.com/developers/docs/references/content-management-api/assets",
+    "https://contentful.com/developers/docs/references/content-management-api/automation-definitions",
+    "https://contentful.com/developers/docs/references/content-management-api/automation-executions",
+    "https://contentful.com/developers/docs/references/content-management-api/bulk-actions",
+    "https://contentful.com/developers/docs/references/content-management-api/bulk-entry-content-operations",
+    "https://contentful.com/developers/docs/references/content-management-api/content-model-templates",
+    "https://contentful.com/developers/docs/references/content-management-api/content-semantics",
+    "https://contentful.com/developers/docs/references/content-management-api/content-types",
+    "https://contentful.com/developers/docs/references/content-management-api/content-types/create-a-content",
+    "https://contentful.com/developers/docs/references/content-management-api/content-types/get-all-content-types-of-a-space",
+    "https://contentful.com/developers/docs/references/content-management-api/cross-space-references",
+    "https://contentful.com/developers/docs/references/content-management-api/editor-interface",
+    "https://contentful.com/developers/docs/references/content-management-api/enterprise-observability",
+    "https://contentful.com/developers/docs/references/content-management-api/entries",
+    "https://contentful.com/developers/docs/references/content-management-api/entry-comments",
+    "https://contentful.com/developers/docs/references/content-management-api/entry-tasks",
+    "https://contentful.com/developers/docs/references/content-management-api/environment-aliases",
+    "https://contentful.com/developers/docs/references/content-management-api/environment-aliases/create-or-update-an-environment-alias",
+    "https://contentful.com/developers/docs/references/content-management-api/environment-aliases/delete-an-environment-alias",
+    "https://contentful.com/developers/docs/references/content-management-api/environment-aliases/get-all-environment-aliases-of-a-space",
+    "https://contentful.com/developers/docs/references/content-management-api/environment-aliases/get-an-environment-alias",
+    "https://contentful.com/developers/docs/references/content-management-api/environments",
+    "https://contentful.com/developers/docs/references/content-management-api/environments/create-an-environment",
+    "https://contentful.com/developers/docs/references/content-management-api/environments/create-an-environment-with-a-specified-id",
+    "https://contentful.com/developers/docs/references/content-management-api/environments/delete-an-environment",
+    "https://contentful.com/developers/docs/references/content-management-api/environments/get-all-environments-of-a-space",
+    "https://contentful.com/developers/docs/references/content-management-api/environments/get-an-environment",
+    "https://contentful.com/developers/docs/references/content-management-api/function-logs",
+    "https://contentful.com/developers/docs/references/content-management-api/functions",
+    "https://contentful.com/developers/docs/references/content-management-api/locales",
+    "https://contentful.com/developers/docs/references/content-management-api/localized-workflows",
+    "https://contentful.com/developers/docs/references/content-management-api/native-external-references",
+    "https://contentful.com/developers/docs/references/content-management-api/oauth-applications",
+    "https://contentful.com/developers/docs/references/content-management-api/organization-enablements",
+    "https://contentful.com/developers/docs/references/content-management-api/organizations",
+    "https://contentful.com/developers/docs/references/content-management-api/organizations/get-all-organizations-an-account-has-access-to",
+    "https://contentful.com/developers/docs/references/content-management-api/organizations/get-an-organization-access-grant",
+    "https://contentful.com/developers/docs/references/content-management-api/organizations/get-an-organization-id-an-admin-or-owner-has-access-to",
+    "https://contentful.com/developers/docs/references/content-management-api/organizations/get-available-licenses",
+    "https://contentful.com/developers/docs/references/content-management-api/organizations/put-an-organization-id-an-admin-or-owner-has-access-to",
     "https://contentful.com/developers/docs/references/content-management-api/overview",
+    "https://contentful.com/developers/docs/references/content-management-api/releases",
+    "https://contentful.com/developers/docs/references/content-management-api/roles",
+    "https://contentful.com/developers/docs/references/content-management-api/scheduled-actions",
+    "https://contentful.com/developers/docs/references/content-management-api/search-parameters",
+    "https://contentful.com/developers/docs/references/content-management-api/security-contacts",
+    "https://contentful.com/developers/docs/references/content-management-api/security-contacts/delete-an-organization-security-contact-an-admin-or-owner-has-access-to",
+    "https://contentful.com/developers/docs/references/content-management-api/security-contacts/get-an-organization-security-contacts-an-admin-or-owner-has-access-to",
+    "https://contentful.com/developers/docs/references/content-management-api/security-contacts/post-an-organization-security-contacts-an-admin-or-owner-has-access-to",
+    "https://contentful.com/developers/docs/references/content-management-api/security-contacts/update-an-organization-security-contact-an-admin-or-owner-has-access-to",
+    "https://contentful.com/developers/docs/references/content-management-api/snapshots",
+    "https://contentful.com/developers/docs/references/content-management-api/space-enablements",
+    "https://contentful.com/developers/docs/references/content-management-api/space-memberships",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/allocate-space-add-ons",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/create-a-space",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/delete-a-space",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/get-a-space",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/get-all-spaces-an-account-has-access-to",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/get-eligible-licenses",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/get-space-add-ons",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/unarchive-space",
+    "https://contentful.com/developers/docs/references/content-management-api/spaces/update-a-space-name",
+    "https://contentful.com/developers/docs/references/content-management-api/tags",
+    "https://contentful.com/developers/docs/references/content-management-api/taxonomy",
+    "https://contentful.com/developers/docs/references/content-management-api/teams-for-a-space",
+    "https://contentful.com/developers/docs/references/content-management-api/timeline-assets",
+    "https://contentful.com/developers/docs/references/content-management-api/timeline-entries",
+    "https://contentful.com/developers/docs/references/content-management-api/timeline-releases",
+    "https://contentful.com/developers/docs/references/content-management-api/ui-config",
+    "https://contentful.com/developers/docs/references/content-management-api/ui-extensions",
+    "https://contentful.com/developers/docs/references/content-management-api/uploads",
+    "https://contentful.com/developers/docs/references/content-management-api/usage",
+    "https://contentful.com/developers/docs/references/content-management-api/users",
+    "https://contentful.com/developers/docs/references/content-management-api/webhook-calls",
+    "https://contentful.com/developers/docs/references/content-management-api/webhook-security",
+    "https://contentful.com/developers/docs/references/content-management-api/webhooks",
+    "https://contentful.com/developers/docs/references/content-management-api/workflow-comments",
+    "https://contentful.com/developers/docs/references/content-management-api/workflow-definitions",
+    "https://contentful.com/developers/docs/references/content-management-api/workflows",
+    "https://contentful.com/developers/docs/references/content-management-api/workflows-changelog",
+    "https://contentful.com/developers/docs/references/content-management-api/workflows-migration-guide",
+    "https://contentful.com/developers/docs/references/content-preview-api",
+    "https://contentful.com/developers/docs/references/content-preview-api/asset-keys",
+    "https://contentful.com/developers/docs/references/content-preview-api/asset-keys/create-an-asset-key",
+    "https://contentful.com/developers/docs/references/content-preview-api/assets",
+    "https://contentful.com/developers/docs/references/content-preview-api/assets/get-all-assets",
+    "https://contentful.com/developers/docs/references/content-preview-api/assets/get-an-asset",
+    "https://contentful.com/developers/docs/references/content-preview-api/content-types",
+    "https://contentful.com/developers/docs/references/content-preview-api/content-types/get-a-content-type",
+    "https://contentful.com/developers/docs/references/content-preview-api/content-types/get-the-content-model-of-a-space",
+    "https://contentful.com/developers/docs/references/content-preview-api/entries",
+    "https://contentful.com/developers/docs/references/content-preview-api/entries/get-all-entries",
+    "https://contentful.com/developers/docs/references/content-preview-api/entries/get-an-entry",
+    "https://contentful.com/developers/docs/references/content-preview-api/links",
+    "https://contentful.com/developers/docs/references/content-preview-api/locales",
+    "https://contentful.com/developers/docs/references/content-preview-api/locales/get-all-locales-of-a-space",
+    "https://contentful.com/developers/docs/references/content-preview-api/localization",
+    "https://contentful.com/developers/docs/references/content-preview-api/native-external-references",
     "https://contentful.com/developers/docs/references/content-preview-api/overview",
+    "https://contentful.com/developers/docs/references/content-preview-api/resource-links",
+    "https://contentful.com/developers/docs/references/content-preview-api/search-parameters",
+    "https://contentful.com/developers/docs/references/content-preview-api/spaces",
+    "https://contentful.com/developers/docs/references/content-preview-api/spaces/get-a-space",
+    "https://contentful.com/developers/docs/references/content-preview-api/tags",
+    "https://contentful.com/developers/docs/references/content-preview-api/tags/get-a-tag",
+    "https://contentful.com/developers/docs/references/content-preview-api/tags/get-all-tags",
+    "https://contentful.com/developers/docs/references/content-preview-api/taxonomy",
+    "https://contentful.com/developers/docs/references/content-preview-api/taxonomy/get-a-concept",
+    "https://contentful.com/developers/docs/references/content-preview-api/taxonomy/get-a-concept-scheme",
+    "https://contentful.com/developers/docs/references/content-preview-api/taxonomy/get-all-concept-schemes",
+    "https://contentful.com/developers/docs/references/content-preview-api/taxonomy/get-all-concepts",
+    "https://contentful.com/developers/docs/references/content-preview-api/taxonomy/get-ancestors-of-a-concept",
+    "https://contentful.com/developers/docs/references/content-preview-api/taxonomy/get-descendants-of-a-concept",
+    "https://contentful.com/developers/docs/references/content-preview-api/timeline",
+    "https://contentful.com/developers/docs/references/content-preview-api/timeline/get-a-timeline-asset",
+    "https://contentful.com/developers/docs/references/content-preview-api/timeline/get-a-timeline-entry",
+    "https://contentful.com/developers/docs/references/content-preview-api/timeline/get-all-timeline-assets",
+    "https://contentful.com/developers/docs/references/content-preview-api/timeline/get-all-timeline-entries",
+    "https://contentful.com/developers/docs/references/errors",
+    "https://contentful.com/developers/docs/references/experience-api",
     "https://contentful.com/developers/docs/references/experience-api/overview",
+    "https://contentful.com/developers/docs/references/experience-api/profiles",
+    "https://contentful.com/developers/docs/references/experience-api/profiles/create-a-profile",
+    "https://contentful.com/developers/docs/references/experience-api/profiles/create-or-update-profiles-async",
+    "https://contentful.com/developers/docs/references/experience-api/profiles/create-or-update-profiles-sync",
+    "https://contentful.com/developers/docs/references/experience-api/profiles/delete-a-profile",
+    "https://contentful.com/developers/docs/references/experience-api/profiles/get-a-profile",
+    "https://contentful.com/developers/docs/references/experience-api/profiles/update-a-profile",
     "https://contentful.com/developers/docs/references/graphql/automatic-persisted-queries",
     "https://contentful.com/developers/docs/references/graphql/collection-fields",
     "https://contentful.com/developers/docs/references/graphql/collection-filters",
@@ -482,9 +654,75 @@
     "https://contentful.com/developers/docs/references/graphql/single-resource-fields",
     "https://contentful.com/developers/docs/references/graphql/taxonomy",
     "https://contentful.com/developers/docs/references/graphql/timeline",
+    "https://contentful.com/developers/docs/references/http-details",
+    "https://contentful.com/developers/docs/references/images-api",
+    "https://contentful.com/developers/docs/references/images-api/images",
+    "https://contentful.com/developers/docs/references/images-api/images/retrieve-an-image",
     "https://contentful.com/developers/docs/references/images-api/overview",
+    "https://contentful.com/developers/docs/references/scim-api",
+    "https://contentful.com/developers/docs/references/scim-api/groups",
+    "https://contentful.com/developers/docs/references/scim-api/groups/create-a-group",
+    "https://contentful.com/developers/docs/references/scim-api/groups/delete-a-group",
+    "https://contentful.com/developers/docs/references/scim-api/groups/get-a-group",
+    "https://contentful.com/developers/docs/references/scim-api/groups/get-all-groups",
+    "https://contentful.com/developers/docs/references/scim-api/groups/patch-a-group",
     "https://contentful.com/developers/docs/references/scim-api/overview",
+    "https://contentful.com/developers/docs/references/scim-api/users",
+    "https://contentful.com/developers/docs/references/scim-api/users/create-a-user",
+    "https://contentful.com/developers/docs/references/scim-api/users/delete-a-user",
+    "https://contentful.com/developers/docs/references/scim-api/users/get-a-user",
+    "https://contentful.com/developers/docs/references/scim-api/users/get-all-users",
+    "https://contentful.com/developers/docs/references/scim-api/users/patch-a-user",
+    "https://contentful.com/developers/docs/references/scim-api/users/update-a-user",
+    "https://contentful.com/developers/docs/references/user-management-api",
+    "https://contentful.com/developers/docs/references/user-management-api/invitations",
+    "https://contentful.com/developers/docs/references/user-management-api/invitations/create-an-invitation",
+    "https://contentful.com/developers/docs/references/user-management-api/invitations/get-an-invitation",
+    "https://contentful.com/developers/docs/references/user-management-api/organization-memberships",
+    "https://contentful.com/developers/docs/references/user-management-api/organization-memberships/delete-an-organization-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/organization-memberships/get-all-organization-memberships",
+    "https://contentful.com/developers/docs/references/user-management-api/organization-memberships/get-an-organization-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/organization-memberships/update-an-organization-membership",
     "https://contentful.com/developers/docs/references/user-management-api/overview",
+    "https://contentful.com/developers/docs/references/user-management-api/space-members",
+    "https://contentful.com/developers/docs/references/user-management-api/space-members/get-a-space-member",
+    "https://contentful.com/developers/docs/references/user-management-api/space-members/get-all-space-members",
+    "https://contentful.com/developers/docs/references/user-management-api/space-memberships",
+    "https://contentful.com/developers/docs/references/user-management-api/space-memberships/create-a-space-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/space-memberships/delete-a-space-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/space-memberships/get-a-space-membership-for-a-space",
+    "https://contentful.com/developers/docs/references/user-management-api/space-memberships/get-a-space-membership-for-an-organization",
+    "https://contentful.com/developers/docs/references/user-management-api/space-memberships/get-all-space-memberships-for-a-space",
+    "https://contentful.com/developers/docs/references/user-management-api/space-memberships/get-all-space-memberships-for-an-organization",
+    "https://contentful.com/developers/docs/references/user-management-api/space-memberships/update-a-space-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/space-roles",
+    "https://contentful.com/developers/docs/references/user-management-api/space-roles/get-all-space-roles",
+    "https://contentful.com/developers/docs/references/user-management-api/team-memberships",
+    "https://contentful.com/developers/docs/references/user-management-api/team-memberships/create-a-team-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/team-memberships/delete-a-team-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/team-memberships/get-a-team-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/team-memberships/get-all-team-memberships-for-a-team",
+    "https://contentful.com/developers/docs/references/user-management-api/team-memberships/get-all-team-memberships-for-an-organization",
+    "https://contentful.com/developers/docs/references/user-management-api/team-space-memberships",
+    "https://contentful.com/developers/docs/references/user-management-api/team-space-memberships/create-a-team-space-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/team-space-memberships/delete-a-team-space-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/team-space-memberships/get-a-team-space-membership-for-a-space",
+    "https://contentful.com/developers/docs/references/user-management-api/team-space-memberships/get-a-team-space-membership-for-an-organization",
+    "https://contentful.com/developers/docs/references/user-management-api/team-space-memberships/get-all-team-space-memberships-for-a-space",
+    "https://contentful.com/developers/docs/references/user-management-api/team-space-memberships/get-all-team-space-memberships-for-an-organization",
+    "https://contentful.com/developers/docs/references/user-management-api/team-space-memberships/update-a-team-space-membership",
+    "https://contentful.com/developers/docs/references/user-management-api/teams",
+    "https://contentful.com/developers/docs/references/user-management-api/teams/create-a-team",
+    "https://contentful.com/developers/docs/references/user-management-api/teams/delete-a-team",
+    "https://contentful.com/developers/docs/references/user-management-api/teams/get-a-team",
+    "https://contentful.com/developers/docs/references/user-management-api/teams/get-all-teams-for-a-space",
+    "https://contentful.com/developers/docs/references/user-management-api/teams/get-all-teams-for-an-organization",
+    "https://contentful.com/developers/docs/references/user-management-api/teams/update-a-team",
+    "https://contentful.com/developers/docs/references/user-management-api/users",
+    "https://contentful.com/developers/docs/references/user-management-api/users/get-a-user-in-a-space",
+    "https://contentful.com/developers/docs/references/user-management-api/users/get-a-user-in-an-organization",
+    "https://contentful.com/developers/docs/references/user-management-api/users/get-all-users-for-a-space",
+    "https://contentful.com/developers/docs/references/user-management-api/users/get-all-users-for-an-organization",
     "https://contentful.com/developers/docs/tutorials/app-framework-tutorials",
     "https://contentful.com/developers/docs/tutorials/cli/authentication",
     "https://contentful.com/developers/docs/tutorials/cli/cli-security-check",
@@ -501,8 +739,9 @@
     "https://contentful.com/developers/docs/tutorials/cli/update-references-across-spaces",
     "https://contentful.com/developers/docs/tutorials/general/optimizely-tutorial",
     "https://contentful.com/developers/docs/tutorials/preview/content-preview",
+    "https://contentful.com/legal/privacy-at-contentful/cookie-notice/",
+    "https://contentful.com/legal/privacy-at-contentful/privacy-notice/",
     "https://github.com/contentful/contentful-cli/blob/master/docs/",
-    "https://github.com/ivo-toby/contentful-mcp-graphql",
     "https://graphql.contentful.com",
     "https://graphql.contentful.com/content/v1/spaces/{",
     "https://graphql.contentful.com/content/v1/spaces/{SPACE}",
@@ -519,58 +758,6 @@
     "https://tools.ietf.org/html/rfc7644",
     "https://training.contentful.com/",
     "https://training.contentful.com/courses/apis-and-delivery-architectures",
-    "https://www.contentful.com/#",
-    "https://www.contentful.com/#additional-notes",
-    "https://www.contentful.com/#advantages",
-    "https://www.contentful.com/#api-keys-in-the-contentful-web-app",
-    "https://www.contentful.com/#api-rate-limits",
-    "https://www.contentful.com/#authentication",
-    "https://www.contentful.com/#basic-api-information",
-    "https://www.contentful.com/#collection-resources-and-pagination",
-    "https://www.contentful.com/#common-resource-attributes",
-    "https://www.contentful.com/#content-delivery-api",
-    "https://www.contentful.com/#content-management-api",
-    "https://www.contentful.com/#content-preview-api",
-    "https://www.contentful.com/#cursor-pagination",
-    "https://www.contentful.com/#date-and-time-format",
-    "https://www.contentful.com/#enablement-and-access",
-    "https://www.contentful.com/#error-responses",
-    "https://www.contentful.com/#example-response",
-    "https://www.contentful.com/#example-usage",
-    "https://www.contentful.com/#example-usage-1",
-    "https://www.contentful.com/#example-usage-2",
-    "https://www.contentful.com/#example-usage-3",
-    "https://www.contentful.com/#example-usage-4",
-    "https://www.contentful.com/#filtering-results",
-    "https://www.contentful.com/#getting-a-personal-access-token",
-    "https://www.contentful.com/#getting-an-oauth-token",
-    "https://www.contentful.com/#graphql-content-api",
-    "https://www.contentful.com/#how-cursor-pagination-works",
-    "https://www.contentful.com/#images-api",
-    "https://www.contentful.com/#including-related-resources",
-    "https://www.contentful.com/#introduction",
-    "https://www.contentful.com/#limitations",
-    "https://www.contentful.com/#managing-access-to-spaces",
-    "https://www.contentful.com/#next-steps",
-    "https://www.contentful.com/#operators",
-    "https://www.contentful.com/#overview",
-    "https://www.contentful.com/#pagination",
-    "https://www.contentful.com/#preview-api-authentication",
-    "https://www.contentful.com/#preview-api-limitations",
-    "https://www.contentful.com/#request",
-    "https://www.contentful.com/#request-1",
-    "https://www.contentful.com/#request-parameters",
-    "https://www.contentful.com/#response",
-    "https://www.contentful.com/#response-1",
-    "https://www.contentful.com/#response-attributes",
-    "https://www.contentful.com/#response-envelope",
-    "https://www.contentful.com/#scim-api-endpoints",
-    "https://www.contentful.com/#searching-multiple-attributes",
-    "https://www.contentful.com/#sorting-results",
-    "https://www.contentful.com/#the-content-delivery-and-preview-api",
-    "https://www.contentful.com/#the-content-management-api",
-    "https://www.contentful.com/#using-the-api",
-    "https://www.contentful.com/#using-the-preview-api",
     "https://www.contentful.com/about-us/",
     "https://www.contentful.com/blog/",
     "https://www.contentful.com/careers/",
@@ -579,269 +766,7 @@
     "https://www.contentful.com/developers/changelog/",
     "https://www.contentful.com/developers/docs/",
     "https://www.contentful.com/developers/docs/concepts/apis/",
-    "https://www.contentful.com/developers/docs/experiences/overview",
-    "https://www.contentful.com/developers/docs/javascript/tutorials/using-contentful-graphql-with-javascript/",
-    "https://www.contentful.com/developers/docs/references/api-basics",
-    "https://www.contentful.com/developers/docs/references/api-basics#content-delivery-api",
-    "https://www.contentful.com/developers/docs/references/api-basics#content-management-api",
-    "https://www.contentful.com/developers/docs/references/api-basics#content-preview-api",
-    "https://www.contentful.com/developers/docs/references/api-basics#graphql-content-api",
-    "https://www.contentful.com/developers/docs/references/api-basics#images-api",
-    "https://www.contentful.com/developers/docs/references/authentication",
-    "https://www.contentful.com/developers/docs/references/authentication#the-content-management-api",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/asset-keys",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/asset-keys/create-an-asset-key",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/assets",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/assets/get-all-assets",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/assets/get-an-asset",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/content-types",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/content-types/get-a-content-type",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/content-types/get-the-content-model-of-a-space",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/entries",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/entries/get-all-entries",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/entries/get-an-entry",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/links",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/locales",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/locales/get-all-locales-of-a-space",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/localization",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/native-external-references",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/overview",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/resource-links",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/search-parameters",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/spaces",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/spaces/get-a-space",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/synchronization",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/synchronization/get-synced-content",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/tags",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/tags/get-a-tag",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/tags/get-all-tags",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/taxonomy",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-a-concept",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-a-concept-scheme",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-all-concept-schemes",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-all-concepts",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-ancestors-of-a-concept",
-    "https://www.contentful.com/developers/docs/references/content-delivery-api/taxonomy/get-descendants-of-a-concept",
-    "https://www.contentful.com/developers/docs/references/content-managemen",
-    "https://www.contentful.com/developers/docs/references/content-management-api",
-    "https://www.contentful.com/developers/docs/references/content-management-api/access-tokens",
-    "https://www.contentful.com/developers/docs/references/content-management-api/ai-actions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/ai-providers",
-    "https://www.contentful.com/developers/docs/references/content-management-api/api-keys",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-access-grants",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-access-token",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-action-calls",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-action-categories",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-actions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-bundles",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-definitions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-details",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-event-subscriptions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-installations",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-keys",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-signed-request",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-signing-secret",
-    "https://www.contentful.com/developers/docs/references/content-management-api/app-uploads",
-    "https://www.contentful.com/developers/docs/references/content-management-api/asset-keys",
-    "https://www.contentful.com/developers/docs/references/content-management-api/assets",
-    "https://www.contentful.com/developers/docs/references/content-management-api/automation-definitions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/automation-executions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/bulk-actions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/bulk-entry-content-operations",
-    "https://www.contentful.com/developers/docs/references/content-management-api/content-model-templates",
-    "https://www.contentful.com/developers/docs/references/content-management-api/content-semantics",
-    "https://www.contentful.com/developers/docs/references/content-management-api/content-types",
-    "https://www.contentful.com/developers/docs/references/content-management-api/cross-space-references",
-    "https://www.contentful.com/developers/docs/references/content-management-api/editor-interface",
-    "https://www.contentful.com/developers/docs/references/content-management-api/enterprise-observability",
-    "https://www.contentful.com/developers/docs/references/content-management-api/entries",
-    "https://www.contentful.com/developers/docs/references/content-management-api/entry-comments",
-    "https://www.contentful.com/developers/docs/references/content-management-api/entry-tasks",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environment-aliases",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environment-aliases/create-or-update-an-environment-alias",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environment-aliases/delete-an-environment-alias",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environment-aliases/get-all-environment-aliases-of-a-space",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environment-aliases/get-an-environment-alias",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environments",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environments/create-an-environment",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environments/create-an-environment-with-a-specified-id",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environments/delete-an-environment",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environments/get-all-environments-of-a-space",
-    "https://www.contentful.com/developers/docs/references/content-management-api/environments/get-an-environment",
-    "https://www.contentful.com/developers/docs/references/content-management-api/function-logs",
-    "https://www.contentful.com/developers/docs/references/content-management-api/functions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/locales",
-    "https://www.contentful.com/developers/docs/references/content-management-api/localized-workflows",
-    "https://www.contentful.com/developers/docs/references/content-management-api/native-external-references",
-    "https://www.contentful.com/developers/docs/references/content-management-api/oauth-applications",
-    "https://www.contentful.com/developers/docs/references/content-management-api/organization-enablements",
-    "https://www.contentful.com/developers/docs/references/content-management-api/organizations",
-    "https://www.contentful.com/developers/docs/references/content-management-api/organizations/get-all-organizations-an-account-has-access-to",
-    "https://www.contentful.com/developers/docs/references/content-management-api/organizations/get-an-organization-access-grant",
-    "https://www.contentful.com/developers/docs/references/content-management-api/organizations/get-an-organization-id-an-admin-or-owner-has-access-to",
-    "https://www.contentful.com/developers/docs/references/content-management-api/organizations/get-available-licenses",
-    "https://www.contentful.com/developers/docs/references/content-management-api/organizations/put-an-organization-id-an-admin-or-owner-has-access-to",
-    "https://www.contentful.com/developers/docs/references/content-management-api/overview",
-    "https://www.contentful.com/developers/docs/references/content-management-api/releases",
-    "https://www.contentful.com/developers/docs/references/content-management-api/roles",
-    "https://www.contentful.com/developers/docs/references/content-management-api/scheduled-actions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/search-parameters",
-    "https://www.contentful.com/developers/docs/references/content-management-api/security-contacts",
-    "https://www.contentful.com/developers/docs/references/content-management-api/security-contacts/get-an-organization-security-contacts-an-admin-or-owner-has-access-to",
-    "https://www.contentful.com/developers/docs/references/content-management-api/security-contacts/post-an-organization-security-contacts-an-admin-or-owner-has-access-to",
-    "https://www.contentful.com/developers/docs/references/content-management-api/security-contacts/update-an-organization-security-contact-an-admin-or-owner-has-access-to",
-    "https://www.contentful.com/developers/docs/references/content-management-api/snapshots",
-    "https://www.contentful.com/developers/docs/references/content-management-api/space-enablements",
-    "https://www.contentful.com/developers/docs/references/content-management-api/space-memberships",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/allocate-space-add-ons",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/create-a-space",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/delete-a-space",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/get-a-space",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/get-all-spaces-an-account-has-access-to",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/get-eligible-licenses",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/get-space-add-ons",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/unarchive-space",
-    "https://www.contentful.com/developers/docs/references/content-management-api/spaces/update-a-space-name",
-    "https://www.contentful.com/developers/docs/references/content-management-api/tags",
-    "https://www.contentful.com/developers/docs/references/content-management-api/taxonomy",
-    "https://www.contentful.com/developers/docs/references/content-management-api/teams-for-a-space",
-    "https://www.contentful.com/developers/docs/references/content-management-api/timeline-assets",
-    "https://www.contentful.com/developers/docs/references/content-management-api/timeline-entries",
-    "https://www.contentful.com/developers/docs/references/content-management-api/timeline-releases",
-    "https://www.contentful.com/developers/docs/references/content-management-api/ui-config",
-    "https://www.contentful.com/developers/docs/references/content-management-api/ui-extensions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/uploads",
-    "https://www.contentful.com/developers/docs/references/content-management-api/usage",
-    "https://www.contentful.com/developers/docs/references/content-management-api/users",
-    "https://www.contentful.com/developers/docs/references/content-management-api/webhook-calls",
-    "https://www.contentful.com/developers/docs/references/content-management-api/webhook-security",
-    "https://www.contentful.com/developers/docs/references/content-management-api/webhooks",
-    "https://www.contentful.com/developers/docs/references/content-management-api/workflow-comments",
-    "https://www.contentful.com/developers/docs/references/content-management-api/workflow-definitions",
-    "https://www.contentful.com/developers/docs/references/content-management-api/workflows",
-    "https://www.contentful.com/developers/docs/references/content-management-api/workflows-changelog",
-    "https://www.contentful.com/developers/docs/references/content-management-api/workflows-migration-guide",
-    "https://www.contentful.com/developers/docs/references/content-preview-api",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/asset-keys",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/asset-keys/create-an-asset-key",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/assets",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/assets/get-all-assets",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/assets/get-an-asset",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/content-types",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/content-types/get-a-content-type",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/content-types/get-the-content-model-of-a-space",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/entries",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/entries/get-all-entries",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/entries/get-an-entry",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/links",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/locales",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/locales/get-all-locales-of-a-space",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/localization",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/native-external-references",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/overview",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/resource-links",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/search-parameters",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/spaces",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/spaces/get-a-space",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/tags",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/tags/get-a-tag",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/tags/get-all-tags",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/taxonomy",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/taxonomy/get-a-concept",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/taxonomy/get-a-concept-scheme",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/taxonomy/get-all-concept-schemes",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/taxonomy/get-all-concepts",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/taxonomy/get-ancestors-of-a-concept",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/taxonomy/get-descendants-of-a-concept",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/timeline",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/timeline/get-a-timeline-asset",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/timeline/get-a-timeline-entry",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/timeline/get-all-timeline-assets",
-    "https://www.contentful.com/developers/docs/references/content-preview-api/timeline/get-all-timeline-entries",
-    "https://www.contentful.com/developers/docs/references/errors",
-    "https://www.contentful.com/developers/docs/references/experience-api",
-    "https://www.contentful.com/developers/docs/references/experience-api/overview",
-    "https://www.contentful.com/developers/docs/references/experience-api/profiles",
-    "https://www.contentful.com/developers/docs/references/experience-api/profiles/create-a-profile",
-    "https://www.contentful.com/developers/docs/references/experience-api/profiles/create-or-update-profiles-async",
-    "https://www.contentful.com/developers/docs/references/experience-api/profiles/create-or-update-profiles-sync",
-    "https://www.contentful.com/developers/docs/references/experience-api/profiles/delete-a-profile",
-    "https://www.contentful.com/developers/docs/references/experience-api/profiles/get-a-profile",
-    "https://www.contentful.com/developers/docs/references/experience-api/profiles/update-a-profile",
-    "https://www.contentful.com/developers/docs/references/graphql/overview",
-    "https://www.contentful.com/developers/docs/references/http-details",
-    "https://www.contentful.com/developers/docs/references/images-api",
-    "https://www.contentful.com/developers/docs/references/images-api/images",
-    "https://www.contentful.com/developers/docs/references/images-api/images/retrieve-an-image",
-    "https://www.contentful.com/developers/docs/references/images-api/overview",
-    "https://www.contentful.com/developers/docs/references/scim-api",
-    "https://www.contentful.com/developers/docs/references/scim-api/groups",
-    "https://www.contentful.com/developers/docs/references/scim-api/groups/create-a-group",
-    "https://www.contentful.com/developers/docs/references/scim-api/groups/delete-a-group",
-    "https://www.contentful.com/developers/docs/references/scim-api/groups/get-a-group",
-    "https://www.contentful.com/developers/docs/references/scim-api/groups/get-all-groups",
-    "https://www.contentful.com/developers/docs/references/scim-api/groups/patch-a-group",
-    "https://www.contentful.com/developers/docs/references/scim-api/overview",
-    "https://www.contentful.com/developers/docs/references/scim-api/users",
-    "https://www.contentful.com/developers/docs/references/scim-api/users/create-a-user",
-    "https://www.contentful.com/developers/docs/references/scim-api/users/delete-a-user",
-    "https://www.contentful.com/developers/docs/references/scim-api/users/get-a-user",
-    "https://www.contentful.com/developers/docs/references/scim-api/users/get-all-users",
-    "https://www.contentful.com/developers/docs/references/scim-api/users/patch-a-user",
-    "https://www.contentful.com/developers/docs/references/scim-api/users/update-a-user",
-    "https://www.contentful.com/developers/docs/references/user-management-api",
-    "https://www.contentful.com/developers/docs/references/user-management-api/invitations",
-    "https://www.contentful.com/developers/docs/references/user-management-api/invitations/create-an-invitation",
-    "https://www.contentful.com/developers/docs/references/user-management-api/invitations/get-an-invitation",
-    "https://www.contentful.com/developers/docs/references/user-management-api/organization-memberships",
-    "https://www.contentful.com/developers/docs/references/user-management-api/organization-memberships/delete-an-organization-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/organization-memberships/get-all-organization-memberships",
-    "https://www.contentful.com/developers/docs/references/user-management-api/organization-memberships/get-an-organization-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/organization-memberships/update-an-organization-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/overview",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-members",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-members/get-a-space-member",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-members/get-all-space-members",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-memberships",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-memberships/create-a-space-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-memberships/delete-a-space-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-memberships/get-a-space-membership-for-a-space",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-memberships/get-a-space-membership-for-an-organization",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-memberships/get-all-space-memberships-for-a-space",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-memberships/get-all-space-memberships-for-an-organization",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-memberships/update-a-space-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-roles",
-    "https://www.contentful.com/developers/docs/references/user-management-api/space-roles/get-all-space-roles",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-memberships",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-memberships/create-a-team-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-memberships/delete-a-team-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-memberships/get-a-team-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-memberships/get-all-team-memberships-for-a-team",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-memberships/get-all-team-memberships-for-an-organization",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-space-memberships",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-space-memberships/create-a-team-space-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-space-memberships/delete-a-team-space-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-space-memberships/get-a-team-space-membership-for-a-space",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-space-memberships/get-a-team-space-membership-for-an-organization",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-space-memberships/get-all-team-space-memberships-for-a-space",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-space-memberships/get-all-team-space-memberships-for-an-organization",
-    "https://www.contentful.com/developers/docs/references/user-management-api/team-space-memberships/update-a-team-space-membership",
-    "https://www.contentful.com/developers/docs/references/user-management-api/teams",
-    "https://www.contentful.com/developers/docs/references/user-management-api/teams/create-a-team",
-    "https://www.contentful.com/developers/docs/references/user-management-api/teams/delete-a-team",
-    "https://www.contentful.com/developers/docs/references/user-management-api/teams/get-a-team",
-    "https://www.contentful.com/developers/docs/references/user-management-api/teams/get-all-teams-for-a-space",
-    "https://www.contentful.com/developers/docs/references/user-management-api/teams/get-all-teams-for-an-organization",
-    "https://www.contentful.com/developers/docs/references/user-management-api/teams/update-a-team",
-    "https://www.contentful.com/developers/docs/references/user-management-api/users",
-    "https://www.contentful.com/developers/docs/references/user-management-api/users/get-a-user-in-a-space",
-    "https://www.contentful.com/developers/docs/references/user-management-api/users/get-a-user-in-an-organization",
-    "https://www.contentful.com/developers/docs/references/user-management-api/users/get-all-users-for-a-space",
-    "https://www.contentful.com/developers/docs/references/user-management-api/users/get-all-users-for-an-organization",
     "https://www.contentful.com/developers/docs/technical-limits/",
-    "https://www.contentful.com/developers/docs/tutorials/preview/content-preview",
     "https://www.contentful.com/events/",
     "https://www.contentful.com/help/",
     "https://www.contentful.com/help/accessibility-statement/",
@@ -849,7 +774,6 @@
     "https://www.contentful.com/help/scim-faq",
     "https://www.contentful.com/leadership/",
     "https://www.contentful.com/legal/",
-    "https://www.contentful.com/legal/privacy-at-contentful/cookie-notice/",
     "https://www.contentful.com/legal/privacy-at-contentful/privacy-notice/",
     "https://www.contentful.com/newsroom/",
     "https://www.contentful.com/partners/",

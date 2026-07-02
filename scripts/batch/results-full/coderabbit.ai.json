@@ -12,14 +12,21 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:38:21.665Z",
-    "summary": "CodeRabbit exposes REST APIs for metrics, learnings, admin/user/role management, and a deprecated report endpoint; CLI, MCP client integrations, and Discord agent docs were also found, with authentication via agentic and non-agentic API keys plus browser/self-hosted CLI login.",
+    "discoveredAt": "2026-07-02T16:20:09.577Z",
+    "summary": "CodeRabbit exposes a REST API secured by `x-coderabbitai-api-key`, an MCP client integration with auth details handled during server setup, and the `cr` CLI authenticated via `cr auth login`.",
     "credentials": {
       "cr_api_key": {
         "type": "api_key",
-        "label": "CodeRabbit Agentic API key",
-        "generateUrl": "https://app.coderabbit.ai/settings/api-keys",
-        "setup": "Go to [API Keys](https://app.coderabbit.ai/settings/api-keys) in the CodeRabbit dashboard and generate an **Agentic API key** for the organization that should power CLI reviews and API access. If you’re using headless automation, store it as a secret such as `CODERABBIT_API_KEY`. Enable the [Usage-based Add-on](https://docs.coderabbit.ai/management/usage-based-addon) first if the dashboard requires it for key generation.",
+        "label": "CodeRabbit API key",
+        "generateUrl": "https://app.coderabbit.ai/",
+        "setup": "Open the [CodeRabbit app](https://app.coderabbit.ai/) and create an API key from the dashboard/settings area mentioned in the docs. Use the key value as the `x-coderabbitai-api-key` header when calling the public REST API.",
+        "acquisition": "manual"
+      },
+      "cr_cli_login": {
+        "type": "oauth2",
+        "label": "CodeRabbit CLI login",
+        "generateUrl": "https://docs.coderabbit.ai/cli",
+        "setup": "Install the CLI, then run `cr auth login` (or `coderabbit auth login`; `cr` is the short alias) and complete the browser sign-in. This creates the local authenticated session used by the CLI review commands.",
         "acquisition": "manual"
       }
     },
@@ -47,7 +54,7 @@
                     "source": "http",
                     "in": "header",
                     "headerName": "x-coderabbitai-api-key",
-                    "scheme": "x-coderabbitai-api-key"
+                    "scheme": "api-key"
                   }
                 }
               ],
@@ -60,7 +67,24 @@
               }
             }
           ]
-        }
+        },
+        "url": "https://api.coderabbit.ai/v1"
+      },
+      {
+        "slug": "coderabbit-mcp-integration",
+        "name": "CodeRabbit MCP integration",
+        "type": "mcp",
+        "docs": "https://docs.coderabbit.ai/integrations/mcp-servers",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.coderabbit.ai/integrations/mcp-servers"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://app.coderabbit.ai/integrations?tab=mcp"
       },
       {
         "slug": "coderabbit-cli",
@@ -70,11 +94,7 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.coderabbit.ai/cli",
-            "https://docs.coderabbit.ai/cli/reference",
-            "https://docs.coderabbit.ai/cli/headless-cli-integration",
-            "https://docs.coderabbit.ai/cli/cli-with-self-hosted-CodeRabbit",
-            "https://docs.coderabbit.ai/cli/claude-code-integration"
+            "https://docs.coderabbit.ai/cli"
           ]
         },
         "auth": {
@@ -83,213 +103,72 @@
             {
               "use": [
                 {
-                  "id": "cr_api_key",
+                  "id": "cr_cli_login",
                   "mechanics": {
                     "source": "cli",
-                    "command": "coderabbit auth login --api-key \"$CODERABBIT_API_KEY\"",
-                    "env": [
-                      "CODERABBIT_API_KEY"
-                    ]
+                    "command": "cr auth login"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.coderabbit.ai/cli/headless-cli-integration",
-                  "https://docs.coderabbit.ai/cli/reference"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "cr_api_key",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "coderabbit auth login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.coderabbit.ai/cli",
-                  "https://docs.coderabbit.ai/cli/reference"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "cr_api_key",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "coderabbit auth login --self-hosted"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.coderabbit.ai/cli/cli-with-self-hosted-CodeRabbit",
-                  "https://docs.coderabbit.ai/cli/reference"
+                  "https://docs.coderabbit.ai/cli"
                 ]
               }
             }
           ]
         },
-        "command": "coderabbit"
-      },
-      {
-        "slug": "coderabbit-mcp-client-integrations",
-        "name": "CodeRabbit MCP client integrations",
-        "type": "mcp",
-        "docs": "https://docs.coderabbit.ai/integrations/mcp-servers",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.coderabbit.ai/integrations/mcp-servers",
-            "https://docs.coderabbit.ai/knowledge-base/mcp-context"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "cr_api_key",
-                  "mechanics": {
-                    "source": "well-known"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.coderabbit.ai/integrations/mcp-servers",
-                  "https://docs.coderabbit.ai/knowledge-base/mcp-context"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://app.coderabbit.ai/integrations?tab=mcp",
-        "transports": [
-          "streamable-http",
-          "sse"
-        ]
-      },
-      {
-        "slug": "coderabbit-organization-admin-rest-api",
-        "name": "CodeRabbit organization/admin REST API",
-        "type": "http",
-        "docs": "https://docs.coderabbit.ai/api-reference/audit-logs.md",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.coderabbit.ai/api-reference/audit-logs.md",
-            "https://docs.coderabbit.ai/api-reference/users-list.md",
-            "https://docs.coderabbit.ai/api-reference/roles-list.md",
-            "https://docs.coderabbit.ai/api-reference/users-seat-assignment-mode.md",
-            "https://docs.coderabbit.ai/api-reference/report-generate.md"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "cr_api_key",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "ApiKeyAuth"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.coderabbit.ai/api-reference/audit-logs.md",
-                  "https://docs.coderabbit.ai/api-reference/users-list.md",
-                  "https://docs.coderabbit.ai/api-reference/roles-list.md",
-                  "https://docs.coderabbit.ai/api-reference/users-seat-assignment-mode.md",
-                  "https://docs.coderabbit.ai/api-reference/report-generate.md"
-                ]
-              }
-            }
-          ]
-        }
-      },
-      {
-        "slug": "coderabbit-agent-for-discord",
-        "name": "CodeRabbit Agent for Discord",
-        "type": "mcp",
-        "docs": "https://docs.coderabbit.ai/discord-agent/index.md",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.coderabbit.ai/discord-agent/index.md"
-          ]
-        },
-        "auth": {
-          "status": "unknown"
-        },
-        "url": "https://docs.coderabbit.ai/discord-agent/index.md"
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "coderabbit",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "homebrew",
+            "identifier": "coderabbit",
+            "runtimeHint": "macOS"
+          }
+        ],
+        "command": "cr"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:38:21.665Z",
+  "discoveredAt": "2026-07-02T16:20:09.577Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 263165,
-    "completion_tokens": 1942,
-    "total_tokens": 265107
+    "prompt_tokens": 106079,
+    "completion_tokens": 856,
+    "total_tokens": 106935
   },
   "visited": [
+    "https://coderabbit.ai/blog/coderabbit-cli-free-ai-code-reviews-in-your-cli",
+    "https://coderabbit.ai/blog/coderabbits-mcp-server-integration-code-reviews-that-see-the-whole-picture",
     "https://coderabbit.ai/llms.txt",
-    "https://docs.coderabbit.ai/api-reference/audit-logs.md",
     "https://docs.coderabbit.ai/api-reference/learnings-list",
     "https://docs.coderabbit.ai/api-reference/metrics-data-api",
-    "https://docs.coderabbit.ai/api-reference/report-generate.md",
-    "https://docs.coderabbit.ai/api-reference/roles-list.md",
-    "https://docs.coderabbit.ai/api-reference/users-list.md",
-    "https://docs.coderabbit.ai/api-reference/users-seat-assignment-mode.md",
     "https://docs.coderabbit.ai/changelog",
     "https://docs.coderabbit.ai/cli",
-    "https://docs.coderabbit.ai/cli/claude-code-integration",
-    "https://docs.coderabbit.ai/cli/cli-with-self-hosted-CodeRabbit",
-    "https://docs.coderabbit.ai/cli/headless-cli-integration",
-    "https://docs.coderabbit.ai/cli/reference",
-    "https://docs.coderabbit.ai/cli/skills.md",
-    "https://docs.coderabbit.ai/discord-agent/index.md",
     "https://docs.coderabbit.ai/integrations/mcp-servers",
-    "https://docs.coderabbit.ai/knowledge-base/mcp-context",
-    "https://docs.coderabbit.ai/llms.txt",
-    "https://docs.coderabbit.ai/platforms/overview"
+    "https://docs.coderabbit.ai/platforms/overview",
+    "https://gist.github.com/donbr/d64ccfde1887197f82e933f669f4d449"
   ],
   "grounding": [
-    "https://agentskills.io/what-are-skills",
-    "https://api.coderabbit.ai",
-    "https://api.coderabbit.ai/v1/audit-logs",
-    "https://api.coderabbit.ai/v1/audit-logs?page=1&page_size=25",
     "https://api.coderabbit.ai/v1/learnings",
     "https://api.coderabbit.ai/v1/metrics/reviews?start_date=2026-01-01&end_date=2026-01-20",
-    "https://api.coderabbit.ai/v1/users",
-    "https://api.coderabbit.ai/v1/users?seat_filter=all&role_filter=all&limit=100",
     "https://app.coderabbit.ai/integrations?tab=mcp",
     "https://app.coderabbit.ai/login",
     "https://app.coderabbit.ai/login?free-trial",
     "https://app.coderabbit.ai/settings/api-keys",
     "https://app.coderabbit.ai/settings/subscription",
     "https://cli.coderabbit.ai/install.sh",
-    "https://cli.github.com/",
     "https://coderabbit.ai/#",
     "https://coderabbit.ai/#features",
     "https://coderabbit.ai/about-us",
     "https://coderabbit.ai/blog",
+    "https://coderabbit.ai/blog/coderabbit-cli-free-ai-code-reviews-in-your-cli",
+    "https://coderabbit.ai/blog/coderabbits-mcp-server-integration-code-reviews-that-see-the-whole-picture",
     "https://coderabbit.ai/brand",
     "https://coderabbit.ai/careers",
     "https://coderabbit.ai/case-studies",
@@ -310,51 +189,26 @@
     "https://dev.azure.com/{org}/{project}/_build?definitionId=1&branchName=refs/pull/{pr}/merge",
     "https://discord.gg/GsXnASn26c",
     "https://discord.gg/coderabbit",
-    "https://docs.coderabb",
     "https://docs.coderabbit.ai/",
-    "https://docs.coderabbit.ai/#advanced-usage",
-    "https://docs.coderabbit.ai/#agent-friendly-auth-commands",
-    "https://docs.coderabbit.ai/#agent-review-output",
     "https://docs.coderabbit.ai/#ai-agent-integration",
     "https://docs.coderabbit.ai/#authorization-x-coderabbitai-api-key",
-    "https://docs.coderabbit.ai/#autonomous-ai-development-workflows",
     "https://docs.coderabbit.ai/#available-placeholders",
-    "https://docs.coderabbit.ai/#before-you-start",
     "https://docs.coderabbit.ai/#browse-and-apply-suggestions",
-    "https://docs.coderabbit.ai/#claude-code-not-applying-fixes",
-    "https://docs.coderabbit.ai/#cli-not-authenticated",
-    "https://docs.coderabbit.ai/#cli-review-commands",
     "https://docs.coderabbit.ai/#cli-with-usage-based-add-on",
-    "https://docs.coderabbit.ai/#coderabbit-not-finding-issues",
-    "https://docs.coderabbit.ai/#combining-with-natural-language",
     "https://docs.coderabbit.ai/#command-reference",
-    "https://docs.coderabbit.ai/#commands",
-    "https://docs.coderabbit.ai/#common-automation-patterns",
-    "https://docs.coderabbit.ai/#comparing-against-different-branches",
     "https://docs.coderabbit.ai/#components-of-a-good-prompt",
-    "https://docs.coderabbit.ai/#configuration",
-    "https://docs.coderabbit.ai/#configure-coderabbit-for-claude-code",
-    "https://docs.coderabbit.ai/#connect-your-self-hosted-instance",
     "https://docs.coderabbit.ai/#considerations",
     "https://docs.coderabbit.ai/#content-area",
     "https://docs.coderabbit.ai/#csv-format",
     "https://docs.coderabbit.ai/#diagnostics",
-    "https://docs.coderabbit.ai/#example-api-integration-implementation",
     "https://docs.coderabbit.ai/#example-configurations",
     "https://docs.coderabbit.ai/#example-prompt-for-your-ai-agent",
-    "https://docs.coderabbit.ai/#examples-of-mcp-server-types",
     "https://docs.coderabbit.ai/#getting-started",
-    "https://docs.coderabbit.ai/#headless-setup",
-    "https://docs.coderabbit.ai/#how-coderabbit-uses-mcp-during-analysis",
     "https://docs.coderabbit.ai/#how-it-works",
     "https://docs.coderabbit.ai/#inspect-ai-prompts",
-    "https://docs.coderabbit.ai/#installation",
     "https://docs.coderabbit.ai/#integration-guides",
     "https://docs.coderabbit.ai/#integration-process",
-    "https://docs.coderabbit.ai/#integration-workflow",
     "https://docs.coderabbit.ai/#key-features",
-    "https://docs.coderabbit.ai/#natural-language-interface",
-    "https://docs.coderabbit.ai/#options",
     "https://docs.coderabbit.ai/#organization-selection",
     "https://docs.coderabbit.ai/#parameter-cursor",
     "https://docs.coderabbit.ai/#parameter-end-date",
@@ -366,8 +220,6 @@
     "https://docs.coderabbit.ai/#parameter-start-date",
     "https://docs.coderabbit.ai/#parameter-user-ids",
     "https://docs.coderabbit.ai/#parameter-x-coderabbitai-api-key",
-    "https://docs.coderabbit.ai/#plugin-not-found",
-    "https://docs.coderabbit.ai/#prerequisites",
     "https://docs.coderabbit.ai/#pricing-and-capabilities",
     "https://docs.coderabbit.ai/#replay-stored-findings",
     "https://docs.coderabbit.ai/#response-data",
@@ -375,148 +227,42 @@
     "https://docs.coderabbit.ai/#response-next-cursor-one-of-0",
     "https://docs.coderabbit.ai/#review-local-changes",
     "https://docs.coderabbit.ai/#review-modes",
-    "https://docs.coderabbit.ai/#review-options",
     "https://docs.coderabbit.ai/#review-statistics",
-    "https://docs.coderabbit.ai/#review-taking-too-long",
-    "https://docs.coderabbit.ai/#reviewing-specific-changes",
-    "https://docs.coderabbit.ai/#running-code-reviews",
     "https://docs.coderabbit.ai/#setup",
-    "https://docs.coderabbit.ai/#stats-command",
     "https://docs.coderabbit.ai/#supported-git-platforms",
     "https://docs.coderabbit.ai/#supported-integrations",
-    "https://docs.coderabbit.ai/#troubleshooting",
     "https://docs.coderabbit.ai/#uninstall",
     "https://docs.coderabbit.ai/#url-template-placeholders",
-    "https://docs.coderabbit.ai/#usage",
     "https://docs.coderabbit.ai/#use-ai-coding-agents",
-    "https://docs.coderabbit.ai/#use-coderabbit-as-part-of-building-new-features",
     "https://docs.coderabbit.ai/#user-guidance",
-    "https://docs.coderabbit.ai/#video-demo",
-    "https://docs.coderabbit.ai/#what%E2%80%99s-next",
     "https://docs.coderabbit.ai/#what-mcp-integration-enables",
-    "https://docs.coderabbit.ai/#what-mcp-servers-add-to-reviews",
     "https://docs.coderabbit.ai/#what-to-include-in-user-guidance",
-    "https://docs.coderabbit.ai/#what’s-next",
-    "https://docs.coderabbit.ai/#why-integrate-these-tools",
     "https://docs.coderabbit.ai/#working-with-review-results",
     "https://docs.coderabbit.ai/agent",
-    "https://docs.coderabbit.ai/agent/index.md",
-    "https://docs.coderabbit.ai/api-reference/audit-logs.md",
     "https://docs.coderabbit.ai/api-reference/learnings-list",
-    "https://docs.coderabbit.ai/api-reference/learnings-list.md",
     "https://docs.coderabbit.ai/api-reference/metrics-data-api",
-    "https://docs.coderabbit.ai/api-reference/metrics-data-api.md",
-    "https://docs.coderabbit.ai/api-reference/report-generate.md",
-    "https://docs.coderabbit.ai/api-reference/roles-create.md",
-    "https://docs.coderabbit.ai/api-reference/roles-delete.md",
-    "https://docs.coderabbit.ai/api-reference/roles-get.md",
-    "https://docs.coderabbit.ai/api-reference/roles-list.md",
-    "https://docs.coderabbit.ai/api-reference/roles-permissions.md",
-    "https://docs.coderabbit.ai/api-reference/roles-update.md",
-    "https://docs.coderabbit.ai/api-reference/users-change-roles.md",
-    "https://docs.coderabbit.ai/api-reference/users-list.md",
-    "https://docs.coderabbit.ai/api-reference/users-manage-seats.md",
-    "https://docs.coderabbit.ai/api-reference/users-seat-assignment-mode.md",
     "https://docs.coderabbit.ai/changelog",
     "https://docs.coderabbit.ai/changelog/",
     "https://docs.coderabbit.ai/cli",
-    "https://docs.coderabbit.ai/cli#organization-selection",
     "https://docs.coderabbit.ai/cli/claude-code-integration",
-    "https://docs.coderabbit.ai/cli/claude-code-integration.md",
-    "https://docs.coderabbit.ai/cli/cli-with-self-hosted-CodeRabbit",
-    "https://docs.coderabbit.ai/cli/cli-with-self-hosted-CodeRabbit.md",
-    "https://docs.coderabbit.ai/cli/codex-integration",
-    "https://docs.coderabbit.ai/cli/codex-integration.md",
-    "https://docs.coderabbit.ai/cli/cursor-integration",
-    "https://docs.coderabbit.ai/cli/cursor-integration.md",
-    "https://docs.coderabbit.ai/cli/gemini-integration",
-    "https://docs.coderabbit.ai/cli/gemini-integration.md",
-    "https://docs.coderabbit.ai/cli/headless-cli-integration",
-    "https://docs.coderabbit.ai/cli/headless-cli-integration.md",
-    "https://docs.coderabbit.ai/cli/index.md",
-    "https://docs.coderabbit.ai/cli/reference",
-    "https://docs.coderabbit.ai/cli/reference.md",
-    "https://docs.coderabbit.ai/cli/skills",
-    "https://docs.coderabbit.ai/cli/skills.md",
-    "https://docs.coderabbit.ai/cli/wsl-windows",
-    "https://docs.coderabbit.ai/cli/wsl-windows.md",
-    "https://docs.coderabbit.ai/configuration/ast-grep-instructions.md",
-    "https://docs.coderabbit.ai/configuration/auto-review.md",
-    "https://docs.coderabbit.ai/configuration/central-configuration.md",
-    "https://docs.coderabbit.ai/configuration/configuration-inheritance.md",
-    "https://docs.coderabbit.ai/configuration/example/index.md",
-    "https://docs.coderabbit.ai/configuration/example/other/mintlify-documentation.md",
-    "https://docs.coderabbit.ai/configuration/example/python/django.md",
-    "https://docs.coderabbit.ai/configuration/example/typescript/expo.md",
-    "https://docs.coderabbit.ai/configuration/path-instructions.md",
-    "https://docs.coderabbit.ai/configuration/yaml-validator.md",
-    "https://docs.coderabbit.ai/discord-agent/index.md",
-    "https://docs.coderabbit.ai/discord-agent/setup.md",
-    "https://docs.coderabbit.ai/discord-agent/usage-and-limits.md",
     "https://docs.coderabbit.ai/early-access",
-    "https://docs.coderabbit.ai/early-access.md",
-    "https://docs.coderabbit.ai/faq.md",
-    "https://docs.coderabbit.ai/finishing-touches/autofix.md",
-    "https://docs.coderabbit.ai/finishing-touches/custom-finishing-touches.md",
-    "https://docs.coderabbit.ai/finishing-touches/docstrings.md",
-    "https://docs.coderabbit.ai/finishing-touches/index.md",
-    "https://docs.coderabbit.ai/finishing-touches/resolve-merge-conflict.md",
-    "https://docs.coderabbit.ai/finishing-touches/simplify.md",
-    "https://docs.coderabbit.ai/finishing-touches/unit-test-generation.md",
     "https://docs.coderabbit.ai/getting-started/quickstart",
-    "https://docs.coderabbit.ai/getting-started/quickstart.md",
-    "https://docs.coderabbit.ai/getting-started/yaml-configuration",
-    "https://docs.coderabbit.ai/getting-started/yaml-configuration.md",
-    "https://docs.coderabbit.ai/guide/chat.md",
-    "https://docs.coderabbit.ai/guide/code-review.md",
-    "https://docs.coderabbit.ai/guide/complete.md",
-    "https://docs.coderabbit.ai/guide/improvements.md",
-    "https://docs.coderabbit.ai/guide/index.md",
-    "https://docs.coderabbit.ai/guide/repository.md",
     "https://docs.coderabbit.ai/guides/code-review-overview",
-    "https://docs.coderabbit.ai/guides/code-review-overview.md",
-    "https://docs.coderabbit.ai/guides/commands.md",
     "https://docs.coderabbit.ai/guides/configuration-overview",
-    "https://docs.coderabbit.ai/guides/configuration-overview.md",
     "https://docs.coderabbit.ai/guides/custom-reports",
-    "https://docs.coderabbit.ai/guides/custom-reports.md",
     "https://docs.coderabbit.ai/guides/dashboard",
     "https://docs.coderabbit.ai/guides/dashboard-metrics",
-    "https://docs.coderabbit.ai/guides/dashboard-metrics.md",
-    "https://docs.coderabbit.ai/guides/dashboard.md",
     "https://docs.coderabbit.ai/guides/data-export",
     "https://docs.coderabbit.ai/guides/data-export#exported-fields",
-    "https://docs.coderabbit.ai/guides/data-export.md",
     "https://docs.coderabbit.ai/guides/ide-cli-dashboard-metrics",
-    "https://docs.coderabbit.ai/guides/ide-cli-dashboard-metrics.md",
     "https://docs.coderabbit.ai/guides/ondemand-reports",
-    "https://docs.coderabbit.ai/guides/ondemand-reports.md",
-    "https://docs.coderabbit.ai/guides/organization-settings.md",
-    "https://docs.coderabbit.ai/guides/repository-settings.md",
     "https://docs.coderabbit.ai/guides/scheduled-reports",
-    "https://docs.coderabbit.ai/guides/scheduled-reports.md",
     "https://docs.coderabbit.ai/ide",
-    "https://docs.coderabbit.ai/ide/index.md",
-    "https://docs.coderabbit.ai/ide/vscode-config.md",
-    "https://docs.coderabbit.ai/ide/vscode-install.md",
-    "https://docs.coderabbit.ai/ide/vscode-plan.md",
-    "https://docs.coderabbit.ai/ide/vscode-selfhosted.md",
-    "https://docs.coderabbit.ai/ide/vscode-uninstall.md",
-    "https://docs.coderabbit.ai/ide/vscode-use.md",
-    "https://docs.coderabbit.ai/index.md",
     "https://docs.coderabbit.ai/integrations/circleci",
-    "https://docs.coderabbit.ai/integrations/circleci.md",
     "https://docs.coderabbit.ai/integrations/issue-trackers",
-    "https://docs.coderabbit.ai/integrations/issue-trackers.md",
     "https://docs.coderabbit.ai/integrations/mcp-servers",
-    "https://docs.coderabbit.ai/integrations/mcp-servers#user-guidance",
-    "https://docs.coderabbit.ai/knowledge-base",
-    "https://docs.coderabbit.ai/knowledge-base/index",
     "https://docs.coderabbit.ai/knowledge-base/learnings",
-    "https://docs.coderabbit.ai/knowledge-base/mcp-context",
-    "https://docs.coderabbit.ai/knowledge-base/web-search",
     "https://docs.coderabbit.ai/llms.txt",
-    "https://docs.coderabbit.ai/login?redirect=/cli/claude-code-integration",
     "https://docs.coderabbit.ai/login?redirect=/integrations/mcp-servers",
     "https://docs.coderabbit.ai/login?redirect=/platforms/overview",
     "https://docs.coderabbit.ai/management/adding-organizations",
@@ -544,9 +290,8 @@
     "https://docs.coderabbit.ai/self-hosted/coderabbit-reverse-tunnel",
     "https://docs.coderabbit.ai/slack-agent",
     "https://docs.coderabbit.ai/support",
+    "https://gist.github.com/donbr/d64ccfde1887197f82e933f669f4d449",
     "https://github.com/coderabbitai",
-    "https://github.com/coderabbitai/skills",
-    "https://gitlab.com/master-group123/sub-group/project1/-/merge_requests/10",
     "https://jenkins.company.com/job/{workspace}/job/{repo}/job/PR-{pr}/",
     "https://kb.coderabbit.ai",
     "https://sonar.company.com/dashboard?id={org}_{repo}",
@@ -555,7 +300,6 @@
     "https://trust.coderabbit.ai/",
     "https://trust.coderabbit.ai/subprocessors",
     "https://www.coderabbit.ai/contact-us/sales",
-    "https://www.coderabbit.ai/discord",
     "https://www.coderabbit.ai/hoppy",
     "https://www.coderabbit.ai/ide",
     "https://www.coderabbit.ai/pricing",

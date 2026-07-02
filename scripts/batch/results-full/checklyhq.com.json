@@ -12,21 +12,28 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:22:14.029Z",
-    "summary": "Checkly exposes a documented REST API, MCP server, and CLI; all require a Checkly API key (user or service), with CLI also supporting `npx checkly login` or `CHECKLY_API_KEY` + `CHECKLY_ACCOUNT_ID`.",
+    "discoveredAt": "2026-07-02T16:19:39.367Z",
+    "summary": "Checkly exposes one HTTP REST API, one CLI, and one MCP server; all require Checkly credentials (API key + account ID for API/CLI env auth, or CLI browser login, with MCP using OAuth-based client auth).",
     "credentials": {
       "checkly_api_key": {
-        "type": "bearer",
+        "type": "api_key",
         "label": "Checkly API key",
         "generateUrl": "https://app.checklyhq.com/settings/user/api-keys",
-        "setup": "Go to [User Settings API keys](https://app.checklyhq.com/settings/user/api-keys), click **Create API key**, name it, and copy it immediately because it is only shown once. Use it as a Bearer token in `Authorization` for the public API and CLI. This is the easiest path for personal automation.",
+        "setup": "Go to [User Settings API keys](https://app.checklyhq.com/settings/user/api-keys) and click **Create API key**. Copy the key immediately; it is only shown once. Checkly also supports service API keys under [Account Settings API keys](https://app.checklyhq.com/settings/account/api-keys) for Enterprise accounts.",
         "acquisition": "manual"
       },
-      "checkly_service_api_key": {
-        "type": "bearer",
-        "label": "Checkly service API key",
-        "generateUrl": "https://app.checklyhq.com/settings/account/api-keys",
-        "setup": "Go to [Account Settings API keys](https://app.checklyhq.com/settings/account/api-keys), click **Create service API key**, choose a role, and copy the key immediately because it is only shown once. Service API keys are available on the Enterprise plan and are tied to one account rather than a user.",
+      "checkly_account_id": {
+        "type": "api_key",
+        "label": "Checkly Account ID",
+        "generateUrl": "https://app.checklyhq.com/settings/account/general",
+        "setup": "Find the target account's ID in [Account Settings](https://app.checklyhq.com/settings/account/general). Checkly API and CLI requests require this account identifier alongside the API key.",
+        "acquisition": "manual"
+      },
+      "checkly_cli_login": {
+        "type": "oauth2",
+        "label": "Checkly CLI browser login",
+        "generateUrl": "https://checklyhq.com/docs/cli/authentication",
+        "setup": "Run `npx checkly login` and complete the interactive browser flow. Use this when you want the CLI to store credentials locally without setting env vars.",
         "acquisition": "manual"
       }
     },
@@ -58,41 +65,12 @@
                   }
                 },
                 {
-                  "id": "checkly_api_key",
+                  "id": "checkly_account_id",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
                     "headerName": "X-Checkly-Account",
-                    "scheme": "apiKey"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://checklyhq.com/docs/api-reference/overview",
-                  "https://checklyhq.com/docs/admin/creating-api-key"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "checkly_service_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                },
-                {
-                  "id": "checkly_service_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "X-Checkly-Account",
-                    "scheme": "apiKey"
+                    "scheme": "header"
                   }
                 }
               ],
@@ -105,44 +83,8 @@
               }
             }
           ]
-        }
-      },
-      {
-        "slug": "checkly-mcp-server",
-        "name": "Checkly MCP Server",
-        "type": "mcp",
-        "docs": "https://checklyhq.com/docs/ai/mcp-server",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://checklyhq.com/docs/ai/mcp-server"
-          ]
         },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "checkly_api_key",
-                  "mechanics": {
-                    "source": "well-known"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://checklyhq.com/docs/ai/mcp-server"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://api.checklyhq.com/mcp",
-        "transports": [
-          "streamable-http"
-        ]
+        "url": "https://api.checklyhq.com/v1"
       },
       {
         "slug": "checkly-cli",
@@ -154,7 +96,7 @@
           "evidence": [
             "https://checklyhq.com/docs/cli/overview",
             "https://checklyhq.com/docs/cli/authentication",
-            "https://checklyhq.com/docs/cli/installation"
+            "https://checklyhq.com/docs/admin/creating-api-key"
           ]
         },
         "auth": {
@@ -163,7 +105,7 @@
             {
               "use": [
                 {
-                  "id": "checkly_api_key",
+                  "id": "checkly_cli_login",
                   "mechanics": {
                     "source": "cli",
                     "command": "npx checkly login"
@@ -174,7 +116,7 @@
                 "via": "discovered",
                 "evidence": [
                   "https://checklyhq.com/docs/cli/authentication",
-                  "https://checklyhq.com/docs/cli/installation"
+                  "https://checklyhq.com/docs/cli/overview"
                 ]
               }
             },
@@ -184,9 +126,16 @@
                   "id": "checkly_api_key",
                   "mechanics": {
                     "source": "cli",
-                    "command": "npx checkly login",
                     "env": [
-                      "CHECKLY_API_KEY",
+                      "CHECKLY_API_KEY"
+                    ]
+                  }
+                },
+                {
+                  "id": "checkly_account_id",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
                       "CHECKLY_ACCOUNT_ID"
                     ]
                   }
@@ -209,100 +158,202 @@
           }
         ],
         "command": "checkly"
+      },
+      {
+        "slug": "checkly-mcp-server",
+        "name": "Checkly MCP Server",
+        "type": "mcp",
+        "docs": "https://checklyhq.com/docs/ai/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://checklyhq.com/docs/ai/mcp-server",
+            "https://feedback.checklyhq.com/changelog"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "checkly_cli_login",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://checklyhq.com/docs/ai/mcp-server",
+                  "https://feedback.checklyhq.com/changelog"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.checklyhq.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:22:14.030Z",
+  "discoveredAt": "2026-07-02T16:19:39.368Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 165975,
-    "completion_tokens": 1566,
-    "total_tokens": 167541
+    "prompt_tokens": 154807,
+    "completion_tokens": 1371,
+    "total_tokens": 156178
   },
   "visited": [
     "https://checklyhq.com/docs/admin/creating-api-key",
     "https://checklyhq.com/docs/ai/mcp-server",
-    "https://checklyhq.com/docs/ai/skills",
     "https://checklyhq.com/docs/api-reference/overview",
     "https://checklyhq.com/docs/cli/authentication",
-    "https://checklyhq.com/docs/cli/environment-variables",
-    "https://checklyhq.com/docs/cli/installation",
     "https://checklyhq.com/docs/cli/overview",
-    "https://checklyhq.com/docs/constructs/api-check",
-    "https://checklyhq.com/docs/detect/synthetic-monitoring/api-checks/configuration",
-    "https://checklyhq.com/llms.txt",
+    "https://checklyhq.com/docs/llms.txt",
+    "https://feedback.checklyhq.com/changelog",
     "https://github.com/checkly/checkly-cli"
   ],
   "grounding": [
-    "https://agentskills.io",
-    "https://agentskills.io/specification.md",
     "https://api.checklyhq.com/mcp",
     "https://api.checklyhq.com/openapi.json",
     "https://api.checklyhq.com/swagger.json",
     "https://api.checklyhq.com/v1/checks",
     "https://app.checklyhq.com",
+    "https://app.checklyhq.com/accounts/settings/account/integrations",
+    "https://app.checklyhq.com/accounts/tag-manager",
     "https://app.checklyhq.com/settings/account/api-keys",
     "https://app.checklyhq.com/settings/account/general",
     "https://app.checklyhq.com/settings/account/team",
     "https://app.checklyhq.com/settings/user/api-keys",
+    "https://app.checklyhq.com/se…",
     "https://app.checklyhq.com/signup/",
-    "https://cdn.checklyhq.com/downloads/checkly-cli/4.9.0/darwin/checkly-cli.zip",
-    "https://cdn.checklyhq.com/downloads/checkly-cli/4.9.0/linux/checkly-cli.tar.gz",
-    "https://cdn.checklyhq.com/downloads/checkly-cli/4.9.0/windows/checkly-cli.zip",
-    "https://checklyhq.com",
-    "https://checklyhq.com/#additional-resources",
     "https://checklyhq.com/#api-specification",
     "https://checklyhq.com/#authentication",
     "https://checklyhq.com/#content-area",
     "https://checklyhq.com/#deleting-a-service-api-key",
     "https://checklyhq.com/#deleting-a-user-api-key",
-    "https://checklyhq.com/#direct-download",
     "https://checklyhq.com/#example-prompts",
-    "https://checklyhq.com/#examples",
     "https://checklyhq.com/#from-ci",
-    "https://checklyhq.com/#installation",
     "https://checklyhq.com/#integrating-with-ci%2Fcd",
     "https://checklyhq.com/#integrating-with-ci/cd",
     "https://checklyhq.com/#interactive",
     "https://checklyhq.com/#learn-more",
-    "https://checklyhq.com/#local-environment-variables",
-    "https://checklyhq.com/#managing-remote-environment-variables",
     "https://checklyhq.com/#mcp-skills-and-cli",
-    "https://checklyhq.com/#prerequisites",
     "https://checklyhq.com/#quick-start",
     "https://checklyhq.com/#rate-limits",
-    "https://checklyhq.com/#remote-environment-variables",
-    "https://checklyhq.com/#securing-environment-variables",
     "https://checklyhq.com/#service-api-keys",
-    "https://checklyhq.com/#skill-details",
     "https://checklyhq.com/#starting-your-first-project",
     "https://checklyhq.com/#troubleshooting",
-    "https://checklyhq.com/#usage",
     "https://checklyhq.com/#user-api-keys",
-    "https://checklyhq.com/#using-a-proxy-server",
     "https://checklyhq.com/#using-a-service-api-key",
     "https://checklyhq.com/#using-a-user-api-key",
     "https://checklyhq.com/#using-agents-ai-ides-and-copilots",
-    "https://checklyhq.com/#using-the-e-flag",
-    "https://checklyhq.com/#using-the-env-file-flag",
     "https://checklyhq.com/#what-you-can-do",
     "https://checklyhq.com/docs",
     "https://checklyhq.com/docs/admin/changing-your-email-password",
+    "https://checklyhq.com/docs/admin/changing-your-email-password.md",
     "https://checklyhq.com/docs/admin/creating-api-key",
+    "https://checklyhq.com/docs/admin/creating-api-key.md",
+    "https://checklyhq.com/docs/admin/team-management/adding-team-members.md",
+    "https://checklyhq.com/docs/admin/team-management/microsoft-azure-ad.md",
+    "https://checklyhq.com/docs/admin/team-management/multi-factor-authentication.md",
     "https://checklyhq.com/docs/admin/team-management/overview",
+    "https://checklyhq.com/docs/admin/team-management/overview.md",
+    "https://checklyhq.com/docs/admin/team-management/saml.md",
+    "https://checklyhq.com/docs/admin/team-management/single-sign-on.md",
     "https://checklyhq.com/docs/ai/llms-txt",
+    "https://checklyhq.com/docs/ai/llms-txt.md",
     "https://checklyhq.com/docs/ai/markdown-access",
+    "https://checklyhq.com/docs/ai/markdown-access.md",
     "https://checklyhq.com/docs/ai/mcp-server",
+    "https://checklyhq.com/docs/ai/mcp-server.md",
     "https://checklyhq.com/docs/ai/mcp-server/security-and-permissions",
+    "https://checklyhq.com/docs/ai/mcp-server/security-and-permissions.md",
     "https://checklyhq.com/docs/ai/mcp-server/setup",
     "https://checklyhq.com/docs/ai/mcp-server/setup#supported-clients",
+    "https://checklyhq.com/docs/ai/mcp-server/setup.md",
     "https://checklyhq.com/docs/ai/mcp-server/tools",
+    "https://checklyhq.com/docs/ai/mcp-server/tools.md",
     "https://checklyhq.com/docs/ai/mcp-server/troubleshooting",
+    "https://checklyhq.com/docs/ai/mcp-server/troubleshooting.md",
     "https://checklyhq.com/docs/ai/overview",
     "https://checklyhq.com/docs/ai/overview#skills-mcp-and-the-cli",
+    "https://checklyhq.com/docs/ai/overview.md",
     "https://checklyhq.com/docs/ai/rocky-ai",
+    "https://checklyhq.com/docs/ai/rocky-ai.md",
     "https://checklyhq.com/docs/ai/skills",
+    "https://checklyhq.com/docs/ai/skills.md",
+    "https://checklyhq.com/docs/api-reference/accounts/fetch-a-given-account-details.md",
+    "https://checklyhq.com/docs/api-reference/accounts/fetch-account-entitlements.md",
+    "https://checklyhq.com/docs/api-reference/accounts/fetch-current-account-details.md",
+    "https://checklyhq.com/docs/api-reference/accounts/fetch-current-account-entitlements.md",
     "https://checklyhq.com/docs/api-reference/accounts/fetch-user-accounts",
+    "https://checklyhq.com/docs/api-reference/accounts/fetch-user-accounts.md",
+    "https://checklyhq.com/docs/api-reference/accounts/list-account-members-and-pending-invites.md",
+    "https://checklyhq.com/docs/api-reference/accounts/list-current-account-members-and-pending-invites.md",
+    "https://checklyhq.com/docs/api-reference/accounts/remove-a-current-account-member.md",
+    "https://checklyhq.com/docs/api-reference/accounts/remove-an-account-member.md",
+    "https://checklyhq.com/docs/api-reference/accounts/update-a-current-account-member-role.md",
+    "https://checklyhq.com/docs/api-reference/accounts/update-an-account-member-role.md",
+    "https://checklyhq.com/docs/api-reference/alert-channels/create-an-alert-channel.md",
+    "https://checklyhq.com/docs/api-reference/alert-channels/delete-an-alert-channel.md",
+    "https://checklyhq.com/docs/api-reference/alert-channels/list-all-alert-channels.md",
+    "https://checklyhq.com/docs/api-reference/alert-channels/retrieve-an-alert-channel.md",
+    "https://checklyhq.com/docs/api-reference/alert-channels/update-an-alert-channel.md",
+    "https://checklyhq.com/docs/api-reference/alert-channels/update-the-subscriptions-of-an-alert-channel.md",
+    "https://checklyhq.com/docs/api-reference/alert-notifications/lists-all-alert-notifications.md",
+    "https://checklyhq.com/docs/api-reference/analytics/api-checks.md",
+    "https://checklyhq.com/docs/api-reference/analytics/browser-checks.md",
+    "https://checklyhq.com/docs/api-reference/analytics/dns-monitors.md",
+    "https://checklyhq.com/docs/api-reference/analytics/get-analytics-summary-for-multiple-checks.md",
+    "https://checklyhq.com/docs/api-reference/analytics/heartbeat-checks.md",
+    "https://checklyhq.com/docs/api-reference/analytics/icmp-monitors.md",
+    "https://checklyhq.com/docs/api-reference/analytics/list-all-available-reporting-metrics.md",
+    "https://checklyhq.com/docs/api-reference/analytics/multistep-checks.md",
+    "https://checklyhq.com/docs/api-reference/analytics/playwright-checks.md",
+    "https://checklyhq.com/docs/api-reference/analytics/tcp-checks.md",
+    "https://checklyhq.com/docs/api-reference/analytics/url-monitors.md",
+    "https://checklyhq.com/docs/api-reference/badges/get-v1badgeschecks.md",
+    "https://checklyhq.com/docs/api-reference/badges/get-v1badgesgroups.md",
+    "https://checklyhq.com/docs/api-reference/check-alerts/list-alerts-for-a-specific-check.md",
+    "https://checklyhq.com/docs/api-reference/check-alerts/list-all-alerts-for-your-account.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/create-a-check-group-v2.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/create-a-check-group.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/delete-a-check-group.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/list-all-check-groups.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/retrieve-a-check-group.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/retrieve-all-checks-in-a-specific-group-with-group-settings-applied.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/retrieve-one-check-in-a-specific-group-with-group-settings-applied.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/update-a-check-group-v2.md",
+    "https://checklyhq.com/docs/api-reference/check-groups/update-a-check-group.md",
+    "https://checklyhq.com/docs/api-reference/check-results/lists-all-check-results-1.md",
+    "https://checklyhq.com/docs/api-reference/check-results/lists-all-check-results.md",
+    "https://checklyhq.com/docs/api-reference/check-results/retrieve-a-check-result.md",
+    "https://checklyhq.com/docs/api-reference/check-results/retrieve-a-normalized-asset-manifest-for-a-check-result.md",
+    "https://checklyhq.com/docs/api-reference/check-sessions/await-the-completion-of-a-check-session-v2.md",
+    "https://checklyhq.com/docs/api-reference/check-sessions/await-the-completion-of-a-check-session.md",
+    "https://checklyhq.com/docs/api-reference/check-sessions/cancel-a-check-session.md",
+    "https://checklyhq.com/docs/api-reference/check-sessions/retrieve-a-check-session-v2.md",
+    "https://checklyhq.com/docs/api-reference/check-sessions/retrieve-a-check-session.md",
+    "https://checklyhq.com/docs/api-reference/check-sessions/trigger-a-new-check-session-v2.md",
+    "https://checklyhq.com/docs/api-reference/check-sessions/trigger-a-new-check-session.md",
+    "https://checklyhq.com/docs/api-reference/check-status/list-all-check-statuses.md",
+    "https://checklyhq.com/docs/api-reference/check-status/retrieve-check-status-details.md",
+    "https://checklyhq.com/docs/api-reference/checks/create-a-browser-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/create-a-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/create-a-multi-step-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/create-a-tcp-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/create-an-api-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/delete-a-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/list-all-checks.md",
+    "https://checklyhq.com/docs/api-reference/checks/retrieve-a-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/update-a-browser-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/update-a-check.md",
+    "https://checklyhq.com/docs/api-reference/checks/update-a-multi-step-",
     "https://checklyhq.com/docs/api-reference/overview",
     "https://checklyhq.com/docs/cli/attaching-git-metadata",
     "https://checklyhq.com/docs/cli/authentication",
@@ -313,7 +364,6 @@
     "https://checklyhq.com/docs/cli/checkly-deploy",
     "https://checklyhq.com/docs/cli/checkly-destroy",
     "https://checklyhq.com/docs/cli/checkly-env",
-    "https://checklyhq.com/docs/cli/checkly-env#pull",
     "https://checklyhq.com/docs/cli/checkly-import",
     "https://checklyhq.com/docs/cli/checkly-incidents",
     "https://checklyhq.com/docs/cli/checkly-init",
@@ -323,7 +373,6 @@
     "https://checklyhq.com/docs/cli/checkly-rca",
     "https://checklyhq.com/docs/cli/checkly-runtimes",
     "https://checklyhq.com/docs/cli/checkly-skills",
-    "https://checklyhq.com/docs/cli/checkly-skills#checkly-skills-install",
     "https://checklyhq.com/docs/cli/checkly-status-pages",
     "https://checklyhq.com/docs/cli/checkly-switch",
     "https://checklyhq.com/docs/cli/checkly-sync-playwright",
@@ -340,11 +389,9 @@
     "https://checklyhq.com/docs/communicate/maintenance-windows/overview",
     "https://checklyhq.com/docs/communicate/overview",
     "https://checklyhq.com/docs/comparisons/frameworks/playwright-vs-cypress",
-    "https://checklyhq.com/docs/constructs/api-check",
     "https://checklyhq.com/docs/constructs/overview",
     "https://checklyhq.com/docs/detect/assertions",
     "https://checklyhq.com/docs/detect/overview",
-    "https://checklyhq.com/docs/detect/synthetic-monitoring/api-checks/configuration",
     "https://checklyhq.com/docs/guides/overview",
     "https://checklyhq.com/docs/integrations/ci-cd/github/actions",
     "https://checklyhq.com/docs/integrations/ci-cd/gitlab/overview",
@@ -354,42 +401,51 @@
     "https://checklyhq.com/docs/learn/playwright/overview",
     "https://checklyhq.com/docs/llms.txt",
     "https://checklyhq.com/docs/platform/managing-false-positives",
-    "https://checklyhq.com/docs/platform/variables",
     "https://checklyhq.com/docs/quickstart",
     "https://checklyhq.com/docs/resolve/ai-root-cause-analysis/overview",
     "https://checklyhq.com/docs/resolve/overview",
     "https://checklyhq.com/docs/what-is-checkly",
-    "https://checklyhq.com/llms.txt",
-    "https://code.visualstudio.com/",
-    "https://danube-web.shop/api/books",
-    "https://github.com/acme/website",
+    "https://featurebase.app/?utm_campaign=checkly&utm_content=feedback-board&utm_medium=referral&utm_source=powered-by&utm_id=646386def4f8de0c9ba04a4e",
+    "https://feedback.checklyhq.com/",
+    "https://feedback.checklyhq.com/changelog",
+    "https://feedback.checklyhq.com/changelog/checkly-cli-8-esm-only-cancellable-playwright-check-runs-and",
+    "https://feedback.checklyhq.com/changelog/playwright-check-suites-cancel-runs-choose-nodebun-versions-and-more",
+    "https://feedback.checklyhq.com/changelog/rocky-ai-rca-now-pulls-in-otel-traces-and-the",
+    "https://feedback.checklyhq.com/changelog/the-checkly-mcp-server-is-now-available",
+    "https://feedback.checklyhq.com/changelog/whats-new-in-june-2",
+    "https://feedback.checklyhq.com/changelog/whats-new-in-may-cli-8-private-location-metrics-maintenance",
+    "https://feedback.checklyhq.com/dashboard/changelog/6a351b280edc5850f6c1d5b1",
     "https://github.com/checkly",
     "https://github.com/checkly/checkly-cli",
-    "https://github.com/checkly/checkly-cli/tree/main/examples/boilerplate-project",
-    "https://github.com/checkly/checkly-cli/tree/main/skills/checkly",
     "https://github.com/checkly/docs/edit/main/admin/creating-api-key.mdx",
     "https://github.com/checkly/docs/edit/main/ai/mcp-server.mdx",
-    "https://github.com/checkly/docs/edit/main/ai/skills.mdx",
     "https://github.com/checkly/docs/edit/main/api-reference/overview.mdx",
     "https://github.com/checkly/docs/edit/main/cli/authentication.mdx",
-    "https://github.com/checkly/docs/edit/main/cli/environment-variables.mdx",
-    "https://github.com/checkly/docs/edit/main/cli/installation.mdx",
     "https://github.com/checkly/docs/edit/main/cli/overview.mdx",
     "https://github.com/checkly/docs/issues/new?title=Issue",
     "https://linkedin.com/company/checkly",
-    "https://proxy-url",
-    "https://staging.checklyhq.com",
     "https://status.checklyhq.com/",
     "https://www.checklyhq.com",
-    "https://www.checklyhq.com/",
     "https://www.checklyhq.com/blog/",
     "https://www.checklyhq.com/customers/",
     "https://www.checklyhq.com/docs/",
+    "https://www.checklyhq.com/docs/ai/mcp-server/",
     "https://www.checklyhq.com/docs/api/",
     "https://www.checklyhq.com/docs/changelog/",
     "https://www.checklyhq.com/docs/changelog/changelog/",
     "https://www.checklyhq.com/docs/cli/",
+    "https://www.checklyhq.com/docs/cli/checkly-account/#checkly-account-members-update",
+    "https://www.checklyhq.com/docs/cli/checkly-assets/",
+    "https://www.checklyhq.com/docs/cli/checkly-checks/#checkly-checks-delete",
+    "https://www.checklyhq.com/docs/cli/checkly-test-sessions/",
+    "https://www.checklyhq.com/docs/communicate/maintenance-windows/overview/#check-behavior",
+    "https://www.checklyhq.com/docs/detect/synthetic-monitoring/agentic-checks/overview/",
+    "https://www.checklyhq.com/docs/detect/uptime-monitoring/dns-monitors/configuration/#https-record-rfc-9460",
+    "https://www.checklyhq.com/docs/integrations/alerts/slack/",
     "https://www.checklyhq.com/docs/llms.txt",
+    "https://www.checklyhq.com/docs/platform/private-locations/autoscaling/",
+    "https://www.checklyhq.com/docs/platform/private-locations/change-log/#v8-2-0",
+    "https://www.checklyhq.com/docs/resolve/traces/overview/",
     "https://www.checklyhq.com/integrations/",
     "https://www.checklyhq.com/learn/kubernetes/",
     "https://www.checklyhq.com/learn/kubernetes/events/",
@@ -419,6 +475,7 @@
     "https://www.checklyhq.com/platform/",
     "https://www.checklyhq.com/pricing.md",
     "https://www.checklyhq.com/pricing/",
+    "https://www.checklyhq.com/pricing/#resolve",
     "https://www.checklyhq.com/product/ai-analysis/",
     "https://www.checklyhq.com/product/alerting/",
     "https://www.checklyhq.com/product/api-monitoring/",
@@ -435,9 +492,9 @@
     "https://www.checklyhq.com/product/terraform-provider/",
     "https://www.checklyhq.com/product/traces/",
     "https://www.checklyhq.com/product/uptime-monitoring/",
+    "https://www.checklyhq.com/slack",
     "https://www.checklyhq.com/webinars/",
     "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=checkly-422f444a",
-    "https://wwww.checklyhq.com",
     "https://x.com/checklyhq"
   ]
 }

@@ -12,21 +12,28 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T10:54:10.201Z",
-    "summary": "BigCommerce exposes REST APIs, a GraphQL Account API, and a beta MCP server; REST and GraphQL Account require OAuth-based API account tokens, while the MCP endpoint and documented client launch commands are public/store-configured.",
+    "discoveredAt": "2026-07-02T16:18:30.765Z",
+    "summary": "BigCommerce exposes REST and GraphQL developer APIs plus a public MCP docs surface; REST/GraphQL use API account OAuth and storefront/private API tokens, while MCP is documented as public.",
     "credentials": {
-      "bc_store_api": {
+      "bc_api_account": {
         "type": "oauth2",
-        "label": "Store-level API account access token",
-        "generateUrl": "https://login.bigcommerce.com/deep-links/manage/settings-list",
-        "setup": "In the store control panel, go to [Settings > Store-level API accounts](https://login.bigcommerce.com/deep-links/manage/settings-list) and create a store API account. Use the generated `access_token` for REST APIs that accept store-level credentials. Store API accounts are store-scoped and their scopes/tokens are managed in the control panel.",
+        "label": "BigCommerce API account / OAuth client",
+        "generateUrl": "https://build.bigcommerce.com/",
+        "setup": "Create an API account in the BigCommerce Dev Portal. Go to [BigCommerce Dev Portal](https://build.bigcommerce.com/), create or select a app/integration, then use its client credentials and requested OAuth scopes for API access. BigCommerce’s docs point developers to **API Accounts** for authenticating requests and configuring scopes/access tokens.",
         "acquisition": "manual"
       },
-      "bc_mcp_storefront": {
-        "type": "oauth2",
-        "label": "BigCommerce MCP storefront access",
-        "generateUrl": "https://docs.bigcommerce.com/developer/api-reference/mcp/overview",
-        "setup": "Enable MCP in the store control panel under **Settings → Early access → MCP Integration**, accept the terms, and copy the storefront-specific MCP server URL. For agent clients, point the MCP client at that URL; BigCommerce documents `npx mcp-remote <YOUR_MCP_SERVER_URL>` for Claude Desktop/Warp and a direct `streamable-http` URL for Cursor. This surface is guest-shopping oriented; no separate developer-issued token is documented on the overview page.",
+      "bc_storefront_token": {
+        "type": "bearer",
+        "label": "Storefront API token",
+        "generateUrl": "https://docs.bigcommerce.com/developer/api-reference/rest/admin/authentication-apis/storefront-api-tokens/create-token",
+        "setup": "From the store control panel / BigCommerce docs’ storefront token flow, create a Storefront API token for storefront and headless integrations. Use the docs page [Create a Token](https://docs.bigcommerce.com/developer/api-reference/rest/admin/authentication-apis/storefront-api-tokens/create-token) and choose the scopes your app needs. The token is used as a bearer-style credential for storefront APIs.",
+        "acquisition": "manual"
+      },
+      "bc_private_api_token": {
+        "type": "bearer",
+        "label": "Private API token",
+        "generateUrl": "https://docs.bigcommerce.com/developer/api-reference/rest/admin/authentication-apis/storefront-api-tokens/create-private-token",
+        "setup": "Create a Private API Token from the store’s admin/authentication area using the docs page [Create a Private API Token](https://docs.bigcommerce.com/developer/api-reference/rest/admin/authentication-apis/storefront-api-tokens/create-private-token). This is the easiest path for server-side integrations that need a token rather than a full OAuth app.",
         "acquisition": "manual"
       }
     },
@@ -39,8 +46,7 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.bigcommerce.com/developer/api-reference/rest/overview",
-            "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/api-accounts.md"
+            "https://docs.bigcommerce.com/developer/api-reference/rest/overview"
           ]
         },
         "auth": {
@@ -49,157 +55,161 @@
             {
               "use": [
                 {
-                  "id": "bc_store_api",
+                  "id": "bc_api_account",
                   "mechanics": {
                     "source": "spec",
-                    "scheme": "X-Auth-Token"
+                    "scheme": "oauth2"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/api-accounts.md",
                   "https://docs.bigcommerce.com/developer/api-reference/rest/overview"
                 ]
               }
-            }
-          ]
-        }
-      },
-      {
-        "slug": "bigcommerce-graphql-account-api",
-        "name": "BigCommerce GraphQL Account API",
-        "type": "graphql",
-        "docs": "https://docs.bigcommerce.com/developer/api-reference/graphql/account/overview",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.bigcommerce.com/developer/api-reference/graphql/account/overview.md",
-            "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/api-accounts.md"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
+            },
             {
               "use": [
                 {
-                  "id": "bc_store_api",
+                  "id": "bc_storefront_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
                     "headerName": "X-Auth-Token",
-                    "scheme": "X-Auth-Token"
+                    "scheme": "Bearer"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.bigcommerce.com/developer/api-reference/graphql/account/overview.md",
-                  "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/api-accounts.md"
+                  "https://docs.bigcommerce.com/developer/api-reference/rest/admin/authentication-apis/storefront-api-tokens/overview"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "bc_private_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Auth-Token",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.bigcommerce.com/developer/api-reference/rest/admin/authentication-apis/storefront-api-tokens/create-private-token"
                 ]
               }
             }
           ]
         },
-        "url": "https://api.bigcommerce.com/accounts/{account_uuid}/graphql"
+        "url": "https://api.bigcommerce.com"
       },
       {
-        "slug": "bigcommerce-mcp-server",
-        "name": "BigCommerce MCP Server",
+        "slug": "bigcommerce-graphql-apis",
+        "name": "BigCommerce GraphQL APIs",
+        "type": "graphql",
+        "docs": "https://docs.bigcommerce.com/developer/api-reference/graphql/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.bigcommerce.com/developer/api-reference/graphql/overview",
+            "https://docs.bigcommerce.com/developer/api-reference/graphql/account/overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bc_api_account",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.bigcommerce.com/developer/api-reference/graphql/overview"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://developer.bigcommerce.com/graphql"
+      },
+      {
+        "slug": "bigcommerce-mcp",
+        "name": "BigCommerce MCP",
         "type": "mcp",
         "docs": "https://docs.bigcommerce.com/developer/api-reference/mcp/overview",
         "basis": {
           "via": "discovered",
-          "evidence": []
+          "evidence": [
+            "https://docs.bigcommerce.com/developer/api-reference/mcp/overview"
+          ]
         },
         "auth": {
           "status": "none",
           "basis": {
             "via": "discovered",
             "evidence": [
-              "https://docs.bigcommerce.com/developer/api-reference/mcp/overview.md"
+              "https://docs.bigcommerce.com/developer/api-reference/mcp/overview"
             ]
           }
         },
-        "url": "https://docs.bigcommerce.com/_mcp/server",
         "transports": [
           "streamable-http"
         ]
-      },
-      {
-        "slug": "bigcommerce-cli-agent-launch-commands",
-        "name": "BigCommerce CLI / agent launch commands",
-        "type": "cli",
-        "docs": "https://docs.bigcommerce.com/developer/api-reference/mcp/overview.md",
-        "basis": {
-          "via": "discovered",
-          "evidence": []
-        },
-        "auth": {
-          "status": "none",
-          "basis": {
-            "via": "discovered",
-            "evidence": [
-              "https://docs.bigcommerce.com/developer/api-reference/mcp/overview.md"
-            ]
-          }
-        },
-        "packages": [
-          {
-            "registryType": "npm",
-            "identifier": "mcp-remote",
-            "runtimeHint": "node >= 18"
-          }
-        ],
-        "command": "npx mcp-remote <YOUR_MCP_SERVER_URL>"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T10:54:10.201Z",
+  "discoveredAt": "2026-07-02T16:18:30.766Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 236678,
-    "completion_tokens": 1439,
-    "total_tokens": 238117
+    "prompt_tokens": 218352,
+    "completion_tokens": 1363,
+    "total_tokens": 219715
   },
   "visited": [
+    "https://bigcommerce.com/llms.txt",
     "https://docs.bigcommerce.com/",
     "https://docs.bigcommerce.com/developer/api-reference/graphql/account/overview",
-    "https://docs.bigcommerce.com/developer/api-reference/graphql/account/overview.md",
     "https://docs.bigcommerce.com/developer/api-reference/graphql/overview",
     "https://docs.bigcommerce.com/developer/api-reference/mcp/overview",
-    "https://docs.bigcommerce.com/developer/api-reference/mcp/overview.md",
     "https://docs.bigcommerce.com/developer/api-reference/rest/admin/overview",
     "https://docs.bigcommerce.com/developer/api-reference/rest/overview",
+    "https://docs.bigcommerce.com/developer/api-reference/rest/storefront/overview",
     "https://docs.bigcommerce.com/developer/docs/ai-agent-setup",
     "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/api-accounts",
-    "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/api-accounts.md",
     "https://docs.bigcommerce.com/developer/docs/overview/tools-and-sdks",
-    "https://ecommerceguide.com/mcp/bigcommerce-developer-platform/",
-    "https://github.com/bigcommerce/bigcommerce-for-wordpress/blob/master/vendor/moderntribe/bigcommerce-api-php-v3/docs/examples/oauth-token.md",
-    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp"
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/overview",
+    "https://github.com/vercel/commerce/issues/287",
+    "https://medium.com/bigcommerce-developer-blog/graphql-authentication-on-bigcommerce-26bb870db931"
   ],
   "grounding": [
-    "https://accounts.bigcommerce.com/tokens",
-    "https://altairgraphql.dev/",
-    "https://api.bigcommerce.com",
-    "https://api.bigcommerce.com/accounts/{account_uuid}/graphql",
-    "https://api.bigcommerce.com/accounts/{{account_uuid}}/graphql",
+    "https://bigcommerce.com/llms.txt",
     "https://build.bigcommerce.com/?utm_source=dev_center",
-    "https://devtools.bigcommerce.com",
+    "https://developer.bigcommerce.com/",
+    "https://developer.bigcommerce.com/docs/api",
+    "https://developer.bigcommerce.com/docs/storefront/catalyst/getting-started",
     "https://do",
     "https://docs",
     "https://docs.bigcommerce.com/",
-    "https://docs.bigcommerce.com/_mcp/server",
+    "https://docs.bigcommerce.com/developer/api-r",
     "https://docs.bigcommerce.com/developer/api-reference/about-our-apis",
     "https://docs.bigcommerce.com/developer/api-reference/graphql/account/overview",
-    "https://docs.bigcommerce.com/developer/api-reference/graphql/account/overview.md",
     "https://docs.bigcommerce.com/developer/api-reference/graphql/overview",
     "https://docs.bigcommerce.com/developer/api-reference/mcp/overview",
-    "https://docs.bigcommerce.com/developer/api-reference/mcp/overview.md",
     "https://docs.bigcommerce.com/developer/api-reference/mcp/tool-resynchronization",
     "https://docs.bigcommerce.com/developer/api-reference/rest/admin/authentication-apis/current-customer/get-current-customer",
     "https://docs.bigcommerce.com/developer/api-reference/rest/admin/authentication-apis/current-customer/overview",
@@ -312,11 +322,11 @@
     "https://docs.bigcommerce.com/developer/api-reference/rest/storefront/subscriptions/create-subscription",
     "https://docs.bigcommerce.com/developer/changelog",
     "https://docs.bigcommerce.com/developer/community/connect",
+    "https://docs.bigcommerce.com/developer/docs/admin/checkout-and-cart/custom-checkouts/graphql-storefront",
     "https://docs.bigcommerce.com/developer/docs/ai-agent-setup",
     "https://docs.bigcommerce.com/developer/docs/archive",
     "https://docs.bigcommerce.com/developer/docs/beta",
     "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/api-accounts",
-    "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/api-accounts.md",
     "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/deprecations-sunsets",
     "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/integration-design",
     "https://docs.bigcommerce.com/developer/docs/overview/api-fundamentals/rate-limits",
@@ -377,6 +387,15 @@
     "https://docs.bigcommerce.com/developer/docs/storefront/catalyst/release-notes/1-7-0",
     "https://docs.bigcommerce.com/developer/docs/storefront/catalyst/release-notes/1-8-0",
     "https://docs.bigcommerce.com/developer/docs/storefront/getting-started",
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/authentication",
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/b-2-b",
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/best-practices",
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/customers",
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/data-events",
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/orders",
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/overview",
+    "https://docs.bigcommerce.com/developer/docs/storefront/guides/graphql-storefront-api/storefront-scripts",
+    "https://docs.bigcommerce.com/developer/docs/storefront/headless/site-content",
     "https://docs.bigcommerce.com/developer/docs/storefront/stencil/b2b-edition-for-stencil",
     "https://docs.bigcommerce.com/developer/docs/storefront/stencil/cli/development-server",
     "https://docs.bigcommerce.com/developer/docs/storefront/stencil/cli/incompatible-directives",
@@ -441,20 +460,51 @@
     "https://docs.bigcommerce.com/developer/docs/storefront/wordpress/start/multi-site",
     "https://docs.bigcommerce.com/developer/docs/storefront/wordpress/start/plugin-settings",
     "https://docs.bigcommerce.com/developer/learn/overview",
-    "https://docs.bigcommerce.com/llms.txt",
     "https://docs.feedonomics.com",
     "https://docs.makeswift.com",
-    "https://ecommerceguide.com/mcp/bigcommerce-developer-platform/",
-    "https://files.buildwithfern.com/bigcommerce.docs.buildwithfern.com/115c8eed660c93fa6f30d65ec550ccad2dbe5ea5c6bca295b1739ca160c5c04e/assets/mcp/mcp-server-url.png",
-    "https://files.buildwithfern.com/bigcommerce.docs.buildwithfern.com/643b9fbf5ad4a6df0225e450454bbe341ac8b574ea0a8e228fa883e45b2e1f6a/assets/mcp/settings-early-access.png",
-    "https://files.buildwithfern.com/bigcommerce.docs.buildwithfern.com/a253f5ddb05725a7e12fc0dcf1dc79cf5983c057aa23fa05fd7b7728eae99fc7/assets/mcp/enable-mcp.png",
-    "https://github.com/bigcommerce/bigcommerce-for-wordpress/blob/master/vendor/moderntribe/bigcommerce-api-php-v3/docs/examples/oauth-token.md",
-    "https://login.bigcommerce.com/deep-links/manage/settings-list",
-    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://github.com/vercel/commerce/issues/287",
+    "https://investors.bigcommerce.com/",
+    "https://medium.com/bigcommerce-developer-blog/graphql-authentication-on-bigcommerce-26bb870db931",
+    "https://security.bigcommerce.com/",
     "https://support.bigcommerce.com/",
-    "https://support.bigcommerce.com/s/article/Store-API-Accounts#account-level",
-    "https://support.bigcommerce.com/s/article/Store-API-Accounts#creating",
-    "https://support.bigcommerce.com/s/article/Store-API-Accounts?language=en_US#deleting",
-    "https://support.bigcommerce.com/s/knowledge"
+    "https://support.bigcommerce.com/s/",
+    "https://support.bigcommerce.com/s/knowledge",
+    "https://www.bigcommerce.at/",
+    "https://www.bigcommerce.co.uk/",
+    "https://www.bigcommerce.com.au/",
+    "https://www.bigcommerce.com/apps/",
+    "https://www.bigcommerce.com/articles/",
+    "https://www.bigcommerce.com/blog/",
+    "https://www.bigcommerce.com/case-study/",
+    "https://www.bigcommerce.com/company/",
+    "https://www.bigcommerce.com/contact/",
+    "https://www.bigcommerce.com/essentials/",
+    "https://www.bigcommerce.com/events/",
+    "https://www.bigcommerce.com/press/",
+    "https://www.bigcommerce.com/product/",
+    "https://www.bigcommerce.com/product/catalyst/",
+    "https://www.bigcommerce.com/sitemap/",
+    "https://www.bigcommerce.com/solutions/",
+    "https://www.bigcommerce.com/solutions/#industry-solutions",
+    "https://www.bigcommerce.com/solutions/#use-cases",
+    "https://www.bigcommerce.com/solutions/b2b-ecommerce-platform/",
+    "https://www.bigcommerce.com/solutions/headless-commerce/",
+    "https://www.bigcommerce.com/solutions/multi-store/",
+    "https://www.bigcommerce.com/solutions/omnichannel/",
+    "https://www.bigcommerce.com/solutions/wholesale-ecommerce-platform/",
+    "https://www.bigcommerce.de/",
+    "https://www.bigcommerce.dk/",
+    "https://www.bigcommerce.es/",
+    "https://www.bigcommerce.fr/",
+    "https://www.bigcommerce.it/",
+    "https://www.bigcommerce.mx/",
+    "https://www.bigcommerce.nl/",
+    "https://www.bigcommerce.no/",
+    "https://www.bigcommerce.se/",
+    "https://www.bigcommerce.sg/",
+    "https://www.commerce.com/careers/",
+    "https://www.commerce.com/privacy/",
+    "https://www.commerce.com/terms/",
+    "https://www.commerce.com/website-terms/"
   ]
 }

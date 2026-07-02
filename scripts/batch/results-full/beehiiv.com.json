@@ -12,37 +12,42 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T10:50:53.552Z",
-    "summary": "beehiiv exposes one public developer API (Bearer API key or OAuth2), plus an MCP server at https://developers.beehiiv.com/_mcp/server that uses OAuth2.",
+    "discoveredAt": "2026-07-02T16:18:16.937Z",
+    "summary": "beehiiv exposes one HTTP API (Bearer auth via API key or OAuth2) and one MCP server at /_mcp/server (workspace-connected auth via the MCP setup flow); no CLI or GraphQL surface found.",
     "credentials": {
       "beehiiv_api_key": {
-        "type": "bearer",
+        "type": "api_key",
         "label": "beehiiv API key",
         "generateUrl": "https://developers.beehiiv.com/welcome/create-an-api-key",
-        "setup": "Open [Create an API Key](https://developers.beehiiv.com/welcome/create-an-api-key.md) in the developer docs, then create a key from your beehiiv account settings. Use it as a Bearer token in the `Authorization` header for API requests.",
+        "setup": "1. Log in to beehiiv.\n2. Go to **Settings** → **API** under **Workspace Settings**.\n3. Click **Create New API Key** and copy the key.\n\nUse this key in the API auth header documented by beehiiv's API reference.",
         "acquisition": "manual"
       },
-      "beehiiv_oauth_client": {
+      "beehiiv_oauth_user": {
         "type": "oauth2",
-        "label": "beehiiv OAuth2 client",
+        "label": "beehiiv OAuth access token",
         "generateUrl": "https://developers.beehiiv.com/oauth2",
-        "setup": "Register and configure an OAuth2 client for your integration, then use the beehiiv OAuth2 authorization-code flow described in [OAuth2](https://developers.beehiiv.com/oauth2.md). The docs expose authorization, token, revoke, introspect, and token-info pages. This credential is the access/refresh token pair obtained for a connected user or workspace.",
+        "setup": "Create a beehiiv OAuth app / authorization through beehiiv's OAuth2 flow, then exchange the authorization for an access token from beehiiv. The developer docs group the flow under **OAuth2** and provide pages for **Authorize**, **Create token**, **Revoke token**, **Introspect token**, and **Get token info**.",
+        "acquisition": "manual"
+      },
+      "beehiiv_mcp_conn": {
+        "type": "oauth2",
+        "label": "beehiiv MCP connection",
+        "generateUrl": "https://app.beehiiv.com/settings/workspace/mcp",
+        "setup": "In beehiiv, open **Settings** → **MCP** and connect your AI client (Claude, Claude Code, Cursor, Codex, or another MCP-capable tool) using the in-app instructions. The connection is granted from the beehiiv workspace settings page; no standalone key minting page is exposed in the docs article.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "beehiiv-developer-api",
-        "name": "beehiiv Developer API",
+        "slug": "beehiiv-api",
+        "name": "beehiiv API",
         "type": "http",
-        "docs": "https://developers.beehiiv.com/",
+        "docs": "https://developers.beehiiv.com/api-reference/authors/index.md",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://developers.beehiiv.com/",
-            "https://developers.beehiiv.com/llms.txt",
-            "https://developers.beehiiv.com/welcome/create-an-api-key",
-            "https://developers.beehiiv.com/welcome/getting-started"
+            "https://developers.beehiiv.com/api-reference/authors/index.md",
+            "https://developers.beehiiv.com/welcome/create-an-api-key.md"
           ]
         },
         "auth": {
@@ -53,41 +58,40 @@
                 {
                   "id": "beehiiv_api_key",
                   "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
+                    "source": "spec",
+                    "scheme": "BearerAuthScheme"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://developers.beehiiv.com/welcome/create-an-api-key",
-                  "https://developers.beehiiv.com/welcome/getting-started"
+                  "https://developers.beehiiv.com/api-reference/authors/index.md",
+                  "https://developers.beehiiv.com/welcome/create-an-api-key.md"
                 ]
               }
             },
             {
               "use": [
                 {
-                  "id": "beehiiv_oauth_client",
+                  "id": "beehiiv_oauth_user",
                   "mechanics": {
                     "source": "spec",
-                    "scheme": "bearerAuth"
+                    "scheme": "BearerAuthScheme"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://developers.beehiiv.com/oauth2",
-                  "https://developers.beehiiv.com/llms.txt"
+                  "https://developers.beehiiv.com/api-reference/authors/index.md",
+                  "https://developers.beehiiv.com/oauth2.md"
                 ]
               }
             }
           ]
-        }
+        },
+        "url": "https://api.beehiiv.com/v2"
       },
       {
         "slug": "beehiiv-mcp",
@@ -97,8 +101,8 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.beehiiv.com/support/article/39255979546263-getting-started-with-the-beehiiv-mcp",
-            "https://developers.beehiiv.com/llms.txt"
+            "https://developers.beehiiv.com/_mcp/server",
+            "https://www.beehiiv.com/support/article/39255979546263-getting-started-with-the-beehiiv-mcp"
           ]
         },
         "auth": {
@@ -107,7 +111,7 @@
             {
               "use": [
                 {
-                  "id": "beehiiv_oauth_client",
+                  "id": "beehiiv_mcp_conn",
                   "mechanics": {
                     "source": "well-known"
                   }
@@ -116,7 +120,7 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://developers.beehiiv.com/llms.txt",
+                  "https://developers.beehiiv.com/_mcp/server",
                   "https://www.beehiiv.com/support/article/39255979546263-getting-started-with-the-beehiiv-mcp"
                 ]
               }
@@ -130,33 +134,45 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T10:50:53.553Z",
+  "discoveredAt": "2026-07-02T16:18:16.938Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 119976,
-    "completion_tokens": 1052,
-    "total_tokens": 121028
+    "prompt_tokens": 191014,
+    "completion_tokens": 1595,
+    "total_tokens": 192609
   },
   "visited": [
     "https://developers.beehiiv.com/",
+    "https://developers.beehiiv.com/_mcp/server",
     "https://developers.beehiiv.com/api-reference/authors/index",
+    "https://developers.beehiiv.com/api-reference/authors/index.md",
     "https://developers.beehiiv.com/llms.txt",
     "https://developers.beehiiv.com/oauth2",
+    "https://developers.beehiiv.com/oauth2.md",
     "https://developers.beehiiv.com/welcome/create-an-api-key",
+    "https://developers.beehiiv.com/welcome/create-an-api-key.md",
     "https://developers.beehiiv.com/welcome/getting-started",
-    "https://github.com/langchain-ai/mcpdoc",
-    "https://www.apollographql.com/blog/building-mcp-tools-with-graphql-a-better-way-to-connect-llms-to-your-api",
-    "https://www.beehiiv.com/support/article/39255979546263-getting-started-with-the-beehiiv-mcp?srsltid=AfmBOoqFdKm-S9uR6ZtMdPGzNNsq_1tHb392h65tKcppt7ttXziTCT3_",
-    "https://www.youtube.com/watch?v=fk2WEVZfheI"
+    "https://github.com/deldrid1/beehiiv-cli",
+    "https://mcpservers.org/servers/danvega/beehiiv-mcp-server",
+    "https://product.beehiiv.com/p/beehiiv-mcp",
+    "https://www.beehiiv.com/support/article/39255979546263-getting-started-with-the-beehiiv-mcp?srsltid=AfmBOopwvifpe2KmXZUH4GFdzVu4cQbOms-P7IbbeluRDHHFp5CrjjoP"
   ],
   "grounding": [
+    "https://api.beehiiv.com/v2",
+    "https://api.beehiiv.com/v2/publications/pub_00000000-0000-0000-0000-000000000000/authors",
+    "https://api.beehiiv.com/v2/publications/{publicationId}/authors",
+    "https://app.beehiiv.com/",
     "https://app.beehiiv.com/custom_fields",
     "https://app.beehiiv.com/login",
+    "https://app.beehiiv.com/oauth/",
+    "https://app.beehiiv.com/oauth/authorize?client_id=WDgKDt_bHOXUfWRhGf2ovKZmFHQ9r_Erd01IPmz_boc&redirect_uri=http%3A%2F%2Flocalhost%3A3008%2Fcallback&response_type=code&scope=posts%3Aread&state=12345678",
     "https://app.beehiiv.com/settings/publication/general",
     "https://app.beehiiv.com/settings/workspace/mcp",
     "https://app.beehiiv.com/signup",
+    "https://assets.beehiiv.com/example.png",
     "https://beehiivhelp.zendesk.com/hc/en-us/articles/41262491804439",
     "https://devel",
+    "https://developers.beehiiv.com",
     "https://developers.beehiiv.com/",
     "https://developers.beehiiv.com/_mcp/server",
     "https://developers.beehiiv.com/api-reference/advertisement-opportunities/index",
@@ -343,11 +359,16 @@
     "https://developers.beehiiv.com/welcome/pagination.md",
     "https://developers.beehiiv.com/welcome/rate-limiting",
     "https://developers.beehiiv.com/welcome/rate-limiting.md",
-    "https://github.com/langchain-ai/mcpdoc",
+    "https://github.com/deldrid1/beehiiv-cli",
+    "https://instagram.com/janedoe",
+    "https://linkedin.com/in/janedoe",
     "https://mcp.beehiiv.com/mcp?account=1",
     "https://mcp.beehiiv.com/mcp?account=2",
     "https://mcp.beehiiv.com/mcp?account=3",
-    "https://www.apollographql.com/blog/building-mcp-tools-with-graphql-a-better-way-to-connect-llms-to-your-api",
+    "https://mcpservers.org/servers/danvega/beehiiv-mcp-server",
+    "https://product.beehiiv.com/p/beehiiv-mcp",
+    "https://security.beehiiv.com",
+    "https://support.beehiiv.com/hc/en-us",
     "https://www.beehiiv.com/#h_01KMGPRGYXBGJ2K6EBZSP8JERZ-frequently-asked-questions-about-the-beehiiv-mcp",
     "https://www.beehiiv.com/#h_01KQFD54WAFVH01ZT90QQGCSVD-how-to-connect-your-ai-to-the-beehiiv-mcp",
     "https://www.beehiiv.com/#h_01KQFD54WFKAY9Q14JB35MTMF7-mcp-vs-api-which-should-you-use",
@@ -364,19 +385,62 @@
     "https://www.beehiiv.com/#h_01KV8E9J80J180V7E77EJS42S0-website",
     "https://www.beehiiv.com/#h_01KV8E9J813AX19VSCPP0Y0FXN-what-you-cant-do-via-mcp",
     "https://www.beehiiv.com/#h_01KW9XVXC1Q2J5T8FKDBN9QWBC-connecting-the-mcp-to-multiple-workspaces",
+    "https://www.beehiiv.com/ad-network.md",
+    "https://www.beehiiv.com/beehiiv-for/business.md",
+    "https://www.beehiiv.com/beehiiv-for/content-creators.md",
+    "https://www.beehiiv.com/beehiiv-for/journalism.md",
+    "https://www.beehiiv.com/blog",
+    "https://www.beehiiv.com/case-studies.md",
+    "https://www.beehiiv.com/comparisons.md",
+    "https://www.beehiiv.com/comparisons/activecampaign.md",
+    "https://www.beehiiv.com/comparisons/convertkit.md",
+    "https://www.beehiiv.com/comparisons/klaviyo.md",
+    "https://www.beehiiv.com/comparisons/mailchimp.md",
+    "https://www.beehiiv.com/comparisons/mailer-lite.md",
+    "https://www.beehiiv.com/comparisons/substack.md",
     "https://www.beehiiv.com/demo/form",
+    "https://www.beehiiv.com/enterprise.md",
     "https://www.beehiiv.com/features",
+    "https://www.beehiiv.com/features.md",
+    "https://www.beehiiv.com/features/ab-testing.md",
+    "https://www.beehiiv.com/features/analytics.md",
+    "https://www.beehiiv.com/features/artificial-intelligence.md",
+    "https://www.beehiiv.com/features/automations.md",
+    "https://www.beehiiv.com/features/boosts-earn.md",
+    "https://www.beehiiv.com/features/boosts-grow.md",
+    "https://www.beehiiv.com/features/digital-products.md",
+    "https://www.beehiiv.com/features/direct-sponsorships.md",
+    "https://www.beehiiv.com/features/dynamic-content.md",
+    "https://www.beehiiv.com/features/link-in-bio.md",
+    "https://www.beehiiv.com/features/podcasts.md",
+    "https://www.beehiiv.com/features/premium-subscriptions.md",
+    "https://www.beehiiv.com/features/recommendations.md",
+    "https://www.beehiiv.com/features/referral-program.md",
+    "https://www.beehiiv.com/features/segmentation.md",
+    "https://www.beehiiv.com/i-am-a/founder.md",
+    "https://www.beehiiv.com/i-am-a/independent-journalist.md",
+    "https://www.beehiiv.com/i-am-a/influencer.md",
+    "https://www.beehiiv.com/i-am-a/newsroom.md",
+    "https://www.beehiiv.com/i-am-a/publisher.md",
+    "https://www.beehiiv.com/i-am-a/small-business.md",
+    "https://www.beehiiv.com/i-am-a/startup.md",
+    "https://www.beehiiv.com/i-am-a/writer.md",
+    "https://www.beehiiv.com/integrations.md",
+    "https://www.beehiiv.com/llms-full.txt",
+    "https://www.beehiiv.com/newsletter-platform.md",
     "https://www.beehiiv.com/pricing",
+    "https://www.beehiiv.com/pricing.md",
     "https://www.beehiiv.com/support",
     "https://www.beehiiv.com/support/article/36759164012439-using-the-send-api-and-create-post-endpoint",
     "https://www.beehiiv.com/support/article/37992518472215-sending-beehiiv-posts-to-an-external-cms",
-    "https://www.beehiiv.com/support/article/39255979546263-getting-started-with-the-beehiiv-mcp?srsltid=AfmBOoqFdKm-S9uR6ZtMdPGzNNsq_1tHb392h65tKcppt7ttXziTCT3_",
+    "https://www.beehiiv.com/support/article/39255979546263-getting-started-with-the-beehiiv-mcp?srsltid=AfmBOopwvifpe2KmXZUH4GFdzVu4cQbOms-P7IbbeluRDHHFp5CrjjoP",
     "https://www.beehiiv.com/support/article/39319369945367-setting-up-s3-compatible-storage-integrations",
     "https://www.beehiiv.com/support/article/39454763210903-where-to-find-things-in-the-new-side-panel-menu",
     "https://www.beehiiv.com/support/article/41262491804439-what-you-can-do-with-the-beehiiv-mcp",
     "https://www.beehiiv.com/support/article/41298215895319-displaying-beehiiv-skills-on-your-linkedin-profile",
     "https://www.beehiiv.com/support/category/21554629356823-integrations-best-practices",
     "https://www.beehiiv.com/support/category/21554629356823-integrations-best-practices#9367045101719-other-integrations",
-    "https://www.youtube.com/watch?v=fk2WEVZfheI"
+    "https://www.beehiiv.com/web-builder.md",
+    "https://www.cloudflare.com/learning/serverless/glossary/client-side-vs-server-side/"
   ]
 }

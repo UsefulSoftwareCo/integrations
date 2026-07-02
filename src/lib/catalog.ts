@@ -15,6 +15,7 @@ export interface DomainSummary {
   total: number;
   formats: Partial<Record<Kind, number>>;
   popularity: number;
+  devtool: boolean;
   description: string;
 }
 
@@ -27,16 +28,18 @@ const DOMAINS: DomainSummary[] = (() => {
     if (!d) continue;
     let g = map.get(d);
     if (!g) {
-      g = { domain: d, icon: faviconUrl(d), total: 0, formats: {}, popularity: 0, description: "" };
+      g = { domain: d, icon: faviconUrl(d), total: 0, formats: {}, popularity: 0, devtool: false, description: "" };
       map.set(d, g);
     }
     g.total++;
     g.formats[r.kind] = (g.formats[r.kind] ?? 0) + 1;
     g.popularity = Math.max(g.popularity, r.popularity ?? 0);
+    g.devtool ||= r.devtool === true;
     if (!g.description && r.description) g.description = r.description.replace(/\s+/g, " ").slice(0, 110);
   }
+  // Dev tools first — the audience's daily drivers — then popularity.
   return [...map.values()].sort(
-    (a, b) => b.popularity - a.popularity || b.total - a.total || a.domain.localeCompare(b.domain),
+    (a, b) => Number(b.devtool) - Number(a.devtool) || b.popularity - a.popularity || b.total - a.total || a.domain.localeCompare(b.domain),
   );
 })();
 

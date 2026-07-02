@@ -10,81 +10,25 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T12:21:18.074Z",
-    "summary": "DoorDash exposes the Drive API publicly with access-key/JWT auth, plus Drive (classic) and Marketplace for Retailers docs surfaced but their auth/spec details weren’t fully confirmed.",
+    "discoveredAt": "2026-07-02T16:22:13.288Z",
+    "summary": "DoorDash exposes three developer HTTP APIs: Drive, Marketplace, and Marketplace for Retailers; Drive and the Marketplace APIs use JWT Bearer auth minted from the Developer Portal access key, while Drive (classic) was found but its auth could not be pinned from the pages read.",
     "credentials": {
-      "dd_access_key": {
-        "type": "api_key",
-        "label": "DoorDash Drive access key",
-        "generateUrl": "https://developer.doordash.com/portal",
-        "setup": "Go to the [Developer Portal](https://developer.doordash.com/portal), sign in, open **Credentials**, then click **+** to create an access key. Choose the environment you need: **Sandbox** for testing, or **Production** only after production access is approved. Copy the key once and store it securely; DoorDash notes the secret is not shown again after closing the modal.",
+      "doordash_jwt": {
+        "type": "jwt",
+        "label": "DoorDash JWT",
+        "generateUrl": "https://developer.doordash.com/portal/",
+        "setup": "Go to the [Developer Portal](https://developer.doordash.com/portal/) and sign in. For Drive, create an access key in **Credentials** by clicking the `+` icon; use that key to mint a JWT. For Marketplace, use the portal flow described in the [JWT guide](https://developer.doordash.com/en-US/docs/marketplace/how_to/JWTs).",
         "acquisition": "manual"
       },
-      "dd_jwt": {
-        "type": "bearer",
-        "label": "DoorDash Drive JWT",
-        "generateUrl": "https://developer.doordash.com/portal",
-        "setup": "Use your DoorDash Drive access key from the [Developer Portal](https://developer.doordash.com/portal) to mint a short-lived JWT for API requests. DoorDash says the JWT lifetime is capped at 30 minutes, so regenerate it when it expires. Treat it like a password and keep it in a secure store or vault.",
+      "doordash_drive_access_key": {
+        "type": "api_key",
+        "label": "Drive access key",
+        "generateUrl": "https://developer.doordash.com/portal/",
+        "setup": "Open the [Developer Portal](https://developer.doordash.com/portal/), sign in, open **Credentials**, click the `+` icon, create a new access key (the guide suggests naming it `test-app`), and copy the generated key. Use it to sign JWTs for the Drive API.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
-      {
-        "slug": "doordash-drive-api",
-        "name": "DoorDash Drive API",
-        "type": "http",
-        "docs": "https://developer.doordash.com/en-US/api/drive/",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://developer.doordash.com/en-US/api/drive/",
-            "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started/",
-            "https://developer.doordash.com/en-US/docs/drive/how_to/manage_credentials"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "dd_jwt",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearerAuth"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://developer.doordash.com/en-US/api/drive/",
-                  "https://developer.doordash.com/en-US/docs/drive/how_to/manage_credentials"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "dd_access_key",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "apiKeyAuth"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started/",
-                  "https://developer.doordash.com/en-US/docs/drive/how_to/manage_credentials"
-                ]
-              }
-            }
-          ]
-        },
-        "spec": "https://openapi.doordash.com/drive/v2/openapi.json"
-      },
       {
         "slug": "doordash-drive-classic-api",
         "name": "DoorDash Drive (classic) API",
@@ -99,59 +43,184 @@
         "auth": {
           "status": "unknown"
         },
-        "spec": "https://openapi.doordash.com/drive_classic/openapi.json"
+        "spec": "https://openapi.doordash.com/drive/classic",
+        "url": "https://openapi.doordash.com/drive/classic"
+      },
+      {
+        "slug": "doordash-drive-api",
+        "name": "DoorDash Drive API",
+        "type": "http",
+        "docs": "https://developer.doordash.com/en-US/api/drive/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.doordash.com/en-US/api/drive/",
+            "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "doordash_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started/",
+                  "https://developer.doordash.com/en-US/api/drive/"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://openapi.doordash.com/drive/v1",
+        "url": "https://openapi.doordash.com/drive/v1"
+      },
+      {
+        "slug": "doordash-marketplace-api",
+        "name": "DoorDash Marketplace API",
+        "type": "http",
+        "docs": "https://developer.doordash.com/en-US/api/marketplace/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.doordash.com/en-US/api/marketplace/",
+            "https://developer.doordash.com/en-US/docs/marketplace/how_to/JWTs"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "doordash_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.doordash.com/en-US/docs/marketplace/how_to/JWTs",
+                  "https://developer.doordash.com/en-US/api/marketplace/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://openapi.doordash.com/marketplace"
+      },
+      {
+        "slug": "doordash-marketplace-for-retailers-api",
+        "name": "DoorDash Marketplace for Retailers API",
+        "type": "http",
+        "docs": "https://developer.doordash.com/en-US/api/marketplace_v2/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.doordash.com/en-US/docs/marketplace/retail/catalog_management/overview/",
+            "https://developer.doordash.com/en-US/api/marketplace_v2/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "doordash_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.doordash.com/en-US/docs/marketplace/retail/catalog_management/overview/",
+                  "https://developer.doordash.com/en-US/docs/marketplace/how_to/JWTs"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://openapi.doordash.com/marketplace/api/v2/items"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T12:21:18.074Z",
+  "discoveredAt": "2026-07-02T16:22:13.288Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 160989,
-    "completion_tokens": 1050,
-    "total_tokens": 162039
+    "prompt_tokens": 116718,
+    "completion_tokens": 1687,
+    "total_tokens": 118405
   },
   "visited": [
     "https://developer.doordash.com/en-US/",
     "https://developer.doordash.com/en-US/api/drive/",
     "https://developer.doordash.com/en-US/api/drive_classic",
-    "https://developer.doordash.com/en-US/api/marketplace_v2",
-    "https://developer.doordash.com/en-US/docs/drive/how_to/manage_credentials",
-    "https://developer.doordash.com/en-US/docs/drive/overview/about_drive/",
+    "https://developer.doordash.com/en-US/api/marketplace/",
+    "https://developer.doordash.com/en-US/api/marketplace_v2/",
     "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started/",
-    "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started_sdk/",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/JWTs",
     "https://developer.doordash.com/en-US/docs/marketplace/retail/catalog_management/overview/",
     "https://github.com/amannm/doordash-mcp",
     "https://mcpservers.org/servers/amannm/doordash-mcp"
   ],
   "grounding": [
-    "https://archiveprogram.github.com",
     "https://code.visualstudio.com/",
     "https://developer.doordash.com/",
     "https://developer.doordash.com/#",
     "https://developer.doordash.com/#__docusaurus_skipToContent_fallback",
+    "https://developer.doordash.com/#anatomy-of-a-jwt",
+    "https://developer.doordash.com/#catalog-management-api",
     "https://developer.doordash.com/#create-a-delivery",
-    "https://developer.doordash.com/#create-a-project",
     "https://developer.doordash.com/#create-an-access-key",
-    "https://developer.doordash.com/#creating-an-access-key",
+    "https://developer.doordash.com/#creating-a-jwt",
+    "https://developer.doordash.com/#faq",
     "https://developer.doordash.com/#finish-up",
     "https://developer.doordash.com/#generate-a-jwt",
-    "https://developer.doordash.com/#generate-a-temporary-jwt",
-    "https://developer.doordash.com/#get-started",
     "https://developer.doordash.com/#get-the-status-of-your-delivery",
+    "https://developer.doordash.com/#getting-started",
+    "https://developer.doordash.com/#header",
     "https://developer.doordash.com/#install-a-jwt-library",
     "https://developer.doordash.com/#install-pre-requisites-and-create-a-project",
-    "https://developer.doordash.com/#integration-process-overview",
-    "https://developer.doordash.com/#keeping-your-credentials-safe",
     "https://developer.doordash.com/#make-a-jwt",
-    "https://developer.doordash.com/#next-steps",
+    "https://developer.doordash.com/#overview-1",
+    "https://developer.doordash.com/#payload",
     "https://developer.doordash.com/#prerequisites",
+    "https://developer.doordash.com/#protecting-your-secret",
+    "https://developer.doordash.com/#request",
+    "https://developer.doordash.com/#response",
     "https://developer.doordash.com/#sign-into-the-developer-portal",
+    "https://developer.doordash.com/#signature",
     "https://developer.doordash.com/#table-of-contents",
     "https://developer.doordash.com/#use-the-delivery-simulator",
+    "https://developer.doordash.com/#verification",
     "https://developer.doordash.com/api/drive",
+    "https://developer.doordash.com/api/marketplace_legacy",
     "https://developer.doordash.com/docs/drive/overview/about_drive",
     "https://developer.doordash.com/docs/drive/support",
     "https://developer.doordash.com/docs/drive/tutorials/get_started",
+    "https://developer.doordash.com/docs/marketplace/how_to/JWTs",
     "https://developer.doordash.com/docs/welcome",
     "https://developer.doordash.com/en-US/",
     "https://developer.doordash.com/en-US/api/ads",
@@ -159,8 +228,11 @@
     "https://developer.doordash.com/en-US/api/drive/",
     "https://developer.doordash.com/en-US/api/drive_classic",
     "https://developer.doordash.com/en-US/api/marketplace",
+    "https://developer.doordash.com/en-US/api/marketplace/",
     "https://developer.doordash.com/en-US/api/marketplace_legacy",
     "https://developer.doordash.com/en-US/api/marketplace_v2",
+    "https://developer.doordash.com/en-US/api/marketplace_v2/",
+    "https://developer.doordash.com/en-US/api/marketplace_v2/#tag/ItemManagementEndpoints/operation/batchAddItems",
     "https://developer.doordash.com/en-US/api/reporting",
     "https://developer.doordash.com/en-US/blog",
     "https://developer.doordash.com/en-US/docs/drive/how_to/Drive_DSX/build_for_dsx",
@@ -168,18 +240,10 @@
     "https://developer.doordash.com/en-US/docs/drive/how_to/Drive_DSX/how_to_dsx_delivery_tracking",
     "https://developer.doordash.com/en-US/docs/drive/how_to/Drive_DSX/how_to_shopping_complete_webhook",
     "https://developer.doordash.com/en-US/docs/drive/how_to/Drive_DSX/how_to_subs_other_shopping_use_cases",
-    "https://developer.doordash.com/en-US/docs/drive/how_to/add_members",
     "https://developer.doordash.com/en-US/docs/drive/how_to/build_for_restaurants",
-    "https://developer.doordash.com/en-US/docs/drive/how_to/build_for_restaurants/",
-    "https://developer.doordash.com/en-US/docs/drive/how_to/build_for_restaurants/#a-validation-checklist-prior-to-requesting-a-demo",
-    "https://developer.doordash.com/en-US/docs/drive/how_to/configure_sms",
-    "https://developer.doordash.com/en-US/docs/drive/how_to/get_production_access",
-    "https://developer.doordash.com/en-US/docs/drive/how_to/manage_credentials",
     "https://developer.doordash.com/en-US/docs/drive/how_to/quote_deliveries",
     "https://developer.doordash.com/en-US/docs/drive/how_to/return_to_pickup/",
-    "https://developer.doordash.com/en-US/docs/drive/how_to/use_delivery_simulator",
     "https://developer.doordash.com/en-US/docs/drive/overview/about_drive",
-    "https://developer.doordash.com/en-US/docs/drive/overview/about_drive/",
     "https://developer.doordash.com/en-US/docs/drive/overview/faqs",
     "https://developer.doordash.com/en-US/docs/drive/overview/integration_requirements",
     "https://developer.doordash.com/en-US/docs/drive/overview/pricing_payment",
@@ -189,148 +253,67 @@
     "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started/",
     "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started_postman",
     "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started_sdk",
-    "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started_sdk/",
     "https://developer.doordash.com/en-US/docs/drive/tutorials/get_started_woocommerce",
-    "https://developer.doordash.com/en-US/docs/drive_classic/overview/about_drive_classic",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/JWTs",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/add_members",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/create_a_provider",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/create_a_test_order",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/create_a_test_store",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/create_webhook_subscription",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/ingest_and_update_menus",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/production_access",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/request_support",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/setup_ssio",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/table_of_contents",
+    "https://developer.doordash.com/en-US/docs/marketplace/how_to/test_integration",
+    "https://developer.doordash.com/en-US/docs/marketplace/overview/about_marketplace",
+    "https://developer.doordash.com/en-US/docs/marketplace/overview/release_notes",
+    "https://developer.doordash.com/en-US/docs/marketplace/overview/terms_of_use",
+    "https://developer.doordash.com/en-US/docs/marketplace/retail/about/integration_options",
+    "https://developer.doordash.com/en-US/docs/marketplace/retail/catalog_management/overview",
     "https://developer.doordash.com/en-US/docs/marketplace/retail/catalog_management/overview/",
+    "https://developer.doordash.com/en-US/docs/marketplace/retail/catalog_management/passthrough_catalog_api_requirements",
+    "https://developer.doordash.com/en-US/docs/marketplace/retail/catalog_management/reference",
+    "https://developer.doordash.com/en-US/docs/marketplace/retail/catalog_management/supported_attribute",
+    "https://developer.doordash.com/en-US/docs/marketplace/retail/how_to/catalog_pull_job",
+    "https://developer.doordash.com/en-US/docs/marketplace/retail/inventory_pricing/modifiers",
     "https://developer.doordash.com/en-US/docs/welcome",
     "https://developer.doordash.com/es-US/",
+    "https://developer.doordash.com/es-US/docs/marketplace/how_to/JWTs",
     "https://developer.doordash.com/fr-CA/",
+    "https://developer.doordash.com/fr-CA/docs/marketplace/how_to/JWTs",
     "https://developer.doordash.com/portal",
     "https://developer.doordash.com/portal/",
     "https://developer.doordash.com/portal/support",
     "https://developer.doordash.com/signup",
     "https://discord.com/invite/8Z5vgFw8Qf",
     "https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/downloads-list.html",
-    "https://docs.github.com",
-    "https://docs.github.com/",
-    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
-    "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
-    "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
     "https://docs.google.com/forms/d/e/1FAIpQLSfggU_NjGWCdi9vyWUicrnzJmtu9vC4zgbfSC3ROwSvW4eV2g/viewform",
     "https://doordash.statuspage.io",
     "https://dotnet.microsoft.com/en-us/",
-    "https://github.blog",
-    "https://github.blog/changelog",
-    "https://github.com/#",
-    "https://github.com/#readme-ov-file",
-    "https://github.com/#start-of-content",
     "https://github.com/JetBrains/kotlin",
-    "https://github.com/accelerator",
-    "https://github.com/amannm",
     "https://github.com/amannm/doordash-mcp",
-    "https://github.com/amannm/doordash-mcp.git",
-    "https://github.com/amannm/doordash-mcp/actions",
-    "https://github.com/amannm/doordash-mcp/activity",
-    "https://github.com/amannm/doordash-mcp/blob/main/.gitignore",
-    "https://github.com/amannm/doordash-mcp/blob/main/README.md",
-    "https://github.com/amannm/doordash-mcp/blob/main/eslint.config.js",
-    "https://github.com/amannm/doordash-mcp/blob/main/index.js",
-    "https://github.com/amannm/doordash-mcp/blob/main/jest.config.js",
-    "https://github.com/amannm/doordash-mcp/blob/main/package-lock.json",
-    "https://github.com/amannm/doordash-mcp/blob/main/package.json",
-    "https://github.com/amannm/doordash-mcp/branches",
-    "https://github.com/amannm/doordash-mcp/commit/30e7383c98812a20f7047c31c9e4f004d1071a5d",
-    "https://github.com/amannm/doordash-mcp/commit/7ca5628590b9f3e33f92b844e1f3f65f7688d7ea",
-    "https://github.com/amannm/doordash-mcp/commit/f02f275ef85af5d3759f554b83a7d1dfda45bd4a",
-    "https://github.com/amannm/doordash-mcp/commit/fc8cb8cdff9630a1776c79398db23360f37ccf98",
-    "https://github.com/amannm/doordash-mcp/commits/main/",
-    "https://github.com/amannm/doordash-mcp/commits?author=amannm",
-    "https://github.com/amannm/doordash-mcp/forks",
-    "https://github.com/amannm/doordash-mcp/graphs/contributors",
-    "https://github.com/amannm/doordash-mcp/issues",
-    "https://github.com/amannm/doordash-mcp/projects",
-    "https://github.com/amannm/doordash-mcp/pulls",
-    "https://github.com/amannm/doordash-mcp/pulse",
-    "https://github.com/amannm/doordash-mcp/releases",
-    "https://github.com/amannm/doordash-mcp/search?l=javascript",
-    "https://github.com/amannm/doordash-mcp/security",
-    "https://github.com/amannm/doordash-mcp/stargazers",
-    "https://github.com/amannm/doordash-mcp/tags",
-    "https://github.com/amannm/doordash-mcp/tree/main/__tests__",
-    "https://github.com/amannm/doordash-mcp/watchers",
-    "https://github.com/claude",
-    "https://github.com/collections",
-    "https://github.com/contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Famannm%2Fdoordash-mcp&report=amannm+%28user%29",
-    "https://github.com/customer-stories",
-    "https://github.com/enterprise",
-    "https://github.com/enterprise/startups",
-    "https://github.com/features",
-    "https://github.com/features/actions",
-    "https://github.com/features/ai/github-app",
-    "https://github.com/features/code-review",
-    "https://github.com/features/codespaces",
-    "https://github.com/features/copilot",
-    "https://github.com/features/copilot/copilot-business",
-    "https://github.com/features/issues",
-    "https://github.com/login?return_to=%2Famannm%2Fdoordash-mcp",
-    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Famannm%2Fdoordash-mcp",
-    "https://github.com/marketplace",
-    "https://github.com/mcp",
-    "https://github.com/orgs/community/discussions",
-    "https://github.com/partners",
-    "https://github.com/premium-support",
-    "https://github.com/pricing",
-    "https://github.com/resources",
-    "https://github.com/resources/articles",
-    "https://github.com/resources/articles?topic=ai",
-    "https://github.com/resources/articles?topic=devops",
-    "https://github.com/resources/articles?topic=security",
-    "https://github.com/resources/articles?topic=software-development",
-    "https://github.com/resources/events",
-    "https://github.com/resources/whitepapers",
-    "https://github.com/security",
-    "https://github.com/security/advanced-security",
-    "https://github.com/security/advanced-security/code-security",
-    "https://github.com/security/advanced-security/secret-protection",
-    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=amannm%2Fdoordash-mcp",
-    "https://github.com/solutions",
-    "https://github.com/solutions/executive-insights",
-    "https://github.com/solutions/industry",
-    "https://github.com/solutions/industry/financial-services",
-    "https://github.com/solutions/industry/government",
-    "https://github.com/solutions/industry/healthcare",
-    "https://github.com/solutions/industry/manufacturing",
-    "https://github.com/solutions/industry/nonprofits",
-    "https://github.com/solutions/use-case",
-    "https://github.com/solutions/use-case/app-modernization",
-    "https://github.com/solutions/use-case/ci-cd",
-    "https://github.com/solutions/use-case/devops",
-    "https://github.com/solutions/use-case/devsecops",
-    "https://github.com/sponsors",
-    "https://github.com/team",
-    "https://github.com/topics",
-    "https://github.com/trending",
-    "https://github.com/trust-center",
-    "https://github.com/users/amannm/packages?repo_name=doordash-mcp",
-    "https://github.com/why-github",
-    "https://github.community/",
     "https://gradle.org/install/",
     "https://help.doordash.com/consumers/s/privacy-policy-us",
-    "https://maintainers.github.com",
     "https://mcpservers.org/servers/amannm/doordash-mcp",
     "https://nodejs.dev/learn/how-to-install-nodejs",
-    "https://openapi.doordash.com/drive",
     "https://openapi.doordash.com/drive/v1/estimates",
     "https://openapi.doordash.com/drive/v1/validations",
     "https://openapi.doordash.com/drive/v2/quotes",
+    "https://openapi.doordash.com/marketplace",
+    "https://openapi.doordash.com/marketplace/api/v1/menus",
+    "https://openapi.doordash.com/marketplace/api/v1/menus/{id}",
     "https://openapi.doordash.com/marketplace/api/v2/items",
+    "https://pointofsale.doordash.com",
     "https://redocly.com/redoc/",
-    "https://securitylab.github.com",
-    "https://skills.github.com",
-    "https://stars.github.com",
-    "https://support.github.com",
-    "https://support.github.com?tags=dotcom-footer",
     "https://visualstudio.microsoft.com/",
     "https://www.doordash.com/about/",
     "https://www.doordash.com/accessibility/",
     "https://www.doordash.com/careers/",
     "https://www.doordash.com/consumer/personalize",
     "https://www.doordash.com/terms/",
-    "https://www.githubstatus.com/",
     "https://www.jetbrains.com/idea/",
     "https://www.jetbrains.com/rider/",
-    "https://www.npmjs.com/package/@doordash/sdk",
     "https://www.php.net/",
     "https://www.python.org/"
   ]

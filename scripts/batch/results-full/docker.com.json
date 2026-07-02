@@ -10,28 +10,21 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T12:19:03.057Z",
-    "summary": "Docker.com exposes the Docker Hub API (OpenAPI REST) and the experimental Docker Hub CLI tool; both authenticate with Docker account login, PATs, or organization access tokens.",
+    "discoveredAt": "2026-07-02T16:22:34.369Z",
+    "summary": "Docker exposes the Docker Hub API, Docker Hub CLI (hub-tool), and the Docker Engine API; Hub auth uses Docker credentials/PAT or org access tokens, while Engine auth is unknown at the API surface level.",
     "credentials": {
-      "docker_dockerhub_login": {
+      "docker_hub_pat": {
         "type": "bearer",
-        "label": "Docker Hub account login token",
-        "generateUrl": "https://hub.docker.com/",
-        "setup": "Use your Docker Hub account credentials to mint a bearer token for Docker Hub API calls. The docs say most endpoints require authenticating with your Docker credentials, and the `Create an authentication token` route returns a bearer token. If your org enforces SSO, use a personal access token instead of a password. Start from your Docker Hub account at [hub.docker.com](https://hub.docker.com/) and create the token via the Docker Hub UI or by logging in through the API.",
-        "acquisition": "manual"
-      },
-      "docker_pat": {
-        "type": "bearer",
-        "label": "Docker personal access token (PAT)",
+        "label": "Docker Hub personal access token (PAT)",
         "generateUrl": "https://hub.docker.com/settings/security",
-        "setup": "Create a Docker personal access token in your Docker account security settings. Docker recommends PATs as the more secure alternative to passwords, and they are required for some SSO-enforced organizations. Go to [Docker Hub security settings](https://hub.docker.com/settings/security) and create a new access token, then use it wherever Docker accepts a password or bearer-token login flow.",
+        "setup": "Go to [Docker Hub](https://hub.docker.com/), sign in, then open [Security settings](https://hub.docker.com/settings/security) and create a new personal access token. Use this token as the password when exchanging Docker credentials for an API bearer token. Prefer PATs over your account password.",
         "acquisition": "manual"
       },
-      "docker_oat": {
+      "docker_hub_oat": {
         "type": "bearer",
-        "label": "Docker organization access token",
-        "generateUrl": "https://hub.docker.com/settings/org-tokens",
-        "setup": "Create an organization access token in Docker Hub for automation and CI/CD. The docs say these tokens are managed by organization owners and are intended for automated systems. Go to [organization settings](https://hub.docker.com/settings/org-tokens) in Docker Hub, create a new org token, and scope it to the required org resources and permissions.",
+        "label": "Docker Hub organization access token (OAT)",
+        "generateUrl": "https://hub.docker.com/orgs",
+        "setup": "In Docker Hub, open your organization settings, then the [access token management](https://docs.docker.com/reference/api/hub/latest/) flow for organization access tokens. These tokens are managed by organization owners and are intended for automation. Create one with the scopes your integration needs, then exchange it for a bearer token where required.",
         "acquisition": "manual"
       }
     },
@@ -53,10 +46,12 @@
             {
               "use": [
                 {
-                  "id": "docker_dockerhub_login",
+                  "id": "docker_hub_pat",
                   "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearerAuth"
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
                   }
                 }
               ],
@@ -70,27 +65,12 @@
             {
               "use": [
                 {
-                  "id": "docker_pat",
+                  "id": "docker_hub_oat",
                   "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearerAuth"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.docker.com/reference/api/hub/latest/"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "docker_oat",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearerAuth"
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
                   }
                 }
               ],
@@ -103,18 +83,18 @@
             }
           ]
         },
-        "spec": "https://docs.docker.com/reference/api/hub/latest.yaml"
+        "spec": "https://docs.docker.com/reference/api/hub/latest.yaml",
+        "url": "https://hub.docker.com/v2"
       },
       {
-        "slug": "docker-hub-cli-tool",
-        "name": "Docker Hub CLI tool",
+        "slug": "docker-hub-cli",
+        "name": "Docker Hub CLI",
         "type": "cli",
         "docs": "https://github.com/docker/hub-tool#readme",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.docker.com/reference/api/hub/latest/",
-            "https://github.com/docker/hub-tool#readme"
+            "https://docs.docker.com/reference/api/hub/latest/"
           ]
         },
         "auth": {
@@ -123,7 +103,7 @@
             {
               "use": [
                 {
-                  "id": "docker_dockerhub_login",
+                  "id": "docker_hub_pat",
                   "mechanics": {
                     "source": "cli",
                     "command": "hub-tool login"
@@ -133,73 +113,61 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://github.com/docker/hub-tool#readme"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "docker_pat",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "hub-tool login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://github.com/docker/hub-tool#readme"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "docker_oat",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "hub-tool login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://github.com/docker/hub-tool#readme"
+                  "https://docs.docker.com/reference/api/hub/latest/"
                 ]
               }
             }
           ]
         },
         "command": "hub-tool"
+      },
+      {
+        "slug": "docker-engine-api",
+        "name": "Docker Engine API",
+        "type": "http",
+        "docs": "https://docs.docker.com/reference/api/engine/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.docker.com/reference/api/engine/",
+            "https://docs.docker.com/reference/api/engine/version/v1.43/"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "http://localhost/v1.43"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T12:19:03.057Z",
+  "discoveredAt": "2026-07-02T16:22:34.369Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 149027,
-    "completion_tokens": 1139,
-    "total_tokens": 150166
+    "prompt_tokens": 205886,
+    "completion_tokens": 1140,
+    "total_tokens": 207026
   },
   "visited": [
     "https://docs.docker.com/ai/docker-agent/integrations/mcp/",
-    "https://docs.docker.com/ai/mcp-catalog-and-toolkit/",
+    "https://docs.docker.com/ai/mcp-catalog-and-toolkit/cli/",
+    "https://docs.docker.com/ai/mcp-catalog-and-toolkit/get-started/",
+    "https://docs.docker.com/ai/mcp-catalog-and-toolkit/toolkit/",
     "https://docs.docker.com/ai/model-runner/api-reference/",
-    "https://docs.docker.com/ai/sandboxes/security/credentials/",
-    "https://docs.docker.com/engine/extend/plugins_authorization/",
-    "https://docs.docker.com/enterprise/security/access-tokens/",
-    "https://docs.docker.com/extensions/extensions-sdk/guides/oauth2-flow/",
+    "https://docs.docker.com/reference/",
+    "https://docs.docker.com/reference/api/engine/",
+    "https://docs.docker.com/reference/api/engine/version/v1.43/",
     "https://docs.docker.com/reference/api/hub/latest/",
-    "https://docs.docker.com/security/access-tokens/",
-    "https://github.com/docker/hub-tool#readme"
+    "https://docs.docker.com/reference/api/registry/latest/",
+    "https://github.com/vogler75/graphql-mcp-server",
+    "https://hub.docker.com/r/mcp/text-to-graphql",
+    "https://www.apollographql.com/docs/apollo-mcp-server/deploy",
+    "https://www.docker.com/blog/docker-mcp-ai-agent-developer-setup/"
   ],
   "grounding": [
-    "https://archiveprogram.github.com",
     "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Retry-After",
+    "https://docs.docker.com/#operation/ContainerInspect",
     "https://docs.docker.com/#operation/PostUsersLogin",
+    "https://docs.docker.com/#operation/SystemAuth",
     "https://docs.docker.com/#tag/authentication",
     "https://docs.docker.com/#tag/authentication-api/operation/AuthCreateAccessToken",
     "https://docs.docker.com/ai-overview/",
@@ -336,7 +304,6 @@
     "https://docs.docker.com/docker-hub/",
     "https://docs.docker.com/docker-hub/usage/",
     "https://docs.docker.com/engine/",
-    "https://docs.docker.com/engine/extend/plugins_authorization/",
     "https://docs.docker.com/engine/install/",
     "https://docs.docker.com/engine/install/binaries/",
     "https://docs.docker.com/engine/install/centos/",
@@ -370,133 +337,165 @@
     "https://docs.docker.com/engine/storage/drivers/zfs-driver/",
     "https://docs.docker.com/engine/storage/tmpfs/",
     "https://docs.docker.com/engine/storage/volumes/",
-    "https://docs.docker.com/enterprise/security/access-tokens/",
-    "https://docs.docker.com/extensions/extensions-sdk/guides/oauth2-flow/",
     "https://docs.docker.com/get-started/",
     "https://docs.docker.com/guides/",
     "https://docs.docker.com/manuals/",
     "https://docs.docker.com/reference/",
     "https://docs.docker.com/reference/api/ai-governance/",
+    "https://docs.docker.com/reference/api/engine/",
+    "https://docs.docker.com/reference/api/engine/version/v1.43.yaml",
+    "https://docs.docker.com/reference/api/engine/version/v1.43/",
     "https://docs.docker.com/reference/api/hub/changelog",
     "https://docs.docker.com/reference/api/hub/latest.yaml",
     "https://docs.docker.com/reference/api/hub/latest/",
+    "https://docs.docker.com/reference/api/registry/latest/",
+    "https://docs.docker.com/reference/cli/docker/",
+    "https://docs.docker.com/reference/cli/docker/builder/",
+    "https://docs.docker.com/reference/cli/docker/builder/build/",
+    "https://docs.docker.com/reference/cli/docker/builder/prune/",
+    "https://docs.docker.com/reference/cli/docker/buildx/",
+    "https://docs.docker.com/reference/cli/docker/buildx/bake/",
+    "https://docs.docker.com/reference/cli/docker/buildx/build/",
+    "https://docs.docker.com/reference/cli/docker/buildx/create/",
+    "https://docs.docker.com/reference/cli/docker/buildx/dap/",
+    "https://docs.docker.com/reference/cli/docker/buildx/dap/build/",
+    "https://docs.docker.com/reference/cli/docker/buildx/debug/",
+    "https://docs.docker.com/reference/cli/docker/buildx/debug/build/",
+    "https://docs.docker.com/reference/cli/docker/buildx/dial-stdio/",
+    "https://docs.docker.com/reference/cli/docker/buildx/du/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/export/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/import/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/inspect/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/inspect/attachment/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/logs/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/ls/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/open/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/rm/",
+    "https://docs.docker.com/reference/cli/docker/buildx/history/trace/",
+    "https://docs.docker.com/reference/cli/docker/buildx/imagetools/",
+    "https://docs.docker.com/reference/cli/docker/buildx/imagetools/create/",
+    "https://docs.docker.com/reference/cli/docker/buildx/imagetools/inspect/",
+    "https://docs.docker.com/reference/cli/docker/buildx/inspect/",
+    "https://docs.docker.com/reference/cli/docker/buildx/ls/",
+    "https://docs.docker.com/reference/cli/docker/buildx/policy/",
+    "https://docs.docker.com/reference/cli/docker/buildx/policy/eval/",
+    "https://docs.docker.com/reference/cli/docker/buildx/policy/test/",
+    "https://docs.docker.com/reference/cli/docker/buildx/prune/",
+    "https://docs.docker.com/reference/cli/docker/buildx/rm/",
+    "https://docs.docker.com/reference/cli/docker/buildx/stop/",
+    "https://docs.docker.com/reference/cli/docker/buildx/use/",
+    "https://docs.docker.com/reference/cli/docker/buildx/version/",
+    "https://docs.docker.com/reference/cli/docker/checkpoint/",
+    "https://docs.docker.com/reference/cli/docker/checkpoint/create/",
+    "https://docs.docker.com/reference/cli/docker/checkpoint/ls/",
+    "https://docs.docker.com/reference/cli/docker/checkpoint/rm/",
+    "https://docs.docker.com/reference/cli/docker/compose/",
+    "https://docs.docker.com/reference/cli/docker/compose/alpha/dry-run/",
+    "https://docs.docker.com/reference/cli/docker/compose/alpha/scale/",
+    "https://docs.docker.com/reference/cli/docker/compose/alpha/watch/",
+    "https://docs.docker.com/reference/cli/docker/compose/attach/",
+    "https://docs.docker.com/reference/cli/docker/compose/bridge/",
+    "https://docs.docker.com/reference/cli/docker/compose/bridge/convert/",
+    "https://docs.docker.com/reference/cli/docker/compose/bridge/transformations/",
+    "https://docs.docker.com/reference/cli/docker/compose/bridge/transformations/create/",
+    "https://docs.docker.com/reference/cli/docker/compose/bridge/transformations/list/",
+    "https://docs.docker.com/reference/cli/docker/compose/build/",
+    "https://docs.docker.com/reference/cli/docker/compose/commit/",
+    "https://docs.docker.com/reference/cli/docker/compose/config/",
+    "https://docs.docker.com/reference/cli/docker/compose/convert/",
+    "https://docs.docker.com/reference/cli/docker/compose/cp/",
+    "https://docs.docker.com/reference/cli/docker/compose/create/",
+    "https://docs.docker.com/reference/cli/docker/compose/down/",
+    "https://docs.docker.com/reference/cli/docker/compose/events/",
+    "https://docs.docker.com/reference/cli/docker/compose/exec/",
+    "https://docs.docker.com/reference/cli/docker/compose/export/",
+    "https://docs.docker.com/reference/cli/docker/compose/images/",
+    "https://docs.docker.com/reference/cli/docker/compose/kill/",
+    "https://docs.docker.com/reference/cli/docker/compose/logs/",
+    "https://docs.docker.com/reference/cli/docker/compose/ls/",
+    "https://docs.docker.com/reference/cli/docker/compose/pause/",
+    "https://docs.docker.com/reference/cli/docker/compose/port/",
+    "https://docs.docker.com/reference/cli/docker/compose/ps/",
+    "https://docs.docker.com/reference/cli/docker/compose/publish/",
+    "https://docs.docker.com/reference/cli/docker/compose/pull/",
+    "https://docs.docker.com/reference/cli/docker/compose/push/",
+    "https://docs.docker.com/reference/cli/docker/compose/restart/",
+    "https://docs.docker.com/reference/cli/docker/compose/rm/",
+    "https://docs.docker.com/reference/cli/docker/compose/run/",
+    "https://docs.docker.com/reference/cli/docker/compose/scale/",
+    "https://docs.docker.com/reference/cli/docker/compose/start/",
+    "https://docs.docker.com/reference/cli/docker/compose/stats/",
+    "https://docs.docker.com/reference/cli/docker/compose/stop/",
+    "https://docs.docker.com/reference/cli/docker/compose/top/",
+    "https://docs.docker.com/reference/cli/docker/compose/unpause/",
+    "https://docs.docker.com/reference/cli/docker/compose/up/",
+    "https://docs.docker.com/reference/cli/docker/compose/version/",
+    "https://docs.docker.com/reference/cli/docker/compose/volumes/",
+    "https://docs.docker.com/reference/cli/docker/compose/wait/",
+    "https://docs.docker.com/reference/cli/docker/compose/watch/",
+    "https://docs.docker.com/reference/cli/docker/config/",
+    "https://docs.docker.com/reference/cli/docker/config/create/",
+    "https://docs.docker.com/reference/cli/docker/config/inspect/",
+    "https://docs.docker.com/reference/cli/docker/config/ls/",
+    "https://docs.docker.com/reference/cli/docker/config/rm/",
+    "https://docs.docker.com/reference/cli/docker/container/",
+    "https://docs.docker.com/reference/cli/docker/container/attach/",
+    "https://docs.docker.com/reference/cli/docker/container/commit/",
+    "https://docs.docker.com/reference/cli/docker/container/cp/",
+    "https://docs.docker.com/reference/cli/docker/container/create/",
+    "https://docs.docker.com/reference/cli/docker/container/diff/",
+    "https://docs.docker.com/reference/cli/docker/container/exec/",
+    "https://docs.docker.com/reference/cli/docker/container/export/",
+    "https://docs.docker.com/reference/cli/docker/container/inspect/",
+    "https://docs.docker.com/reference/cli/docker/container/kill/",
+    "https://docs.docker.com/reference/cli/docker/container/logs/",
+    "https://docs.docker.com/reference/cli/docker/container/ls/",
+    "https://docs.docker.com/reference/cli/docker/container/pause/",
+    "https://docs.docker.com/reference/cli/docker/container/port/",
+    "https://docs.docker.com/reference/cli/docker/container/prune/",
+    "https://docs.docker.com/reference/cli/docker/container/rename/",
+    "https://docs.docker.com/reference/cli/docker/container/restart/",
+    "https://docs.docker.com/reference/cli/docker/container/rm/",
+    "https://docs.docker.com/reference/cli/docker/container/run/",
+    "https://docs.docker.com/reference/cli/docker/container/start/",
+    "https://docs.docker.com/reference/cli/docker/container/stats/",
+    "https://docs.docker.com/reference/cli/docker/container/stop/",
+    "https://docs.docker.com/reference/cli/docker/container/top/",
+    "https://docs.docker.com/reference/cli/docker/container/unpause/",
+    "https://docs.docker.com/reference/cli/docker/container/update/",
+    "https://docs.docker.com/reference/cli/docker/container/wait/",
+    "https://docs.docker.com/reference/cli/docker/context/",
+    "https://docs.docker.com/reference/cli/docker/context/create/",
+    "https://docs.docker.com/reference/cli/docker/context/export/",
+    "https://docs.docker.com/reference/cli/docker/context/import/",
+    "https://docs.docker.com/reference/cli/docker/context/inspect/",
+    "https://docs.docker.com/reference/cli/docker/context/ls/",
+    "https://docs.docker.com/reference/cli/docker/context/rm/",
+    "https://docs.docker.com/reference/cli/docker/context/show/",
+    "https://docs.docker.com/reference/cli/docker/context/update/",
+    "https://docs.docker.com/reference/cli/docker/context/use/",
+    "https://docs.docker.com/reference/cli/docker/debug/",
+    "https://docs.docker.com/reference/cli/docker/desktop/",
+    "https://docs.docker.com/reference/cli/docker/desktop/diagnose/",
+    "https://docs.docker.com/reference/cli/docker/desktop/disable/",
+    "https://docs.docker.com/reference/cli/docker/desktop/disable/model-runner/",
+    "https://docs.docker.com/reference/cli/docker/desktop/enable/",
+    "https://docs.docker.com/reference/cli/docker/desktop/enable/model-runner/",
     "https://docs.docker.com/security/access-tokens/",
-    "https://docs.github.com",
-    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
-    "https://github.blog",
-    "https://github.blog/changelog",
-    "https://github.com/#start-of-content",
-    "https://github.com/accelerator",
-    "https://github.com/collections",
-    "https://github.com/customer-stories",
-    "https://github.com/docker",
     "https://github.com/docker/docs/issues/23966",
-    "https://github.com/docker/hub-tool",
     "https://github.com/docker/hub-tool#readme",
-    "https://github.com/docker/hub-tool/actions",
-    "https://github.com/docker/hub-tool/blob/main/.dockerignore",
-    "https://github.com/docker/hub-tool/blob/main/.gitattributes",
-    "https://github.com/docker/hub-tool/blob/main/.gitignore",
-    "https://github.com/docker/hub-tool/blob/main/.golangci.yml",
-    "https://github.com/docker/hub-tool/blob/main/Dockerfile",
-    "https://github.com/docker/hub-tool/blob/main/LICENSE",
-    "https://github.com/docker/hub-tool/blob/main/Makefile",
-    "https://github.com/docker/hub-tool/blob/main/NOTICE",
-    "https://github.com/docker/hub-tool/blob/main/README.md",
-    "https://github.com/docker/hub-tool/blob/main/builder.Makefile",
-    "https://github.com/docker/hub-tool/blob/main/go.mod",
-    "https://github.com/docker/hub-tool/blob/main/go.sum",
-    "https://github.com/docker/hub-tool/blob/main/main.go",
-    "https://github.com/docker/hub-tool/blob/main/vars.mk",
-    "https://github.com/docker/hub-tool/branches",
-    "https://github.com/docker/hub-tool/commit/0ee5a0148b4f35bf4d94967dfb6d1f812245747c",
-    "https://github.com/docker/hub-tool/commit/250b376451f2837fe88ea649a0793102d1a508cb",
-    "https://github.com/docker/hub-tool/commit/74bc560cdbc56bd232c49033c2f37194b7b40e62",
-    "https://github.com/docker/hub-tool/commit/7f68742f5d011f3c55f21a0824586603206e3f95",
-    "https://github.com/docker/hub-tool/commit/916c3fa5f16a92ab1a086fe4a8e96ad0182d6d27",
-    "https://github.com/docker/hub-tool/commit/9928d01beee6a50004313c62f4e54e3d5df34377",
-    "https://github.com/docker/hub-tool/commit/aed196c6f12f30d43330c11b3cc5333f548c32d1",
-    "https://github.com/docker/hub-tool/commit/affdece4ad66ff11f813d12affcef670d460bc62",
-    "https://github.com/docker/hub-tool/commit/d438b2fdfa54c686c5015f480ce17bb207beed01",
-    "https://github.com/docker/hub-tool/commit/d51c87197493f4ae956a27a1f9de4895c8a9da0e",
-    "https://github.com/docker/hub-tool/commit/e91d7c7b16e0f6c630558cd2f46b5d0d8e448b6c",
-    "https://github.com/docker/hub-tool/commit/eae516cca7fcb470f9c2896aee5303438f1b4ecc",
-    "https://github.com/docker/hub-tool/commit/f80523c16fae9cd980c4d54c431b725407a1b668",
-    "https://github.com/docker/hub-tool/commits/main/",
-    "https://github.com/docker/hub-tool/commits?author=silvin-lubecki",
-    "https://github.com/docker/hub-tool/issues",
-    "https://github.com/docker/hub-tool/projects",
-    "https://github.com/docker/hub-tool/pull/222",
-    "https://github.com/docker/hub-tool/pulls",
-    "https://github.com/docker/hub-tool/pulse",
-    "https://github.com/docker/hub-tool/security",
-    "https://github.com/docker/hub-tool/tags",
-    "https://github.com/docker/hub-tool/tree/main/.github",
-    "https://github.com/docker/hub-tool/tree/main/e2e",
-    "https://github.com/docker/hub-tool/tree/main/internal",
-    "https://github.com/docker/hub-tool/tree/main/packaging",
-    "https://github.com/docker/hub-tool/tree/main/pkg",
-    "https://github.com/docker/hub-tool/tree/main/scripts/validate",
-    "https://github.com/enterprise",
-    "https://github.com/enterprise/startups",
-    "https://github.com/features",
-    "https://github.com/features/actions",
-    "https://github.com/features/ai/github-app",
-    "https://github.com/features/code-review",
-    "https://github.com/features/codespaces",
-    "https://github.com/features/copilot",
-    "https://github.com/features/copilot/copilot-business",
-    "https://github.com/features/issues",
-    "https://github.com/login?return_to=%2Fdocker%2Fhub-tool",
-    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fdocker%2Fhub-tool",
-    "https://github.com/marketplace",
-    "https://github.com/mcp",
-    "https://github.com/orgs/community/discussions",
-    "https://github.com/partners",
-    "https://github.com/premium-support",
-    "https://github.com/pricing",
-    "https://github.com/resources",
-    "https://github.com/resources/articles",
-    "https://github.com/resources/articles?topic=ai",
-    "https://github.com/resources/articles?topic=devops",
-    "https://github.com/resources/articles?topic=security",
-    "https://github.com/resources/articles?topic=software-development",
-    "https://github.com/resources/events",
-    "https://github.com/resources/whitepapers",
-    "https://github.com/security/advanced-security",
-    "https://github.com/security/advanced-security/code-security",
-    "https://github.com/security/advanced-security/secret-protection",
-    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=docker%2Fhub-tool",
-    "https://github.com/solutions",
-    "https://github.com/solutions/executive-insights",
-    "https://github.com/solutions/industry",
-    "https://github.com/solutions/industry/financial-services",
-    "https://github.com/solutions/industry/government",
-    "https://github.com/solutions/industry/healthcare",
-    "https://github.com/solutions/industry/manufacturing",
-    "https://github.com/solutions/industry/nonprofits",
-    "https://github.com/solutions/use-case",
-    "https://github.com/solutions/use-case/app-modernization",
-    "https://github.com/solutions/use-case/ci-cd",
-    "https://github.com/solutions/use-case/devops",
-    "https://github.com/solutions/use-case/devsecops",
-    "https://github.com/sponsors",
-    "https://github.com/team",
-    "https://github.com/topics",
-    "https://github.com/trending",
-    "https://github.com/trust-center",
-    "https://github.com/why-github",
+    "https://github.com/vogler75/graphql-mcp-server",
+    "https://hub.docker.com/r/mcp/text-to-graphql",
     "https://hub.docker.com/v2/access-tokens",
     "https://hub.docker.com/v2/access-tokens/{uuid}",
     "https://hub.docker.com/v2/auth/token",
     "https://hub.docker.com/v2/users/2fa-login",
     "https://hub.docker.com/v2/users/login",
-    "https://maintainers.github.com",
     "https://redocly.com/redoc/",
-    "https://securitylab.github.com",
-    "https://skills.github.com",
-    "https://stars.github.com",
-    "https://support.github.com",
+    "https://tools.ietf.org/html/rfc4648#section-5",
+    "https://www.apollographql.com/docs/apollo-mcp-server/deploy",
+    "https://www.docker.com/blog/docker-mcp-ai-agent-developer-setup/",
     "https://www.docker.com/pricing?ref=Docs&refAction=DocsApiHub",
     "https://www.docker.com/resources/the-state-of-agentic-ai-white-paper/"
   ]

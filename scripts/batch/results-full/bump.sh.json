@@ -32,20 +32,28 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:10:00.629Z",
-    "summary": "Bump.sh exposes two REST APIs (public Portal API, token-authenticated Workspace API), two MCP servers (Portal and Workspace, OAuth-protected), and a CLI (`bump`) with token-based login.",
+    "discoveredAt": "2026-07-02T16:18:59.724Z",
+    "summary": "Bump.sh exposes a public Portal API, an authenticated Workspace API, an MCP server at https://developers.bump.sh/mcp, and the Bump CLI (`bump`).",
     "credentials": {
       "bump_oauth": {
-        "type": "oauth2_cc",
-        "label": "Bump.sh OAuth client (for private MCP/server auth)",
-        "generateUrl": "https://bump.sh/oauth/registration",
-        "setup": "Register a client at [OAuth dynamic client registration](https://bump.sh/oauth/registration), then use the resulting client credentials with the OAuth authorization flow. The seed facts indicate the authorization endpoint is `https://bump.sh/oauth/authorize` and the token endpoint is `https://bump.sh/oauth/token`. Requested scopes include `openid` and `mcp`.",
+        "type": "oauth2",
+        "label": "Bump.sh OAuth app access",
+        "generateUrl": "https://bump.sh/users/sign_up",
+        "setup": "Create or sign in to a Bump.sh account, then connect an OAuth client using the app registration flow at [OAuth dynamic client registration](https://bump.sh/oauth/registration). Users authenticate via the Bump.sh authorize/token flow on [authorization](https://bump.sh/oauth/authorize) and [token](https://bump.sh/oauth/token). Requested scopes include `openid` and `mcp`.",
         "acquisition": "manual"
       },
-      "bump_token": {
+      "bump_cli_login": {
         "type": "bearer",
-        "label": "Bump.sh documentation access token",
-        "setup": "Go to your Bump.sh documentation or workspace settings and copy the token used for restricted API access. The docs say this token is used as the HTTP token authorization header for the Workspace API; the same account/org settings are where you obtain the token. If your surface is private, use the token-based authentication shown in the API docs.",
+        "label": "Bump.sh CLI login session",
+        "generateUrl": "https://docs.bump.sh/help/continuous-integration/cli/",
+        "setup": "Install the Bump CLI and authenticate by running `bump login` from the command line. The CLI then stores the login session and uses it for deployments and API operations.",
+        "acquisition": "manual"
+      },
+      "bump_api_token": {
+        "type": "bearer",
+        "label": "Bump.sh Workspace API token",
+        "generateUrl": "https://developers.bump.sh/",
+        "setup": "Open the Bump.sh developer/API area and create a workspace credential from your Bump.sh account. Use this token when calling the Workspace API or when the CLI is configured to authenticate with an API token instead of interactive login.",
         "acquisition": "manual"
       }
     },
@@ -54,11 +62,13 @@
         "slug": "bump-sh-portal-api",
         "name": "Bump.sh Portal API",
         "type": "http",
-        "docs": "https://developers.bump.sh/doc/portal",
+        "docs": "https://developers.bump.sh/",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://developers.bump.sh/doc/portal"
+            "https://developers.bump.sh/",
+            "https://docs.bump.sh/help/continuous-integration/api/",
+            "https://docs.bump.sh/product-updates/"
           ]
         },
         "auth": {
@@ -66,69 +76,23 @@
           "basis": {
             "via": "discovered",
             "evidence": [
-              "https://developers.bump.sh/doc/portal",
-              "https://docs.bump.sh/product-updates/2026/06/10/portal-api-mcp-server/"
+              "https://docs.bump.sh/product-updates/ (Portal API currently works for public docs; no authentication required)"
             ]
           }
         },
-        "spec": "https://developers.bump.sh/doc/portal.json",
-        "specAlternates": [
-          "https://developers.bump.sh/doc/portal.yaml"
-        ],
-        "url": "https://bump.sh/api/portal/v1"
+        "url": "https://developers.bump.sh"
       },
       {
-        "slug": "bump-sh-workspace-api",
-        "name": "Bump.sh Workspace API",
-        "type": "http",
-        "docs": "https://developers.bump.sh/doc/workspace",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://developers.bump.sh/doc/workspace",
-            "https://docs.bump.sh/help/continuous-integration/api/"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "bump_token",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "Token"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://developers.bump.sh/doc/workspace",
-                  "https://docs.bump.sh/help/continuous-integration/api/"
-                ]
-              }
-            }
-          ]
-        },
-        "spec": "https://developers.bump.sh/doc/workspace.json",
-        "specAlternates": [
-          "https://developers.bump.sh/doc/workspace.yaml"
-        ],
-        "url": "https://bump.sh/api/v1"
-      },
-      {
-        "slug": "bump-sh-portal-mcp-server",
-        "name": "Bump.sh Portal MCP server",
+        "slug": "bump-sh-mcp-server",
+        "name": "Bump.sh MCP server",
         "type": "mcp",
-        "docs": "https://docs.bump.sh/help/mcp-servers/use-mcp-server/",
+        "docs": "https://developers.bump.sh/",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://developers.bump.sh/doc/portal",
+            "https://developers.bump.sh/",
             "https://docs.bump.sh/help/mcp-servers/use-mcp-server/",
-            "https://docs.bump.sh/help/mcp-servers/access-management/"
+            "https://docs.bump.sh/product-updates/"
           ]
         },
         "auth": {
@@ -146,63 +110,22 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.bump.sh/help/mcp-servers/access-management/",
+                  "https://developers.bump.sh/",
                   "https://docs.bump.sh/help/mcp-servers/use-mcp-server/"
                 ]
               }
             }
           ]
         },
-        "url": "https://developers.bump.sh/doc/portal/mcp",
+        "url": "https://developers.bump.sh/mcp",
         "transports": [
           "streamable-http"
         ]
       },
       {
-        "slug": "bump-sh-workspace-mcp-server",
-        "name": "Bump.sh Workspace MCP server",
-        "type": "mcp",
-        "docs": "https://docs.bump.sh/help/mcp-servers/use-mcp-server/",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://developers.bump.sh/doc/workspace",
-            "https://docs.bump.sh/help/mcp-servers/use-mcp-server/",
-            "https://docs.bump.sh/help/mcp-servers/access-management/"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "bump_oauth",
-                  "mechanics": {
-                    "source": "well-known"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.bump.sh/help/mcp-servers/access-management/",
-                  "https://docs.bump.sh/help/mcp-servers/use-mcp-server/"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://developers.bump.sh/doc/workspace/mcp",
-        "transports": [
-          "streamable-http"
-        ]
-      },
-      {
-        "slug": "bump-sh-cli",
-        "name": "Bump.sh CLI",
+        "slug": "bump-cli",
+        "name": "Bump CLI",
         "type": "cli",
-        "docs": "https://docs.bump.sh/help/continuous-integration/cli/",
         "basis": {
           "via": "discovered",
           "evidence": [
@@ -216,13 +139,10 @@
             {
               "use": [
                 {
-                  "id": "bump_token",
+                  "id": "bump_cli_login",
                   "mechanics": {
                     "source": "cli",
-                    "command": "bump login",
-                    "env": [
-                      "BUMP_TOKEN"
-                    ]
+                    "command": "bump login"
                   }
                 }
               ],
@@ -247,49 +167,40 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:10:00.630Z",
+  "discoveredAt": "2026-07-02T16:18:59.724Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 296457,
-    "completion_tokens": 1539,
-    "total_tokens": 297996
+    "prompt_tokens": 106831,
+    "completion_tokens": 1246,
+    "total_tokens": 108077
   },
   "visited": [
-    "https://apievangelist.com/2024/06/16/bumpsh-support-apisjson-with-their-api-documentation-hubs/",
     "https://bump.sh/",
     "https://bump.sh/pricing/",
-    "https://bump.sh/security/",
+    "https://community.openai.com/t/are-chatgpt-docs-lying-about-this-mcp-tool-field-existing/1362688",
     "https://developers.bump.sh/",
-    "https://developers.bump.sh/doc/portal",
-    "https://developers.bump.sh/doc/workspace",
+    "https://docs.bump.sh/help/continuous-integration/",
     "https://docs.bump.sh/help/continuous-integration/api/",
     "https://docs.bump.sh/help/continuous-integration/cli/",
-    "https://docs.bump.sh/help/continuous-integration/cli/#prepare-your-bumpsh-account",
-    "https://docs.bump.sh/help/continuous-integration/github-actions/",
-    "https://docs.bump.sh/help/mcp-servers/access-management/",
+    "https://docs.bump.sh/help/getting-started/concepts/",
+    "https://docs.bump.sh/help/mcp-servers/create-and-manage-mcp-servers/",
     "https://docs.bump.sh/help/mcp-servers/use-mcp-server/",
     "https://docs.bump.sh/product-updates/",
-    "https://github.com/bump-sh/cli"
+    "https://github.com/bump-sh/cli",
+    "https://openapi.tools/categories/mcp"
   ],
   "grounding": [
-    "https://apidocs.lastminute.com/",
-    "https://apievangelist.com/2024/06/16/bumpsh-support-apisjson-with-their-api-documentation-hubs/",
     "https://archiveprogram.github.com",
     "https://bump.sh",
     "https://bump.sh/",
     "https://bump.sh/#",
     "https://bump.sh/#content",
     "https://bump.sh/#footer",
-    "https://bump.sh/?utm_campaign=powered+by&utm_content=%2Fbump%2Fhub%2Fbumpsh-apis%2Fdoc%2Fportal&utm_medium=referral&utm_source=documentation",
-    "https://bump.sh/?utm_campaign=powered+by&utm_content=%2Fbump%2Fhub%2Fbumpsh-apis%2Fdoc%2Fworkspace&utm_medium=referral&utm_source=documentation",
     "https://bump.sh/about",
     "https://bump.sh/about#careers",
     "https://bump.sh/about/",
     "https://bump.sh/api-documentation",
-    "https://bump.sh/api/portal/v1",
-    "https://bump.sh/api/portal/v1/changes/list",
     "https://bump.sh/api/v1",
-    "https://bump.sh/api/v1/versions/1",
     "https://bump.sh/blog",
     "https://bump.sh/blog/",
     "https://bump.sh/blog/bigid-enhancing-processes-and-boosting-satisfaction",
@@ -314,90 +225,45 @@
     "https://bump.sh/pricing/",
     "https://bump.sh/privacy-policy",
     "https://bump.sh/security",
-    "https://bump.sh/security/",
     "https://bump.sh/terms",
     "https://bump.sh/users/sign_in",
     "https://bump.sh/users/sign_up",
     "https://calendly.com/bump-sh/discovery-call-bump-sh",
     "https://chatgpt.com/?prompt=Hi",
     "https://claude.ai/new/?q=Hi",
-    "https://developers.bump.sh",
+    "https://community.openai.com/t/are-chatgpt-docs-lying-about-this-mcp-tool-field-existing/1362688",
     "https://developers.bump.sh/",
     "https://developers.bump.sh/#",
-    "https://developers.bump.sh/#operation-post-diffs",
-    "https://developers.bump.sh/#operation-post-previews",
-    "https://developers.bump.sh/#operation-post-validations",
-    "https://developers.bump.sh/#operation-post-versions",
-    "https://developers.bump.sh/#webhook-documentation-change",
     "https://developers.bump.sh/?format=md",
     "https://developers.bump.sh/changes",
     "https://developers.bump.sh/cursor://anysphere.cursor-deeplink/mcp/install?name=Bump.sh",
     "https://developers.bump.sh/doc/portal",
-    "https://developers.bump.sh/doc/portal.json",
-    "https://developers.bump.sh/doc/portal.md",
-    "https://developers.bump.sh/doc/portal.yaml",
-    "https://developers.bump.sh/doc/portal/",
-    "https://developers.bump.sh/doc/portal/changes",
     "https://developers.bump.sh/doc/portal/changes/c901b98d",
     "https://developers.bump.sh/doc/portal/changes/e8e439b8",
-    "https://developers.bump.sh/doc/portal/explorer",
-    "https://developers.bump.sh/doc/portal/explorer/operation/operation-get-changes-list",
-    "https://developers.bump.sh/doc/portal/group/endpoint-changes",
-    "https://developers.bump.sh/doc/portal/group/endpoint-fetch",
-    "https://developers.bump.sh/doc/portal/group/endpoint-list",
-    "https://developers.bump.sh/doc/portal/group/endpoint-search",
-    "https://developers.bump.sh/doc/portal/mcp",
-    "https://developers.bump.sh/doc/portal/operation/operation-get-changes-fetch",
-    "https://developers.bump.sh/doc/portal/operation/operation-get-changes-list",
-    "https://developers.bump.sh/doc/portal/operation/operation-get-changes-list.md",
-    "https://developers.bump.sh/doc/portal/operation/operation-get-fetch",
-    "https://developers.bump.sh/doc/portal/operation/operation-get-list",
-    "https://developers.bump.sh/doc/portal/operation/operation-get-search",
     "https://developers.bump.sh/doc/workspace",
-    "https://developers.bump.sh/doc/workspace.json",
-    "https://developers.bump.sh/doc/workspace.md",
-    "https://developers.bump.sh/doc/workspace.yaml",
     "https://developers.bump.sh/doc/workspace/",
-    "https://developers.bump.sh/doc/workspace/authentication",
     "https://developers.bump.sh/doc/workspace/authentication.md",
-    "https://developers.bump.sh/doc/workspace/changes",
     "https://developers.bump.sh/doc/workspace/changes/5b912314",
-    "https://developers.bump.sh/doc/workspace/changes/abc123",
     "https://developers.bump.sh/doc/workspace/changes/b86715b8",
     "https://developers.bump.sh/doc/workspace/changes/c6c0d861",
     "https://developers.bump.sh/doc/workspace/group/endpoint-branches",
     "https://developers.bump.sh/doc/workspace/group/endpoint-branches.md",
-    "https://developers.bump.sh/doc/workspace/group/endpoint-diffs",
     "https://developers.bump.sh/doc/workspace/group/endpoint-diffs.md",
     "https://developers.bump.sh/doc/workspace/group/endpoint-hubs",
-    "https://developers.bump.sh/doc/workspace/group/endpoint-mcp-servers",
-    "https://developers.bump.sh/doc/workspace/group/endpoint-ping",
-    "https://developers.bump.sh/doc/workspace/group/endpoint-previews",
-    "https://developers.bump.sh/doc/workspace/group/endpoint-validations",
-    "https://developers.bump.sh/doc/workspace/group/endpoint-versions",
-    "https://developers.bump.sh/doc/workspace/group/webhook-documentation-change",
     "https://developers.bump.sh/doc/workspace/group/webhook-documentation-change.md",
-    "https://developers.bump.sh/doc/workspace/mcp",
     "https://developers.bump.sh/doc/workspace/operation/operation-delete-docs-parameter-branches-parameter",
     "https://developers.bump.sh/doc/workspace/operation/operation-delete-docs-parameter-branches-parameter.md",
     "https://developers.bump.sh/doc/workspace/operation/operation-get-diffs-parameter",
     "https://developers.bump.sh/doc/workspace/operation/operation-get-docs-parameter-branches",
     "https://developers.bump.sh/doc/workspace/operation/operation-get-docs-parameter-branches.md",
     "https://developers.bump.sh/doc/workspace/operation/operation-get-hubs-parameter",
-    "https://developers.bump.sh/doc/workspace/operation/operation-get-ping",
-    "https://developers.bump.sh/doc/workspace/operation/operation-get-versions-parameter",
-    "https://developers.bump.sh/doc/workspace/operation/operation-listhubs",
-    "https://developers.bump.sh/doc/workspace/operation/operation-mcpserverdeploy",
     "https://developers.bump.sh/doc/workspace/operation/operation-patch-docs-parameter-branches-parameter-set_default",
     "https://developers.bump.sh/doc/workspace/operation/operation-patch-docs-parameter-branches-parameter-set_default.md",
     "https://developers.bump.sh/doc/workspace/operation/operation-post-diffs",
     "https://developers.bump.sh/doc/workspace/operation/operation-post-docs-parameter-branches",
     "https://developers.bump.sh/doc/workspace/operation/operation-post-docs-parameter-branches.md",
-    "https://developers.bump.sh/doc/workspace/operation/operation-post-previews",
-    "https://developers.bump.sh/doc/workspace/operation/operation-post-validations",
     "https://developers.bump.sh/doc/workspace/operation/operation-post-versions",
     "https://developers.bump.sh/doc/workspace/operation/operation-post-versions.md",
-    "https://developers.bump.sh/doc/workspace/operation/operation-put-previews-parameter",
     "https://developers.bump.sh/doc/workspace/operation/operation-webhookdocstructurechange",
     "https://developers.bump.sh/doc/workspace/operation/operation-webhookdocstructurechange.md",
     "https://developers.bump.sh/doc/workspace/source.md",
@@ -408,34 +274,24 @@
     "https://docs.bump.sh/#add-bumpsh-to-your-node-project",
     "https://docs.bump.sh/#ask-ai",
     "https://docs.bump.sh/#authenticated-diffs-related-to-your-bumpsh-documentation",
-    "https://docs.bump.sh/#authenticating-with-apis",
     "https://docs.bump.sh/#built-in-security",
     "https://docs.bump.sh/#can-i-install-bumpsh-cli-without-using-nodejs",
     "https://docs.bump.sh/#chatgpt",
     "https://docs.bump.sh/#choosing-between-arazzo-and-flower",
     "https://docs.bump.sh/#claude",
-    "https://docs.bump.sh/#code-of-conduct",
     "https://docs.bump.sh/#commands",
     "https://docs.bump.sh/#contributing",
-    "https://docs.bump.sh/#control-who-can-access-your-mcp-server",
+    "https://docs.bump.sh/#create-an-mcp-server",
     "https://docs.bump.sh/#cursor",
     "https://docs.bump.sh/#declarative-by-design",
+    "https://docs.bump.sh/#delete-an-mcp-server",
     "https://docs.bump.sh/#deploy-a-folder-all-at-once",
-    "https://docs.bump.sh/#deploy-a-single-documentation-on-a-hub",
-    "https://docs.bump.sh/#deploy-a-workflow-document-for-your-mcp-server",
     "https://docs.bump.sh/#deploy-a-workflow-document-on-your-mcp-server",
-    "https://docs.bump.sh/#deploy-documentation--diff-on-pull-requests",
-    "https://docs.bump.sh/#deploy-documentation-only",
-    "https://docs.bump.sh/#deploy-multiple-documentation-at-once-on-a-hub",
     "https://docs.bump.sh/#deploy-to-your-documentation",
     "https://docs.bump.sh/#diff-between-two-api-documents",
-    "https://docs.bump.sh/#diff-on-pull-requests-only",
     "https://docs.bump.sh/#documentation-change-webhook",
-    "https://docs.bump.sh/#generate-your-api-documentation--changelog",
     "https://docs.bump.sh/#github-integration",
     "https://docs.bump.sh/#global-installation",
-    "https://docs.bump.sh/#how-users-connect",
-    "https://docs.bump.sh/#inputs",
     "https://docs.bump.sh/#installation",
     "https://docs.bump.sh/#join-the-closed-beta",
     "https://docs.bump.sh/#license",
@@ -444,20 +300,21 @@
     "https://docs.bump.sh/#manage-your-branches",
     "https://docs.bump.sh/#markdown-rendering",
     "https://docs.bump.sh/#mcp-server",
+    "https://docs.bump.sh/#mcp-server-states",
     "https://docs.bump.sh/#mcpjam-debug-tool",
     "https://docs.bump.sh/#not-a-simple-openapi-to-mcp-conversion",
     "https://docs.bump.sh/#observability-and-debugging",
     "https://docs.bump.sh/#portal-api",
     "https://docs.bump.sh/#prepare-your-bumpsh-account",
-    "https://docs.bump.sh/#private-mcp-servers-using-a-bumpsh-account-default",
-    "https://docs.bump.sh/#private-mcp-servers-using-your-own-oauth-server",
     "https://docs.bump.sh/#public-api-diffs",
+    "https://docs.bump.sh/#start-and-stop-an-mcp-server",
     "https://docs.bump.sh/#the-deploy-command",
     "https://docs.bump.sh/#the-diff-command",
     "https://docs.bump.sh/#the-overlay-command",
     "https://docs.bump.sh/#the-preview-command",
     "https://docs.bump.sh/#usage",
     "https://docs.bump.sh/#validate-an-api-document",
+    "https://docs.bump.sh/#where-can-i-find-my-mcp-servers",
     "https://docs.bump.sh/arazzo/v1.0/",
     "https://docs.bump.sh/arazzo/v1.0/introduction/what-is-arazzo/",
     "https://docs.bump.sh/guides",
@@ -468,14 +325,12 @@
     "https://docs.bump.sh/help/changes-management/",
     "https://docs.bump.sh/help/changes-management/changelog/",
     "https://docs.bump.sh/help/changes-management/integrations/",
-    "https://docs.bump.sh/help/continuous-integration#integrate-with-your-ci",
     "https://docs.bump.sh/help/continuous-integration/",
     "https://docs.bump.sh/help/continuous-integration/api/",
     "https://docs.bump.sh/help/continuous-integration/azure-devops/",
     "https://docs.bump.sh/help/continuous-integration/circle-ci/",
     "https://docs.bump.sh/help/continuous-integration/cli/",
     "https://docs.bump.sh/help/continuous-integration/cli/#deploy-a-workflow-document-on-your-mcp-server",
-    "https://docs.bump.sh/help/continuous-integration/cli/#prepare-your-bumpsh-account",
     "https://docs.bump.sh/help/continuous-integration/github-actions/",
     "https://docs.bump.sh/help/continuous-integration/github-actions/#deploy-a-workflow-document-for-your-mcp-server",
     "https://docs.bump.sh/help/continuous-integration/gitlab-ci/",
@@ -509,6 +364,7 @@
     "https://docs.bump.sh/help/mcp-servers/create-and-manage-mcp-servers/",
     "https://docs.bump.sh/help/mcp-servers/customization-options/custom-domain/",
     "https://docs.bump.sh/help/mcp-servers/debug-sessions/",
+    "https://docs.bump.sh/help/mcp-servers/deploy-workflows",
     "https://docs.bump.sh/help/mcp-servers/deploy-workflows/",
     "https://docs.bump.sh/help/mcp-servers/runtime-expressions/",
     "https://docs.bump.sh/help/mcp-servers/secrets-and-config/",
@@ -516,7 +372,6 @@
     "https://docs.bump.sh/help/mcp-servers/security/",
     "https://docs.bump.sh/help/mcp-servers/specification-support/arazzo-support/",
     "https://docs.bump.sh/help/mcp-servers/specification-support/flower-support/",
-    "https://docs.bump.sh/help/mcp-servers/use-mcp-server",
     "https://docs.bump.sh/help/mcp-servers/use-mcp-server/",
     "https://docs.bump.sh/help/mcp-servers/write-your-first-flower-workflow/",
     "https://docs.bump.sh/help/organizations/",
@@ -563,10 +418,7 @@
     "https://github.blog",
     "https://github.blog/changelog",
     "https://github.com/#start-of-content",
-    "https://github.com/OAI/OpenAPI-Specification",
     "https://github.com/accelerator",
-    "https://github.com/actions",
-    "https://github.com/asyncapi/asyncapi",
     "https://github.com/bump-sh",
     "https://github.com/bump-sh/bump/pull/8623",
     "https://github.com/bump-sh/cli",
@@ -612,9 +464,8 @@
     "https://github.com/bump-sh/cli/tree/main/examples",
     "https://github.com/bump-sh/cli/tree/main/src",
     "https://github.com/bump-sh/cli/tree/main/test",
-    "https://github.com/bump-sh/cors-toujours",
     "https://github.com/bump-sh/docs/tree/main/src/_help/continuous-integration/api.md",
-    "https://github.com/bump-sh/docs/tree/main/src/_help/mcp-servers/access-management.md",
+    "https://github.com/bump-sh/docs/tree/main/src/_help/mcp-servers/create-and-manage-mcp-servers.md",
     "https://github.com/bump-sh/docs/tree/main/src/_help/mcp-servers/use-mcp-server.md",
     "https://github.com/bump-sh/github-action",
     "https://github.com/collections",
@@ -672,22 +523,19 @@
     "https://itducks.slack.com/archives/C08294CTDM3/p1780661912150059",
     "https://maintainers.github.com",
     "https://modelcontextprotocol.io/docs/getting-started/intro",
-    "https://oauth.net/2/jwt/",
     "https://oclif.io",
-    "https://openid.net/specs/openid-connect-core-1_0.html#UserInfo",
+    "https://openapi.tools/categories/mcp",
     "https://run.bump.sh/my-org/my-mcp-server/mcp",
+    "https://run.bump.sh/your_organization_slug/your_server_slug/mcp",
     "https://securitylab.github.com",
     "https://skills.github.com",
     "https://spec.openapis.org/",
     "https://spec.openapis.org/oas/v3.2.0.html",
     "https://stars.github.com",
-    "https://status.bump.sh",
     "https://status.bump.sh/",
     "https://support.github.com",
     "https://survey.typeform.com/to/SQLtxk7j",
-    "https://workos.com/",
     "https://www.asyncapi.com/docs/reference/specification/latest",
-    "https://www.elastic.co/docs/api",
     "https://www.mcpjam.com/"
   ]
 }

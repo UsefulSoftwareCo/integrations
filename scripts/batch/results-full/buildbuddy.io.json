@@ -10,35 +10,21 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:06:01.322Z",
-    "summary": "BuildBuddy exposes an authenticated Enterprise HTTP API, an authenticated MCP server, and the `bb` CLI; public docs confirm API-key auth for Bazel/CLI and GitHub App-based Enterprise access, plus OIDC auth for self-hosted enterprise deployments.",
+    "discoveredAt": "2026-07-02T16:18:37.530Z",
+    "summary": "BuildBuddy exposes one authenticated Enterprise HTTP API, an Enterprise MCP server, and the `bb` CLI; API auth uses a BuildBuddy API key in `x-buildbuddy-api-key`.",
     "credentials": {
       "bb_api_key": {
         "type": "api_key",
         "label": "BuildBuddy API key",
         "generateUrl": "https://app.buildbuddy.io/docs/setup/",
-        "setup": "Create a BuildBuddy account at [app.buildbuddy.io](https://app.buildbuddy.io/), then open your [Quickstart/setup page](https://app.buildbuddy.io/docs/setup/) to find or create API keys. Use the key in Bazel/BuildBuddy client config; for Bazel remote auth, pass it as `x-buildbuddy-api-key` (for example in `.bazelrc`).",
-        "acquisition": "manual"
-      },
-      "bb_oidc_client": {
-        "type": "oauth2",
-        "label": "BuildBuddy OIDC provider client credentials",
-        "generateUrl": "https://www.buildbuddy.io/docs/config-auth/",
-        "setup": "For self-hosted/enterprise BuildBuddy auth, configure an OpenID Connect provider in BuildBuddy's `auth:` settings. Create an OAuth client at your OIDC provider, then enter its `client_id`, `client_secret`, and issuer URL in the BuildBuddy config. The provider's redirect URL should be `https://YOUR_BUILDBUDDY_URL/auth/` (for example, `https://buildbuddy.acme.com/auth/`).",
-        "acquisition": "manual"
-      },
-      "bb_github_app": {
-        "type": "app",
-        "label": "GitHub App credentials for BuildBuddy Enterprise API / MCP",
-        "generateUrl": "https://www.buildbuddy.io/docs/enterprise-api/",
-        "setup": "BuildBuddy Enterprise API access requires GitHub App authentication. Create/install the GitHub App used by your org, then use the app's credentials when configuring access to the Enterprise API or MCP server. Follow the Enterprise API docs and the MCP docs for the exact BuildBuddy-side setup; the docs indicate GitHub App auth is required.",
+        "setup": "Log in to your BuildBuddy account at [app.buildbuddy.io](https://app.buildbuddy.io/) and open your [Quickstart page](https://app.buildbuddy.io/docs/setup/) to find or create API keys. Use the key in Bazel or scripts as the `x-buildbuddy-api-key` value; you can create multiple keys for different orgs/contexts. If needed, store it in a separate secret file or environment secret instead of committing it to source control.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "buildbuddy-api",
-        "name": "BuildBuddy API",
+        "slug": "buildbuddy-enterprise-api",
+        "name": "BuildBuddy Enterprise API",
         "type": "http",
         "docs": "https://www.buildbuddy.io/docs/enterprise-api/",
         "basis": {
@@ -59,20 +45,21 @@
                     "source": "http",
                     "in": "header",
                     "headerName": "x-buildbuddy-api-key",
-                    "scheme": "x-buildbuddy-api-key"
+                    "scheme": "api_key"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.buildbuddy.io/docs/guide-auth/",
-                  "https://www.buildbuddy.io/docs/enterprise-api/"
+                  "https://www.buildbuddy.io/docs/enterprise-api/",
+                  "https://www.buildbuddy.io/docs/guide-auth/"
                 ]
               }
             }
           ]
-        }
+        },
+        "url": "https://app.buildbuddy.io/api/v1"
       },
       {
         "slug": "buildbuddy-mcp-server",
@@ -83,30 +70,11 @@
           "via": "discovered",
           "evidence": [
             "https://www.buildbuddy.io/docs/enterprise-mcp/",
-            "https://www.buildbuddy.io/docs/config-api/"
+            "https://www.buildbuddy.io/docs/enterprise-api/"
           ]
         },
         "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "bb_github_app",
-                  "mechanics": {
-                    "source": "unknown"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.buildbuddy.io/docs/enterprise-api/",
-                  "https://www.buildbuddy.io/docs/enterprise-mcp/"
-                ]
-              }
-            }
-          ]
+          "status": "unknown"
         },
         "url": "https://<org>.buildbuddy.io/mcp",
         "transports": [
@@ -117,7 +85,7 @@
         "slug": "buildbuddy-cli",
         "name": "BuildBuddy CLI",
         "type": "cli",
-        "docs": "https://www.buildbuddy.io/docs/cli",
+        "docs": "https://www.buildbuddy.io/docs/cli/",
         "basis": {
           "via": "discovered",
           "evidence": [
@@ -126,35 +94,12 @@
           ]
         },
         "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "bb_api_key",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "bb",
-                    "env": [
-                      "BUILDBUDDY_API_KEY"
-                    ]
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.buildbuddy.io/docs/guide-auth/",
-                  "https://www.buildbuddy.io/docs/cli/"
-                ]
-              }
-            }
-          ]
+          "status": "unknown"
         },
         "packages": [
           {
             "registryType": "github",
-            "identifier": "buildbuddy-io/buildbuddy",
+            "identifier": "buildbuddy-io/bazel",
             "runtimeHint": "go"
           }
         ],
@@ -162,170 +107,65 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:06:01.322Z",
+  "discoveredAt": "2026-07-02T16:18:37.530Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 245107,
-    "completion_tokens": 1460,
-    "total_tokens": 246567
+    "prompt_tokens": 109881,
+    "completion_tokens": 779,
+    "total_tokens": 110660
   },
   "visited": [
-    "https://github.com/buildbuddy-io/buildbuddy/tree/master/proto/api/v1",
-    "https://www.buildbuddy.io/docs/cli",
+    "https://www.buildbuddy.io/docs/cli/",
     "https://www.buildbuddy.io/docs/config-api/",
     "https://www.buildbuddy.io/docs/config-auth/",
     "https://www.buildbuddy.io/docs/enterprise-api/",
     "https://www.buildbuddy.io/docs/enterprise-mcp/",
     "https://www.buildbuddy.io/docs/guide-auth/",
-    "https://www.buildbuddy.io/docs/introduction/"
+    "https://www.buildbuddy.io/docs/introduction/",
+    "https://www.buildbuddy.io/docs/quickstart/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ],
   "grounding": [
     "http://community.buildbuddy.io/",
     "http://linkedin.com/company/buildbuddy",
-    "https://YOUR_BUILDBUDDY_URL/auth/",
-    "https://accounts.google.com",
     "https://app.buildbuddy.io",
     "https://app.buildbuddy.io/",
     "https://app.buildbuddy.io/api/v1/GetInvocation",
     "https://app.buildbuddy.io/api/v1/GetLog",
-    "https://app.buildbuddy.io/auth/saml/acs?slug=",
+    "https://app.buildbuddy.io/docs/setup",
     "https://app.buildbuddy.io/docs/setup/",
+    "https://app.buildbuddy.io/invocation/24a37b8f-4cf2-4909-9522-3cc91d2ebfc4INFO",
+    "https://app.buildbuddy.io/invocation/build",
     "https://app.buildbuddy.io/invocation/c6b2b6de-c7bb-4dd9-b7fd-a530362f0845",
-    "https://app.buildbuddy.io/login?slug=",
-    "https://app.buildbuddy.io/saml/metadata?slug=",
-    "https://app.buildbuddy.io/scim/v2",
-    "https://app.buildbuddy.io/settings/",
     "https://app.buildbuddy.io/settings/org/api-keys",
-    "https://archiveprogram.github.com",
     "https://bazel.build/",
-    "https://buildbuddy-corp.slack.com/archives/C09GAJTMW1E/p1777562641360189?thread_ts=1777496008.821789&cid=C09GAJTMW1E",
-    "https://buildbuddy.acme.com",
-    "https://buildbuddy.acme.com/auth/",
     "https://code.claude.com/docs/en/mcp",
     "https://community.buildbuddy.io",
-    "https://console.developers.google.com/apis/credentials",
     "https://cursor.com/docs/mcp",
     "https://developers.openai.com/codex/mcp",
-    "https://docs.github.com",
     "https://docs.github.com/en/copilot/concepts/context/mcp",
-    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
-    "https://docs.gitlab.com/ee/integration/oauth_provider.html#create-a-group-owned-application",
-    "https://docs.gitlab.com/ee/integration/openid_connect_provider.html",
-    "https://entra.microsoft.com/",
     "https://geminicli.com/docs/tools/mcp-server/",
-    "https://github.blog",
-    "https://github.blog/changelog",
-    "https://github.com/#start-of-content",
-    "https://github.com/accelerator",
     "https://github.com/bazelbuild/bazel/blob/b3602eb14cf27494a0a754bc215ec2b94d13d89b/src/main/java/com/google/devtools/build/lib/util/ExitCode.java#L42-L72",
     "https://github.com/bazelbuild/bazelisk",
     "https://github.com/buildbuddy-io",
     "https://github.com/buildbuddy-io/bazel/releases",
     "https://github.com/buildbuddy-io/buildbuddy",
-    "https://github.com/buildbuddy-io/buildbuddy/actions",
-    "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/BUILD",
-    "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/action.proto",
-    "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/api_key.proto",
-    "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/audit_log.proto",
-    "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/common.proto",
-    "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/file.proto",
     "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/invocation.proto",
     "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/log.proto",
     "https://github.com/buildbuddy-io/buildbuddy/blob/master/proto/api/v1/service.proto",
-    "https://github.com/buildbuddy-io/buildbuddy/commit/01b26201b7a29e001d1c1af2f1530e74b6a1dfd7",
-    "https://github.com/buildbuddy-io/buildbuddy/commit/1968ba87e72071899f05256f082f5b2584729ce8",
-    "https://github.com/buildbuddy-io/buildbuddy/commit/5b2c0487088daf4fe75a38fa80c0762804d49d53",
-    "https://github.com/buildbuddy-io/buildbuddy/commit/5ef59a8d8b41bf4037ee9a7b23cb3cd49ac64abe",
-    "https://github.com/buildbuddy-io/buildbuddy/commit/845d2a48226d4b38868bbe8395c2f89a08fcd4fa",
-    "https://github.com/buildbuddy-io/buildbuddy/commit/c1b70bf63fa81fb6c2adca306afbfa923f4d6664",
-    "https://github.com/buildbuddy-io/buildbuddy/commits/master/proto/api/v1",
-    "https://github.com/buildbuddy-io/buildbuddy/commits?author=sluongng",
-    "https://github.com/buildbuddy-io/buildbuddy/discussions",
     "https://github.com/buildbuddy-io/buildbuddy/edit/master/docs/../docs/cli.md",
     "https://github.com/buildbuddy-io/buildbuddy/edit/master/docs/../docs/config-api.md",
     "https://github.com/buildbuddy-io/buildbuddy/edit/master/docs/../docs/enterprise-mcp.md",
     "https://github.com/buildbuddy-io/buildbuddy/edit/master/docs/../docs/guide-auth.md",
     "https://github.com/buildbuddy-io/buildbuddy/edit/master/docs/../docs/introduction.mdx",
-    "https://github.com/buildbuddy-io/buildbuddy/issues",
+    "https://github.com/buildbuddy-io/buildbuddy/edit/master/docs/../docs/quickstart.md",
     "https://github.com/buildbuddy-io/buildbuddy/issues/new",
-    "https://github.com/buildbuddy-io/buildbuddy/projects",
-    "https://github.com/buildbuddy-io/buildbuddy/pull/11668",
-    "https://github.com/buildbuddy-io/buildbuddy/pull/12044",
-    "https://github.com/buildbuddy-io/buildbuddy/pull/12351",
-    "https://github.com/buildbuddy-io/buildbuddy/pull/6668",
-    "https://github.com/buildbuddy-io/buildbuddy/pull/9723",
-    "https://github.com/buildbuddy-io/buildbuddy/pulls",
-    "https://github.com/buildbuddy-io/buildbuddy/pulse",
-    "https://github.com/buildbuddy-io/buildbuddy/security",
-    "https://github.com/buildbuddy-io/buildbuddy/tree/master",
     "https://github.com/buildbuddy-io/buildbuddy/tree/master/cli",
-    "https://github.com/buildbuddy-io/buildbuddy/tree/master/proto",
-    "https://github.com/buildbuddy-io/buildbuddy/tree/master/proto/api",
     "https://github.com/buildbuddy-io/buildbuddy/tree/master/proto/api/v1",
-    "https://github.com/collections",
-    "https://github.com/customer-stories",
-    "https://github.com/enterprise",
-    "https://github.com/enterprise/startups",
-    "https://github.com/features",
-    "https://github.com/features/actions",
-    "https://github.com/features/ai/github-app",
-    "https://github.com/features/code-review",
-    "https://github.com/features/codespaces",
-    "https://github.com/features/copilot",
-    "https://github.com/features/copilot/copilot-business",
-    "https://github.com/features/issues",
-    "https://github.com/login?return_to=%2Fbuildbuddy-io%2Fbuildbuddy",
-    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fbuildbuddy-io%2Fbuildbuddy%2Ftree%2Fmaster%2Fproto%2Fapi%2Fv1",
-    "https://github.com/marketplace",
-    "https://github.com/mcp",
-    "https://github.com/orgs/community/discussions",
-    "https://github.com/partners",
-    "https://github.com/premium-support",
-    "https://github.com/pricing",
-    "https://github.com/resources",
-    "https://github.com/resources/articles",
-    "https://github.com/resources/articles?topic=ai",
-    "https://github.com/resources/articles?topic=devops",
-    "https://github.com/resources/articles?topic=security",
-    "https://github.com/resources/articles?topic=software-development",
-    "https://github.com/resources/events",
-    "https://github.com/resources/whitepapers",
-    "https://github.com/security/advanced-security",
-    "https://github.com/security/advanced-security/code-security",
-    "https://github.com/security/advanced-security/secret-protection",
-    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Ffiles%2Fdisambiguate&source=header-repo&source_repo=buildbuddy-io%2Fbuildbuddy",
-    "https://github.com/solutions",
-    "https://github.com/solutions/executive-insights",
-    "https://github.com/solutions/industry",
-    "https://github.com/solutions/industry/financial-services",
-    "https://github.com/solutions/industry/government",
-    "https://github.com/solutions/industry/healthcare",
-    "https://github.com/solutions/industry/manufacturing",
-    "https://github.com/solutions/industry/nonprofits",
-    "https://github.com/solutions/use-case",
-    "https://github.com/solutions/use-case/app-modernization",
-    "https://github.com/solutions/use-case/ci-cd",
-    "https://github.com/solutions/use-case/devops",
-    "https://github.com/solutions/use-case/devsecops",
-    "https://github.com/sponsors",
-    "https://github.com/team",
-    "https://github.com/topics",
-    "https://github.com/trending",
-    "https://github.com/trust-center",
-    "https://github.com/why-github",
-    "https://gitlab.com",
-    "https://gitlab.com/gitlab-org/gitlab/-/issues/16620",
     "https://go.dev/",
     "https://install.buildbuddy.io",
-    "https://login.microsoftonline.com/",
-    "https://maintainers.github.com",
     "https://opencode.ai/docs/mcp-servers/",
     "https://opensource.org/licenses/MIT",
-    "https://portal.azure.com/",
-    "https://securitylab.github.com",
-    "https://skills.github.com",
-    "https://stars.github.com",
-    "https://support.github.com",
     "https://twitter.com/buildbuddy",
     "https://www.buildbuddy.io/#",
     "https://www.buildbuddy.io/#__docusaurus_skipToContent_fallback",
@@ -333,8 +173,6 @@
     "https://www.buildbuddy.io/#authenticating-with-user-owned-keys",
     "https://www.buildbuddy.io/#authentication",
     "https://www.buildbuddy.io/#available-mcp-tools",
-    "https://www.buildbuddy.io/#azure-ad--entra-saml-provider",
-    "https://www.buildbuddy.io/#azure-ad-provider",
     "https://www.buildbuddy.io/#command-line",
     "https://www.buildbuddy.io/#configuration",
     "https://www.buildbuddy.io/#contributing",
@@ -351,8 +189,6 @@
     "https://www.buildbuddy.io/#getinvocationrequest",
     "https://www.buildbuddy.io/#getinvocationresponse",
     "https://www.buildbuddy.io/#getlog",
-    "https://www.buildbuddy.io/#gitlab-auth-provider",
-    "https://www.buildbuddy.io/#google-auth-provider",
     "https://www.buildbuddy.io/#installation",
     "https://www.buildbuddy.io/#installing-for-a-project",
     "https://www.buildbuddy.io/#invocation",
@@ -360,20 +196,14 @@
     "https://www.buildbuddy.io/#join-the-discussion",
     "https://www.buildbuddy.io/#managing-keys",
     "https://www.buildbuddy.io/#managing-users-within-an-organization",
+    "https://www.buildbuddy.io/#more-features",
     "https://www.buildbuddy.io/#networking",
-    "https://www.buildbuddy.io/#oidc",
-    "https://www.buildbuddy.io/#oidc-examples",
-    "https://www.buildbuddy.io/#okta",
-    "https://www.buildbuddy.io/#okta-saml-provider",
     "https://www.buildbuddy.io/#options",
-    "https://www.buildbuddy.io/#other-providers",
     "https://www.buildbuddy.io/#personal-api-keys",
     "https://www.buildbuddy.io/#plugins",
     "https://www.buildbuddy.io/#read-only-keys",
-    "https://www.buildbuddy.io/#redirect-url",
     "https://www.buildbuddy.io/#reporting-an-issue",
     "https://www.buildbuddy.io/#resources",
-    "https://www.buildbuddy.io/#saml-20",
     "https://www.buildbuddy.io/#section",
     "https://www.buildbuddy.io/#self-hosted-setup",
     "https://www.buildbuddy.io/#separate-auth-file",
@@ -382,8 +212,8 @@
     "https://www.buildbuddy.io/#setup",
     "https://www.buildbuddy.io/#start-contributing",
     "https://www.buildbuddy.io/#updating",
-    "https://www.buildbuddy.io/#user-management-via-scim",
     "https://www.buildbuddy.io/#user-roles",
+    "https://www.buildbuddy.io/#verifying-your-installation",
     "https://www.buildbuddy.io/blog/",
     "https://www.buildbuddy.io/careers",
     "https://www.buildbuddy.io/changelog",
@@ -401,6 +231,7 @@
     "https://www.buildbuddy.io/docs/cache-encryption-keys",
     "https://www.buildbuddy.io/docs/cli",
     "https://www.buildbuddy.io/docs/cli-plugins",
+    "https://www.buildbuddy.io/docs/cli/",
     "https://www.buildbuddy.io/docs/config",
     "https://www.buildbuddy.io/docs/config-all-options",
     "https://www.buildbuddy.io/docs/config-api",
@@ -442,6 +273,7 @@
     "https://www.buildbuddy.io/docs/prometheus-metrics-for-cloud",
     "https://www.buildbuddy.io/docs/prometheus-metrics-on-prem",
     "https://www.buildbuddy.io/docs/quickstart",
+    "https://www.buildbuddy.io/docs/quickstart/",
     "https://www.buildbuddy.io/docs/rbe-container-image-caching",
     "https://www.buildbuddy.io/docs/rbe-github-actions",
     "https://www.buildbuddy.io/docs/rbe-microvms",
@@ -469,6 +301,6 @@
     "https://www.buildbuddy.io/terms",
     "https://www.buildbuddy.io/ui",
     "https://www.buildbuddy.io/workflows",
-    "https://xxxx.okta.com/app/XXXX/sso/saml/metadata"
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ]
 }

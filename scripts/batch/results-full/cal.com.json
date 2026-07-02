@@ -12,28 +12,34 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:13:40.616Z",
-    "summary": "Cal.com exposes a v2 REST API, hosted MCP server, and official CLI; auth is via OAuth, API key, and deprecated platform client credentials, with `cal-api-version: 2024-08-13` required on v2 HTTP calls.",
+    "discoveredAt": "2026-07-02T16:19:09.850Z",
+    "summary": "Cal.com exposes one REST API v2, a hosted MCP server, a self-hosted MCP server, and a CLI; auth is via OAuth client or API key for the API, OAuth for hosted MCP, API key for self-hosted MCP/CLI, with legacy Platform credentials deprecated.",
     "credentials": {
-      "cal_api_key": {
-        "type": "api_key",
-        "label": "Cal.com API key",
-        "generateUrl": "https://app.cal.com/settings/developer/api-keys",
-        "setup": "Go to [Settings → Developer → API Keys](https://app.cal.com/settings/developer/api-keys) in Cal.com and create a key. Cal.com says test mode keys use the `cal_` prefix and live mode keys use `cal_live_`. Use it as a Bearer token in the `Authorization` header.",
-        "acquisition": "manual"
-      },
       "cal_oauth_client": {
         "type": "oauth2",
         "label": "Cal.com OAuth client",
         "generateUrl": "https://app.cal.com/settings/developer/oauth",
-        "setup": "Create an OAuth client in [Developer → OAuth](https://app.cal.com/settings/developer/oauth). Choose at least one scope and register redirect URIs. Cal.com reviews the client before it becomes active; once approved, your app can run the standard OAuth flow to obtain access and refresh tokens.",
+        "setup": "Go to [Settings → Developer → OAuth](https://app.cal.com/settings/developer/oauth) and create an OAuth client. Choose the scopes your app needs, add up to 10 redirect URIs, then wait for Cal.com review/approval. Use the resulting client ID and client secret to obtain OAuth access tokens.",
         "acquisition": "manual"
       },
-      "cal_platform_client": {
-        "type": "app",
-        "label": "Legacy platform OAuth client credentials",
+      "cal_api_key": {
+        "type": "api_key",
+        "label": "Cal.com API key",
+        "generateUrl": "https://app.cal.com/settings/developer/api-keys",
+        "setup": "Go to [Settings → Developer → API Keys](https://app.cal.com/settings/developer/api-keys) and create a key. Test keys use the `cal_` prefix; live keys use the `cal_live_` prefix. Keep it secret and rotate it from the same page if needed.",
+        "acquisition": "manual"
+      },
+      "cal_platform_oauth_client": {
+        "type": "oauth2",
+        "label": "Cal.com platform OAuth client credentials",
         "generateUrl": "https://app.cal.com/settings/platform",
-        "setup": "Legacy platform customers can find the client ID and secret in the platform dashboard at [Settings → Platform](https://app.cal.com/settings/platform). Use the `x-cal-client-id` and `x-cal-secret-key` headers. Cal.com marks this offering deprecated and for existing customers only; do not choose this for new integrations.",
+        "setup": "Only for existing legacy Platform customers. Open the platform dashboard at [Settings → Platform](https://app.cal.com/settings/platform) to view the client ID and client secret for your OAuth client. These are deprecated and no longer available for new signups.",
+        "acquisition": "manual"
+      },
+      "cal_platform_managed_user_token": {
+        "type": "bearer",
+        "label": "Cal.com platform managed user access token",
+        "setup": "Legacy Platform only. After creating a managed user, Cal.com returns an access token and refresh token for that managed user. Store them securely; they are used as bearer tokens when calling managed-user endpoints. New Platform signups are no longer offered.",
         "acquisition": "manual"
       }
     },
@@ -47,9 +53,8 @@
           "via": "discovered",
           "evidence": [
             "https://cal.com/docs/api-reference/v2/introduction",
-            "https://cal.com/docs/api-reference/v2/oauth",
-            "https://cal.com/docs/api-reference/v2/access-control",
-            "https://cal.com/docs/agents"
+            "https://cal.com/docs/agents",
+            "https://cal.com/docs/llms.txt?raw=1"
           ]
         },
         "auth": {
@@ -61,7 +66,7 @@
                   "id": "cal_oauth_client",
                   "mechanics": {
                     "source": "spec",
-                    "scheme": "OAuth2"
+                    "scheme": "oauth2"
                   }
                 }
               ],
@@ -92,35 +97,10 @@
                   "https://cal.com/docs/agents"
                 ]
               }
-            },
-            {
-              "use": [
-                {
-                  "id": "cal_platform_client",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "x-cal-client-id"
-                  }
-                },
-                {
-                  "id": "cal_platform_client",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "x-cal-secret-key"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://cal.com/docs/api-reference/v2/introduction"
-                ]
-              }
             }
           ]
         },
+        "url": "https://api.cal.com/v2",
         "requiredHeaders": [
           {
             "name": "cal-api-version",
@@ -128,13 +108,13 @@
               "kind": "static",
               "value": "2024-08-13"
             },
-            "description": "Required for all v2 endpoints."
+            "description": "Required on all v2 endpoints; omitted requests return 404."
           }
         ]
       },
       {
-        "slug": "cal-com-mcp-server",
-        "name": "Cal.com MCP server",
+        "slug": "cal-com-hosted-mcp-server",
+        "name": "Cal.com hosted MCP server",
         "type": "mcp",
         "docs": "https://cal.com/docs/mcp-server",
         "basis": {
@@ -161,7 +141,28 @@
                   "https://cal.com/docs/mcp-server"
                 ]
               }
-            },
+            }
+          ]
+        },
+        "url": "https://mcp.cal.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "cal-com-self-hosted-mcp-server",
+        "name": "Cal.com self-hosted MCP server",
+        "type": "mcp",
+        "docs": "https://cal.com/docs/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://cal.com/docs/mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
             {
               "use": [
                 {
@@ -183,15 +184,11 @@
               }
             }
           ]
-        },
-        "url": "https://mcp.cal.com/mcp",
-        "transports": [
-          "streamable-http"
-        ]
+        }
       },
       {
-        "slug": "cal-com-ai-agents-guidance",
-        "name": "Cal.com AI agents guidance",
+        "slug": "cal-com-cli",
+        "name": "Cal.com CLI",
         "type": "cli",
         "docs": "https://cal.com/docs/agents",
         "basis": {
@@ -209,10 +206,7 @@
                   "id": "cal_api_key",
                   "mechanics": {
                     "source": "cli",
-                    "command": "calcom login",
-                    "env": [
-                      "CAL_API_KEY"
-                    ]
+                    "command": "calcom login"
                   }
                 }
               ],
@@ -228,38 +222,44 @@
         "packages": [
           {
             "registryType": "npm",
-            "identifier": "@calcom/cli"
+            "identifier": "@calcom/cli",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "install-script",
+            "identifier": "https://cal.com/install.sh",
+            "runtimeHint": "bash"
           }
         ],
         "command": "calcom"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:13:40.617Z",
+  "discoveredAt": "2026-07-02T16:19:09.851Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 141663,
-    "completion_tokens": 1235,
-    "total_tokens": 142898
+    "prompt_tokens": 178174,
+    "completion_tokens": 1339,
+    "total_tokens": 179513
   },
   "visited": [
-    "https://cal.com/blog/where-is-my-api-key-and-what-can-it-do",
     "https://cal.com/docs/agents",
-    "https://cal.com/docs/api-reference/v2/access-control",
-    "https://cal.com/docs/api-reference/v2/api-keys",
+    "https://cal.com/docs/api-reference/v2/api-reference",
     "https://cal.com/docs/api-reference/v2/introduction",
     "https://cal.com/docs/api-reference/v2/oauth",
+    "https://cal.com/docs/llms.txt?raw=1",
     "https://cal.com/docs/mcp-server",
     "https://cal.com/llms.txt",
     "https://github.com/bcharleson/calcom-cli",
+    "https://mcpmarket.com/server/cal-com-calendar",
     "https://www.npmjs.com/package/@calcom/cal-mcp"
   ],
   "grounding": [
     "http://Cal.com",
-    "https://api.cal.com/v2/api-keys/refresh",
     "https://api.cal.com/v2/bookings",
     "https://api.cal.com/v2/bookings/{bookingUid}/cancel",
     "https://api.cal.com/v2/bookings/{bookingUid}/reschedule",
+    "https://api.cal.com/v2/calendars/busy-times?timeZone=Europe%2FMadrid&dateFrom=2024-12-18&dateTo=2024-12-18&calendarsToLoad[0",
     "https://api.cal.com/v2/credits/available",
     "https://api.cal.com/v2/credits/charge",
     "https://api.cal.com/v2/event-types?username=bailey",
@@ -310,8 +310,6 @@
     "https://cal.com/#available-scopes",
     "https://cal.com/#available-tools",
     "https://cal.com/#best-practices-for-ai-agents",
-    "https://cal.com/#body-api-key-days-valid",
-    "https://cal.com/#body-api-key-never-expires",
     "https://cal.com/#bookings",
     "https://cal.com/#callback-mode",
     "https://cal.com/#charge-credits",
@@ -324,7 +322,6 @@
     "https://cal.com/#credit-management",
     "https://cal.com/#deprecated-%26-maintenance-for-existing-users-only",
     "https://cal.com/#deprecated-&-maintenance-for-existing-users-only",
-    "https://cal.com/#endpoint-descriptions",
     "https://cal.com/#error-handling",
     "https://cal.com/#error-responses",
     "https://cal.com/#error-responses-2",
@@ -339,20 +336,13 @@
     "https://cal.com/#hosted-server-mcp-cal-com",
     "https://cal.com/#how-it-works",
     "https://cal.com/#how-it-works-2",
-    "https://cal.com/#how-to-tell-if-an-endpoint-supports-oauth",
     "https://cal.com/#implement-retry-logic",
     "https://cal.com/#important-notes",
     "https://cal.com/#legacy-client-migration",
-    "https://cal.com/#managing-memberships",
-    "https://cal.com/#managing-roles-and-permissions",
-    "https://cal.com/#oauth-access-token-scopes",
-    "https://cal.com/#organization-roles-grant-team-access",
     "https://cal.com/#organization-scopes",
     "https://cal.com/#organizations",
     "https://cal.com/#organizations-endpoints",
     "https://cal.com/#overview",
-    "https://cal.com/#parameter-authorization",
-    "https://cal.com/#pbac-permission-based-access-control",
     "https://cal.com/#platform-endpoints",
     "https://cal.com/#prerequisites",
     "https://cal.com/#props",
@@ -362,17 +352,9 @@
     "https://cal.com/#recommended-use-the-cal-com-cli",
     "https://cal.com/#redirect-mode",
     "https://cal.com/#related-resources",
-    "https://cal.com/#response-data",
-    "https://cal.com/#response-status",
-    "https://cal.com/#role-hierarchy",
-    "https://cal.com/#role-permissions",
-    "https://cal.com/#roles",
-    "https://cal.com/#roles-2",
     "https://cal.com/#routing-forms",
     "https://cal.com/#schedules",
-    "https://cal.com/#scope-levels",
     "https://cal.com/#self-hosted-server-stdio",
-    "https://cal.com/#setting-up-pbac",
     "https://cal.com/#step-1-update-your-authorization-url",
     "https://cal.com/#step-2-update-client-scopes-in-settings",
     "https://cal.com/#success-response-200",
@@ -390,45 +372,111 @@
     "https://cal.com/blog/cal-com-plans-explained",
     "https://cal.com/blog/cal-diy-open-source-to-closed-source",
     "https://cal.com/blog/calendly-pricing",
-    "https://cal.com/blog/where-is-my-api-key-and-what-can-it-do",
     "https://cal.com/docs",
     "https://cal.com/docs/agents",
+    "https://cal.com/docs/agents.md",
+    "https://cal.com/docs/api-refer",
     "https://cal.com/docs/api-reference/v2/access-control",
-    "https://cal.com/docs/api-reference/v2/api-keys",
-    "https://cal.com/docs/api-reference/v2/api-keys/refresh-api-key",
+    "https://cal.com/docs/api-reference/v2/access-control.md",
+    "https://cal.com/docs/api-reference/v2/api-keys/refresh-api-key.md",
+    "https://cal.com/docs/api-reference/v2/api-reference",
+    "https://cal.com/docs/api-reference/v2/bookings--email-verification/check-if-email-verification-is-required.md",
+    "https://cal.com/docs/api-reference/v2/bookings--email-verification/send-email-verification-code.md",
+    "https://cal.com/docs/api-reference/v2/bookings--email-verification/verify-email-with-code.md",
     "https://cal.com/docs/api-reference/v2/bookings-attendees/add-an-attendee-to-a-booking",
+    "https://cal.com/docs/api-reference/v2/bookings-attendees/add-an-attendee-to-a-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings-attendees/get-a-specific-attendee-for-a-booking",
+    "https://cal.com/docs/api-reference/v2/bookings-attendees/get-a-specific-attendee-for-a-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings-attendees/get-all-attendees-for-a-booking",
+    "https://cal.com/docs/api-reference/v2/bookings-attendees/get-all-attendees-for-a-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings-guests/add-guests-to-an-existing-booking",
+    "https://cal.com/docs/api-reference/v2/bookings-guests/add-guests-to-an-existing-booking.md",
+    "https://cal.com/docs/api-reference/v2/bookings-routing-trace/get-the-routing-trace-for-a-booking.md",
+    "https://cal.com/docs/api-reference/v2/bookings/cancel-a-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings/confirm-a-booking",
+    "https://cal.com/docs/api-reference/v2/bookings/confirm-a-booking.md",
+    "https://cal.com/docs/api-reference/v2/bookings/create-a-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings/decline-a-booking",
+    "https://cal.com/docs/api-reference/v2/bookings/decline-a-booking.md",
+    "https://cal.com/docs/api-reference/v2/bookings/get-a-booking-by-seat-uid.md",
+    "https://cal.com/docs/api-reference/v2/bookings/get-a-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings/get-add-to-calendar-links-for-a-booking",
+    "https://cal.com/docs/api-reference/v2/bookings/get-add-to-calendar-links-for-a-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings/get-all-bookings",
+    "https://cal.com/docs/api-reference/v2/bookings/get-all-bookings.md",
     "https://cal.com/docs/api-reference/v2/bookings/get-all-the-recordings-for-the-booking",
+    "https://cal.com/docs/api-reference/v2/bookings/get-all-the-recordings-for-the-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings/get-booking-references",
+    "https://cal.com/docs/api-reference/v2/bookings/get-booking-references.md",
     "https://cal.com/docs/api-reference/v2/bookings/get-cal-video-real-time-transcript-download-links-for-the-booking",
+    "https://cal.com/docs/api-reference/v2/bookings/get-cal-video-real-time-transcript-download-links-for-the-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings/get-video-meeting-sessions-only-supported-for-cal-video",
+    "https://cal.com/docs/api-reference/v2/bookings/get-video-meeting-sessions-only-supported-for-cal-video.md",
     "https://cal.com/docs/api-reference/v2/bookings/mark-a-booking-absence",
+    "https://cal.com/docs/api-reference/v2/bookings/mark-a-booking-absence.md",
     "https://cal.com/docs/api-reference/v2/bookings/reassign-a-booking-to-a-specific-host",
+    "https://cal.com/docs/api-reference/v2/bookings/reassign-a-booking-to-a-specific-host.md",
     "https://cal.com/docs/api-reference/v2/bookings/reassign-a-booking-to-auto-selected-host",
+    "https://cal.com/docs/api-reference/v2/bookings/reassign-a-booking-to-auto-selected-host.md",
     "https://cal.com/docs/api-reference/v2/bookings/request-to-reschedule-a-booking",
+    "https://cal.com/docs/api-reference/v2/bookings/request-to-reschedule-a-booking.md",
+    "https://cal.com/docs/api-reference/v2/bookings/reschedule-a-booking.md",
     "https://cal.com/docs/api-reference/v2/bookings/update-booking-location-for-an-existing-booking",
+    "https://cal.com/docs/api-reference/v2/bookings/update-booking-location-for-an-existing-booking.md",
     "https://cal.com/docs/api-reference/v2/cal-unified-calendars/get-meeting-details-from-calendar",
+    "https://cal.com/docs/api-reference/v2/cal-unified-calendars/get-meeting-details-from-calendar.md",
     "https://cal.com/docs/api-reference/v2/cal-unified-calendars/update-meeting-details-in-calendar",
+    "https://cal.com/docs/api-reference/v2/cal-unified-calendars/update-meeting-details-in-calendar.md",
     "https://cal.com/docs/api-reference/v2/calendars/check-a-calendar-connection",
+    "https://cal.com/docs/api-reference/v2/calendars/check-a-calendar-connection.md",
     "https://cal.com/docs/api-reference/v2/calendars/check-an-ics-feed",
+    "https://cal.com/docs/api-reference/v2/calendars/check-an-ics-feed.md",
     "https://cal.com/docs/api-reference/v2/calendars/disconnect-a-calendar",
+    "https://cal.com/docs/api-reference/v2/calendars/disconnect-a-calendar.md",
     "https://cal.com/docs/api-reference/v2/calendars/get-all-calendars",
+    "https://cal.com/docs/api-reference/v2/calendars/get-all-calendars.md",
     "https://cal.com/docs/api-reference/v2/calendars/get-busy-times",
+    "https://cal.com/docs/api-reference/v2/calendars/get-busy-times.md",
     "https://cal.com/docs/api-reference/v2/calendars/get-oauth-connect-url",
+    "https://cal.com/docs/api-reference/v2/calendars/get-oauth-connect-url.md",
     "https://cal.com/docs/api-reference/v2/calendars/save-an-ics-feed",
+    "https://cal.com/docs/api-reference/v2/calendars/save-an-ics-feed.md",
     "https://cal.com/docs/api-reference/v2/calendars/save-apple-calendar-credentials",
+    "https://cal.com/docs/api-reference/v2/calendars/save-apple-calendar-credentials.md",
+    "https://cal.com/docs/api-reference/v2/calendars/save-google-or-outlook-calendar-credentials.md",
+    "https://cal.com/docs/api-reference/v2/conferencing/conferencing-app-oauth-callback.md",
     "https://cal.com/docs/api-reference/v2/conferencing/connect-your-conferencing-application",
+    "https://cal.com/docs/api-reference/v2/conferencing/connect-your-conferencing-application.md",
     "https://cal.com/docs/api-reference/v2/conferencing/disconnect-your-conferencing-application",
+    "https://cal.com/docs/api-reference/v2/conferencing/disconnect-your-conferencing-application.md",
     "https://cal.com/docs/api-reference/v2/conferencing/get-oauth-conferencing-app-auth-url",
+    "https://cal.com/docs/api-reference/v2/conferencing/get-oauth-conferencing-app-auth-url.md",
     "https://cal.com/docs/api-reference/v2/conferencing/get-your-default-conferencing-application",
+    "https://cal.com/docs/api-reference/v2/conferencing/get-your-default-conferencing-application.md",
     "https://cal.com/docs/api-reference/v2/conferencing/list-your-conferencing-applications",
+    "https://cal.com/docs/api-reference/v2/conferencing/list-your-conferencing-applications.md",
     "https://cal.com/docs/api-reference/v2/conferencing/set-your-default-conferencing-application",
+    "https://cal.com/docs/api-reference/v2/conferencing/set-your-default-conferencing-application.md",
+    "https://cal.com/docs/api-reference/v2/credits/charge-credits.md",
+    "https://cal.com/docs/api-reference/v2/credits/check-available-credits.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-managed-users/create-a-managed-user.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-managed-users/delete-a-managed-user.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-managed-users/force-refresh-tokens.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-managed-users/get-a-managed-user.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-managed-users/get-all-managed-users.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-managed-users/refresh-managed-user-tokens.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-managed-users/update-a-managed-user.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-oauth-clients/create-an-oauth-client.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-oauth-clients/delete-an-oauth-client.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-oauth-clients/get-all-oauth-clients.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-oauth-clients/get-an-oauth-client.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-oauth-clients/update-an-oauth-client.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-webhooks/create-a-webhook.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-webhooks/delete-a-webhook.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-webhooks/delete-all-webhooks.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-webhooks/get-a-webhook.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-webhooks/get-all-webhooks.md",
+    "https://cal.com/docs/api-reference/v2/deprecated:-platform-webhooks/update-a-webhook.md",
     "https://cal.com/docs/api-reference/v2/destination-calendars/update-destination-calendars",
     "https://cal.com/docs/api-reference/v2/event-types-private-links/create-a-private-link-for-an-event-type",
     "https://cal.com/docs/api-reference/v2/event-types-private-links/delete-a-private-link-for-an-event-type",
@@ -452,31 +500,9 @@
     "https://cal.com/docs/api-reference/v2/me/update-my-booking-limits",
     "https://cal.com/docs/api-reference/v2/me/update-my-profile",
     "https://cal.com/docs/api-reference/v2/oauth",
-    "https://cal.com/docs/api-reference/v2/oauth#available-scopes",
     "https://cal.com/docs/api-reference/v2/oauth/post-v2oauth-refresh",
-    "https://cal.com/docs/api-reference/v2/oauth2/get-oauth2-client",
-    "https://cal.com/docs/api-reference/v2/organization-team-verified-resources/get-verified-phone-number-of-an-org-team-by-id",
     "https://cal.com/docs/api-reference/v2/orgs-event-types/create-an-event-type",
-    "https://cal.com/docs/api-reference/v2/orgs-memberships/create-a-membership",
-    "https://cal.com/docs/api-reference/v2/orgs-memberships/delete-a-membership",
-    "https://cal.com/docs/api-reference/v2/orgs-memberships/get-a-membership",
-    "https://cal.com/docs/api-reference/v2/orgs-memberships/get-all-memberships",
-    "https://cal.com/docs/api-reference/v2/orgs-memberships/update-a-membership",
-    "https://cal.com/docs/api-reference/v2/orgs-roles-permissions/add-permissions-to-an-organization-role-single-or-batch",
-    "https://cal.com/docs/api-reference/v2/orgs-roles-permissions/list-permissions-for-an-organization-role",
-    "https://cal.com/docs/api-reference/v2/orgs-roles-permissions/remove-a-permission-from-an-organization-role",
-    "https://cal.com/docs/api-reference/v2/orgs-roles-permissions/remove-multiple-permissions-from-an-organization-role",
-    "https://cal.com/docs/api-reference/v2/orgs-roles-permissions/replace-all-permissions-for-an-organization-role",
-    "https://cal.com/docs/api-reference/v2/orgs-roles/create-a-new-organization-role",
-    "https://cal.com/docs/api-reference/v2/orgs-roles/delete-an-organization-role",
-    "https://cal.com/docs/api-reference/v2/orgs-roles/get-a-specific-organization-role",
-    "https://cal.com/docs/api-reference/v2/orgs-roles/get-all-organization-roles",
-    "https://cal.com/docs/api-reference/v2/orgs-roles/update-an-organization-role",
     "https://cal.com/docs/api-reference/v2/orgs-teams-memberships/create-a-membership",
-    "https://cal.com/docs/api-reference/v2/orgs-teams-memberships/delete-a-membership",
-    "https://cal.com/docs/api-reference/v2/orgs-teams-memberships/get-a-membership",
-    "https://cal.com/docs/api-reference/v2/orgs-teams-memberships/get-all-memberships",
-    "https://cal.com/docs/api-reference/v2/orgs-teams-memberships/update-a-membership",
     "https://cal.com/docs/api-reference/v2/orgs-teams/create-a-team",
     "https://cal.com/docs/api-reference/v2/out-of-office/create-an-out-of-office-entry-for-the-authenticated-user",
     "https://cal.com/docs/api-reference/v2/out-of-office/delete-an-out-of-office-entry-for-the-authenticated-user",
@@ -512,6 +538,7 @@
     "https://cal.com/docs/atoms/introduction",
     "https://cal.com/docs/developing/local-development",
     "https://cal.com/docs/llms.txt",
+    "https://cal.com/docs/llms.txt?raw=1",
     "https://cal.com/docs/mcp-server",
     "https://cal.com/docs/self-hosting/installation",
     "https://cal.com/embed",
@@ -531,6 +558,7 @@
     "https://github.com/calcom/companion/tree/main/apps/mcp-server",
     "https://go.cal.com/support",
     "https://mcp.cal.com/mcp",
+    "https://mcpmarket.com/server/cal-com-calendar",
     "https://modelcontextprotocol.io/introduction",
     "https://www.cal.diy",
     "https://www.linkedin.com/company/cal-com",

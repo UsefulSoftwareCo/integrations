@@ -17,6 +17,7 @@ interface AssetsFetcher {
 let cached: Promise<number | null> | undefined;
 
 async function fromGitHub(): Promise<number | null> {
+  if (process.env.INTEGRATIONS_FETCH_GITHUB_STARS !== "1") return null;
   try {
     const res = await fetch(`https://api.github.com/repos/${REPO}`, {
       headers: { "User-Agent": "integrations.sh-build", Accept: "application/vnd.github+json" },

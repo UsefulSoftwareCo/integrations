@@ -10,21 +10,28 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T12:21:36.287Z",
-    "summary": "Doppler exposes a REST API, MCP server, and CLI; API/CLI use Doppler bearer tokens, and MCP/CLI can authenticate via `doppler login` or an existing token.",
+    "discoveredAt": "2026-07-02T16:22:07.233Z",
+    "summary": "Doppler exposes a REST API, CLI, and experimental MCP server; REST and CLI use API/service tokens or CLI login, while MCP auth could not be confirmed from the docs.",
     "credentials": {
-      "doppler_cli_token": {
-        "type": "bearer",
-        "label": "Doppler CLI token",
-        "generateUrl": "https://docs.doppler.com/docs/cli",
-        "setup": "Run `doppler login` and complete the browser-based sign-in, or paste an existing Doppler token when prompted. Doppler docs say the CLI can create or use a CLI token for local development. See [CLI Guide](https://docs.doppler.com/docs/cli) and [MCP Server](https://docs.doppler.com/docs/mcp).",
+      "doppler_api_key": {
+        "type": "api_key",
+        "label": "Doppler API key",
+        "generateUrl": "https://dashboard.doppler.com/workplace/settings/access-tokens",
+        "setup": "In the Doppler dashboard, open your workplace settings and create an API access token, or use the CLI login flow if you prefer local auth. Keep the value secret; it is used as an API credential for Doppler's REST API and CLI.",
         "acquisition": "manual"
       },
       "doppler_service_token": {
-        "type": "bearer",
+        "type": "api_key",
         "label": "Doppler service token",
-        "generateUrl": "https://docs.doppler.com/reference/api",
-        "setup": "Create a service token in Doppler for restricted application access. The API reference says high-entropy tokens authenticate requests, and the CLI guide notes service tokens are used for production access. Use the Doppler dashboard/docs path for service token creation, then copy the token into your app or CI secret store. See [API Reference](https://docs.doppler.com/reference/api) and [CLI Guide](https://docs.doppler.com/docs/cli).",
+        "generateUrl": "https://dashboard.doppler.com/workplace/service-tokens",
+        "setup": "In the Doppler dashboard, create a service token for the workplace/config you want to grant restricted machine access to. Use this when an integration or runtime should only read a limited config scope.",
+        "acquisition": "manual"
+      },
+      "doppler_cli_login": {
+        "type": "bearer",
+        "label": "Doppler CLI login session",
+        "generateUrl": "https://docs.doppler.com/docs/cli",
+        "setup": "Install the Doppler CLI and run `doppler login`. The CLI will open the browser-based login flow and store the resulting session for local use. This is the easiest path for interactive developer access.",
         "acquisition": "manual"
       }
     },
@@ -38,13 +45,32 @@
           "via": "discovered",
           "evidence": [
             "https://docs.doppler.com/reference/api",
-            "https://docs.doppler.com/reference/auth-token-formats",
-            "https://docs.doppler.com/llms.txt"
+            "https://docs.doppler.com/reference/auth-token-formats"
           ]
         },
         "auth": {
           "status": "required",
           "entries": [
+            {
+              "use": [
+                {
+                  "id": "doppler_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.doppler.com/reference/auth-token-formats",
+                  "https://docs.doppler.com/reference/api"
+                ]
+              }
+            },
             {
               "use": [
                 {
@@ -55,67 +81,18 @@
                     "headerName": "Authorization",
                     "scheme": "Bearer"
                   }
-                },
-                {
-                  "id": "doppler_cli_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.doppler.com/reference/api",
-                  "https://docs.doppler.com/reference/auth-token-formats"
+                  "https://docs.doppler.com/reference/auth-token-formats",
+                  "https://docs.doppler.com/reference/api"
                 ]
               }
             }
           ]
         }
-      },
-      {
-        "slug": "doppler-mcp-server",
-        "name": "Doppler MCP Server",
-        "type": "mcp",
-        "docs": "https://docs.doppler.com/docs/mcp",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.doppler.com/docs/mcp",
-            "https://docs.doppler.com/docs/cli"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "doppler_cli_token",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "doppler login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.doppler.com/docs/mcp",
-                  "https://docs.doppler.com/docs/cli"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://docs.doppler.com/docs/mcp",
-        "transports": [
-          "streamable-http"
-        ]
       },
       {
         "slug": "doppler-cli",
@@ -135,10 +112,19 @@
             {
               "use": [
                 {
-                  "id": "doppler_cli_token",
+                  "id": "doppler_cli_login",
                   "mechanics": {
                     "source": "cli",
                     "command": "doppler login"
+                  }
+                },
+                {
+                  "id": "doppler_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "DOPPLER_TOKEN"
+                    ]
                   }
                 },
                 {
@@ -155,7 +141,8 @@
                 "via": "discovered",
                 "evidence": [
                   "https://docs.doppler.com/docs/cli",
-                  "https://docs.doppler.com/docs/install-cli"
+                  "https://docs.doppler.com/docs/install-cli",
+                  "https://docs.doppler.com/reference/auth-token-formats"
                 ]
               }
             }
@@ -163,40 +150,60 @@
         },
         "packages": [
           {
-            "registryType": "npm",
-            "identifier": "doppler-cli",
-            "runtimeHint": "node"
+            "registryType": "brew",
+            "identifier": "dopplerhq/cli/doppler",
+            "runtimeHint": "macOS"
           },
           {
-            "registryType": "homebrew",
-            "identifier": "dopplerhq/cli/doppler"
+            "registryType": "apt",
+            "identifier": "doppler",
+            "runtimeHint": "Debian/Ubuntu"
           },
           {
-            "registryType": "github-release",
-            "identifier": "DopplerHQ/cli",
-            "runtimeHint": "go"
+            "registryType": "scoop",
+            "identifier": "doppler",
+            "runtimeHint": "Windows"
           }
         ],
         "command": "doppler"
+      },
+      {
+        "slug": "doppler-mcp-server",
+        "name": "Doppler MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.doppler.com/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.doppler.com/docs/mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "transports": [
+          "streamable-http"
+        ]
       }
     ]
   },
-  "discoveredAt": "2026-07-02T12:21:36.287Z",
+  "discoveredAt": "2026-07-02T16:22:07.233Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 179019,
-    "completion_tokens": 1343,
-    "total_tokens": 180362
+    "prompt_tokens": 134579,
+    "completion_tokens": 1078,
+    "total_tokens": 135657
   },
   "visited": [
     "https://docs.doppler.com/",
     "https://docs.doppler.com/docs/cli",
+    "https://docs.doppler.com/docs/cli-migration",
     "https://docs.doppler.com/docs/install-cli",
     "https://docs.doppler.com/docs/mcp",
     "https://docs.doppler.com/llms.txt",
     "https://docs.doppler.com/reference/api",
     "https://docs.doppler.com/reference/auth-token-formats",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+    "https://github.com/DopplerHQ/cli"
   ],
   "grounding": [
     "https://api.doppler.com/v3/configs/config/secrets/download?format=json",
@@ -691,11 +698,11 @@
     "https://docs.doppler.com/reference/workplace_roles-list",
     "https://docs.doppler.com/reference/workplace_roles-list_permissions",
     "https://docs.doppler.com/reference/workplace_roles-update",
+    "https://github.com/DopplerHQ/cli",
     "https://github.com/DopplerHQ/cli/releases/",
     "https://god.gw.postman.com/run-collection/18131534-dc9d717d-e67f-4270-9947-2268e27c3978?action=collection%2Ffork&collection-url=entityId%3D18131534-dc9d717d-e67f-4270-9947-2268e27c3978%26entityType%3Dcollection%26workspaceId%3Dd27a0b96-1b29-4710-ae19-7b29ccb7eb95",
     "https://modelcontextprotocol.io/",
     "https://status.doppler.com",
-    "https://support.doppler.com",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+    "https://support.doppler.com"
   ]
 }

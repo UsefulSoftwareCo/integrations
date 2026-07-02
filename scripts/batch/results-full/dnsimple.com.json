@@ -12,28 +12,28 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T12:18:28.718Z",
-    "summary": "DNSimple exposes one public HTTP API v2 and one CLI; no GraphQL or MCP surface was found. API auth supports Basic with optional OTP and Bearer API tokens, while the CLI authenticates via browser OAuth/PKCE or API token login.",
+    "discoveredAt": "2026-07-02T16:22:13.315Z",
+    "summary": "DNSimple exposes one public integration API (API v2 over HTTP) and one CLI; both support browser/OAuth login and token-based auth, with API v2 also supporting HTTP Basic and OAuth bearer tokens.",
     "credentials": {
+      "dnsimple_basic": {
+        "type": "basic",
+        "label": "DNSimple account password for HTTP Basic auth",
+        "generateUrl": "https://dnsimple.com/user",
+        "setup": "Go to the DNSimple app at [dnsimple.com/user](https://dnsimple.com/user) and sign in to your account. The API supports HTTP Basic auth with your `EMAIL:PASSWORD` pair; for two-factor accounts, also send the `X-Dnsimple-OTP` header with your 2FA code. Use this when you want to authenticate directly without OAuth.",
+        "acquisition": "manual"
+      },
+      "dnsimple_oauth_client": {
+        "type": "oauth2",
+        "label": "DNSimple OAuth application client credentials",
+        "generateUrl": "https://dnsimple.com/user",
+        "setup": "Register an OAuth application in the DNSimple app and copy its `client_id` and `client_secret`. DNSimple says confidential clients are the default web-app type; public clients (native/CLI) can be enabled on request. Use the app’s exact registered redirect URI; for native/CLI apps, use a loopback redirect URI and PKCE with `S256`.",
+        "acquisition": "manual"
+      },
       "dnsimple_api_token": {
         "type": "bearer",
         "label": "DNSimple API token",
         "generateUrl": "https://dnsimple.com/user",
-        "setup": "Go to the DNSimple user area for your environment: [production](https://dnsimple.com/user) or [sandbox](https://sandbox.dnsimple.com/user). Create an API token there. DNSimple documents both classic and scoped access tokens; scoped account access tokens may be available on certain plans. Use the token as a bearer token for API and CLI login.",
-        "acquisition": "manual"
-      },
-      "dnsimple_basic_password": {
-        "type": "basic",
-        "label": "DNSimple account password",
-        "generateUrl": "https://dnsimple.com/user",
-        "setup": "Use your DNSimple account email and password. DNSimple API v2 supports HTTP Basic Authentication for user authentication. If your account has two-factor authentication enabled, you must also send the `X-Dnsimple-OTP` header with your OTP code.",
-        "acquisition": "manual"
-      },
-      "dnsimple_oauth_app": {
-        "type": "oauth2",
-        "label": "DNSimple OAuth application client",
-        "generateUrl": "https://dnsimple.com/user",
-        "setup": "Register an OAuth application in DNSimple. The app gets a `client_id`; confidential web apps also get a `client_secret`. Public clients (native/mobile/SPA/CLI) use PKCE with `code_challenge_method=S256` and do not use a client secret. DNSimple notes public clients may need support-enabled registration.",
+        "setup": "Create an API token from your DNSimple account settings in the DNSimple app. DNSimple’s CLI docs point to API token creation in the app and support both classic and scoped tokens. Use the token as a bearer token for API v2 requests or paste it into the CLI when prompted by `dnsimple auth login --with-token`.",
         "acquisition": "manual"
       }
     },
@@ -56,10 +56,10 @@
             {
               "use": [
                 {
-                  "id": "dnsimple_basic_password",
+                  "id": "dnsimple_basic",
                   "mechanics": {
-                    "source": "spec",
-                    "scheme": "basicAuth"
+                    "source": "http",
+                    "scheme": "Basic"
                   }
                 }
               ],
@@ -76,8 +76,8 @@
                 {
                   "id": "dnsimple_api_token",
                   "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearerAuth"
+                    "source": "http",
+                    "scheme": "Bearer"
                   }
                 }
               ],
@@ -91,7 +91,7 @@
             }
           ]
         },
-        "url": "https://api.dnsimple.com/v2/"
+        "url": "https://api.dnsimple.com/v2"
       },
       {
         "slug": "dnsimple-cli",
@@ -101,8 +101,7 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://developer.dnsimple.com/cli/",
-            "https://developer.dnsimple.com/v2/oauth/"
+            "https://developer.dnsimple.com/cli/"
           ]
         },
         "auth": {
@@ -116,29 +115,19 @@
                     "source": "cli",
                     "command": "dnsimple auth login --with-token"
                   }
-                },
-                {
-                  "id": "dnsimple_api_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://developer.dnsimple.com/cli/",
-                  "https://developer.dnsimple.com/v2/"
+                  "https://developer.dnsimple.com/cli/"
                 ]
               }
             },
             {
               "use": [
                 {
-                  "id": "dnsimple_oauth_app",
+                  "id": "dnsimple_oauth_client",
                   "mechanics": {
                     "source": "cli",
                     "command": "dnsimple auth login"
@@ -148,8 +137,7 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://developer.dnsimple.com/cli/",
-                  "https://developer.dnsimple.com/v2/oauth/"
+                  "https://developer.dnsimple.com/cli/"
                 ]
               }
             }
@@ -157,8 +145,13 @@
         },
         "packages": [
           {
-            "registryType": "homebrew",
+            "registryType": "brew",
             "identifier": "dnsimple/tap/dnsimple",
+            "runtimeHint": "homebrew"
+          },
+          {
+            "registryType": "go",
+            "identifier": "github.com/dnsimple/cli/cmd/dnsimple@latest",
             "runtimeHint": "go"
           }
         ],
@@ -166,15 +159,14 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T12:18:28.718Z",
+  "discoveredAt": "2026-07-02T16:22:13.315Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 105250,
-    "completion_tokens": 1365,
-    "total_tokens": 106615
+    "prompt_tokens": 120967,
+    "completion_tokens": 1286,
+    "total_tokens": 122253
   },
   "visited": [
-    "https://blog.dnsimple.com/2026/05/announcing-the-dnsimple-cli/",
     "https://developer.appdirect.com/references-api/llms",
     "https://developer.dnsimple.com/cli/",
     "https://developer.dnsimple.com/v2/",
@@ -182,7 +174,9 @@
     "https://developer.dnsimple.com/v2/openapi.json",
     "https://developer.dnsimple.com/v2/openapi.yml",
     "https://dnsimple.com/llms.txt",
-    "https://www.speakeasy.com/llms.txt",
+    "https://support.dnsimple.com/articles/api-documentation/",
+    "https://www.apollographql.com/blog/building-mcp-tools-with-graphql-a-better-way-to-connect-llms-to-your-api",
+    "https://www.plain.com/docs/graphql/introduction",
     "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ],
   "grounding": [
@@ -202,7 +196,6 @@
     "https://api.dnsimple.com/v2/whoami",
     "https://api.sandbox.dnsimple.com/v2",
     "https://blog.dnsimple.com/",
-    "https://blog.dnsimple.com/2026/05/announcing-the-dnsimple-cli/",
     "https://cli-beta.dnsimple.com/install.ps1",
     "https://developer.appdirect.com/references-api/llms",
     "https://developer.dnsimple.com",
@@ -295,6 +288,8 @@
     "https://dnsimple.com/business",
     "https://dnsimple.com/campaign/support?utm_source=developer&utm_medium=web&utm_content=cta-footer",
     "https://dnsimple.com/campaign/support?utm_source=developer&utm_medium=web&utm_content=link-footer",
+    "https://dnsimple.com/campaign/support?utm_source=support&utm_medium=web&utm_content=cta-footer",
+    "https://dnsimple.com/campaign/support?utm_source=support&utm_medium=web&utm_content=link-footer",
     "https://dnsimple.com/cli",
     "https://dnsimple.com/compare-dnsimple",
     "https://dnsimple.com/contact",
@@ -312,6 +307,7 @@
     "https://dnsimple.com/dnsimple-vs-self-hosting",
     "https://dnsimple.com/enterprises",
     "https://dnsimple.com/enterprises?utm_source=developer&utm_medium=web&utm_content=cta-header#contact-sales",
+    "https://dnsimple.com/enterprises?utm_source=support&utm_medium=web&utm_content=cta-header#contact-sales",
     "https://dnsimple.com/how-to-avoid-dns-downtime",
     "https://dnsimple.com/how-to-transfer-a-domain-without-downtime",
     "https://dnsimple.com/insurance-hosting",
@@ -332,10 +328,12 @@
     "https://dnsimple.com/secondary-dns",
     "https://dnsimple.com/signup",
     "https://dnsimple.com/signup?utm_source=developer&utm_medium=web&utm_content=cta-header",
+    "https://dnsimple.com/signup?utm_source=support&utm_medium=web&utm_content=cta-header",
     "https://dnsimple.com/terms",
     "https://dnsimple.com/url-forwarding-301-redirect",
     "https://dnsimple.com/user",
     "https://dnsimple.com/webhooks",
+    "https://dnsimplestatus.com/",
     "https://en.wikipedia.org/wiki/ISO_8601",
     "https://example.com/dnsimple/webhook",
     "https://github.com/dnsimple",
@@ -346,15 +344,40 @@
     "https://sandbox.dnsimple.com/user",
     "https://support.dnsimple.com",
     "https://support.dnsimple.com/",
+    "https://support.dnsimple.com/#",
     "https://support.dnsimple.com/articles/account-invoice-history/#retrying",
     "https://support.dnsimple.com/articles/api-access-token/",
     "https://support.dnsimple.com/articles/api-access-token/#scoped-access-tokens",
+    "https://support.dnsimple.com/articles/api-documentation/",
+    "https://support.dnsimple.com/articles/api-errors/",
     "https://support.dnsimple.com/articles/dnsimple-plans/",
     "https://support.dnsimple.com/articles/domain-access-control/",
+    "https://support.dnsimple.com/categories/account/",
+    "https://support.dnsimple.com/categories/api/",
+    "https://support.dnsimple.com/categories/cli/",
+    "https://support.dnsimple.com/categories/connectors/",
+    "https://support.dnsimple.com/categories/contacts/",
+    "https://support.dnsimple.com/categories/dns/",
+    "https://support.dnsimple.com/categories/dnsimple/",
+    "https://support.dnsimple.com/categories/dnssec/",
+    "https://support.dnsimple.com/categories/domains-and-transfers/",
+    "https://support.dnsimple.com/categories/emails/",
+    "https://support.dnsimple.com/categories/enterprise/",
+    "https://support.dnsimple.com/categories/guides/",
+    "https://support.dnsimple.com/categories/integrations/",
+    "https://support.dnsimple.com/categories/name-servers/",
+    "https://support.dnsimple.com/categories/secondary-dns/",
+    "https://support.dnsimple.com/categories/services/",
+    "https://support.dnsimple.com/categories/ssl-certificates/",
+    "https://support.dnsimple.com/categories/templates/",
+    "https://support.dnsimple.com/categories/tlds/",
+    "https://support.dnsimple.com/categories/whois-privacy/",
+    "https://support.dnsimple.com/javascript",
+    "https://www.apollographql.com/blog/building-mcp-tools-with-graphql-a-better-way-to-connect-llms-to-your-api",
     "https://www.linkedin.com/company/dnsimple",
+    "https://www.plain.com/docs/graphql/introduction",
     "https://www.rfc-editor.org/rfc/rfc7636",
     "https://www.rfc-editor.org/rfc/rfc8252#section-7.3",
-    "https://www.speakeasy.com/llms.txt",
     "https://www.youtube.com/user/dnsimple",
     "https://www.youtube.com/watch?v=tMTsNn09GNo",
     "https://x.com/dnsimple"

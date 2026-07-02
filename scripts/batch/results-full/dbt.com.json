@@ -10,41 +10,49 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T12:07:51.978Z",
-    "summary": "dbt exposes Administrative, Discovery, and Semantic Layer GraphQL APIs, plus an MCP server and the dbt CLI; API and MCP access use PATs or service tokens, while MCP also supports OAuth.",
+    "discoveredAt": "2026-07-02T16:22:18.186Z",
+    "summary": "dbt.com exposes two developer surfaces: the dbt Cloud REST APIs (v2/v3, base URL https://cloud.getdbt.com/) authenticated with either a personal access token or service account token in the `Authorization` header using `Token <token>` or `Bearer <token>`, and the Discovery API GraphQL endpoint (https://metadata.cloud.getdbt.com/graphql) authenticated with a service token in `Authorization` as `Token` or `Bearer`; dbt also documents an MCP server for local/remote use that connects via OAuth or tokens.",
     "credentials": {
       "dbt_pat": {
         "type": "bearer",
-        "label": "dbt personal access token",
+        "label": "dbt Personal Access Token",
         "generateUrl": "https://docs.getdbt.com/docs/dbt-apis/user-tokens",
-        "setup": "Go to the dbt platform and create a personal access token from your user account. The auth docs say PATs are the preferred secure way to access dbt APIs on behalf of a user. Start from the [authentication tokens overview](https://docs.getdbt.com/docs/dbt-apis/authentication) and then follow the [personal access tokens guide](https://docs.getdbt.com/docs/dbt-apis/user-tokens).",
+        "setup": "Go to your dbt account settings, open **Personal Tokens**, and create a token. Then send it in the `Authorization` header with the `Token` prefix (or `Bearer`, which dbt says is equivalent).",
         "acquisition": "manual"
       },
       "dbt_service_token": {
         "type": "bearer",
-        "label": "dbt service account token",
+        "label": "dbt Service Account Token",
         "generateUrl": "https://docs.getdbt.com/docs/dbt-apis/service-tokens",
-        "setup": "Create a service account token in dbt platform for production or other system-level integrations. The auth docs recommend service tokens for partner integrations, production Terraform, and other service-account workflows. Start from the [authentication tokens overview](https://docs.getdbt.com/docs/dbt-apis/authentication) and then follow the [service account tokens guide](https://docs.getdbt.com/docs/dbt-apis/service-tokens).",
+        "setup": "Create a service account token in dbt account settings for automated access to the dbt APIs. Use it the same way as a PAT in the `Authorization` header with `Token` (or `Bearer`).",
         "acquisition": "manual"
       },
-      "dbt_oauth": {
+      "dbt_oauth_session": {
         "type": "oauth2",
-        "label": "dbt platform OAuth access",
-        "generateUrl": "https://docs.getdbt.com/docs/platform/manage-access/connect-apps-oauth",
-        "setup": "Create an OAuth app in dbt platform if you are building an external app that needs user-consented access. The docs say admins manage OAuth 2.0 client registrations in the App integrations section. Start from [Connect apps with OAuth](https://docs.getdbt.com/docs/platform/manage-access/connect-apps-oauth).",
+        "label": "dbt platform OAuth session",
+        "generateUrl": "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-oauth",
+        "setup": "Use the dbt platform OAuth quickstart for MCP access to a connected account. Complete the login flow in the dbt platform / Wizard setup so the managed remote services can access your account context.",
+        "acquisition": "ambient"
+      },
+      "dbt_mcp_tokens": {
+        "type": "compound",
+        "label": "dbt MCP access tokens",
+        "generateUrl": "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-oauth",
+        "setup": "For token-based MCP setups, create the dbt tokens the quickstart references and wire them into your MCP client configuration instead of OAuth. dbt's docs describe token-based auth as the fallback when a client does not support OAuth or when you need shared/server-side access.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "dbt-administrative-api",
-        "name": "dbt Administrative API",
+        "slug": "dbt-cloud-api-v2",
+        "name": "dbt Cloud API v2",
         "type": "http",
-        "docs": "https://docs.getdbt.com/docs/dbt-apis/admin-api",
+        "docs": "https://docs.getdbt.com/dbt-cloud/api-v2",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.getdbt.com/docs/dbt-apis/admin-api",
+            "https://docs.getdbt.com/dbt-cloud/api-v2",
+            "https://docs.getdbt.com/docs/dbt-apis/overview",
             "https://docs.getdbt.com/docs/dbt-apis/authentication"
           ]
         },
@@ -56,142 +64,18 @@
                 {
                   "id": "dbt_pat",
                   "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearer"
-                  }
-                },
-                {
-                  "id": "dbt_service_token",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearer"
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Token"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
+                  "https://docs.getdbt.com/dbt-cloud/api-v2",
                   "https://docs.getdbt.com/docs/dbt-apis/authentication"
-                ]
-              }
-            }
-          ]
-        }
-      },
-      {
-        "slug": "dbt-discovery-api",
-        "name": "dbt Discovery API",
-        "type": "http",
-        "docs": "https://docs.getdbt.com/docs/dbt-apis/discovery-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.getdbt.com/docs/dbt-apis/discovery-api",
-            "https://docs.getdbt.com/docs/dbt-apis/authentication"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "dbt_pat",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearer"
-                  }
-                },
-                {
-                  "id": "dbt_service_token",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.getdbt.com/docs/dbt-apis/authentication"
-                ]
-              }
-            }
-          ]
-        }
-      },
-      {
-        "slug": "dbt-semantic-layer-graphql-api",
-        "name": "dbt Semantic Layer GraphQL API",
-        "type": "graphql",
-        "docs": "https://docs.getdbt.com/docs/dbt-apis/sl-api-overview",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.getdbt.com/docs/dbt-apis/sl-api-overview"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "dbt_pat",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearer"
-                  }
-                },
-                {
-                  "id": "dbt_service_token",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.getdbt.com/docs/dbt-apis/authentication"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://docs.getdbt.com/docs/dbt-apis/sl-graphql"
-      },
-      {
-        "slug": "dbt-mcp-server",
-        "name": "dbt MCP server",
-        "type": "mcp",
-        "docs": "https://docs.getdbt.com/docs/dbt-ai/about-mcp",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.getdbt.com/docs/dbt-ai/about-mcp",
-            "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-oauth",
-            "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-cli",
-            "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-remote"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "dbt_oauth",
-                  "mechanics": {
-                    "source": "well-known"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-oauth"
                 ]
               }
             },
@@ -205,7 +89,38 @@
                     "headerName": "Authorization",
                     "scheme": "Bearer"
                   }
-                },
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.getdbt.com/dbt-cloud/api-v2",
+                  "https://docs.getdbt.com/docs/dbt-apis/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "dbt_service_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.getdbt.com/dbt-cloud/api-v2",
+                  "https://docs.getdbt.com/docs/dbt-apis/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
                 {
                   "id": "dbt_service_token",
                   "mechanics": {
@@ -219,163 +134,250 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-remote"
+                  "https://docs.getdbt.com/dbt-cloud/api-v2",
+                  "https://docs.getdbt.com/docs/dbt-apis/authentication"
                 ]
               }
             }
           ]
         },
-        "url": "https://docs.getdbt.com/docs/dbt-ai/about-mcp",
-        "transports": [
-          "streamable-http",
-          "sse"
-        ]
+        "url": "https://cloud.getdbt.com/"
       },
       {
-        "slug": "dbt-cli",
-        "name": "dbt CLI",
-        "type": "cli",
-        "docs": "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-cli",
+        "slug": "discovery-api",
+        "name": "Discovery API",
+        "type": "graphql",
+        "docs": "https://docs.getdbt.com/docs/dbt-apis/discovery-api",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-cli",
-            "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-oauth"
+            "https://docs.getdbt.com/docs/dbt-apis/discovery-querying",
+            "https://docs.getdbt.com/docs/dbt-apis/discovery-api"
           ]
         },
         "auth": {
-          "status": "unknown"
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dbt_service_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.getdbt.com/docs/dbt-apis/discovery-querying"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "dbt_service_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.getdbt.com/docs/dbt-apis/discovery-querying"
+                ]
+              }
+            }
+          ]
         },
-        "command": "dbt"
+        "url": "https://metadata.cloud.getdbt.com/graphql"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T12:07:51.979Z",
+  "discoveredAt": "2026-07-02T16:22:18.187Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 302908,
-    "completion_tokens": 1722,
-    "total_tokens": 304630
+    "prompt_tokens": 404147,
+    "completion_tokens": 2518,
+    "total_tokens": 406665
   },
   "visited": [
+    "https://docs.getdbt.com/dbt-cloud/api-v2",
+    "https://docs.getdbt.com/dbt-cloud/api-v3",
     "https://docs.getdbt.com/docs/dbt-ai/about-mcp",
     "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-cli",
     "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-oauth",
-    "https://docs.getdbt.com/docs/dbt-ai/mcp-quickstart-remote",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-mcp",
     "https://docs.getdbt.com/docs/dbt-apis/admin-api",
     "https://docs.getdbt.com/docs/dbt-apis/authentication",
     "https://docs.getdbt.com/docs/dbt-apis/discovery-api",
+    "https://docs.getdbt.com/docs/dbt-apis/discovery-querying",
     "https://docs.getdbt.com/docs/dbt-apis/overview",
     "https://docs.getdbt.com/docs/dbt-apis/sl-api-overview",
-    "https://docs.getdbt.com/docs/platform/manage-access/connect-apps-oauth",
+    "https://docs.getdbt.com/docs/dbt-apis/sl-graphql",
+    "https://docs.getdbt.com/docs/dbt-versions",
+    "https://docs.getdbt.com/docs/local/install-dbt",
+    "https://docs.getdbt.com/docs/platform/configure-dbt-cli",
+    "https://docs.getdbt.com/docs/platform/dbt-cli-installation",
+    "https://docs.getdbt.com/docs/use-dbt-semantic-layer/setup-sl",
+    "https://docs.getdbt.com/guides/manual-install",
+    "https://docs.getdbt.com/reference/dbt-commands",
     "https://github.com/dbt-labs/dbt-mcp",
+    "https://glama.ai/mcp/servers/MammothGrowth/dbt-cli-mcp",
     "https://lobehub.com/it/skills/dbt-labs-dbt-agent-skills-configuring-dbt-mcp-server",
-    "https://mcpservers.org/servers/MammothGrowth/dbt-cli-mcp",
-    "https://x.com/getdbt/status/2071640007945687241"
+    "https://www.youtube.com/watch?v=TL7k7jZrfa8"
   ],
   "grounding": [
-    "https://YOUR_DBT_HOST_URL/api/ai/v1/mcp",
-    "https://YOUR_DBT_HOST_URL/api/ai/v1/mcp/",
-    "https://YOUR_PREFIX.dbt.com/oauth/authorize",
-    "https://YOUR_PREFIX.dbt.com/oauth/token",
+    "http://brew.sh/",
+    "https://ACCOUNT_PREFIX.metadata.REGION.dbt.com/graphql",
+    "https://ACCOUNT_PREFIX.metadata.ROUTING_SUBDOMAIN.dbt.com/graphql",
+    "https://YOUR_ACCOUNT_PREFIX.semantic-layer.REGION.dbt.com/api/graphql",
+    "https://abc123.metadata.us1.dbt.com/graphql",
     "https://abc123.us1.dbt.com",
-    "https://abc123.us1.dbt.com/api/ai/v1/mcp",
+    "https://api.githubcopilot.com/mcp/",
     "https://archiveprogram.github.com",
+    "https://au.dbt.com/",
     "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fabout-mcp+so+I+can+ask+questions+about+it",
     "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-cli+so+I+can+ask+questions+about+it",
     "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-oauth+so+I+can+ask+questions+about+it",
-    "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-remote+so+I+can+ask+questions+about+it",
+    "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fwizard-mcp+so+I+can+ask+questions+about+it",
     "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fadmin-api+so+I+can+ask+questions+about+it",
     "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fauthentication+so+I+can+ask+questions+about+it",
     "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fdiscovery-api+so+I+can+ask+questions+about+it",
+    "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fdiscovery-querying+so+I+can+ask+questions+about+it",
     "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Foverview+so+I+can+ask+questions+about+it",
     "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fsl-api-overview+so+I+can+ask+questions+about+it",
-    "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fplatform%2Fmanage-access%2Fconnect-apps-oauth+so+I+can+ask+questions+about+it",
+    "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fsl-graphql+so+I+can+ask+questions+about+it",
+    "https://chatgpt.com/?hints=search&prompt=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fplatform%2Fdbt-cli-installation+so+I+can+ask+questions+about+it",
     "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fabout-mcp+so+I+can+ask+questions+about+it",
     "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-cli+so+I+can+ask+questions+about+it",
     "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-oauth+so+I+can+ask+questions+about+it",
-    "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-remote+so+I+can+ask+questions+about+it",
+    "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fwizard-mcp+so+I+can+ask+questions+about+it",
     "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fadmin-api+so+I+can+ask+questions+about+it",
     "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fauthentication+so+I+can+ask+questions+about+it",
     "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fdiscovery-api+so+I+can+ask+questions+about+it",
+    "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fdiscovery-querying+so+I+can+ask+questions+about+it",
     "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Foverview+so+I+can+ask+questions+about+it",
     "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fsl-api-overview+so+I+can+ask+questions+about+it",
-    "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fplatform%2Fmanage-access%2Fconnect-apps-oauth+so+I+can+ask+questions+about+it",
+    "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fsl-graphql+so+I+can+ask+questions+about+it",
+    "https://claude.ai/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fplatform%2Fdbt-cli-installation+so+I+can+ask+questions+about+it",
     "https://claude.com/claude-code",
     "https://cloud.getdbt.com",
-    "https://cloud.getdbt.com/api/ai/v1/mcp/",
+    "https://cloud.getdbt.com/",
+    "https://cloud.getdbt.com/api/v3/accounts/",
     "https://cloud.getdbt.com/deploy/12345/projects/67890/environments/54321DBT_USER_ID=https://cloud.getdbt.com/settings/profile",
     "https://cookiepedia.co.uk/giving-consent-to-cookies",
-    "https://datatracker.ietf.org/doc/html/rfc7591",
-    "https://datatracker.ietf.org/doc/html/rfc7636",
+    "https://datatracker.ietf.org/doc/html/rfc8707",
     "https://discourse.getdbt.com/",
     "https://docs.astral.sh/uv/getting-started/installation/",
     "https://docs.getdbt.com/#",
-    "https://docs.getdbt.com/#1-enable-ai-features",
-    "https://docs.getdbt.com/#2-get-your-credentials",
-    "https://docs.getdbt.com/#3-choose-authentication-oauth-or-tokens",
-    "https://docs.getdbt.com/#4-get-your-mcp-url-and-ids",
-    "https://docs.getdbt.com/#5-configure-your-mcp-client",
+    "https://docs.getdbt.com/#/",
+    "https://docs.getdbt.com/#/#authentication",
+    "https://docs.getdbt.com/#/#example-request",
+    "https://docs.getdbt.com/#/#pagination",
+    "https://docs.getdbt.com/#/mailto:support@getdbt.com",
     "https://docs.getdbt.com/#__docusaurus_skipToContent_fallback",
+    "https://docs.getdbt.com/#access-the-discovery-api",
+    "https://docs.getdbt.com/#add-an-mcp-server",
     "https://docs.getdbt.com/#add-the-config-to-your-mcp-client",
     "https://docs.getdbt.com/#add-the-config-to-your-mcp-client-1",
+    "https://docs.getdbt.com/#authorization",
     "https://docs.getdbt.com/#available-tools",
+    "https://docs.getdbt.com/#configuration-keys",
+    "https://docs.getdbt.com/#create-metric-query",
+    "https://docs.getdbt.com/#create-query",
     "https://docs.getdbt.com/#data-retention",
-    "https://docs.getdbt.com/#dynamic-registration",
+    "https://docs.getdbt.com/#dbt-mcp-server",
+    "https://docs.getdbt.com/#dbt-semantic-layer-graphql-api",
+    "https://docs.getdbt.com/#dimension-types",
+    "https://docs.getdbt.com/#discovery-api-endpoints",
+    "https://docs.getdbt.com/#faqs",
+    "https://docs.getdbt.com/#fetch-available-dimensions-for-metrics",
+    "https://docs.getdbt.com/#fetch-available-granularities-given-metrics",
+    "https://docs.getdbt.com/#fetch-available-metrics",
+    "https://docs.getdbt.com/#fetch-data-platform-dialect",
+    "https://docs.getdbt.com/#fetch-entities",
+    "https://docs.getdbt.com/#fetch-entities-and-dimensions-to-group-metrics",
+    "https://docs.getdbt.com/#fetch-query-result",
     "https://docs.getdbt.com/#find-your-access-url",
     "https://docs.getdbt.com/#find-your-paths-and-ids",
+    "https://docs.getdbt.com/#fragments",
     "https://docs.getdbt.com/#get-started",
     "https://docs.getdbt.com/#how-to-access-the-apis",
+    "https://docs.getdbt.com/#install-a-virtual-environment",
+    "https://docs.getdbt.com/#install-dbt-cli",
+    "https://docs.getdbt.com/#install-dbt-cloud-cli-in-pip",
+    "https://docs.getdbt.com/#job-based-endpoint-pagination",
+    "https://docs.getdbt.com/#list-a-saved-query",
+    "https://docs.getdbt.com/#list-saved-queries",
     "https://docs.getdbt.com/#local-mcp-server",
-    "https://docs.getdbt.com/#manual-registration",
+    "https://docs.getdbt.com/#locations-and-precedence",
     "https://docs.getdbt.com/#mcp-integrations",
+    "https://docs.getdbt.com/#metadata-calls",
+    "https://docs.getdbt.com/#metric-type-parameters",
+    "https://docs.getdbt.com/#metric-types",
     "https://docs.getdbt.com/#next-steps",
     "https://docs.getdbt.com/#optional-add-local-cli-commands",
+    "https://docs.getdbt.com/#pagination",
     "https://docs.getdbt.com/#prerequisites",
-    "https://docs.getdbt.com/#registration-methods",
+    "https://docs.getdbt.com/#querying",
+    "https://docs.getdbt.com/#reasonable-use",
     "https://docs.getdbt.com/#related-docs",
     "https://docs.getdbt.com/#remote-mcp-server",
+    "https://docs.getdbt.com/#requirements-to-use-the-graphql-api",
     "https://docs.getdbt.com/#resources",
-    "https://docs.getdbt.com/#scopes-and-consent",
+    "https://docs.getdbt.com/#retention-limits",
+    "https://docs.getdbt.com/#run-queries-using-http-requests",
+    "https://docs.getdbt.com/#run-queries-with-the-graphql-explorer",
     "https://docs.getdbt.com/#server-access",
-    "https://docs.getdbt.com/#sessions-and-refresh-tokens",
-    "https://docs.getdbt.com/#set-up-remote-mcp",
     "https://docs.getdbt.com/#step-1-choose-your-auth-method-and-configure",
     "https://docs.getdbt.com/#step-1-find-your-paths",
     "https://docs.getdbt.com/#step-2-add-to-your-mcp-client",
     "https://docs.getdbt.com/#step-3-test-your-setup",
+    "https://docs.getdbt.com/#supported-mcp-server-types",
     "https://docs.getdbt.com/#supported-tools-by-mcp-server-type",
     "https://docs.getdbt.com/#troubleshooting",
     "https://docs.getdbt.com/#types-of-api-access-tokens",
     "https://docs.getdbt.com/#types-of-project-state",
-    "https://docs.getdbt.com/#use-with-remote-mcp",
+    "https://docs.getdbt.com/#using-the-graphql-api",
     "https://docs.getdbt.com/#what-you-can-use-the-discovery-api-for",
     "https://docs.getdbt.com/#whats-available",
-    "https://docs.getdbt.com/#when-to-use-remote-mcp",
     "https://docs.getdbt.com/#which-token-type-should-you-use",
+    "https://docs.getdbt.com/#why-use-an-mcp-server",
     "https://docs.getdbt.com/best-practices",
     "https://docs.getdbt.com/blog",
     "https://docs.getdbt.com/blog/introducing-dbt-mcp-server#getting-started",
     "https://docs.getdbt.com/community/contribute",
     "https://docs.getdbt.com/community/join",
+    "https://docs.getdbt.com/community/join?version=2.0",
     "https://docs.getdbt.com/cursor://anysphere.cursor-deeplink/mcp/install?name=dbt&config=eyJlbnYiOnsiREJUX0hPU1QiOiJZT1VSLUFDQ0VTUy1VUkwiLCJEQlRfUFJPSkVDVF9ESVIiOiIvcGF0aC90by9wcm9qZWN0IiwiREJUX1BBVEgiOiJwYXRoL3RvL2RidC9leGVjdXRhYmxlIn0sImNvbW1hbmQiOiJ1dngiLCJhcmdzIjpbImRidC1tY3AiXX0%3D",
     "https://docs.getdbt.com/cursor://anysphere.cursor-deeplink/mcp/install?name=dbt&config=eyJlbnYiOnsiREJUX0hPU1QiOiJZT1VSLUFDQ0VTUy1VUkwiLCJESVNBQkxFX0RCVF9DTEkiOiJ0cnVlIn0sImNvbW1hbmQiOiJ1dngiLCJhcmdzIjpbImRidC1tY3AiXX0%3D",
     "https://docs.getdbt.com/cursor://anysphere.cursor-deeplink/mcp/install?name=dbt&config=eyJlbnYiOnsiREJUX1BST0pFQ1RfRElSIjoiL3BhdGgvdG8veW91ci9kYnQvcHJvamVjdCIsIkRCVF9QQVRIIjoiL3BhdGgvdG8veW91ci9kYnQvZXhlY3V0YWJsZSJ9LCJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJkYnQtbWNwIl19",
     "https://docs.getdbt.com/dbt-cloud/api-v2",
+    "https://docs.getdbt.com/dbt-cloud/api-v2#/",
     "https://docs.getdbt.com/dbt-cloud/api-v3",
+    "https://docs.getdbt.com/dbt-cloud/api-v3#/",
     "https://docs.getdbt.com/docs/about-dbt-extension",
+    "https://docs.getdbt.com/docs/about-dbt-lsp",
     "https://docs.getdbt.com/docs/about-setup",
     "https://docs.getdbt.com/docs/build/about-metricflow",
     "https://docs.getdbt.com/docs/build/projects",
-    "https://docs.getdbt.com/docs/configuration-checklist",
     "https://docs.getdbt.com/docs/dbt-ai/about-dbt-ai",
+    "https://docs.getdbt.com/docs/dbt-ai/about-dbt-wizard-cli",
     "https://docs.getdbt.com/docs/dbt-ai/about-mcp",
     "https://docs.getdbt.com/docs/dbt-ai/analyst-agent",
     "https://docs.getdbt.com/docs/dbt-ai/copilot-overview",
     "https://docs.getdbt.com/docs/dbt-ai/dbt-ai-faqs",
     "https://docs.getdbt.com/docs/dbt-ai/integrate-mcp-claude",
     "https://docs.getdbt.com/docs/dbt-ai/integrate-mcp-cursor",
-    "https://docs.getdbt.com/docs/dbt-ai/integrate-mcp-cursor#set-up-with-remote-dbt-mcp-server",
     "https://docs.getdbt.com/docs/dbt-ai/integrate-mcp-vscode",
     "https://docs.getdbt.com/docs/dbt-ai/mcp-available-tools",
     "https://docs.getdbt.com/docs/dbt-ai/mcp-environment-variables",
@@ -389,9 +391,23 @@
     "https://docs.getdbt.com/docs/dbt-ai/setup-local-mcp#choose-your-auth-method",
     "https://docs.getdbt.com/docs/dbt-ai/setup-local-mcp#tool-requirements-at-a-glance",
     "https://docs.getdbt.com/docs/dbt-ai/setup-remote-mcp",
-    "https://docs.getdbt.com/docs/dbt-ai/setup-remote-mcp#oauth-remote-mcp",
     "https://docs.getdbt.com/docs/dbt-ai/setup-remote-mcp#token-based-authentication",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-byok",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-cli",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-cli-reference",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-config",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-config#config-precedence",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-headless",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-how-it-works",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-how-it-works#sessions",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-mcp",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-migrate",
     "https://docs.getdbt.com/docs/dbt-ai/wizard-quickstart",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-skills",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-slash-commands",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-subagents",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-telemetry",
+    "https://docs.getdbt.com/docs/dbt-ai/wizard-use-cases",
     "https://docs.getdbt.com/docs/dbt-apis/admin-api",
     "https://docs.getdbt.com/docs/dbt-apis/authentication",
     "https://docs.getdbt.com/docs/dbt-apis/discovery-api",
@@ -414,8 +430,9 @@
     "https://docs.getdbt.com/docs/dbt-apis/sl-jdbc",
     "https://docs.getdbt.com/docs/dbt-apis/sl-python",
     "https://docs.getdbt.com/docs/dbt-apis/user-tokens",
-    "https://docs.getdbt.com/docs/dbt-platform-environments",
+    "https://docs.getdbt.com/docs/dbt-cloud-apis/discovery-api",
     "https://docs.getdbt.com/docs/dbt-support",
+    "https://docs.getdbt.com/docs/dbt-versions",
     "https://docs.getdbt.com/docs/dbt-versions/about-versions",
     "https://docs.getdbt.com/docs/dbt-versions/dbt-cloud-release-notes",
     "https://docs.getdbt.com/docs/dbt-versions/dbt-release-tracks",
@@ -432,61 +449,53 @@
     "https://docs.getdbt.com/docs/fusion",
     "https://docs.getdbt.com/docs/get-started-dbt",
     "https://docs.getdbt.com/docs/introduction",
-    "https://docs.getdbt.com/docs/local/about-local",
+    "https://docs.getdbt.com/docs/local/install-dbt",
     "https://docs.getdbt.com/docs/mesh/about-mesh",
+    "https://docs.getdbt.com/docs/mesh/govern/project-dependencies",
     "https://docs.getdbt.com/docs/platform-integrations/avail-sl-integrations",
     "https://docs.getdbt.com/docs/platform-integrations/overview",
+    "https://docs.getdbt.com/docs/platform/about-defer",
     "https://docs.getdbt.com/docs/platform/about-develop-dbt",
-    "https://docs.getdbt.com/docs/platform/about-platform-setup",
     "https://docs.getdbt.com/docs/platform/about-platform/access-regions-ip-addresses",
     "https://docs.getdbt.com/docs/platform/about-platform/dbt-platform-features",
     "https://docs.getdbt.com/docs/platform/about-platform/tenancy#multi-tenant",
     "https://docs.getdbt.com/docs/platform/about-platform/tenancy#single-tenant",
-    "https://docs.getdbt.com/docs/platform/about-profiles",
-    "https://docs.getdbt.com/docs/platform/account-integrations",
-    "https://docs.getdbt.com/docs/platform/account-settings",
-    "https://docs.getdbt.com/docs/platform/connect-data-platform/about-connections",
+    "https://docs.getdbt.com/docs/platform/canvas",
+    "https://docs.getdbt.com/docs/platform/configure-dbt-cli",
+    "https://docs.getdbt.com/docs/platform/dbt-cli-installation",
     "https://docs.getdbt.com/docs/platform/enable-dbt-ai",
-    "https://docs.getdbt.com/docs/platform/git/configure-git",
-    "https://docs.getdbt.com/docs/platform/manage-access/about-user-access",
-    "https://docs.getdbt.com/docs/platform/manage-access/audit-log",
-    "https://docs.getdbt.com/docs/platform/manage-access/connect-apps-oauth",
-    "https://docs.getdbt.com/docs/platform/manage-access/connect-apps-oauth#dynamic-registration",
-    "https://docs.getdbt.com/docs/platform/manage-access/connect-apps-oauth#manual-registration",
-    "https://docs.getdbt.com/docs/platform/manage-access/connect-apps-oauth#scopes-and-consent",
-    "https://docs.getdbt.com/docs/platform/manage-access/environment-permissions",
-    "https://docs.getdbt.com/docs/platform/manage-access/invite-users",
-    "https://docs.getdbt.com/docs/platform/manage-access/mfa",
-    "https://docs.getdbt.com/docs/platform/manage-access/oauth-intro",
-    "https://docs.getdbt.com/docs/platform/manage-access/redshift-external-oauth",
-    "https://docs.getdbt.com/docs/platform/manage-access/scim",
-    "https://docs.getdbt.com/docs/platform/manage-access/seats-and-users",
-    "https://docs.getdbt.com/docs/platform/manage-access/set-up-bigquery-oauth",
-    "https://docs.getdbt.com/docs/platform/manage-access/set-up-databricks-oauth",
-    "https://docs.getdbt.com/docs/platform/manage-access/set-up-snowflake-oauth",
-    "https://docs.getdbt.com/docs/platform/manage-access/snowflake-external-oauth",
-    "https://docs.getdbt.com/docs/platform/manage-access/sso-oauth-intro",
-    "https://docs.getdbt.com/docs/platform/manage-access/sso-overview",
-    "https://docs.getdbt.com/docs/platform/migration",
-    "https://docs.getdbt.com/docs/platform/secure/about-network-security",
+    "https://docs.getdbt.com/docs/platform/studio-ide/develop-in-studio",
     "https://docs.getdbt.com/docs/platform/wizard-overview",
-    "https://docs.getdbt.com/docs/running-a-dbt-project/run-your-dbt-projects",
-    "https://docs.getdbt.com/docs/running-a-dbt-project/using-threads",
+    "https://docs.getdbt.com/docs/platform/wizard-platform",
     "https://docs.getdbt.com/docs/supported-data-platforms",
     "https://docs.getdbt.com/docs/use-dbt-semantic-layer/dbt-sl",
+    "https://docs.getdbt.com/docs/use-dbt-semantic-layer/setup-sl",
     "https://docs.getdbt.com/guides",
+    "https://docs.getdbt.com/guides/fusion-platform-local-workflow",
+    "https://docs.getdbt.com/guides/manual-install",
+    "https://docs.getdbt.com/guides/sl-snowflake-qs",
+    "https://docs.getdbt.com/reference/commands/dbt-environment",
+    "https://docs.getdbt.com/reference/dbt-commands",
     "https://docs.getdbt.com/reference/references-overview",
     "https://docs.getdbt.com/tags/api",
     "https://docs.getdbt.com/tags/semantic-layer",
     "https://docs.github.com",
     "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://emea.dbt.com/",
+    "https://example.com/mcp",
+    "https://getdbt.slack.com/archives/C0B6KLW6T26",
     "https://github.blog",
     "https://github.blog/changelog",
     "https://github.com/#start-of-content",
+    "https://github.com/YOUR-USERNAME/YOUR-REPOSITORY",
     "https://github.com/accelerator",
     "https://github.com/collections",
     "https://github.com/customer-stories",
     "https://github.com/dbt-labs",
+    "https://github.com/dbt-labs/dbt-agent-skills",
+    "https://github.com/dbt-labs/dbt-cli/releases",
+    "https://github.com/dbt-labs/dbt-cloud-openapi-spec/blob/master/openapi-v2.yaml",
+    "https://github.com/dbt-labs/dbt-cloud-openapi-spec/blob/master/openapi-v3.yaml",
     "https://github.com/dbt-labs/dbt-core/discussions/categories/announcements?discussions_q=is:open+diaries+category:Announcements",
     "https://github.com/dbt-labs/dbt-mcp",
     "https://github.com/dbt-labs/dbt-mcp#tools",
@@ -577,13 +586,16 @@
     "https://github.com/trending",
     "https://github.com/trust-center",
     "https://github.com/why-github",
+    "https://glama.ai/mcp/servers/MammothGrowth/dbt-cli-mcp",
+    "https://graphql.org/",
     "https://hub.getdbt.com/",
     "https://learn.getdbt.com",
     "https://lobehub.com/it/skills/dbt-labs-dbt-agent-skills-configuring-dbt-mcp-server",
     "https://login.dbt.com/",
     "https://maintainers.github.com",
     "https://marketplace.visualstudio.com/items?itemName=dbtLabsInc.dbt",
-    "https://mcpservers.org/servers/MammothGrowth/dbt-cli-mcp",
+    "https://medium.com/@kevinmarkvi/how-to-add-executables-to-your-path-in-windows-5ffa4ce61a53",
+    "https://metadata.cloud.getdbt.com/graphql",
     "https://modelcontextprotocol.io/clients",
     "https://modelcontextprotocol.io/introduction",
     "https://policies.google.com/privacy",
@@ -592,10 +604,19 @@
     "https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest/docs/guides/1_getting_started",
     "https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest/docs/guides/99_list_resources",
     "https://securitylab.github.com",
+    "https://semantic-layer.ABC123.getdbt.com/api/graphql",
+    "https://semantic-layer.YOUR_ACCESS_URL/api/graphql",
+    "https://semantic-layer.au.dbt.com/api/graphql",
+    "https://semantic-layer.cloud.getdbt.com/api/graphql",
+    "https://semantic-layer.emea.dbt.com/api/graphql",
     "https://skills.github.com",
     "https://stars.github.com",
     "https://status.getdbt.com/",
+    "https://stoplight.io/?utm_source=elements&utm_medium=dbt",
     "https://support.github.com",
+    "https://www.apollographql.com/docs/graphos/explorer/connecting-authenticating#authentication",
+    "https://www.apollographql.com/docs/graphos/explorer/explorer",
+    "https://www.apollographql.com/docs/react/data/fragments/",
     "https://www.getdbt.com/cloud/privacy-policy",
     "https://www.getdbt.com/cloud/privacy-policy/",
     "https://www.getdbt.com/contact",
@@ -614,17 +635,22 @@
     "https://www.getdbt.com/security/",
     "https://www.getdbt.com/services",
     "https://www.getdbt.com/signup",
+    "https://www.getdbt.com/terms-of-service",
     "https://www.getdbt.com/terms-of-use/",
     "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fabout-mcp+so+I+can+ask+questions+about+it",
     "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-cli+so+I+can+ask+questions+about+it",
     "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-oauth+so+I+can+ask+questions+about+it",
-    "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fmcp-quickstart-remote+so+I+can+ask+questions+about+it",
+    "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-ai%2Fwizard-mcp+so+I+can+ask+questions+about+it",
     "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fadmin-api+so+I+can+ask+questions+about+it",
     "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fauthentication+so+I+can+ask+questions+about+it",
     "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fdiscovery-api+so+I+can+ask+questions+about+it",
+    "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fdiscovery-querying+so+I+can+ask+questions+about+it",
     "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Foverview+so+I+can+ask+questions+about+it",
     "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fsl-api-overview+so+I+can+ask+questions+about+it",
-    "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fplatform%2Fmanage-access%2Fconnect-apps-oauth+so+I+can+ask+questions+about+it",
-    "https://x.com/getdbt/status/2071640007945687241"
+    "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fdbt-apis%2Fsl-graphql+so+I+can+ask+questions+about+it",
+    "https://www.perplexity.ai/search/new?q=Read+from+https%3A%2F%2Fdocs.getdbt.com%2Fdocs%2Fplatform%2Fdbt-cli-installation+so+I+can+ask+questions+about+it",
+    "https://www.youtube.com/watch?v=-lIzh1xQWMA",
+    "https://www.youtube.com/watch?v=TL7k7jZrfa8",
+    "https://{account"
   ]
 }

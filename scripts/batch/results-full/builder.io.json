@@ -32,104 +32,42 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T14:56:39.470Z",
-    "summary": "Builder.io exposes a Content API, a GraphQL Content API, and an MCP server; the HTTP/GraphQL APIs use a public API key, and the MCP server uses OAuth.",
+    "discoveredAt": "2026-07-02T16:19:16.384Z",
+    "summary": "Builder.io exposes an authenticated MCP server plus authenticated HTTP/GraphQL developer APIs: Content API, Admin API, and Write API.",
     "credentials": {
+      "builder_oauth_client": {
+        "type": "oauth2_cc",
+        "label": "MCP OAuth client credentials",
+        "generateUrl": "https://mcp.builder.io/oauth/register",
+        "setup": "Register a dynamic client at [Builder MCP OAuth registration](https://mcp.builder.io/oauth/register). Use the returned client credentials with the MCP OAuth flow at `https://mcp.builder.io/oauth/authorize` and `https://mcp.builder.io/oauth/token`. The documented scopes are `mcp:publish:read` and `mcp:publish:write`.",
+        "acquisition": "manual"
+      },
       "builder_api_key": {
         "type": "api_key",
         "label": "Builder Public API Key",
         "generateUrl": "https://www.builder.io/c/docs/using-your-api-key",
-        "setup": "Go to [Using the Builder API Key](https://www.builder.io/c/docs/using-your-api-key) and create or copy your Builder Public API Key from your Builder space settings. Use it as the `apiKey` / public key for Builder content integrations.",
+        "setup": "Go to [Using the Builder API Key](https://www.builder.io/c/docs/using-your-api-key) and copy the **Builder Public API Key** for your space. Builder says this key is used to connect your code base with Builder and is the public key for integration use.",
         "acquisition": "manual"
       },
-      "builder_mcp_oauth": {
-        "type": "oauth2",
-        "label": "Builder MCP OAuth access token",
-        "generateUrl": "https://mcp.builder.io/oauth/register",
-        "setup": "Register an OAuth client at [Builder MCP OAuth registration](https://mcp.builder.io/oauth/register) if needed, then authorize against [https://mcp.builder.io/oauth/authorize](https://mcp.builder.io/oauth/authorize) and exchange the code at [https://mcp.builder.io/oauth/token](https://mcp.builder.io/oauth/token). The documented scopes are `mcp:publish:read` and `mcp:publish:write`.",
+      "builder_admin_key": {
+        "type": "api_key",
+        "label": "Builder Admin API Key",
+        "generateUrl": "https://www.builder.io/c/docs/admin-api",
+        "setup": "In Builder, open your space's [Admin API](https://www.builder.io/c/docs/admin-api) settings and create or copy the **Admin API key**. Builder describes this as the key used for administrative backend access to manage content programmatically.",
+        "acquisition": "manual"
+      },
+      "builder_write_key": {
+        "type": "api_key",
+        "label": "Builder Write API Key",
+        "generateUrl": "https://www.builder.io/c/docs/write-api",
+        "setup": "Open the [Write API](https://www.builder.io/c/docs/write-api) docs and create or copy the **Write API key** for your space. Builder notes the Write API is separate from the Admin API and is used for write operations.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "builder-content-api",
-        "name": "Builder Content API",
-        "type": "http",
-        "docs": "https://www.builder.io/c/docs/api-intro",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.builder.io/c/docs/api-intro",
-            "https://www.builder.io/c/docs/using-your-api-key"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "builder_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "paramName": "apiKey"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.builder.io/c/docs/api-intro",
-                  "https://www.builder.io/c/docs/using-your-api-key"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://cdn.builder.io/api"
-      },
-      {
-        "slug": "builder-graphql-content-api",
-        "name": "Builder GraphQL Content API",
-        "type": "graphql",
-        "docs": "https://www.builder.io/c/docs/graphql-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.builder.io/c/docs/graphql-api",
-            "https://www.builder.io/c/docs/using-your-api-key"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "builder_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "paramName": "apiKey"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.builder.io/c/docs/graphql-api",
-                  "https://www.builder.io/c/docs/using-your-api-key"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://cdn.builder.io/api/v2/graphql"
-      },
-      {
-        "slug": "builder-mcp-server",
-        "name": "Builder MCP Server",
+        "slug": "builder-mcp",
+        "name": "Builder MCP",
         "type": "mcp",
         "docs": "https://www.builder.io/c/docs/builder-mcp",
         "basis": {
@@ -144,7 +82,7 @@
             {
               "use": [
                 {
-                  "id": "builder_mcp_oauth",
+                  "id": "builder_oauth_client",
                   "mechanics": {
                     "source": "well-known"
                   }
@@ -163,30 +101,148 @@
         "transports": [
           "streamable-http"
         ]
+      },
+      {
+        "slug": "builder-content-api",
+        "name": "Builder Content API",
+        "type": "http",
+        "docs": "https://www.builder.io/c/docs/content-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.builder.io/c/docs/content-api",
+            "https://www.builder.io/c/docs/api-authentication",
+            "https://www.builder.io/c/docs/using-your-api-key"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "builder_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "scheme": "apiKey",
+                    "paramName": "apiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.builder.io/c/docs/content-api",
+                  "https://www.builder.io/c/docs/api-authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://cdn.builder.io/api/v2"
+      },
+      {
+        "slug": "builder-admin-api",
+        "name": "Builder Admin API",
+        "type": "graphql",
+        "docs": "https://www.builder.io/c/docs/admin-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.builder.io/c/docs/admin-api",
+            "https://www.builder.io/c/docs/api-intro"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "builder_admin_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.builder.io/c/docs/admin-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://builder.io"
+      },
+      {
+        "slug": "builder-write-api",
+        "name": "Builder Write API",
+        "type": "http",
+        "docs": "https://www.builder.io/c/docs/write-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.builder.io/c/docs/write-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "builder_write_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.builder.io/c/docs/write-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://builder.io/api/v1"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T14:56:39.470Z",
+  "discoveredAt": "2026-07-02T16:19:16.384Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 207549,
-    "completion_tokens": 1073,
-    "total_tokens": 208622
+    "prompt_tokens": 304503,
+    "completion_tokens": 1490,
+    "total_tokens": 305993
   },
   "visited": [
     "https://apitracker.io/a/builder-io",
+    "https://forum.builder.io/t/authentication-failed/5827",
     "https://github.com/api-evangelist/builder-io/blob/main/graphql/builder-io-graphql.md",
     "https://www.builder.io/c/docs/admin-api",
+    "https://www.builder.io/c/docs/api-authentication",
     "https://www.builder.io/c/docs/api-intro",
     "https://www.builder.io/c/docs/builder-mcp",
+    "https://www.builder.io/c/docs/code-flow",
+    "https://www.builder.io/c/docs/content-api",
     "https://www.builder.io/c/docs/graphql-api",
     "https://www.builder.io/c/docs/using-your-api-key",
-    "https://www.builder.io/c/docs/write-api",
-    "https://www.builder.io/glossary/api",
-    "https://www.builder.io/glossary/graphql"
+    "https://www.builder.io/c/docs/write-api"
   ],
   "grounding": [
     "https://apitracker.io/a/builder-io",
+    "https://forum.builder.io/t/authentication-failed/5827",
     "https://github.com/api-evangelist/builder-io/blob/main/graphql/builder-io-graphql.md",
     "https://luma.com/builder-make-validation-a-practice",
     "https://www.builder.io/#main-content",
@@ -205,6 +261,7 @@
     "https://www.builder.io/c/docs/ai-instruction-best-practices",
     "https://www.builder.io/c/docs/ai-models",
     "https://www.builder.io/c/docs/announcement-bar",
+    "https://www.builder.io/c/docs/api-authentication",
     "https://www.builder.io/c/docs/api-intro",
     "https://www.builder.io/c/docs/asset-library",
     "https://www.builder.io/c/docs/block-types",
@@ -217,6 +274,7 @@
     "https://www.builder.io/c/docs/chrome-extension",
     "https://www.builder.io/c/docs/cli-code-generation",
     "https://www.builder.io/c/docs/cli-code-generation-best-practices",
+    "https://www.builder.io/c/docs/code-flow",
     "https://www.builder.io/c/docs/collaboration",
     "https://www.builder.io/c/docs/command-palette",
     "https://www.builder.io/c/docs/commenting",
@@ -224,6 +282,7 @@
     "https://www.builder.io/c/docs/configuration-builder-rules",
     "https://www.builder.io/c/docs/connect-storybook-repository",
     "https://www.builder.io/c/docs/connecting-api-data",
+    "https://www.builder.io/c/docs/content-api",
     "https://www.builder.io/c/docs/create-a-hero",
     "https://www.builder.io/c/docs/create-a-starter-template",
     "https://www.builder.io/c/docs/create-and-duplicate-branches",
@@ -404,8 +463,6 @@
     "https://www.builder.io/c/docs/zapier",
     "https://www.builder.io/demo",
     "https://www.builder.io/enterprise",
-    "https://www.builder.io/glossary/api",
-    "https://www.builder.io/glossary/graphql",
     "https://www.builder.io/pricing",
     "https://www.builder.io/signup"
   ]

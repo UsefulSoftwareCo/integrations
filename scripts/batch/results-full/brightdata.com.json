@@ -31,42 +31,41 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T14:56:48.220Z",
-    "summary": "Bright Data exposes one public HTTP API, one hosted MCP server, and a Bright Data CLI; authentication is via API key or proxy username/password for HTTP, OAuth login for MCP, and either OAuth login or direct API key for the CLI.",
+    "discoveredAt": "2026-07-02T16:18:42.204Z",
+    "summary": "Bright Data exposes one HTTP API, one remote MCP server, and a CLI; all require either the Bright Data API key or CLI OAuth/login, and the MCP server uses the API key in its `token` query parameter.",
     "credentials": {
       "brightdata_api_key": {
-        "type": "api_key",
+        "type": "bearer",
         "label": "Bright Data API key",
         "generateUrl": "https://brightdata.com/cp/setting/users",
-        "setup": "Go to [Account settings](https://brightdata.com/cp/setting/users) in the Bright Data control panel, open the API key section, and click **Add API key**. Only admin users can create API keys. Save the key immediately; it is shown only once. Bright Data says new users may receive their API key via welcome email.",
+        "setup": "Go to [Account settings](https://brightdata.com/cp/setting/users) and click **Add API key**. New users may receive a default key in the welcome email. Save the token securely; it is shown only once. Use the `Authorization: Bearer <token>` header for API and remote MCP access.",
         "acquisition": "manual"
       },
-      "brightdata_proxy_userpass": {
+      "brightdata_proxy_username_password": {
         "type": "basic",
         "label": "Bright Data proxy username and password",
-        "generateUrl": "https://brightdata.com/cp/setting/auth",
-        "setup": "In the Bright Data control panel, open the proxy authentication settings under [Change password / auth settings](https://brightdata.com/cp/setting/auth) or the account authentication area, then create or view your proxy `username` and `password` for native access. This is the proxy-protocol credential Bright Data documents for Native Access.",
+        "generateUrl": "https://brightdata.com/cp/setting/users",
+        "setup": "In [Account settings](https://brightdata.com/cp/setting/users), create or view proxy credentials for native proxy access. Use the account's proxy username and password when connecting through Bright Data's proxy protocol. This is a separate native-access credential pair from the API key.",
         "acquisition": "manual"
       },
-      "brightdata_oauth_login": {
+      "brightdata_cli_login": {
         "type": "oauth2",
-        "label": "Bright Data OAuth login for CLI/MCP",
-        "generateUrl": "https://brightdata.com/users/auth/mcp/authorize",
-        "setup": "Use the Bright Data OAuth flow when a client asks you to sign in (for example the Bright Data CLI's browser login, or an MCP client configured against the hosted MCP server). Bright Data exposes the standard OAuth endpoints for MCP at [authorize](https://brightdata.com/users/auth/mcp/authorize), [token](https://brightdata.com/users/auth/mcp/token), and [dynamic client registration](https://brightdata.com/users/auth/mcp/register).",
+        "label": "Bright Data CLI login session",
+        "generateUrl": "https://docs.brightdata.com/cli/installation",
+        "setup": "Run `brightdata login` to authenticate the CLI. The command opens a browser for OAuth by default; use `brightdata login --device` for headless/SSH environments, or `brightdata login --api-key <key>` to seed it from an API key. The CLI stores credentials locally after login.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "bright-data-api",
-        "name": "Bright Data API",
+        "slug": "bright-data-api-reference",
+        "name": "Bright Data API Reference",
         "type": "http",
         "docs": "https://docs.brightdata.com/api-reference/authentication",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.brightdata.com/api-reference/authentication",
-            "https://docs.brightdata.com/general/account/overview"
+            "https://docs.brightdata.com/api-reference/authentication"
           ]
         },
         "auth": {
@@ -90,33 +89,14 @@
                   "https://docs.brightdata.com/api-reference/authentication"
                 ]
               }
-            },
-            {
-              "use": [
-                {
-                  "id": "brightdata_proxy_userpass",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Proxy-Authorization",
-                    "scheme": "Basic"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.brightdata.com/api-reference/authentication"
-                ]
-              }
             }
           ]
         },
         "url": "https://api.brightdata.com"
       },
       {
-        "slug": "bright-data-mcp-server",
-        "name": "Bright Data MCP Server",
+        "slug": "bright-data-remote-mcp-server",
+        "name": "Bright Data Remote MCP Server",
         "type": "mcp",
         "docs": "https://docs.brightdata.com/ai/mcp-server/overview",
         "basis": {
@@ -124,7 +104,7 @@
           "evidence": [
             "https://docs.brightdata.com/ai/mcp-server/overview",
             "https://docs.brightdata.com/ai/mcp-server/remote/quickstart",
-            "https://docs.brightdata.com/ai/mcp-server/tools"
+            "https://docs.brightdata.com/ai/mcp-server/remote/advanced"
           ]
         },
         "auth": {
@@ -133,16 +113,20 @@
             {
               "use": [
                 {
-                  "id": "brightdata_oauth_login",
+                  "id": "brightdata_api_key",
                   "mechanics": {
-                    "source": "well-known"
+                    "source": "http",
+                    "in": "query",
+                    "scheme": "Bearer",
+                    "paramName": "token"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.brightdata.com/ai/mcp-server/remote/quickstart"
+                  "https://docs.brightdata.com/ai/mcp-server/remote/quickstart",
+                  "https://docs.brightdata.com/ai/mcp-server/remote/advanced"
                 ]
               }
             }
@@ -158,12 +142,13 @@
         "slug": "bright-data-cli",
         "name": "Bright Data CLI",
         "type": "cli",
-        "docs": "https://docs.brightdata.com/cli/commands",
+        "docs": "https://docs.brightdata.com/cli/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.brightdata.com/cli/commands",
-            "https://brightdata.com/blog/ai/bright-data-cli"
+            "https://docs.brightdata.com/cli/overview",
+            "https://docs.brightdata.com/cli/installation",
+            "https://docs.brightdata.com/cli/commands"
           ]
         },
         "auth": {
@@ -172,7 +157,7 @@
             {
               "use": [
                 {
-                  "id": "brightdata_oauth_login",
+                  "id": "brightdata_cli_login",
                   "mechanics": {
                     "source": "cli",
                     "command": "brightdata login"
@@ -182,8 +167,8 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.brightdata.com/cli/commands",
-                  "https://brightdata.com/blog/ai/bright-data-cli"
+                  "https://docs.brightdata.com/cli/installation",
+                  "https://docs.brightdata.com/cli/overview"
                 ]
               }
             },
@@ -193,13 +178,17 @@
                   "id": "brightdata_api_key",
                   "mechanics": {
                     "source": "cli",
-                    "command": "brightdata login --api-key <key>"
+                    "command": "brightdata login --api-key <key>",
+                    "env": [
+                      "BRIGHTDATA_API_KEY"
+                    ]
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
+                  "https://docs.brightdata.com/cli/installation",
                   "https://docs.brightdata.com/cli/commands"
                 ]
               }
@@ -209,154 +198,52 @@
         "packages": [
           {
             "registryType": "npm",
-            "identifier": "brightdata-cli",
-            "runtimeHint": "node"
+            "identifier": "@brightdata/cli",
+            "runtimeHint": "node>=20"
           }
         ],
         "command": "brightdata"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T14:56:48.220Z",
+  "discoveredAt": "2026-07-02T16:18:42.205Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 177257,
-    "completion_tokens": 1506,
-    "total_tokens": 178763
+    "prompt_tokens": 144309,
+    "completion_tokens": 1293,
+    "total_tokens": 145602
   },
   "visited": [
     "https://brightdata.com/blog/ai/bright-data-cli",
     "https://brightdata.com/blog/ai/gemini-cli-web-mcp",
-    "https://brightdata.com/blog/ai/lobechat-with-web-mcp",
-    "https://brightdata.com/blog/ai/vertex-ai-with-web-mcp",
-    "https://brightdata.com/blog/ai/voice-agents-with-livekit-and-bright-data",
-    "https://brightdata.com/products/data-feeds/web-search-api",
-    "https://docs.brightdata.com/ai/mcp-server/integrations/claude-code",
     "https://docs.brightdata.com/ai/mcp-server/overview",
+    "https://docs.brightdata.com/ai/mcp-server/remote/advanced",
     "https://docs.brightdata.com/ai/mcp-server/remote/quickstart",
     "https://docs.brightdata.com/ai/mcp-server/tools",
-    "https://docs.brightdata.com/ai/mcp-server/usage-examples",
-    "https://docs.brightdata.com/api-reference/account-management-api/Get_Zone_Static_Datacenter_ISP_IPs",
-    "https://docs.brightdata.com/api-reference/account-management-api/Get_account_status",
-    "https://docs.brightdata.com/api-reference/account-management-api/Get_total_balance_through_API",
     "https://docs.brightdata.com/api-reference/authentication",
-    "https://docs.brightdata.com/api-reference/marketplace-dataset-api/download-the-file-by-snapshot_id",
-    "https://docs.brightdata.com/api-reference/scrapers/social-media-apis/overview",
     "https://docs.brightdata.com/cli/commands",
-    "https://docs.brightdata.com/datasets/scraper-studio/quickstart",
-    "https://docs.brightdata.com/datasets/scrapers/scrapers-library/faqs",
-    "https://docs.brightdata.com/datasets/scrapers/scrapers-library/overview",
-    "https://docs.brightdata.com/general/account/overview",
+    "https://docs.brightdata.com/cli/installation",
+    "https://docs.brightdata.com/cli/overview",
     "https://docs.brightdata.com/introduction",
-    "https://docs.brightdata.com/scraping-automation/serp-api/introduction",
-    "https://docs.brightdata.com/scraping-automation/web-unlocker/five-minute-how-to"
+    "https://feluda.ai/mcp-servers/brightdata"
   ],
   "grounding": [
+    "https://amazon.com/dp/B09V3KXJPB",
     "https://api.brightdata.com/request",
-    "https://bright-sdk.com/",
-    "https://brightdata.co.kr/blog/ai/bright-data-cli",
-    "https://brightdata.co.kr/blog/ai/lobechat-with-web-mcp",
-    "https://brightdata.com.br/blog/ai/bright-data-cli",
-    "https://brightdata.com.br/blog/ai/lobechat-with-web-mcp",
     "https://brightdata.com/",
-    "https://brightdata.com/#",
-    "https://brightdata.com/#lang_popup",
-    "https://brightdata.com/#popup-155639",
-    "https://brightdata.com/#popup-160692",
-    "https://brightdata.com/#site-content",
-    "https://brightdata.com/#user_menu",
-    "https://brightdata.com/?hs_signup=1",
     "https://brightdata.com/?hs_signup=1&utm_source=docs",
-    "https://brightdata.com/ai",
-    "https://brightdata.com/ai/agent-browser",
     "https://brightdata.com/ai/ai-startups-program",
-    "https://brightdata.com/ai/data-packages",
-    "https://brightdata.com/ai/mcp-server",
-    "https://brightdata.com/ai/video-data",
-    "https://brightdata.com/ai/video-data/vla",
-    "https://brightdata.com/ai/web-access",
-    "https://brightdata.com/blog",
-    "https://brightdata.com/blog/ai",
     "https://brightdata.com/blog/ai/bright-data-cli",
     "https://brightdata.com/blog/ai/gemini-cli-web-mcp",
-    "https://brightdata.com/blog/ai/lobechat-with-web-mcp",
-    "https://brightdata.com/blog/ai/sse-vs-streamable-http",
-    "https://brightdata.com/blog/ai/vertex-ai-with-web-mcp",
-    "https://brightdata.com/blog/ai/voice-agents-with-livekit-and-bright-data",
-    "https://brightdata.com/blog/ai/web-mcp-free-tier",
-    "https://brightdata.com/blog/authors/antonello-zanini",
-    "https://brightdata.com/blog/authors/meir-kadosh",
-    "https://brightdata.com/blog/web-data/train-an-ai-model",
-    "https://brightdata.com/blog/web-data/web-scraping-challenges",
-    "https://brightdata.com/cp/mcp",
-    "https://brightdata.com/cp/setting/auth",
+    "https://brightdata.com/cp/setting",
     "https://brightdata.com/cp/setting/customer_details",
     "https://brightdata.com/cp/setting/users",
-    "https://brightdata.com/cp/start",
     "https://brightdata.com/cp/zones",
-    "https://brightdata.com/customer-stories",
-    "https://brightdata.com/integration",
-    "https://brightdata.com/locations",
     "https://brightdata.com/network-status",
-    "https://brightdata.com/partners",
-    "https://brightdata.com/pricing/archive-api",
-    "https://brightdata.com/pricing/crawl-api",
-    "https://brightdata.com/pricing/datasets",
-    "https://brightdata.com/pricing/insights",
-    "https://brightdata.com/pricing/managed-services",
-    "https://brightdata.com/pricing/proxy-network/datacenter-proxies",
-    "https://brightdata.com/pricing/proxy-network/isp-proxies",
-    "https://brightdata.com/pricing/proxy-network/residential-proxies",
-    "https://brightdata.com/pricing/scraping-browser",
-    "https://brightdata.com/pricing/serp",
-    "https://brightdata.com/pricing/web-scraper",
-    "https://brightdata.com/pricing/web-scraper/studio",
-    "https://brightdata.com/pricing/web-unlocker",
-    "https://brightdata.com/products",
-    "https://brightdata.com/products/data-feeds/web-search-api",
-    "https://brightdata.com/products/data-firehose",
-    "https://brightdata.com/products/datasets",
-    "https://brightdata.com/products/datasets/ecommerce",
-    "https://brightdata.com/products/datasets/linkedin",
-    "https://brightdata.com/products/datasets/real-estate",
-    "https://brightdata.com/products/datasets/social-media",
-    "https://brightdata.com/products/discover-api",
-    "https://brightdata.com/products/insights",
-    "https://brightdata.com/products/managed-service",
-    "https://brightdata.com/products/proxy-browser-extension",
-    "https://brightdata.com/products/scraping-browser",
-    "https://brightdata.com/products/serp-api",
-    "https://brightdata.com/products/serp-api/bing-search",
-    "https://brightdata.com/products/serp-api/duckduckgo-search",
-    "https://brightdata.com/products/serp-api/google-search",
-    "https://brightdata.com/products/serp-api/yandex-search",
-    "https://brightdata.com/products/web-scraper",
-    "https://brightdata.com/products/web-scraper/chatgpt",
-    "https://brightdata.com/products/web-scraper/ecommerce",
-    "https://brightdata.com/products/web-scraper/linkedin",
-    "https://brightdata.com/products/web-scraper/social-media-scrape",
-    "https://brightdata.com/products/web-scraper/studio",
-    "https://brightdata.com/products/web-unlocker",
-    "https://brightdata.com/proxy-types",
-    "https://brightdata.com/proxy-types/datacenter-proxies",
-    "https://brightdata.com/proxy-types/isp-proxies",
-    "https://brightdata.com/proxy-types/residential-proxies",
-    "https://brightdata.com/trustcenter",
-    "https://brightdata.com/web-data-masterclass",
-    "https://brightdata.com/webinar",
-    "https://brightdata.de/blog/ai/bright-data-cli",
-    "https://brightdata.de/blog/ai/lobechat-with-web-mcp",
-    "https://brightdata.es/blog/ai/bright-data-cli",
-    "https://brightdata.es/blog/ai/lobechat-with-web-mcp",
-    "https://brightdata.fr/blog/ai/bright-data-cli",
-    "https://brightdata.fr/blog/ai/lobechat-with-web-mcp",
-    "https://brightdata.jp/blog/ai/bright-data-cli",
-    "https://brightdata.jp/blog/ai/lobechat-with-web-mcp",
-    "https://brightinitiative.com/",
-    "https://cli.brightdata.com/install.sh",
-    "https://deeplookup.com",
-    "https://demos.brightdata.com/",
+    "https://brightdata.zendesk.com/hc/en-us/requests/new",
     "https://docs.brightdata.com/#account-id",
+    "https://docs.brightdata.com/#alternative-authentication-methods",
+    "https://docs.brightdata.com/#authenticate",
     "https://docs.brightdata.com/#bright-data-mcp-tools-reference",
     "https://docs.brightdata.com/#brightdata-add-mcp",
     "https://docs.brightdata.com/#brightdata-browser",
@@ -392,6 +279,8 @@
     "https://docs.brightdata.com/#config-file-locations",
     "https://docs.brightdata.com/#content-area",
     "https://docs.brightdata.com/#does-the-api-key-have-an-expiration-date",
+    "https://docs.brightdata.com/#example-configurations",
+    "https://docs.brightdata.com/#explore-cli-resources",
     "https://docs.brightdata.com/#explore-mcp-server-resources",
     "https://docs.brightdata.com/#global-flags",
     "https://docs.brightdata.com/#global-options",
@@ -401,17 +290,34 @@
     "https://docs.brightdata.com/#how-do-i-authenticate-with-native-proxy-username-and-password",
     "https://docs.brightdata.com/#how-do-i-generate-a-new-api-key",
     "https://docs.brightdata.com/#how-do-i-relay-the-api-key-within-a-request",
+    "https://docs.brightdata.com/#how-it-works",
+    "https://docs.brightdata.com/#how-to-configure-the-remote-mcp-server",
+    "https://docs.brightdata.com/#install-the-cli",
+    "https://docs.brightdata.com/#interactive-setup-wizard",
+    "https://docs.brightdata.com/#mcp-server-modes",
     "https://docs.brightdata.com/#modes-rapid-free--pro-and-11-tool-groups",
+    "https://docs.brightdata.com/#next-steps",
+    "https://docs.brightdata.com/#param-browser",
+    "https://docs.brightdata.com/#param-groups",
+    "https://docs.brightdata.com/#param-pro",
+    "https://docs.brightdata.com/#param-tools",
+    "https://docs.brightdata.com/#param-unlocker",
     "https://docs.brightdata.com/#password",
     "https://docs.brightdata.com/#subcommands",
     "https://docs.brightdata.com/#supported-platforms",
+    "https://docs.brightdata.com/#update-the-cli",
     "https://docs.brightdata.com/#username",
     "https://docs.brightdata.com/#username%2Fpassword-format",
     "https://docs.brightdata.com/#username/password-format",
+    "https://docs.brightdata.com/#verify-your-setup",
     "https://docs.brightdata.com/#what-are-api-key-options-and-configuration",
+    "https://docs.brightdata.com/#what-can-you-do-with-the-cli",
     "https://docs.brightdata.com/#what-permissions-level-does-an-api-key-have",
+    "https://docs.brightdata.com/#what-the-cli-looks-like",
+    "https://docs.brightdata.com/#where-configuration-is-stored",
     "https://docs.brightdata.com/#where-should-i-save-the-api-key-with-admin-permissions",
     "https://docs.brightdata.com/#which-products-can-i-access-with-proxy-protocol",
+    "https://docs.brightdata.com/#who-this-platform-is-for",
     "https://docs.brightdata.com/#why-can%E2%80%99t-i-see-a-plain-text-version-of-my-api-key-or-copy-it",
     "https://docs.brightdata.com/#why-can’t-i-see-a-plain-text-version-of-my-api-key-or-copy-it",
     "https://docs.brightdata.com/ai/agents",
@@ -427,7 +333,6 @@
     "https://docs.brightdata.com/ai/mcp-server/faqs",
     "https://docs.brightdata.com/ai/mcp-server/integrations",
     "https://docs.brightdata.com/ai/mcp-server/integrations/claude#hosted-mcp",
-    "https://docs.brightdata.com/ai/mcp-server/integrations/claude-code",
     "https://docs.brightdata.com/ai/mcp-server/integrations/cursor",
     "https://docs.brightdata.com/ai/mcp-server/local/quickstart",
     "https://docs.brightdata.com/ai/mcp-server/overview",
@@ -439,96 +344,53 @@
     "https://docs.brightdata.com/ai/training",
     "https://docs.brightdata.com/api-reference/SDK",
     "https://docs.brightdata.com/api-reference/SDK-JS",
-    "https://docs.brightdata.com/api-reference/account-management-api/Get_Zone_Static_Datacenter_ISP_IPs",
-    "https://docs.brightdata.com/api-reference/account-management-api/Get_account_status",
-    "https://docs.brightdata.com/api-reference/account-management-api/Get_total_balance_through_API",
     "https://docs.brightdata.com/api-reference/authentication",
     "https://docs.brightdata.com/api-reference/authentication#how-do-i-generate-a-new-api-key%3F",
     "https://docs.brightdata.com/api-reference/authentication#understanding-api-key-permissions",
     "https://docs.brightdata.com/api-reference/discover",
-    "https://docs.brightdata.com/api-reference/marketplace-dataset-api/download-the-file-by-snapshot_id",
     "https://docs.brightdata.com/api-reference/postman-collection",
-    "https://docs.brightdata.com/api-reference/scrapers/social-media-apis/overview",
     "https://docs.brightdata.com/api-reference/terminology",
     "https://docs.brightdata.com/cli/commands",
-    "https://docs.brightdata.com/cli/commands#brightdata-budget",
-    "https://docs.brightdata.com/cli/commands#brightdata-pipelines-%3Ctype%3E-params--options",
-    "https://docs.brightdata.com/cli/commands#brightdata-scrape-%3Curl%3E",
-    "https://docs.brightdata.com/cli/commands#brightdata-search-%3Cquery%3E",
-    "https://docs.brightdata.com/cli/commands#brightdata-skill",
-    "https://docs.brightdata.com/cli/commands#brightdata-zones",
     "https://docs.brightdata.com/cli/examples",
     "https://docs.brightdata.com/cli/faqs",
     "https://docs.brightdata.com/cli/installation",
     "https://docs.brightdata.com/cli/overview",
-    "https://docs.brightdata.com/cli/overview#what-can-you-do-with-the-cli",
+    "https://docs.brightdata.com/datasets",
     "https://docs.brightdata.com/datasets/introduction",
     "https://docs.brightdata.com/datasets/marketplace",
     "https://docs.brightdata.com/datasets/scraper-studio/build-with-the-cli",
     "https://docs.brightdata.com/datasets/scraper-studio/introduction",
-    "https://docs.brightdata.com/datasets/scraper-studio/quickstart",
     "https://docs.brightdata.com/datasets/scrapers/overview",
-    "https://docs.brightdata.com/datasets/scrapers/scrapers-library/faqs",
-    "https://docs.brightdata.com/datasets/scrapers/scrapers-library/overview",
     "https://docs.brightdata.com/general/account/billing-and-pricing/free-tier",
-    "https://docs.brightdata.com/general/account/faqs",
-    "https://docs.brightdata.com/general/account/limited-trial-restrictions",
     "https://docs.brightdata.com/general/account/overview",
-    "https://docs.brightdata.com/general/account/referral-program",
     "https://docs.brightdata.com/general/account/ssl-certificate",
-    "https://docs.brightdata.com/general/account/users-management",
-    "https://docs.brightdata.com/general/faqs",
-    "https://docs.brightdata.com/general/webhook_notifications",
-    "https://docs.brightdata.com/general/webmaster-console",
-    "https://docs.brightdata.com/general/websites",
-    "https://docs.brightdata.com/integrations/ai-integrations",
     "https://docs.brightdata.com/integrations/introduction",
     "https://docs.brightdata.com/integrations/n8n#sse-based-mcp-integration",
     "https://docs.brightdata.com/introduction",
     "https://docs.brightdata.com/llms.txt",
-    "https://docs.brightdata.com/mcp-server/overview",
-    "https://docs.brightdata.com/mcp-server/remote/quickstart",
     "https://docs.brightdata.com/proxy-networks",
     "https://docs.brightdata.com/proxy-networks/introduction",
     "https://docs.brightdata.com/proxy-networks/residential/network-access",
+    "https://docs.brightdata.com/release-notes",
+    "https://docs.brightdata.com/scraping-automation",
     "https://docs.brightdata.com/scraping-automation/introduction",
     "https://docs.brightdata.com/scraping-automation/scraping-browser",
     "https://docs.brightdata.com/scraping-automation/serp-api",
-    "https://docs.brightdata.com/scraping-automation/serp-api/introduction",
     "https://docs.brightdata.com/scraping-automation/web-unlocker",
-    "https://docs.brightdata.com/scraping-automation/web-unlocker/five-minute-how-to",
+    "https://example.com",
     "https://example.com/page",
     "https://example.com/product/1",
-    "https://github.com/brightdata/brightdata-mcp/blob/main/assets/Tools.md",
+    "https://feluda.ai/mcp-servers/brightdata",
     "https://github.com/brightdata/brightdata-mcp?tab=readme-ov-file#-usage-examples",
-    "https://github.com/brightdata/brightdata-mcp?tab=readme-ov-file#advanced-configuration",
-    "https://github.com/brightdata/cli",
-    "https://github.com/brightdata/cli?tab=readme-ov-file#add-mcp",
-    "https://github.com/brightdata/cli?tab=readme-ov-file#browser",
-    "https://github.com/lobehub/lobe-chat",
+    "https://github.com/brightdata/cli/releases",
     "https://github.com/luminati-io",
     "https://help.brightdata.com/hc/en-us/requests/new",
     "https://il.linkedin.com/company/bright-data",
     "https://linkedin.com/in/username",
-    "https://lobechat.com/",
-    "https://lobechat.com/login",
-    "https://lobechat.com/signup",
-    "https://lobehub.com/agent",
-    "https://lobehub.com/blog/mcp-in-lobehub-what-is-it-and-how-to-set-it-up",
-    "https://lobehub.com/mcp",
-    "https://lobehub.com/mcp/brightdata-com-brightdata-mcp?activeTab=deployment",
-    "https://mcp.brightdata.com/mcp?token=",
     "https://mcp.brightdata.com/sse?token=YOUR_API_TOKEN",
-    "https://modelcontextprotocol.io/docs/learn/architecture",
+    "https://mcp.brightdata.com/sse?token=YOUR_API_TOKEN&pro=1",
     "https://news.ycombinator.com",
-    "https://nodejs.org/en/download",
-    "https://www.bright.cn/blog/ai/bright-data-cli",
-    "https://www.bright.cn/blog/ai/lobechat-with-web-mcp",
     "https://www.example.com",
-    "https://www.kaggle.com/code/brightdataml/benchmarking-ai-on-different-data-formats",
-    "https://www.npmjs.com/package/@brightdata/cli",
-    "https://www.npmjs.com/package/@brightdata/mcp",
-    "https://www.youtube.com/@BrightData",
     "https://www.youtube.com/channel/UCM_0cG1ljAoEUcZIyoUIq6g"
   ]
 }

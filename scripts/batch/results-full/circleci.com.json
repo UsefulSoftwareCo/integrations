@@ -12,14 +12,21 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:26:59.765Z",
-    "summary": "CircleCI exposes two authenticated REST APIs (v1 and v2) plus an authenticated MCP server; all use the same user-minted CircleCI API token.",
+    "discoveredAt": "2026-07-02T16:19:55.876Z",
+    "summary": "CircleCI exposes one documented REST API surface (API v2), an MCP server, and the `circleci` CLI; API v2 uses CircleCI personal API tokens or project API tokens via `Circle-Token`, while MCP/CLI auth mechanics were not pinned down from the pages read.",
     "credentials": {
       "circleci_api_token": {
-        "type": "api_key",
-        "label": "CircleCI API token",
+        "type": "bearer",
+        "label": "CircleCI personal API token",
         "generateUrl": "https://app.circleci.com/settings/user/tokens",
-        "setup": "Go to [User settings](https://app.circleci.com/settings/user), open [Personal API Tokens](https://app.circleci.com/settings/user/tokens), and click **Create New Token**. Name it, create it, then copy the value once; CircleCI says you cannot view it again. Use this for API v1 and v2. CircleCI also documents project API tokens, but for API v2 the docs say only personal API tokens are currently supported.",
+        "setup": "Create it in the CircleCI app under [User settings](https://app.circleci.com/settings/user) → [Personal API Tokens](https://app.circleci.com/settings/user/tokens) → **Create New Token**. Name it, add it, then copy the token once; CircleCI says you won't be able to view it again. Use this token for the API v2 and CLI authentication where supported.",
+        "acquisition": "manual"
+      },
+      "circleci_project_token": {
+        "type": "bearer",
+        "label": "CircleCI project API token",
+        "generateUrl": "https://app.circleci.com/settings/project",
+        "setup": "Go to your project settings in the CircleCI app, open **API Permissions**, and choose **Add API Token**. Pick a scope such as `Status`, `Read Only`, or `Admin`, then add the token and copy it immediately. CircleCI notes that project tokens are primarily for project-scoped access and that `Read Only` / `Admin` are for API v1 only.",
         "acquisition": "manual"
       }
     },
@@ -28,12 +35,12 @@
         "slug": "circleci-api-v2",
         "name": "CircleCI API v2",
         "type": "http",
-        "docs": "https://circleci.com/docs/guides/toolkit/api-developers-guide/",
+        "docs": "https://circleci.com/docs/api/v2/",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://circleci.com/docs/guides/toolkit/api-developers-guide/",
-            "https://circleci.com/docs/api/v2/"
+            "https://circleci.com/docs/api/v2/",
+            "https://circleci.com/docs/guides/toolkit/api-developers-guide/"
           ]
         },
         "auth": {
@@ -46,168 +53,42 @@
                   "mechanics": {
                     "source": "http",
                     "in": "header",
-                    "headerName": "Authorization",
+                    "headerName": "Circle-Token",
                     "scheme": "Bearer"
                   }
-                },
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://circleci.com/docs/api/v2/",
+                  "https://circleci.com/docs/guides/toolkit/api-developers-guide/"
+                ]
+              }
+            },
+            {
+              "use": [
                 {
-                  "id": "circleci_api_token",
+                  "id": "circleci_project_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
                     "headerName": "Circle-Token",
-                    "scheme": "Circle-Token"
+                    "scheme": "Bearer"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://circleci.com/docs/guides/toolkit/api-developers-guide/",
-                  "https://circleci.com/docs/api/v2/"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "circleci_api_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Basic"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://circleci.com/docs/guides/toolkit/api-developers-guide/",
-                  "https://circleci.com/docs/api/v2/"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "circleci_api_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "scheme": "query",
-                    "paramName": "circle-token"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://circleci.com/docs/guides/toolkit/api-developers-guide/",
-                  "https://circleci.com/docs/api/v2/"
+                  "https://circleci.com/docs/api/v2/",
+                  "https://circleci.com/docs/guides/toolkit/api-developers-guide/"
                 ]
               }
             }
-          ]
-        }
-      },
-      {
-        "slug": "circleci-api-v1",
-        "name": "CircleCI API v1",
-        "type": "http",
-        "docs": "https://circleci.com/docs/api/v1/",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://circleci.com/docs/api/v1/",
-            "https://circleci.com/docs/guides/toolkit/managing-api-tokens/"
           ]
         },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "circleci_api_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://circleci.com/docs/api/v1/",
-                  "https://circleci.com/docs/guides/toolkit/managing-api-tokens/"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "circleci_api_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Circle-Token",
-                    "scheme": "Circle-Token"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://circleci.com/docs/api/v1/",
-                  "https://circleci.com/docs/guides/toolkit/managing-api-tokens/"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "circleci_api_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Basic"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://circleci.com/docs/api/v1/",
-                  "https://circleci.com/docs/guides/toolkit/managing-api-tokens/"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "circleci_api_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "scheme": "query",
-                    "paramName": "circle-token"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://circleci.com/docs/api/v1/",
-                  "https://circleci.com/docs/guides/toolkit/managing-api-tokens/"
-                ]
-              }
-            }
-          ]
-        }
+        "url": "https://circleci.com/api/v2"
       },
       {
         "slug": "circleci-mcp-server",
@@ -217,167 +98,154 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://circleci.com/docs/guides/toolkit/using-the-circleci-mcp-server/"
+            "https://circleci.com/docs/guides/toolkit/using-the-circleci-mcp-server/",
+            "https://circleci.com/product/mcp/"
           ]
         },
         "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "circleci_api_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://circleci.com/docs/guides/toolkit/using-the-circleci-mcp-server/"
-                ]
-              }
-            }
+          "status": "unknown"
+        },
+        "url": "https://circleci.com/product/mcp/",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "circleci-local-cli",
+        "name": "CircleCI local CLI",
+        "type": "cli",
+        "docs": "https://circleci.com/docs/guides/toolkit/local-cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://circleci.com/docs/guides/toolkit/local-cli/",
+            "https://github.com/CircleCI-Public/circleci-cli"
           ]
         },
-        "url": "https://circleci.com/docs/guides/toolkit/using-the-circleci-mcp-server/",
-        "transports": [
-          "streamable-http",
-          "sse"
-        ]
+        "auth": {
+          "status": "unknown"
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "CircleCI-Public/circleci-cli"
+          }
+        ],
+        "command": "circleci"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:26:59.766Z",
+  "discoveredAt": "2026-07-02T16:19:55.877Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 148084,
-    "completion_tokens": 1636,
-    "total_tokens": 149720
+    "prompt_tokens": 184931,
+    "completion_tokens": 1389,
+    "total_tokens": 186320
   },
   "visited": [
-    "https://circleci.com/docs/api/v1/",
     "https://circleci.com/docs/api/v2/",
     "https://circleci.com/docs/guides/toolkit/api-developers-guide/",
-    "https://circleci.com/docs/guides/toolkit/api-intro/",
+    "https://circleci.com/docs/guides/toolkit/local-cli/",
     "https://circleci.com/docs/guides/toolkit/managing-api-tokens/",
     "https://circleci.com/docs/guides/toolkit/using-the-circleci-mcp-server/",
     "https://circleci.com/llms.txt",
+    "https://circleci.com/product/mcp/",
+    "https://discuss.circleci.com/t/any-documentation-on-the-graphql-api/29913",
+    "https://discuss.circleci.com/t/help-a-newbie-with-circleci-api-basic-how-to/36794",
     "https://github.com/circleci-public/circleci-cli"
   ],
   "grounding": [
     "https://app.circleci.com",
     "https://app.circleci.com/",
+    "https://app.circleci.com/dashboard",
+    "https://app.circleci.com/login",
     "https://app.circleci.com/pipelines/github/org/repo/123",
     "https://app.circleci.com/settings/user",
     "https://app.circleci.com/settings/user/tokens",
+    "https://app.circleci.com/signup",
     "https://archiveprogram.github.com",
-    "https://avatars.githubusercontent.com/u/6017470?v=3",
+    "https://brew.sh/",
+    "https://chocolatey.org/",
+    "https://circleci-public.github.io/circleci-cli/",
     "https://circleci.com",
     "https://circleci.com/",
     "https://circleci.com/#",
     "https://circleci.com/#accept-header",
     "https://circleci.com/#add-an-api-token",
-    "https://circleci.com/#add-environment-variables",
     "https://circleci.com/#additional-api-use-cases",
     "https://circleci.com/#additional-resources",
+    "https://circleci.com/#alternative-installation-method",
     "https://circleci.com/#api-categories",
-    "https://circleci.com/#artifacts",
-    "https://circleci.com/#artifacts-of-a-job",
-    "https://circleci.com/#artifacts-of-the-latest-job-run",
-    "https://circleci.com/#authentication",
     "https://circleci.com/#authentication-and-authorization",
     "https://circleci.com/#automatic-installation-via-smithery",
     "https://circleci.com/#c-consent-modal",
-    "https://circleci.com/#cache-control-header",
-    "https://circleci.com/#cancel-a-job",
-    "https://circleci.com/#circleci-v1-api-overview",
     "https://circleci.com/#claude-code",
     "https://circleci.com/#claude-desktop",
     "https://circleci.com/#configuration-helper-config_helper",
-    "https://circleci.com/#create-ssh-keys",
+    "https://circleci.com/#configure-the-cli",
     "https://circleci.com/#creating-a-personal-api-token",
     "https://circleci.com/#creating-a-project-api-token",
     "https://circleci.com/#cursor-ide",
-    "https://circleci.com/#delete-checkout-key",
-    "https://circleci.com/#delete-environment-variables",
-    "https://circleci.com/#delete-ssh-key",
-    "https://circleci.com/#download-an-artifact-file",
     "https://circleci.com/#download-artifacts",
     "https://circleci.com/#download-artifacts-steps",
     "https://circleci.com/#endpoints-with-pagination",
-    "https://circleci.com/#environment-variables",
     "https://circleci.com/#example-1-fixing-a-failed-pr-build",
     "https://circleci.com/#example-2-debugging-a-failed-deployment",
     "https://circleci.com/#example-3-addressing-flaky-tests",
     "https://circleci.com/#example-4-emergency-production-rollback-using-rollback-pipeline",
     "https://circleci.com/#example-end-to-end-api-request",
-    "https://circleci.com/#f-oss",
     "https://circleci.com/#find-flaky-tests-find_flaky_tests",
-    "https://circleci.com/#follow-a-new-project-on-circleci",
     "https://circleci.com/#gather-insights",
-    "https://circleci.com/#get-all-followed-projects",
-    "https://circleci.com/#get-authenticated",
     "https://circleci.com/#get-build-failure-logs-get_build_failure_logs",
-    "https://circleci.com/#get-checkout-key",
     "https://circleci.com/#get-job-details",
     "https://circleci.com/#get-job-details-steps",
     "https://circleci.com/#get-project-details",
     "https://circleci.com/#get-project-steps",
-    "https://circleci.com/#get-single-environment-variable",
-    "https://circleci.com/#get-test-metadata",
-    "https://circleci.com/#getting-started",
+    "https://circleci.com/#get-started",
     "https://circleci.com/#getting-started-with-the-api",
     "https://circleci.com/#github-app-gitlab-and-bitbucket-data-center",
     "https://circleci.com/#github-oauth-and-bitbucket-cloud",
-    "https://circleci.com/#heroku-keys",
     "https://circleci.com/#how-it-works",
     "https://circleci.com/#how-pagination-works",
     "https://circleci.com/#installation",
     "https://circleci.com/#installation-issues",
     "https://circleci.com/#introduction",
-    "https://circleci.com/#jobs",
-    "https://circleci.com/#keys",
-    "https://circleci.com/#list-checkout-keys",
-    "https://circleci.com/#list-environment-variables",
-    "https://circleci.com/#list-ordering",
-    "https://circleci.com/#new-checkout-key",
+    "https://circleci.com/#learn-more",
+    "https://circleci.com/#linux-install-with-snap",
+    "https://circleci.com/#macos-install-with-homebrew",
+    "https://circleci.com/#main",
+    "https://circleci.com/#manual-download",
+    "https://circleci.com/#mcp-overview",
+    "https://circleci.com/#mcp-use-cases",
     "https://circleci.com/#next-steps",
     "https://circleci.com/#not-seeing-an-up-to-date-list-of-tools",
     "https://circleci.com/#overview",
     "https://circleci.com/#paginating-through-results",
     "https://circleci.com/#pagination",
     "https://circleci.com/#prerequisites",
-    "https://circleci.com/#projects",
-    "https://circleci.com/#rate-limiting",
     "https://circleci.com/#rate-limits",
     "https://circleci.com/#real-world-examples",
-    "https://circleci.com/#recent-jobs-across-all-projects",
-    "https://circleci.com/#recent-jobs-for-a-single-project",
     "https://circleci.com/#reference",
-    "https://circleci.com/#retry-a-job",
     "https://circleci.com/#returning-workflow-metrics",
     "https://circleci.com/#reviewing-individual-job-metrics",
     "https://circleci.com/#rollback-tool-run_rollback_pipeline",
     "https://circleci.com/#rotating-a-personal-api-token",
     "https://circleci.com/#rotating-a-project-api-token",
     "https://circleci.com/#rotating-personal-and-project-api-tokens",
-    "https://circleci.com/#single-job",
     "https://circleci.com/#steps",
-    "https://circleci.com/#summary-of-api-endpoints",
     "https://circleci.com/#supported-tools",
-    "https://circleci.com/#trigger-a-new-job",
-    "https://circleci.com/#trigger-a-new-job-with-a-branch",
-    "https://circleci.com/#trigger-a-new-pipeline-by-project",
+    "https://circleci.com/#telemetry",
+    "https://circleci.com/#the-circleci-cli-and-the-task-runner",
+    "https://circleci.com/#tools",
     "https://circleci.com/#troubleshooting",
-    "https://circleci.com/#user",
+    "https://circleci.com/#uninstallation",
+    "https://circleci.com/#updating-the-cli",
+    "https://circleci.com/#updating-the-legacy-cli",
+    "https://circleci.com/#useful-links",
     "https://circleci.com/#using-the-api-securely-with-curl",
     "https://circleci.com/#using-the-circleci-mcp-server",
     "https://circleci.com/#vs-code",
+    "https://circleci.com/#windows-install-with-chocolatey",
     "https://circleci.com/#windsurf",
     "https://circleci.com/../",
     "https://circleci.com/../../../",
@@ -428,19 +296,14 @@
     "https://circleci.com/../../orchestrate/workflows/",
     "https://circleci.com/../../security/inject-environment-variables-with-api/",
     "https://circleci.com/../../security/security-recommendations/#protect-the-api-token",
+    "https://circleci.com/../how-to-use-the-circleci-local-cli/#context-management",
+    "https://circleci.com/../how-to-use-the-circleci-local-cli/#orb-development-kit",
+    "https://circleci.com/../how-to-use-the-circleci-local-cli/#run-a-job-in-a-container-on-your-machine",
+    "https://circleci.com/../how-to-use-the-circleci-local-cli/#validate-a-circleci-config",
     "https://circleci.com/../managing-api-tokens/#creating-a-personal-api-token",
     "https://circleci.com/../managing-api-tokens/#creating-a-project-api-token",
     "https://circleci.com/[url",
     "https://circleci.com/about/",
-    "https://circleci.com/account/api",
-    "https://circleci.com/api/",
-    "https://circleci.com/api/v1.1",
-    "https://circleci.com/api/v1.1/",
-    "https://circleci.com/api/v1.1/me",
-    "https://circleci.com/api/v1.1/me?circle-token=",
-    "https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/follow",
-    "https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/tree/:branch",
-    "https://circleci.com/api/v1.1/projects",
     "https://circleci.com/api/v2/context",
     "https://circleci.com/api/v2/context/be8bb2e3",
     "https://circleci.com/api/v2/context/be8bb2e3-c3d6-4098-89f4-572ff976ba9a/environment-variable?page-token=example-value",
@@ -448,8 +311,10 @@
     "https://circleci.com/api/v2/context?owner-id=497f6eca-6276-4993-bfeb-53cbbbba6f08&owner-slug=example-value&owner-type=account&page-token=example-value",
     "https://circleci.com/api/v2/me",
     "https://circleci.com/api/v2/project/{project-slug}/pipeline",
+    "https://circleci.com/autonomous-validation-roi/",
     "https://circleci.com/blob:https://circleci.com/282a7242-014f-48bd-b754-1c3cb28c8ea0",
     "https://circleci.com/blog/",
+    "https://circleci.com/blog/business-value-of-software-delivery/",
     "https://circleci.com/careers/",
     "https://circleci.com/changelog/",
     "https://circleci.com/compare/bitrise-vs-circleci/",
@@ -458,33 +323,40 @@
     "https://circleci.com/compare/harness-vs-circleci/",
     "https://circleci.com/compare/jenkins-vs-circleci/",
     "https://circleci.com/customers/",
+    "https://circleci.com/de/product/mcp/",
     "https://circleci.com/developer",
     "https://circleci.com/developer/",
     "https://circleci.com/developer/images",
     "https://circleci.com/developer/orbs",
     "https://circleci.com/docs/",
-    "https://circleci.com/docs/2.0",
-    "https://circleci.com/docs/api/v1/",
     "https://circleci.com/docs/api/v2/",
     "https://circleci.com/docs/api/v2/#tag/Pipeline/operation/getPipelineById",
     "https://circleci.com/docs/api/v2/#tag/Workflow/operation/getWorkflowById",
     "https://circleci.com/docs/api/v2/index.html",
     "https://circleci.com/docs/api/v2/llms.txt",
-    "https://circleci.com/docs/configuration-reference/#notify",
     "https://circleci.com/docs/contexts/",
     "https://circleci.com/docs/guides/getting-started/getting-started/",
     "https://circleci.com/docs/guides/toolkit/api-developers-guide/",
-    "https://circleci.com/docs/guides/toolkit/api-intro/",
     "https://circleci.com/docs/guides/toolkit/local-cli/",
     "https://circleci.com/docs/guides/toolkit/managing-api-tokens/",
+    "https://circleci.com/docs/guides/toolkit/managing-api-tokens/#creating-a-personal-api-token",
     "https://circleci.com/docs/guides/toolkit/using-the-circleci-mcp-server/",
     "https://circleci.com/docs/guides/toolkit/vs-code-extension-overview/",
-    "https://circleci.com/docs/inject-environment-variables-with-api/#api-v1",
+    "https://circleci.com/enterprise/",
+    "https://circleci.com/es/product/mcp/",
     "https://circleci.com/execution-environments/",
-    "https://circleci.com/gh/circleci/mongofinil/1",
     "https://circleci.com/index.md",
     "https://circleci.com/integrations/",
+    "https://circleci.com/integrations/aws/",
+    "https://circleci.com/integrations/azure/",
+    "https://circleci.com/integrations/bitbucket/",
+    "https://circleci.com/integrations/gcp/",
+    "https://circleci.com/integrations/github/",
+    "https://circleci.com/integrations/gitlab/",
+    "https://circleci.com/integrations/kubernetes/",
+    "https://circleci.com/ja/product/mcp/",
     "https://circleci.com/javascript",
+    "https://circleci.com/ko/product/mcp/",
     "https://circleci.com/legal/cookie-policy/",
     "https://circleci.com/legal/cookie-policy/#current",
     "https://circleci.com/legal/cookie-policy/#functional",
@@ -495,30 +367,56 @@
     "https://circleci.com/legal/terms-of-service/",
     "https://circleci.com/llms.txt",
     "https://circleci.com/newsroom/",
+    "https://circleci.com/open-source/",
     "https://circleci.com/orbs/",
+    "https://circleci.com/partners/",
+    "https://circleci.com/podcast/confident-commit/",
     "https://circleci.com/pricing/",
     "https://circleci.com/privacy/",
+    "https://circleci.com/product-roadmap/",
     "https://circleci.com/product/",
     "https://circleci.com/product/analytics-insights/",
     "https://circleci.com/product/auto-scaling/",
+    "https://circleci.com/product/build-images/",
+    "https://circleci.com/product/build-optimization/",
+    "https://circleci.com/product/chunk/",
     "https://circleci.com/product/demo/",
+    "https://circleci.com/product/features/",
     "https://circleci.com/product/mcp/",
     "https://circleci.com/research/",
+    "https://circleci.com/resources/",
+    "https://circleci.com/resources/events/",
+    "https://circleci.com/ru/product/mcp/",
     "https://circleci.com/security/",
+    "https://circleci.com/software-delivery-data-explorer/",
+    "https://circleci.com/solutions/",
     "https://circleci.com/solutions/ai-agents/",
     "https://circleci.com/solutions/ai/",
+    "https://circleci.com/solutions/automation/",
     "https://circleci.com/solutions/business-leader/",
+    "https://circleci.com/solutions/continuous-integration/",
     "https://circleci.com/solutions/developer/",
     "https://circleci.com/solutions/engineering-manager/",
+    "https://circleci.com/solutions/mobile/",
     "https://circleci.com/solutions/platform-engineer/",
+    "https://circleci.com/solutions/release-orchestration/",
+    "https://circleci.com/solutions/security-compliance/",
     "https://circleci.com/solutions/security-engineer/",
+    "https://circleci.com/solutions/smb/",
+    "https://circleci.com/solutions/startups/",
     "https://circleci.com/support/plans/",
+    "https://circleci.com/support/technical-services/",
+    "https://circleci.com/topics/",
+    "https://circleci.com/zh/product/mcp/",
     "https://code.visualstudio.com/docs/copilot/chat/mcp-servers",
     "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After",
     "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429",
     "https://discuss.circleci.com/",
+    "https://discuss.circleci.com/t/any-documentation-on-the-graphql-api/29913",
+    "https://discuss.circleci.com/t/help-a-newbie-with-circleci-api-basic-how-to/36794",
     "https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp",
     "https://docs.cursor.com/context/model-context-protocol",
+    "https://docs.docker.com/get-docker/",
     "https://docs.github.com",
     "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
     "https://docs.windsurf.com/windsurf/mcp#model-context-protocol-mcp",
@@ -558,6 +456,7 @@
     "https://github.com/CircleCI-Public/circleci-cli/pull/1556",
     "https://github.com/CircleCI-Public/circleci-cli/pulls",
     "https://github.com/CircleCI-Public/circleci-cli/pulse",
+    "https://github.com/CircleCI-Public/circleci-cli/releases",
     "https://github.com/CircleCI-Public/circleci-cli/security",
     "https://github.com/CircleCI-Public/circleci-cli/tags",
     "https://github.com/CircleCI-Public/circleci-cli/tree/main/.chunk",
@@ -577,10 +476,11 @@
     "https://github.com/circleci-public/circleci-cli",
     "https://github.com/circleci/circleci-docs/blob/main/CONTRIBUTING.md",
     "https://github.com/circleci/circleci-docs/commit/686c18f09478a2ed6c16eda07c96a4d6a74c9d7d",
+    "https://github.com/circleci/circleci-docs/commit/8e4925195626cff67ecdb3db3970ecea6abd7b3b",
     "https://github.com/circleci/circleci-docs/commit/9418584a49c9bd9ab6c38b7f3c9356e922f9912f",
     "https://github.com/circleci/circleci-docs/commit/e182cc8446e3670c111af3a45af17988fb722161",
     "https://github.com/circleci/circleci-docs/edit/main/docs/guides/modules/toolkit/pages/managing-api-tokens.adoc",
-    "https://github.com/circleci/mongofinil",
+    "https://github.com/circleci/local-cli",
     "https://github.com/collections",
     "https://github.com/customer-stories",
     "https://github.com/enterprise",
@@ -639,13 +539,29 @@
     "https://maintainers.github.com",
     "https://modelcontextprotocol.io/quickstart/user",
     "https://opensource.org/license/MIT",
+    "https://pnpm.io/installation",
+    "https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/main/install.sh",
     "https://redocly.com/redoc/",
     "https://securitylab.github.com",
     "https://skills.github.com",
     "https://smithery.ai/docs",
+    "https://snapcraft.io/",
     "https://stars.github.com",
     "https://support.circleci.com/hc/en-us/",
-    "https://support.github.com",
-    "https://www.gnu.org/philosophy/free-sw.html"
+    "https://support.circleci.com/hc/en-us/articles/10643012267291-How-to-validate-a-config-that-uses-private-Orbs",
+    "https://support.circleci.com/hc/en-us/articles/14027411555355-How-to-delete-a-projects-Docker-Layer-Cache",
+    "https://support.circleci.com/hc/en-us/articles/14031352897819-How-to-Rotate-your-Self-Hosted-Runner-Resource-Class-Tokens",
+    "https://support.circleci.com/hc/en-us/articles/15222621603355-How-to-Find-your-Private-Orb-s-Documentation",
+    "https://support.circleci.com/hc/en-us/articles/360011235534-Using-realitycheck-to-validate-your-CircleCI-installation",
+    "https://support.circleci.com/hc/en-us/articles/360033753374-Checkout-private-repositories-with-local-jobs-run-through-circleci-cli",
+    "https://support.circleci.com/hc/en-us/articles/360035341894-How-can-I-make-my-orbs-private-",
+    "https://support.circleci.com/hc/en-us/articles/360045977834-Can-I-delete-an-Orb-",
+    "https://support.circleci.com/hc/en-us/articles/360046871833-CircleCI-CLI-Fails-With-panic-yaml-line-4-could-not-find-expected-Error",
+    "https://support.circleci.com/hc/en-us/articles/360047644153-CircleCI-CLI-Context-Command-errors-with-Must-have-admin-permission-",
+    "https://support.circleci.com/hc/en-us/articles/360057144631-CircleCI-Runner-Error-Message-We-cannot-run-this-job-using-the-selected-resource-class-",
+    "https://support.circleci.com/hc/en-us/articles/4406826701339-Orbs-Public-vs-Private-vs-Unlisted",
+    "https://support.circleci.com/hc/en-us/articles/4407580027675-Docker-Layer-Caching-FAQ",
+    "https://support.circleci.com/hc/en-us/articles/4421154407195-Deprecating-Ubuntu-14-04-and-16-04-images-EOL-5-31-22",
+    "https://support.github.com"
   ]
 }

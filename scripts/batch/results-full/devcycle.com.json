@@ -12,35 +12,28 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T12:14:43.389Z",
-    "summary": "DevCycle exposes a Management REST API, Bucketing REST API, hosted MCP server, and DevCycle CLI; auth uses OAuth client credentials for Management API, SDK keys for Bucketing API, and CLI/browser SSO or auth-file client credentials for CLI and MCP.",
+    "discoveredAt": "2026-07-02T16:22:07.445Z",
+    "summary": "DevCycle exposes a Management API, Bucketing API, hosted MCP server, and DevCycle CLI; auth uses OAuth client credentials/access tokens for management/MCP and SDK keys for bucketing, with CLI supporting SSO login or stored client credentials.",
     "credentials": {
-      "dvc_oauth_client": {
+      "devcycle_oauth_client": {
         "type": "oauth2_cc",
-        "label": "DevCycle OAuth client credentials token",
+        "label": "DevCycle OAuth client credentials",
         "generateUrl": "https://app.devcycle.com/r/settings",
-        "setup": "Go to the [DevCycle dashboard settings](https://app.devcycle.com/r/settings) and use your organization's OAuth client id and client secret to mint an access token from `https://auth.devcycle.com/oauth/token` with `grant_type=client_credentials` and `audience=https://api.devcycle.com/`. For Enterprise RBAC setups, DevCycle notes a different token request using `grant_type=refresh_token` and a refresh token.",
+        "setup": "Go to the [DevCycle dashboard settings](https://app.devcycle.com/r/settings) and create or copy the client id and client secret used for OAuth client-credentials access to the Management API. Exchange them at `https://auth.devcycle.com/oauth/token` for a short-lived access token. For Enterprise RBAC setups, the docs note a different token request may be required.",
         "acquisition": "manual"
       },
-      "dvc_cli_sso": {
+      "devcycle_access_token": {
         "type": "bearer",
-        "label": "DevCycle CLI / MCP SSO access token",
-        "generateUrl": "https://docs.devcycle.com/cli/",
-        "setup": "Use the DevCycle CLI `login sso` flow to open the browser-based DevCycle universal login, choose your organization, and store a short-lived access token locally. The CLI docs also mention `login again` to refresh the token without re-prompting for org selection.",
+        "label": "DevCycle access token",
+        "generateUrl": "https://auth.devcycle.com/oauth/token",
+        "setup": "Obtain this token by exchanging the DevCycle OAuth client id and secret at [DevCycle auth](https://auth.devcycle.com/oauth/token). The docs describe this as the token used for API authorization and mention a 24-hour validity for CLI login flows. Enterprise RBAC may use a different refresh-token-based token request.",
         "acquisition": "manual"
       },
-      "dvc_client_creds_file": {
-        "type": "compound",
-        "label": "DevCycle CLI auth-file client credentials",
-        "generateUrl": "https://docs.devcycle.com/cli/",
-        "setup": "Create the CLI auth file shown in the DevCycle CLI docs and put your `client_id` and `client_secret` in it. The docs say to find the auth config path with `dvc status`, and not to commit this file to version control.",
-        "acquisition": "manual"
-      },
-      "dvc_sdk_key": {
-        "type": "bearer",
+      "devcycle_sdk_key": {
+        "type": "api_key",
         "label": "DevCycle SDK key",
-        "generateUrl": "https://app.devcycle.com/",
-        "setup": "In the DevCycle dashboard, create or copy an SDK key for the environment you want to evaluate against. The Bucketing API docs say you can pass it either in the `Authorization` header or as the `sdkKey` query parameter.",
+        "generateUrl": "https://app.devcycle.com/r/settings",
+        "setup": "In the [DevCycle dashboard](https://app.devcycle.com/r/settings), open your environment settings and generate or copy the SDK key for that environment. DevCycle documents that the Bucketing API accepts this key either in the `Authorization` header or as the `sdkKey` query parameter.",
         "acquisition": "manual"
       }
     },
@@ -62,7 +55,7 @@
             {
               "use": [
                 {
-                  "id": "dvc_oauth_client",
+                  "id": "devcycle_access_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -79,7 +72,8 @@
               }
             }
           ]
-        }
+        },
+        "url": "https://api.devcycle.com/v1"
       },
       {
         "slug": "devcycle-bucketing-api",
@@ -98,7 +92,7 @@
             {
               "use": [
                 {
-                  "id": "dvc_sdk_key",
+                  "id": "devcycle_sdk_key",
                   "mechanics": {
                     "source": "spec",
                     "scheme": "bearerAuth"
@@ -111,10 +105,30 @@
                   "https://docs.devcycle.com/bucketing-api/"
                 ]
               }
+            },
+            {
+              "use": [
+                {
+                  "id": "devcycle_sdk_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "scheme": "Bearer",
+                    "paramName": "sdkKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.devcycle.com/bucketing-api/"
+                ]
+              }
             }
           ]
         },
-        "spec": "https://bucketing-api.devcycle.com/openapi.yaml"
+        "spec": "https://bucketing-api.devcycle.com/openapi.yaml",
+        "url": "https://bucketing-api.devcycle.com/v1"
       },
       {
         "slug": "devcycle-mcp-server",
@@ -125,7 +139,7 @@
           "via": "discovered",
           "evidence": [
             "https://docs.devcycle.com/cli-mcp/mcp-getting-started/",
-            "https://docs.devcycle.com/cli/"
+            "https://docs.devcycle.com/cli-mcp/"
           ]
         },
         "auth": {
@@ -134,7 +148,7 @@
             {
               "use": [
                 {
-                  "id": "dvc_cli_sso",
+                  "id": "devcycle_access_token",
                   "mechanics": {
                     "source": "well-known"
                   }
@@ -144,7 +158,7 @@
                 "via": "discovered",
                 "evidence": [
                   "https://docs.devcycle.com/cli-mcp/mcp-getting-started/",
-                  "https://docs.devcycle.com/cli/"
+                  "https://docs.devcycle.com/cli-mcp/"
                 ]
               }
             }
@@ -165,9 +179,7 @@
           "via": "discovered",
           "evidence": [
             "https://docs.devcycle.com/cli/",
-            "https://docs.devcycle.com/cli-mcp/mcp-getting-started/",
-            "https://docs.devcycle.com/management-api/",
-            "https://docs.devcycle.com/bucketing-api/"
+            "https://docs.devcycle.com/cli-mcp/"
           ]
         },
         "auth": {
@@ -176,7 +188,7 @@
             {
               "use": [
                 {
-                  "id": "dvc_cli_sso",
+                  "id": "devcycle_access_token",
                   "mechanics": {
                     "source": "cli",
                     "command": "dvc login sso"
@@ -193,10 +205,10 @@
             {
               "use": [
                 {
-                  "id": "dvc_client_creds_file",
+                  "id": "devcycle_oauth_client",
                   "mechanics": {
                     "source": "cli",
-                    "command": "dvc status"
+                    "command": "dvc login sso"
                   }
                 }
               ],
@@ -217,30 +229,29 @@
           },
           {
             "registryType": "homebrew",
-            "identifier": "devcyclehq/cli",
-            "runtimeHint": "brew"
+            "identifier": "devcycle"
           }
         ],
         "command": "dvc"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T12:14:43.389Z",
+  "discoveredAt": "2026-07-02T16:22:07.446Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 188355,
-    "completion_tokens": 1644,
-    "total_tokens": 189999
+    "prompt_tokens": 181338,
+    "completion_tokens": 1557,
+    "total_tokens": 182895
   },
   "visited": [
-    "https://devcycle.com/llms.txt",
+    "https://api.devcycle.com/openapi.json",
     "https://docs.devcycle.com/bucketing-api/",
     "https://docs.devcycle.com/cli-mcp/",
     "https://docs.devcycle.com/cli-mcp/mcp-getting-started/",
-    "https://docs.devcycle.com/cli-mcp/mcp-reference",
     "https://docs.devcycle.com/cli/",
     "https://docs.devcycle.com/management-api/",
-    "https://docs.devcycle.com/quickstart"
+    "https://github.com/blurrah/mcp-graphql",
+    "https://www.apollographql.com/docs/apollo-mcp-server"
   ],
   "grounding": [
     "https://api.devcycle.com/",
@@ -271,7 +282,6 @@
     "https://devcycle.com/features/sdks",
     "https://devcycle.com/how-it-works",
     "https://devcycle.com/launchdarkly-vs-devcycle",
-    "https://devcycle.com/llms.txt",
     "https://devcycle.com/openfeature",
     "https://devcycle.com/pricing",
     "https://devcycle.com/qa-and-testing",
@@ -285,70 +295,42 @@
     "https://docs.devcycle.com",
     "https://docs.devcycle.com/",
     "https://docs.devcycle.com/#",
-    "https://docs.devcycle.com/#1-cli-authentication-recommended-for-local-development",
-    "https://docs.devcycle.com/#2-environment-variables-recommended-for-cicd",
     "https://docs.devcycle.com/#__docusaurus_skipToContent_fallback",
-    "https://docs.devcycle.com/#advanced-configuration",
     "https://docs.devcycle.com/#authentication",
-    "https://docs.devcycle.com/#authentication-methods",
     "https://docs.devcycle.com/#available-tools",
     "https://docs.devcycle.com/#capturing-with-or-without-quotes",
-    "https://docs.devcycle.com/#cleanup_feature",
-    "https://docs.devcycle.com/#clear_feature_self_targeting_overrides-️",
+    "https://docs.devcycle.com/#choose-your-workflow",
     "https://docs.devcycle.com/#cli-documentation",
     "https://docs.devcycle.com/#client-credentials-in-auth-file",
     "https://docs.devcycle.com/#command-line-arguments",
     "https://docs.devcycle.com/#command-topics",
     "https://docs.devcycle.com/#configure-your-ai-client",
-    "https://docs.devcycle.com/#create_feature-️",
-    "https://docs.devcycle.com/#create_variable-️",
-    "https://docs.devcycle.com/#delete_feature-️️",
-    "https://docs.devcycle.com/#delete_variable-️️",
+    "https://docs.devcycle.com/#devcycle-cli",
+    "https://docs.devcycle.com/#devcycle-mcp-server",
     "https://docs.devcycle.com/#environment-variables",
-    "https://docs.devcycle.com/#feature-management",
-    "https://docs.devcycle.com/#get_current_project",
-    "https://docs.devcycle.com/#get_feature_audit_log_history",
-    "https://docs.devcycle.com/#get_feature_total_evaluations",
-    "https://docs.devcycle.com/#get_project_total_evaluations",
-    "https://docs.devcycle.com/#get_self_targeting_identity",
     "https://docs.devcycle.com/#getting-help",
     "https://docs.devcycle.com/#github-action",
     "https://docs.devcycle.com/#install-the-cli",
-    "https://docs.devcycle.com/#install_devcycle_sdk",
-    "https://docs.devcycle.com/#installation",
-    "https://docs.devcycle.com/#list_features",
-    "https://docs.devcycle.com/#list_projects",
-    "https://docs.devcycle.com/#list_self_targeting_overrides",
-    "https://docs.devcycle.com/#list_variables",
-    "https://docs.devcycle.com/#local-mcp-server-installation",
+    "https://docs.devcycle.com/#key-benefits",
+    "https://docs.devcycle.com/#key-features",
     "https://docs.devcycle.com/#login-command",
     "https://docs.devcycle.com/#match-patterns-and-aliases",
     "https://docs.devcycle.com/#mcp-server-for-ai-assistants",
     "https://docs.devcycle.com/#next-steps",
     "https://docs.devcycle.com/#pattern-captures-the-key-including-surrounding-quotes",
     "https://docs.devcycle.com/#pattern-strips-quotes-capturing-only-the-content",
-    "https://docs.devcycle.com/#prerequisites",
-    "https://docs.devcycle.com/#project-management",
     "https://docs.devcycle.com/#project-selection",
     "https://docs.devcycle.com/#quick-setup",
     "https://docs.devcycle.com/#quick-setup-no-installation-required",
+    "https://docs.devcycle.com/#quick-start",
     "https://docs.devcycle.com/#repo-configuration",
     "https://docs.devcycle.com/#repo-init-command",
-    "https://docs.devcycle.com/#results--analytics",
-    "https://docs.devcycle.com/#sdk-installation",
-    "https://docs.devcycle.com/#select_project",
-    "https://docs.devcycle.com/#self-targeting--overrides",
-    "https://docs.devcycle.com/#set_self_targeting_override-️",
     "https://docs.devcycle.com/#setup",
     "https://docs.devcycle.com/#try-it-out",
-    "https://docs.devcycle.com/#update_feature-️",
-    "https://docs.devcycle.com/#update_feature_status-️",
-    "https://docs.devcycle.com/#update_self_targeting_identity",
-    "https://docs.devcycle.com/#update_variable-️",
     "https://docs.devcycle.com/#usage",
     "https://docs.devcycle.com/#using-access-tokens-preferred",
     "https://docs.devcycle.com/#using-client-credentials",
-    "https://docs.devcycle.com/#variable-management",
+    "https://docs.devcycle.com/#what-is-mcp",
     "https://docs.devcycle.com/best-practices/",
     "https://docs.devcycle.com/bucketing-api/",
     "https://docs.devcycle.com/cli",
@@ -405,7 +387,9 @@
     "https://docs.devcycle.com/sdk/",
     "https://example.com/preview.png",
     "https://github.com/DevCycleHQ/cli/issues",
+    "https://github.com/blurrah/mcp-graphql",
     "https://github.com/devcyclehq",
+    "https://github.com/devcyclehq/devcycle-docs/edit/main/docs/cli-mcp/index.md",
     "https://github.com/devcyclehq/devcycle-docs/edit/main/docs/cli-mcp/mcp-getting-started.md",
     "https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#how-to-set-up-your-mcp-server",
     "https://github.com/openai/codex/blob/main/docs/config.md#mcp-servers",
@@ -417,6 +401,7 @@
     "https://registry.modelcontextprotocol.io",
     "https://twitter.com/devcyclehq",
     "https://vscode.dev/redirect/mcp/install?name=DevCycle&config=%7B%22url%22%3A%20%22https%3A%2F%2Fmcp.devcycle.com%2Fmcp%22%7D",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
     "https://www.devcycle.com/contact/request-demo",
     "https://www.devcycle.com/contact/request-support",
     "https://www.devcycle.com/features/confidentiality"

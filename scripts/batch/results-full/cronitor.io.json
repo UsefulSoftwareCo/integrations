@@ -10,14 +10,14 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:54:58.528Z",
-    "summary": "Cronitor exposes one authenticated REST API, a CLI, and a built-in MCP server; authentication is via API key (HTTP Basic for API, CLI config/env for the CLI), with no GraphQL surface found.",
+    "discoveredAt": "2026-07-02T16:21:02.835Z",
+    "summary": "Cronitor exposes a basic-auth HTTP API and Monitor API plus the `cronitor` CLI; both use Cronitor API keys, with a separate telemetry/ping key for CLI ping operations and telemetry ingestion.",
     "credentials": {
       "cronitor_api_key": {
         "type": "api_key",
-        "label": "Cronitor API key",
+        "label": "Cronitor API Key",
         "generateUrl": "https://cronitor.io/app/settings/api",
-        "setup": "Go to the [API Settings](https://cronitor.io/app/settings/api) page, click **Create API Key**, choose the scopes you need, and save the key once. Cronitor notes that the key is shown in full only when created. Use least privilege: telemetry-only keys exist for pings, while custom keys can be scoped for monitor/site/statuspage/issue access.",
+        "setup": "Go to the [API Settings](https://cronitor.io/app/settings/api) page, click **Create API Key**, choose the scopes you need, and save the key. Cronitor says every account starts with two keys: a Telemetry key (`monitor:telemetry`) and an SDK Integration key with broader resource scopes.",
         "acquisition": "manual"
       }
     },
@@ -57,16 +57,44 @@
             }
           ]
         },
-        "requiredHeaders": [
-          {
-            "name": "Cronitor-Version",
-            "source": {
-              "kind": "static",
-              "value": "2025-11-28"
-            },
-            "description": "Optional version pin; requests without it default to 2020-10-01."
-          }
-        ]
+        "url": "https://cronitor.io/api"
+      },
+      {
+        "slug": "cronitor-monitor-api",
+        "name": "Cronitor Monitor API",
+        "type": "http",
+        "docs": "https://cronitor.io/docs/monitors-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://cronitor.io/docs/monitors-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cronitor_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://cronitor.io/docs/monitors-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://cronitor.io/api/monitors"
       },
       {
         "slug": "cronitor-cli",
@@ -93,24 +121,14 @@
                       "CRONITOR_API_KEY"
                     ]
                   }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://cronitor.io/docs/using-cronitor-cli"
-                ]
-              }
-            },
-            {
-              "use": [
+                },
                 {
                   "id": "cronitor_api_key",
                   "mechanics": {
                     "source": "cli",
-                    "command": "cronitor --api-key YOUR_API_KEY",
+                    "command": "cronitor configure --ping-api-key YOUR_PING_API_KEY",
                     "env": [
-                      "CRONITOR_API_KEY"
+                      "CRONITOR_PING_API_KEY"
                     ]
                   }
                 }
@@ -124,54 +142,67 @@
             }
           ]
         },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "cronitorio/cronitor-cli"
+          }
+        ],
         "command": "cronitor"
-      },
-      {
-        "slug": "cronitor-mcp-server",
-        "name": "Cronitor MCP server",
-        "type": "mcp",
-        "docs": "https://github.com/cronitorio/cronitor-cli",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://github.com/cronitorio/cronitor-cli"
-          ]
-        },
-        "auth": {
-          "status": "unknown"
-        },
-        "url": "https://github.com/cronitorio/cronitor-cli",
-        "transports": [
-          "streamable-http"
-        ]
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:54:58.528Z",
+  "discoveredAt": "2026-07-02T16:21:02.836Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 26946,
-    "completion_tokens": 729,
-    "total_tokens": 27675
+    "prompt_tokens": 75370,
+    "completion_tokens": 837,
+    "total_tokens": 76207
   },
   "visited": [
+    "https://cronitor.io/docs",
     "https://cronitor.io/docs/api",
-    "https://cronitor.io/docs/api-keys",
     "https://cronitor.io/docs/monitors-api",
     "https://cronitor.io/docs/using-cronitor-cli",
     "https://github.com/cronitorio/cronitor-cli",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+    "https://stackoverflow.com/questions/75023351/cronitor-cli-usage-is-different-from-documentation"
   ],
   "grounding": [
     "http://en.wikipedia.org/wiki/Basic_access_authentication",
     "http://en.wikipedia.org/wiki/HTTP_Secure",
+    "https://api.example.com/health",
+    "https://app.example.com/dashboard",
     "https://archiveprogram.github.com",
     "https://claude.ai/code/session_01UDueW9A6SuxugCcsbAMfdB",
-    "https://cronitor.io/api/keys",
-    "https://cronitor.io/api/keys/:key",
-    "https://cronitor.io/api/keys/abc123def456",
-    "https://cronitor.io/api/keys/old_key_123",
+    "https://cronitor.io/#monitor-attributes",
+    "https://cronitor.io/api/groups/production/pause/0",
+    "https://cronitor.io/api/groups/production/pause/4",
+    "https://cronitor.io/api/groups/web-services/pause/1",
     "https://cronitor.io/api/monitors",
+    "https://cronitor.io/api/monitors/$monitor/pause/12",
+    "https://cronitor.io/api/monitors/:monitorKey",
+    "https://cronitor.io/api/monitors/:monitorKey/pause/:hours",
+    "https://cronitor.io/api/monitors/clone",
+    "https://cronitor.io/api/monitors/database-backup/pause/0",
+    "https://cronitor.io/api/monitors/database-backup/pause/6",
+    "https://cronitor.io/api/monitors/my-monitor",
+    "https://cronitor.io/api/monitors/my-monitor/pause",
+    "https://cronitor.io/api/monitors/my-monitor/pause/0",
+    "https://cronitor.io/api/monitors/my-monitor/pause/2",
+    "https://cronitor.io/api/monitors/my-monitor/pause/24",
+    "https://cronitor.io/api/monitors?env=staging",
+    "https://cronitor.io/api/monitors?group=production",
+    "https://cronitor.io/api/monitors?page=2&pageSize=25",
+    "https://cronitor.io/api/monitors?search=backup",
+    "https://cronitor.io/api/monitors?sort=name",
+    "https://cronitor.io/api/monitors?state=failing&state=paused",
+    "https://cronitor.io/api/monitors?tag=critical&tag=database",
+    "https://cronitor.io/api/monitors?type=job&type=check",
+    "https://cronitor.io/api/search?query=backup",
+    "https://cronitor.io/api/search?query=group:production",
+    "https://cronitor.io/api/search?query=job:backup",
+    "https://cronitor.io/api/search?query=tag:critical",
+    "https://cronitor.io/api/search?query=ungrouped",
     "https://cronitor.io/app/issues",
     "https://cronitor.io/app/settings/api",
     "https://cronitor.io/dl/darwin_amd64.tar.gz",
@@ -188,12 +219,6 @@
     "https://cronitor.io/docs/api#rate-limits",
     "https://cronitor.io/docs/api#versioning",
     "https://cronitor.io/docs/api-keys",
-    "https://cronitor.io/docs/api-keys#api-key-attributes",
-    "https://cronitor.io/docs/api-keys#api-keys",
-    "https://cronitor.io/docs/api-keys#authentication",
-    "https://cronitor.io/docs/api-keys#best-practices",
-    "https://cronitor.io/docs/api-keys#quick-start",
-    "https://cronitor.io/docs/api-keys#security-considerations",
     "https://cronitor.io/docs/environments",
     "https://cronitor.io/docs/environments-api",
     "https://cronitor.io/docs/groups-api",
@@ -204,11 +229,18 @@
     "https://cronitor.io/docs/monitor-api-v2",
     "https://cronitor.io/docs/monitor-api-v3",
     "https://cronitor.io/docs/monitors-api",
+    "https://cronitor.io/docs/monitors-api#cloning-monitors",
+    "https://cronitor.io/docs/monitors-api#creating-and-updating-monitors",
+    "https://cronitor.io/docs/monitors-api#deleting-monitors",
+    "https://cronitor.io/docs/monitors-api#monitor-attributes",
+    "https://cronitor.io/docs/monitors-api#pausing-monitors",
+    "https://cronitor.io/docs/monitors-api#reading-monitors",
+    "https://cronitor.io/docs/monitors-api#troubleshooting",
+    "https://cronitor.io/docs/monitors-api#yaml-configuration",
     "https://cronitor.io/docs/notifications-api",
     "https://cronitor.io/docs/sdks",
     "https://cronitor.io/docs/sites-api",
     "https://cronitor.io/docs/statuspages-api",
-    "https://cronitor.io/docs/teams-roles",
     "https://cronitor.io/docs/telemetry-api",
     "https://cronitor.io/docs/using-cronitor-cli",
     "https://cronitor.io/docs/using-cronitor-cli#configuration",
@@ -223,6 +255,7 @@
     "https://cronitor.link/p/:apiKey/:monitorKey",
     "https://docs.github.com",
     "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://example.com",
     "https://github.blog",
     "https://github.blog/changelog",
     "https://github.com/#start-of-content",
@@ -318,10 +351,11 @@
     "https://github.com/trust-center",
     "https://github.com/why-github",
     "https://maintainers.github.com",
+    "https://secure.example.com",
     "https://securitylab.github.com",
     "https://skills.github.com",
+    "https://stackoverflow.com/questions/75023351/cronitor-cli-usage-is-different-from-documentation",
     "https://stars.github.com",
-    "https://support.github.com",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+    "https://support.github.com"
   ]
 }

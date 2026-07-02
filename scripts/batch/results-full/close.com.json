@@ -37,36 +37,37 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:30:50.638Z",
-    "summary": "Close exposes a REST API and a remote MCP server; both require authentication via either API key or OAuth, and no separate GraphQL or CLI surface was confirmed.",
+    "discoveredAt": "2026-07-02T16:19:46.950Z",
+    "summary": "Close exposes one authenticated CRM HTTP API and one authenticated remote MCP server; both accept API key auth, and the MCP server also supports OAuth via Close OAuth apps.",
     "credentials": {
       "close_api_key": {
         "type": "api_key",
         "label": "Close API key",
-        "generateUrl": "https://help.close.com/docs/api-keys-oauth",
-        "setup": "Go to [Settings > Developer > API Keys](https://help.close.com/docs/api-keys-oauth) in Close, click `+ New API Key`, name it, then copy the secret once and store it securely. Close shows only the key ID later, not the full key.",
+        "generateUrl": "https://app.close.com/settings/developer/api-keys",
+        "setup": "Go to [Settings → Developer → API Keys](https://app.close.com/settings/developer/api-keys) in your Close organization, click **+ New API Key**, name it, then copy the generated key once. Keep the full token secret; only the key ID is shown later.",
         "acquisition": "manual"
       },
-      "close_oauth": {
-        "type": "oauth2",
-        "label": "Close OAuth access",
-        "generateUrl": "https://developer.close.com/integrations/create-an-oauth-app",
-        "setup": "Create an OAuth app in Close, then have the user click the app’s `Connect to Close CRM` flow to grant access. Close notes OAuth apps get the same full read/write access as API keys for the authorized organization.",
+      "close_oauth_app": {
+        "type": "oauth2_cc",
+        "label": "Close OAuth app client credentials",
+        "generateUrl": "https://app.close.com/settings/developer/oauth-apps",
+        "setup": "Create an OAuth app in [Settings → Developer → OAuth Apps](https://app.close.com/settings/developer/oauth-apps), fill in the app name, description, and HTTPS redirect URL, then click **Create** to receive a **Client ID** and **Client Secret**. Close grants OAuth apps the `all.full_access offline_access` scopes.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "close-rest-api",
-        "name": "Close REST API",
+        "slug": "close-crm-api",
+        "name": "Close CRM API",
         "type": "http",
         "docs": "https://developer.close.com/api/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://developer.close.com/api/overview.md",
+            "https://developer.close.com/api/overview",
+            "https://developer.close.com/api/overview/api-key-authentication",
             "https://developer.close.com/api/overview/oauth-authentication",
-            "https://developer.close.com/api/overview/api-key-authentication"
+            "https://help.close.com/docs/api-keys-oauth"
           ]
         },
         "auth": {
@@ -82,23 +83,31 @@
                     "headerName": "Authorization",
                     "scheme": "Basic"
                   }
-                },
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.close.com/api/overview/api-key-authentication",
+                  "https://help.close.com/docs/api-keys-oauth"
+                ]
+              }
+            },
+            {
+              "use": [
                 {
-                  "id": "close_oauth",
+                  "id": "close_oauth_app",
                   "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
+                    "source": "spec",
+                    "scheme": "oauth2"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://developer.close.com/api/overview.md",
-                  "https://developer.close.com/api/overview/api-key-authentication",
-                  "https://developer.close.com/api/overview/oauth-authentication"
+                  "https://developer.close.com/api/overview/oauth-authentication",
+                  "https://developer.close.com/integrations/create-an-oauth-app"
                 ]
               }
             }
@@ -109,7 +118,6 @@
         "slug": "close-mcp-server",
         "name": "Close MCP Server",
         "type": "mcp",
-        "docs": "https://developer.close.com/mcp",
         "basis": {
           "via": "discovered",
           "evidence": [
@@ -123,7 +131,7 @@
             {
               "use": [
                 {
-                  "id": "close_oauth",
+                  "id": "close_oauth_app",
                   "mechanics": {
                     "source": "well-known"
                   }
@@ -144,8 +152,16 @@
                   "mechanics": {
                     "source": "http",
                     "in": "header",
-                    "headerName": "Close-API-Key",
-                    "scheme": "api_key"
+                    "headerName": "Close-API-Key"
+                  }
+                },
+                {
+                  "id": "close_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Close-Scope",
+                    "scheme": "mcp.read"
                   }
                 }
               ],
@@ -166,62 +182,59 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:30:50.640Z",
+  "discoveredAt": "2026-07-02T16:19:46.950Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 148865,
-    "completion_tokens": 1237,
-    "total_tokens": 150102
+    "prompt_tokens": 85966,
+    "completion_tokens": 942,
+    "total_tokens": 86908
   },
   "visited": [
-    "https://apipheny.io/close-crm-api/",
-    "https://apitracker.io/a/closeio",
-    "https://developer.close.com/",
-    "https://developer.close.com/api.md",
+    "https://close.com/api",
     "https://developer.close.com/api/overview",
-    "https://developer.close.com/api/overview.md",
     "https://developer.close.com/api/overview/api-key-authentication",
     "https://developer.close.com/api/overview/oauth-authentication",
+    "https://developer.close.com/api/resources/activities/notes",
+    "https://developer.close.com/integrations/create-an-oauth-app",
     "https://developer.close.com/mcp",
     "https://help.close.com/docs/api-keys-oauth",
-    "https://help.close.com/docs/mcp-server",
-    "https://www.getknit.dev/blog/close-api-directory-bjpPxE"
+    "https://help.close.com/docs/mcp-server"
   ],
   "grounding": [
-    "https://api.close.com/api/openapi.json",
-    "https://api.close.com/api/v1",
-    "https://apipheny.io/close-crm-api/",
-    "https://apitracker.io/a/closeio",
     "https://app.close.com/",
     "https://app.close.com/download/",
+    "https://app.close.com/settings/developer/oauth-apps",
     "https://app.close.com/signup/",
     "https://buildwithfern.com/?utm_campaign=buildWith&utm_medium=docs&utm_source=developer.close.com",
-    "https://calendly.com/joe-close/api-chat",
     "https://chatgpt.com/apps/close/asdk_app_694574813e548191bac45327be0a61d1",
     "https://claude.ai/directory/connectors/3e12bb5c-11e5-409c-8e73-64d4b625b498",
-    "https://claude.ai/new?q=Read%20https%3A%2F%2Fdeveloper.close.com%2F.md%20so%20I%20can%20ask%20questions%20about%20it",
+    "https://close.com",
     "https://close.com/",
+    "https://close.com/api",
+    "https://close.com/chloe",
     "https://close.com/integrations",
     "https://close.com/integrations/",
+    "https://close.com/pricing",
+    "https://close.com/security",
     "https://code.claude.com/docs/en/mcp",
     "https://cursor.com/en-US/install-mcp?name=Close&config=eyJ1cmwiOiJodHRwczovL21jcC5jbG9zZS5jb20vbWNwIiwidHlwZSI6InN0cmVhbWFibGVIdHRwIn0%3D",
-    "https://dashboard.buildwithfern.com/close/edit-page?docsUrl=developer.close.com&slug=&fallbackUrl=https%3A%2F%2Fgithub.com%2Ffern-support%2Fclose%2Fblob%2Fmain%2Ffern%2Fdocs%2Fpages%2Fhome.mdx%3Fplain%3D1",
+    "https://dashboard.buildwithfern.com/close/edit-page?docsUrl=developer.close.com&slug=integrations%2Fcreate-an-oauth-app&fallbackUrl=https%3A%2F%2Fgithub.com%2Ffern-support%2Fclose%2Fblob%2Fmain%2Ffern%2Fdocs%2Fpages%2Fintegrations%2Fcreating-an-oauth-app.mdx%3Fplain%3D1",
+    "https://developer.close.com",
     "https://developer.close.com/",
     "https://developer.close.com/#accessing-closes-remote-mcp-server",
     "https://developer.close.com/#can-i-create-multiple-mcp-connections-if-i-want-to-work-with-more-than-one-close-organization",
+    "https://developer.close.com/#create-a-new-oauth-app",
     "https://developer.close.com/#does-close-mcp-support-sse",
     "https://developer.close.com/#faqs",
-    "https://developer.close.com/#getting-help",
+    "https://developer.close.com/#make-authenticated-requests",
+    "https://developer.close.com/#making-your-app-public-optional",
     "https://developer.close.com/#mcp-client-setup",
+    "https://developer.close.com/#scopes",
     "https://developer.close.com/#step-1-configure-the-mcp-server",
     "https://developer.close.com/#step-2-start-the-server",
     "https://developer.close.com/#step-3-start-using-the-server",
-    "https://developer.close.com/#use-cases",
     "https://developer.close.com/#what-tools-does-the-mcp-server-have-access-to",
-    "https://developer.close.com/api",
-    "https://developer.close.com/api.md",
     "https://developer.close.com/api/overview",
-    "https://developer.close.com/api/overview.md",
     "https://developer.close.com/api/overview/api-clients",
     "https://developer.close.com/api/overview/api-key-authentication",
     "https://developer.close.com/api/overview/changelog",
@@ -329,7 +342,6 @@
     "https://developer.close.com/api/resources/advanced-filtering",
     "https://developer.close.com/api/resources/blocked-phone-numbers",
     "https://developer.close.com/api/resources/bulk-actions",
-    "https://developer.close.com/api/resources/bulk-actions/email",
     "https://developer.close.com/api/resources/comments",
     "https://developer.close.com/api/resources/connected-accounts",
     "https://developer.close.com/api/resources/contacts",
@@ -395,8 +407,11 @@
     "https://developer.close.com/api/resources/webhooks",
     "https://developer.close.com/integrations",
     "https://developer.close.com/integrations/create-an-oauth-app",
+    "https://developer.close.com/integrations/create-an-oauth-app#fill-in-your-app-details",
+    "https://developer.close.com/integrations/create-an-oauth-app#get-your-credentials",
+    "https://developer.close.com/integrations/create-an-oauth-app#go-to-oauth-apps-settings",
+    "https://developer.close.com/integrations/create-an-oauth-app.md",
     "https://developer.close.com/integrations/publish",
-    "https://developer.close.com/llms.txt",
     "https://developer.close.com/mcp",
     "https://developer.close.com/mcp.md",
     "https://developer.close.com/mcp/tools",
@@ -459,6 +474,7 @@
     "https://www.close.com/sms",
     "https://www.close.com/tools/revenue-growth-calculator",
     "https://www.close.com/webinars",
-    "https://www.getknit.dev/blog/close-api-directory-bjpPxE"
+    "https://www.ycombinator.com/companies/close",
+    "https://yourapp.com/callback/close"
   ]
 }

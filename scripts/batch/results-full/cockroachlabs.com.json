@@ -10,21 +10,14 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:32:03.726Z",
-    "summary": "CockroachDB Cloud exposes two authenticated HTTP APIs and a managed MCP server; authentication is via Cloud service account API keys for Cloud/MCP and cockroach CLI auth-session for the Cluster API.",
+    "discoveredAt": "2026-07-02T16:20:03.089Z",
+    "summary": "Cockroach Labs exposes a bearer-authenticated CockroachDB Cloud API and a managed MCP server at `https://cockroachlabs.cloud/mcp`; docs also mention a separate Docs MCP server, but its public auth details are unclear.",
     "credentials": {
-      "cloud_service_account_key": {
+      "ccloud_service_account_api_key": {
         "type": "bearer",
         "label": "CockroachDB Cloud service account API key",
-        "generateUrl": "https://www.cockroachlabs.com/docs/cockroachcloud/cloud-api",
-        "setup": "In CockroachDB Cloud, create or select a [service account](https://www.cockroachlabs.com/docs/cockroachcloud/service-accounts) and mint an API key for it in the Cloud Console. Use the generated secret key as a bearer token in `Authorization: Bearer <secret-key>`. This is the credential used for Cloud APIs and the managed MCP server.",
-        "acquisition": "manual"
-      },
-      "cockroach_cli_login": {
-        "type": "custom",
-        "label": "CockroachDB CLI login session",
-        "generateUrl": "https://www.cockroachlabs.com/docs/stable/cluster-api",
-        "setup": "Install the CockroachDB CLI and run `cockroach auth-session` to create a web session and authentication tokens for the Cluster API. The docs describe this as the command-line way to create/manage Cluster API sessions and auth tokens.",
+        "generateUrl": "https://cockroachlabs.cloud/",
+        "setup": "1. Sign in to CockroachDB Cloud at [cockroachlabs.cloud](https://cockroachlabs.cloud/).\n2. Create or open a [service account](https://www.cockroachlabs.com/docs/cockroachcloud/cloud-api) in the Cloud console.\n3. Generate an API key/secret key for that service account; this is the credential used for Cloud API and managed MCP access.\n4. Store the secret securely; it is sent as a bearer token in requests.",
         "acquisition": "manual"
       }
     },
@@ -46,7 +39,7 @@
             {
               "use": [
                 {
-                  "id": "cloud_service_account_key",
+                  "id": "ccloud_service_account_api_key",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -63,51 +56,19 @@
               }
             }
           ]
-        }
-      },
-      {
-        "slug": "cockroachdb-cluster-api-v2-0",
-        "name": "CockroachDB Cluster API v2.0",
-        "type": "http",
-        "docs": "https://www.cockroachlabs.com/docs/stable/cluster-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.cockroachlabs.com/docs/stable/cluster-api"
-          ]
         },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "cockroach_cli_login",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "cockroach auth-session"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.cockroachlabs.com/docs/stable/cluster-api"
-                ]
-              }
-            }
-          ]
-        }
+        "url": "https://cockroachlabs.cloud/api"
       },
       {
-        "slug": "cockroachdb-cloud-mcp-server",
-        "name": "CockroachDB Cloud MCP Server",
+        "slug": "cockroachdb-cloud-managed-mcp-server",
+        "name": "CockroachDB Cloud Managed MCP Server",
         "type": "mcp",
         "docs": "https://www.cockroachlabs.com/blog/cockroachdb-ai-agents-managed-mcp-server/",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.cockroachlabs.com/blog/cockroachdb-ai-agents-managed-mcp-server/"
+            "https://www.cockroachlabs.com/blog/cockroachdb-ai-agents-managed-mcp-server/",
+            "https://www.cockroachlabs.com/docs/cockroachcloud/connect-to-the-cockroachdb-cloud-mcp-server"
           ]
         },
         "auth": {
@@ -116,16 +77,20 @@
             {
               "use": [
                 {
-                  "id": "cloud_service_account_key",
+                  "id": "ccloud_service_account_api_key",
                   "mechanics": {
-                    "source": "well-known"
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.cockroachlabs.com/blog/cockroachdb-ai-agents-managed-mcp-server/"
+                  "https://www.cockroachlabs.com/blog/cockroachdb-ai-agents-managed-mcp-server/",
+                  "https://www.cockroachlabs.com/docs/cockroachcloud/connect-to-the-cockroachdb-cloud-mcp-server"
                 ]
               }
             }
@@ -135,25 +100,45 @@
         "transports": [
           "streamable-http"
         ]
+      },
+      {
+        "slug": "cockroachdb-docs-mcp-server",
+        "name": "CockroachDB Docs MCP Server",
+        "type": "mcp",
+        "docs": "https://www.cockroachlabs.com/docs/stable/cockroachdb-and-ai",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.cockroachlabs.com/docs/stable/cockroachdb-and-ai"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://cockroachlabs.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:32:03.726Z",
+  "discoveredAt": "2026-07-02T16:20:03.090Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 160002,
-    "completion_tokens": 1051,
-    "total_tokens": 161053
+    "prompt_tokens": 140049,
+    "completion_tokens": 1032,
+    "total_tokens": 141081
   },
   "visited": [
     "https://www.cockroachlabs.com/blog/cockroachdb-ai-agents-managed-mcp-server/",
-    "https://www.cockroachlabs.com/docs/cluster-api/v2.0/openapi.json",
-    "https://www.cockroachlabs.com/docs/cockroachcloud/authentication",
     "https://www.cockroachlabs.com/docs/cockroachcloud/cloud-api",
     "https://www.cockroachlabs.com/docs/cockroachcloud/connect-to-the-cockroachdb-cloud-mcp-server",
     "https://www.cockroachlabs.com/docs/stable/cluster-api",
+    "https://www.cockroachlabs.com/docs/stable/cockroachcloud/cloud-api",
     "https://www.cockroachlabs.com/docs/stable/cockroachdb-and-ai",
-    "https://www.cockroachlabs.com/docs/stable/manage-certs-cli"
+    "https://www.cockroachlabs.com/docs/stable/frequently-asked-questions/",
+    "https://www.cockroachlabs.com/docs/stable/manage-certs-cli",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ],
   "grounding": [
     "https://cockroachlabs.cloud/",
@@ -207,8 +192,6 @@
     "https://www.cockroachlabs.com/customers/hard-rock-digital/",
     "https://www.cockroachlabs.com/customers/shipt/",
     "https://www.cockroachlabs.com/docs/",
-    "https://www.cockroachlabs.com/docs/cluster-api/v2.0/openapi.json",
-    "https://www.cockroachlabs.com/docs/cockroachcloud/authentication",
     "https://www.cockroachlabs.com/docs/cockroachcloud/cloud-api",
     "https://www.cockroachlabs.com/docs/cockroachcloud/connect-to-the-cockroachdb-cloud-mcp-server",
     "https://www.cockroachlabs.com/docs/cockroachcloud/migrations-page",
@@ -268,6 +251,7 @@
     "https://www.cockroachlabs.com/docs/stable/build-a-ruby-app-with-cockroachdb",
     "https://www.cockroachlabs.com/docs/stable/build-a-rust-app-with-cockroachdb",
     "https://www.cockroachlabs.com/docs/stable/cluster-api",
+    "https://www.cockroachlabs.com/docs/stable/cockroachcloud/cloud-api",
     "https://www.cockroachlabs.com/docs/stable/cockroachdb-and-ai",
     "https://www.cockroachlabs.com/docs/stable/connect-to-the-database",
     "https://www.cockroachlabs.com/docs/stable/connection-parameters",
@@ -328,6 +312,7 @@
     "https://www.cockroachlabs.com/whatsnew/",
     "https://www.linkedin.com/in/abhishek-munnolimath/",
     "https://www.linkedin.com/in/jrxna/",
-    "https://www.linkedin.com/in/rahul-sr/"
+    "https://www.linkedin.com/in/rahul-sr/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ]
 }

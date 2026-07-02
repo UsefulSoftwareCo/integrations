@@ -10,13 +10,14 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:58:45.251Z",
-    "summary": "Dagger exposes a local HTTP GraphQL API secured by `DAGGER_SESSION_TOKEN`, plus a public `dagger` CLI and public SDKs.",
+    "discoveredAt": "2026-07-02T16:21:06.093Z",
+    "summary": "Dagger exposes a local GraphQL API protected by `DAGGER_SESSION_TOKEN` Basic auth, plus the public `dagger` CLI; no MCP server or separate HTTP REST surface was identified.",
     "credentials": {
       "dagger_session_token": {
         "type": "basic",
         "label": "Dagger session token",
-        "setup": "Run a Dagger session via the [Dagger CLI](https://docs.dagger.io/getting-started/api/cli) or an SDK call; the running engine injects `DAGGER_SESSION_TOKEN` into the session environment. Use that value as the password in HTTP Basic auth (username is empty) for the local session API.",
+        "generateUrl": "https://docs.dagger.io/getting-started/installation",
+        "setup": "Run `dagger`/`dagger listen` to start a local Dagger session. The session token is exposed in `DAGGER_SESSION_TOKEN`; use that value as the Basic auth username with an empty password when calling the local GraphQL endpoint. For a quick local test, the docs show `env DAGGER_SESSION_TOKEN=test dagger listen --allow-cors` and then `Authorization: Basic dGVzdDo=` for `test`.",
         "acquisition": "ambient"
       }
     },
@@ -24,12 +25,14 @@
       {
         "slug": "dagger-graphql-api",
         "name": "Dagger GraphQL API",
-        "type": "http",
+        "type": "graphql",
         "docs": "https://docs.dagger.io/getting-started/api/http/",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.dagger.io/getting-started/api/http/"
+            "https://docs.dagger.io/getting-started/api/http/",
+            "https://docs.dagger.io/reference/api/internals/",
+            "https://docs.dagger.io/extending/api-playground"
           ]
         },
         "auth": {
@@ -50,29 +53,15 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.dagger.io/getting-started/api/http/"
+                  "https://docs.dagger.io/getting-started/api/http/",
+                  "https://docs.dagger.io/extending/api-playground"
                 ]
               }
             }
           ]
         },
-        "requiredHeaders": [
-          {
-            "name": "content-type",
-            "source": {
-              "kind": "static",
-              "value": "application/json"
-            },
-            "description": "JSON GraphQL POST body"
-          }
-        ],
-        "variables": [
-          {
-            "name": "DAGGER_SESSION_PORT",
-            "resolveFrom": "session",
-            "description": "Local session port for the API endpoint `http://127.0.0.1:$DAGGER_SESSION_PORT/query`"
-          }
-        ]
+        "spec": "introspection",
+        "url": "http://127.0.0.1:$DAGGER_SESSION_PORT/query"
       },
       {
         "slug": "dagger-cli",
@@ -81,66 +70,36 @@
         "docs": "https://docs.dagger.io/getting-started/api/cli",
         "basis": {
           "via": "discovered",
-          "evidence": []
+          "evidence": [
+            "https://docs.dagger.io/getting-started/api/cli",
+            "https://docs.dagger.io/getting-started/api/sdk/"
+          ]
         },
         "auth": {
           "status": "none",
           "basis": {
             "via": "discovered",
             "evidence": [
-              "https://docs.dagger.io/getting-started/api/cli"
-            ]
-          }
-        },
-        "command": "dagger"
-      },
-      {
-        "slug": "dagger-sdks",
-        "name": "Dagger SDKs",
-        "type": "cli",
-        "docs": "https://docs.dagger.io/getting-started/api/sdk/",
-        "basis": {
-          "via": "discovered",
-          "evidence": []
-        },
-        "auth": {
-          "status": "none",
-          "basis": {
-            "via": "discovered",
-            "evidence": [
+              "https://docs.dagger.io/getting-started/api/cli",
               "https://docs.dagger.io/getting-started/api/sdk/"
             ]
           }
         },
-        "packages": [
-          {
-            "registryType": "pypi",
-            "identifier": "dagger-io"
-          },
-          {
-            "registryType": "npm",
-            "identifier": "@dagger.io/dagger"
-          },
-          {
-            "registryType": "go",
-            "identifier": "dagger.io/dagger"
-          }
-        ]
+        "command": "dagger"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:58:45.252Z",
+  "discoveredAt": "2026-07-02T16:21:06.093Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 86085,
-    "completion_tokens": 734,
-    "total_tokens": 86819
+    "prompt_tokens": 82314,
+    "completion_tokens": 709,
+    "total_tokens": 83023
   },
   "visited": [
-    "https://betterprogramming.pub/a-java-sdk-proof-of-concept-for-dagger-io-b1067e256116",
     "https://dagger.io/blog/graphql/",
     "https://docs.dagger.io/api/reference",
-    "https://docs.dagger.io/blog/graphql/",
+    "https://docs.dagger.io/extending/api-playground",
     "https://docs.dagger.io/getting-started/api/cli",
     "https://docs.dagger.io/getting-started/api/http/",
     "https://docs.dagger.io/getting-started/api/sdk/",
@@ -150,8 +109,9 @@
   "grounding": [
     "http://127.0.0.1",
     "http://127.0.0.1:$DAGGER_SESSION_PORT/query",
+    "http://127.0.0.1:8080/query",
     "http://127.0.0.1:{}/query",
-    "https://betterprogramming.pub/a-java-sdk-proof-of-concept-for-dagger-io-b1067e256116",
+    "https://altairgraphql.dev",
     "https://blog.ionelmc.ro/2014/05/25/python-packaging/",
     "https://dagger-io.readthedocs.io/en/latest/module.html#dagger.function",
     "https://dagger-io.readthedocs.io/en/latest/module.html#dagger.object_type",
@@ -303,17 +263,21 @@
     "https://docs.dagger.io/#query-sourceMap",
     "https://docs.dagger.io/#query-typeDef",
     "https://docs.dagger.io/#query-version",
+    "https://docs.dagger.io/#running-the-graphql-api-locally",
     "https://docs.dagger.io/#state-representation",
     "https://docs.dagger.io/0.16.3/",
     "https://docs.dagger.io/0.17.2/",
+    "https://docs.dagger.io/0.18.19/extending/api-playground",
     "https://docs.dagger.io/0.18.19/getting-started/api/cli",
     "https://docs.dagger.io/0.18.19/getting-started/api/http",
     "https://docs.dagger.io/0.18.19/getting-started/api/sdk",
     "https://docs.dagger.io/0.18.19/reference/api/internals",
+    "https://docs.dagger.io/0.19.11/extending/api-playground",
     "https://docs.dagger.io/0.19.11/getting-started/api/cli",
     "https://docs.dagger.io/0.19.11/getting-started/api/http",
     "https://docs.dagger.io/0.19.11/getting-started/api/sdk",
     "https://docs.dagger.io/0.19.11/reference/api/internals",
+    "https://docs.dagger.io/0.20.2/extending/api-playground",
     "https://docs.dagger.io/0.20.2/getting-started/api/cli",
     "https://docs.dagger.io/0.20.2/getting-started/api/http",
     "https://docs.dagger.io/0.20.2/getting-started/api/sdk",
@@ -321,13 +285,34 @@
     "https://docs.dagger.io/api/reference",
     "https://docs.dagger.io/api/reference/#definition-Container",
     "https://docs.dagger.io/api/reference/#definition-Directory",
-    "https://docs.dagger.io/blog/graphql/",
     "https://docs.dagger.io/cookbook",
     "https://docs.dagger.io/core-concepts",
     "https://docs.dagger.io/core-concepts/checks",
     "https://docs.dagger.io/core-concepts/functions",
     "https://docs.dagger.io/core-concepts/toolchains",
     "https://docs.dagger.io/extending",
+    "https://docs.dagger.io/extending/api-playground",
+    "https://docs.dagger.io/extending/arguments",
+    "https://docs.dagger.io/extending/cache-volumes",
+    "https://docs.dagger.io/extending/chaining",
+    "https://docs.dagger.io/extending/constructors",
+    "https://docs.dagger.io/extending/custom-applications/go",
+    "https://docs.dagger.io/extending/custom-types",
+    "https://docs.dagger.io/extending/documentation",
+    "https://docs.dagger.io/extending/enumerations",
+    "https://docs.dagger.io/extending/error-handling",
+    "https://docs.dagger.io/extending/function-caching",
+    "https://docs.dagger.io/extending/functions",
+    "https://docs.dagger.io/extending/interfaces",
+    "https://docs.dagger.io/extending/llm",
+    "https://docs.dagger.io/extending/module-dependencies",
+    "https://docs.dagger.io/extending/modules",
+    "https://docs.dagger.io/extending/packages",
+    "https://docs.dagger.io/extending/remote-repositories",
+    "https://docs.dagger.io/extending/return-types",
+    "https://docs.dagger.io/extending/secrets",
+    "https://docs.dagger.io/extending/services",
+    "https://docs.dagger.io/extending/state",
     "https://docs.dagger.io/faq",
     "https://docs.dagger.io/features",
     "https://docs.dagger.io/getting-started",
@@ -338,10 +323,12 @@
     "https://docs.dagger.io/getting-started/api/sdk/",
     "https://docs.dagger.io/getting-started/concepts",
     "https://docs.dagger.io/getting-started/installation",
+    "https://docs.dagger.io/getting-started/quickstarts/ci",
     "https://docs.dagger.io/next/",
     "https://docs.dagger.io/reference/",
     "https://docs.dagger.io/reference/api/internals",
     "https://docs.dagger.io/reference/api/internals/",
+    "https://docs.dagger.io/reference/dagger.schema.json",
     "https://docs.dagger.io/reference/glossary",
     "https://docs.dagger.io/reference/ide-setup",
     "https://docs.dagger.io/reference/php",
@@ -352,6 +339,7 @@
     "https://github.com/arthurkhlghatyan/gql-client-rs",
     "https://github.com/dagger/dagger/blob/main/CHANGELOG.md",
     "https://github.com/dagger/dagger/blob/main/core/docs/d7yxc-operator_manual.md",
+    "https://github.com/dagger/dagger/edit/main/docs/versioned_docs/version-0.21.4/extending/modules/playground.mdx",
     "https://github.com/dagger/dagger/edit/main/docs/versioned_docs/version-0.21.4/getting-started/api/clients-cli.mdx",
     "https://github.com/dagger/dagger/edit/main/docs/versioned_docs/version-0.21.4/getting-started/api/clients-http.mdx",
     "https://github.com/dagger/dagger/edit/main/docs/versioned_docs/version-0.21.4/getting-started/api/clients-sdk.mdx",

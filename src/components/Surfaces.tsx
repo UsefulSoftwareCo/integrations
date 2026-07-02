@@ -17,7 +17,7 @@ import type { Basis, Credential, Surface, AuthStatus, DiscoveryResult } from "..
 import { credCta, hostOf, slugifySurface } from "../lib/surface-view.ts";
 import Setup from "./surface/Setup.tsx";
 
-type DiscoverData = Partial<Pick<DiscoveryResult, "summary" | "credentials" | "surfaces">>;
+export type DiscoverData = Partial<Pick<DiscoveryResult, "summary" | "credentials" | "surfaces">>;
 type Creds = DiscoveryResult["credentials"];
 
 /** A static catalog entry, pre-flattened by the page (identity for dedup). */
@@ -150,16 +150,28 @@ function EntryRow({ e }: { e: Entry }) {
   );
 }
 
-export default function Surfaces({ domain, catalog = [] }: { domain: string; catalog?: CatalogSection[] }) {
-  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [data, setData] = useState<DiscoverData | null>(null);
+export default function Surfaces({
+  domain,
+  catalog = [],
+  initialData = null,
+}: {
+  domain: string;
+  catalog?: CatalogSection[];
+  /** Stored discovery baked in by the SSR'd domain page — the island then
+   * hydrates directly into "done" with no fetch and no idle-button flash. */
+  initialData?: DiscoverData | null;
+}) {
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">(initialData ? "done" : "idle");
+  const [data, setData] = useState<DiscoverData | null>(initialData);
   const [progress, setProgress] = useState("");
   const [liveCreds, setLiveCreds] = useState<Record<string, Credential>>({});
   const [liveSurfaces, setLiveSurfaces] = useState<Surface[]>([]);
 
   // On mount, load any durably-stored discovery so returning visitors see the
-  // enriched map without re-running the agent.
+  // enriched map without re-running the agent. Skipped when the server already
+  // baked it in (initialData) — that's the SSR path's whole point.
   useEffect(() => {
+    if (initialData) return;
     let cancelled = false;
     fetch(`/api/${encodeURIComponent(domain)}/discovery`)
       .then(async (r) => {
@@ -174,7 +186,7 @@ export default function Surfaces({ domain, catalog = [] }: { domain: string; cat
     return () => {
       cancelled = true;
     };
-  }, [domain]);
+  }, [domain, initialData]);
 
   async function run() {
     // The site's key conversion — posthog is the snippet global from

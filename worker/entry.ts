@@ -264,6 +264,19 @@ export function createExports(manifest: SSRManifest) {
       track(env, ctx, request, "data_fetch");
     }
 
+    // Domain page with a STORED discovery → SSR it with the map baked in
+    // (src/pages/ssr/[domain].astro) instead of the prerendered asset, so
+    // returning visitors don't get the idle-button flash while the island
+    // fetches. One KV read per page view; a miss falls through to the asset.
+    const domainMatch = /^\/([^/]+)\/?$/.exec(url.pathname);
+    if (request.method === "GET" && domainMatch && domainMatch[1].includes(".")) {
+      const domain = decodeURIComponent(domainMatch[1]).trim().toLowerCase();
+      if (await env.DISCOVERY.get(domain)) {
+        const ssrUrl = new URL(`/ssr/${encodeURIComponent(domain)}/`, url.origin);
+        return handle(manifest, app, new Request(ssrUrl, request) as never, env as never, ctx as never);
+      }
+    }
+
     // Everything else is Astro: prerendered pages/data served from ASSETS, and
     // the on-demand routes (surface detail pages) rendered in this Worker.
     return handle(manifest, app, request as never, env as never, ctx as never);

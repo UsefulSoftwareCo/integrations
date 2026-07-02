@@ -1,0 +1,210 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "box.com",
+    "detect": {
+      "domain": "box.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T09:46:54.377Z",
+    "summary": "Box exposes a REST API, hosted MCP server, and CLI; all require Box OAuth-based auth, with CLI-supported login flows and MCP OAuth credentials.",
+    "credentials": {
+      "box_oauth_access_token": {
+        "type": "oauth2",
+        "label": "Box OAuth 2.0 access token",
+        "generateUrl": "https://account.box.com/developers/console",
+        "setup": "Create or use a Box app in the [Developer Console](https://account.box.com/developers/console), choose **Standard OAuth 2.0**, and complete OAuth to mint an access token. For CLI and MCP, this is the token ultimately sent to Box APIs. If you're using the CLI's built-in login, Box can mint it for you after you run `box login`.",
+        "acquisition": "manual"
+      },
+      "box_client_id_secret": {
+        "type": "oauth2_cc",
+        "label": "Box OAuth client ID and client secret",
+        "generateUrl": "https://account.box.com/developers/console",
+        "setup": "In the [Developer Console](https://account.box.com/developers/console), create or open your app, go to **Configuration**, ensure **Standard OAuth 2.0**, set the redirect URI required by your client (for example `http://localhost:3000/callback` for the CLI or `cursor://anysphere.cursor-mcp/oauth/callback` for Cursor), then copy the **Client ID** and **Client Secret** shown there.",
+        "acquisition": "manual"
+      },
+      "box_mcp_authorization_token": {
+        "type": "bearer",
+        "label": "Box MCP authorization token",
+        "generateUrl": "https://account.box.com/developers/console",
+        "setup": "Enable the Box MCP server in the [Box Admin Console](https://app.box.com/master), then add or configure the MCP integration under **Integrations** → **Box MCP server** (or **Custom Box MCP Server**) and save the generated OAuth client details. Your AI client then receives an `authorization_token` as part of the MCP OAuth flow and sends it to `https://mcp.box.com`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "box-api",
+        "name": "Box API",
+        "type": "http",
+        "docs": "https://developer.box.com/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.box.com/reference",
+            "https://developer.box.com/guides/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "box_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.box.com/reference",
+                  "https://developer.box.com/guides/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "box-mcp-server",
+        "name": "Box MCP server",
+        "type": "mcp",
+        "docs": "https://developer.box.com/guides/box-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.box.com/guides/box-mcp",
+            "https://developer.box.com/guides/box-mcp/setup"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "box_client_id_secret",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                },
+                {
+                  "id": "box_mcp_authorization_token",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.box.com/guides/box-mcp",
+                  "https://developer.box.com/guides/box-mcp/setup"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.box.com",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "box-cli",
+        "name": "Box CLI",
+        "type": "cli",
+        "docs": "https://developer.box.com/guides/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.box.com/guides/cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "box_oauth_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "box login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.box.com/guides/cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "box_client_id_secret",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "box login --platform-app"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.box.com/guides/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "box",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "@box/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "box"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T09:46:54.378Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 150292,
+    "completion_tokens": 1235,
+    "total_tokens": 151527
+  },
+  "visited": [
+    "https://box.com/llms.txt",
+    "https://developer.box.com/guides/authentication",
+    "https://developer.box.com/guides/box-mcp",
+    "https://developer.box.com/guides/box-mcp/integrations/cursor",
+    "https://developer.box.com/guides/box-mcp/setup",
+    "https://developer.box.com/guides/box-mcp/tools",
+    "https://developer.box.com/guides/cli",
+    "https://developer.box.com/reference",
+    "https://github.com/box/boxcli/blob/main/docs/authentication.md",
+    "https://medium.com/box-developer-blog/get-started-with-the-box-cli-in-less-than-five-minutes-3fe2f70f879a",
+    "https://support.box.com/hc/en-us/articles/50025514128915-Enhancements-to-Box-CLI-OAuth-sign-in"
+  ]
+}

@@ -46,21 +46,21 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T09:16:55.202Z",
-    "summary": "Hugging Face exposes the Hub HTTP API, a public MCP server at `/mcp`, the `hf` CLI, and OAuth/OIDC endpoints for third-party login/client registration.",
+    "discoveredAt": "2026-07-02T09:56:28.464Z",
+    "summary": "Hugging Face exposes a protected Hub HTTP API and a public MCP server; auth for the API is via user access tokens or OAuth apps.",
     "credentials": {
-      "hf_user_token": {
+      "hf_oauth_app": {
+        "type": "oauth2",
+        "label": "Hugging Face OAuth application",
+        "generateUrl": "https://huggingface.co/oauth/register",
+        "setup": "Create an OAuth app in Hugging Face by visiting [OAuth registration](https://huggingface.co/oauth/register) and registering your client. Use this when you need user-delegated access via OAuth/OIDC scopes such as `openid`, `profile`, `read-mcp`, `read-repos`, `jobs`, `contribute-repos`, or `inference-api`.",
+        "acquisition": "manual"
+      },
+      "hf_user_access_token": {
         "type": "bearer",
         "label": "Hugging Face user access token",
         "generateUrl": "https://huggingface.co/settings/tokens",
-        "setup": "Go to [Access Tokens](https://huggingface.co/settings/tokens) in your Hugging Face account and create a new user access token. Use the token value as the bearer credential for Hub APIs, CLI, and MCP OAuth-protected requests. Choose the narrowest scopes needed (for example, `read-repos`, `inference-api`, `jobs`, or `contribute-repos`).",
-        "acquisition": "manual"
-      },
-      "hf_oauth_client": {
-        "type": "oauth2",
-        "label": "Hugging Face OAuth client",
-        "generateUrl": "https://huggingface.co/oauth/register",
-        "setup": "Register an OAuth client at [OAuth app registration](https://huggingface.co/oauth/register). You will get a client ID and secret for a third-party app that uses Hugging Face's OAuth/OpenID Connect flow. This is the right credential if you are building a \"Sign in with HF\" integration.",
+        "setup": "Go to your Hugging Face account settings and create a new user access token from [Access Tokens](https://huggingface.co/settings/tokens). Copy the token value once and store it securely. This is the easiest credential for scripts, SDKs, and CLIs that authenticate to Hugging Face APIs.",
         "acquisition": "manual"
       }
     },
@@ -69,12 +69,12 @@
         "slug": "hugging-face-hub-api",
         "name": "Hugging Face Hub API",
         "type": "http",
-        "docs": "https://huggingface.co/docs/hub/en/index",
+        "docs": "https://huggingface.co/docs/hub/en/oauth",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://huggingface.co/docs/hub/en/index",
-            "https://huggingface.co/docs/huggingface_hub/en/package_reference/authentication"
+            "https://huggingface.co/docs/hub/en/oauth",
+            "https://huggingface.co/docs/hub/en/security-tokens"
           ]
         },
         "auth": {
@@ -83,9 +83,11 @@
             {
               "use": [
                 {
-                  "id": "hf_user_token",
+                  "id": "hf_user_access_token",
                   "mechanics": {
-                    "source": "spec",
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
                     "scheme": "Bearer"
                   }
                 }
@@ -93,14 +95,29 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://huggingface.co/spaces/huggingface/openapi",
-                  "https://huggingface.co/docs/huggingface_hub/en/package_reference/authentication"
+                  "https://huggingface.co/docs/hub/en/security-tokens"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "hf_oauth_app",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "OAuth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://huggingface.co/docs/hub/en/oauth"
                 ]
               }
             }
           ]
-        },
-        "spec": "https://huggingface.co/spaces/huggingface/openapi"
+        }
       },
       {
         "slug": "hugging-face-mcp-server",
@@ -110,7 +127,7 @@
         "basis": {
           "via": "detected",
           "signal": "mcp:initialize",
-          "verifiedAt": "2026-07-02T09:16:55.202Z"
+          "verifiedAt": "2026-07-02T09:56:28.464Z"
         },
         "auth": {
           "status": "none",
@@ -125,117 +142,25 @@
         "transports": [
           "streamable-http"
         ]
-      },
-      {
-        "slug": "hugging-face-hub-python-cli",
-        "name": "Hugging Face Hub Python CLI",
-        "type": "cli",
-        "docs": "https://huggingface.co/docs/huggingface_hub/en/guides/cli",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://huggingface.co/docs/huggingface_hub/en/guides/cli",
-            "https://huggingface.co/docs/huggingface_hub/en/package_reference/authentication"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "hf_user_token",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "hf auth login",
-                    "env": [
-                      "HF_TOKEN"
-                    ]
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://huggingface.co/docs/huggingface_hub/en/guides/cli",
-                  "https://huggingface.co/docs/huggingface_hub/en/package_reference/authentication"
-                ]
-              }
-            }
-          ]
-        },
-        "packages": [
-          {
-            "registryType": "pypi",
-            "identifier": "huggingface_hub",
-            "runtimeHint": "python"
-          }
-        ],
-        "command": "hf"
-      },
-      {
-        "slug": "hugging-face-oauth-openid-connect",
-        "name": "Hugging Face OAuth / OpenID Connect",
-        "type": "http",
-        "docs": "https://huggingface.co/docs/hub/en/oauth",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://huggingface.co/docs/hub/en/oauth"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "hf_oauth_client",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "paramName": "client_id"
-                  }
-                },
-                {
-                  "id": "hf_oauth_client",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "paramName": "redirect_uri"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://huggingface.co/docs/hub/en/oauth"
-                ]
-              }
-            }
-          ]
-        },
-        "spec": "https://huggingface.co/oauth/authorize"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T09:16:55.203Z",
+  "discoveredAt": "2026-07-02T09:56:28.464Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 150667,
-    "completion_tokens": 1194,
-    "total_tokens": 151861
+    "prompt_tokens": 87256,
+    "completion_tokens": 1002,
+    "total_tokens": 88258
   },
   "visited": [
-    "https://github.com/huggingface/huggingface_hub/issues/3628",
     "https://huggingface.co/docs/hub/en/agents-mcp",
     "https://huggingface.co/docs/hub/en/oauth",
-    "https://huggingface.co/docs/hub/en/spaces-api-endpoints",
+    "https://huggingface.co/docs/hub/en/security-tokens",
     "https://huggingface.co/docs/hub/en/spaces-mcp-servers",
-    "https://huggingface.co/docs/huggingface_hub/en/guides/cli",
-    "https://huggingface.co/docs/huggingface_hub/en/package_reference/authentication",
-    "https://huggingface.co/docs/huggingface_hub/en/package_reference/mcp",
+    "https://huggingface.co/docs/hub/en/webhooks",
+    "https://huggingface.co/spaces/huggingface/openapi",
     "https://logto.io/oauth-providers-explorer/huggingface",
-    "https://www.linkedin.com/posts/julienchaumond_today-is-a-big-day-were-introducing-the-activity-7336773323759984640-OySQ"
+    "https://www.scalekit.com/blog/migrating-from-api-keys-to-oauth-mcp-servers",
+    "https://www.truefoundry.com/blog/oauth-mcp-enterprise-token-management"
   ]
 }

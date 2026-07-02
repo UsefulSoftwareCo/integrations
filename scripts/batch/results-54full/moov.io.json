@@ -1,0 +1,523 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "moov.io",
+    "detect": {
+      "domain": "moov.io",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:39:24.087Z",
+    "summary": "Moov exposes a versioned REST API at `https://api.moov.io` plus two MCP servers: a public docs MCP endpoint at `https://docs.moov.io/mcp` and an authenticated Moov MCP server shipped via the `@moovio/sdk` npm package.",
+    "description": "Moov is a payments platform for accepting, storing, sending, and spending money through APIs, SDKs, and prebuilt UI components. Its products cover money movement, wallets, card issuing, onboarding, payment links, invoicing, and related developer tooling.",
+    "credentials": {
+      "moov_api_keys": {
+        "type": "compound",
+        "label": "Moov API key pair (public key + secret/private key)",
+        "generateUrl": "https://dashboard.moov.io/developers/api",
+        "setup": "In the [Moov Dashboard API keys](https://dashboard.moov.io/developers/api), create a new API key under **Developers → API keys**. Save both the public key and secret/private key when shown; the secret cannot be viewed again later. Add each allowed browser domain to the key’s allowed domain list if you will use the key to mint browser tokens via `POST /oauth2/token`. Test and production require separate API keys.",
+        "acquisition": "manual"
+      },
+      "moov_access_token": {
+        "type": "jwt",
+        "label": "Moov OAuth access token",
+        "generateUrl": "https://docs.moov.io/api/authentication/access-tokens/create/",
+        "setup": "Generate a short-lived access token by calling `POST https://api.moov.io/oauth2/token` with your Moov API key pair and the scopes your integration needs. For browser-issued tokens, include an `Origin` or `Referer` header matching a domain allowed on the API key. See [Access tokens](https://docs.moov.io/api/authentication/access-tokens/) and [Authentication options](https://docs.moov.io/api/authentication/api-authentication/).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "moov-docs-mcp-server",
+        "name": "Moov docs MCP server",
+        "type": "mcp",
+        "docs": "https://docs.moov.io/guides/developer-tools/mcp-ai/docs-mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.moov.io/guides/developer-tools/mcp-ai/docs-mcp/"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.moov.io/guides/developer-tools/mcp-ai/docs-mcp/"
+            ]
+          }
+        },
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "moov-mcp-server",
+        "name": "Moov MCP server",
+        "type": "mcp",
+        "docs": "https://docs.moov.io/guides/developer-tools/mcp-ai/mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.moov.io/guides/developer-tools/mcp-ai/mcp/",
+            "https://docs.moov.io/sdks/typescript/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "moov_api_keys",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx -y --package @moovio/sdk -- mcp start --username <public_key> --password <secret_key>"
+                  }
+                },
+                {
+                  "id": "moov_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx -y --package @moovio/sdk -- mcp start --access-token <token>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.moov.io/sdks/typescript/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "moov_api_keys",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx -y --package @moovio/sdk -- mcp start --username <public_key> --password <secret_key>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.moov.io/guides/developer-tools/mcp-ai/mcp/",
+                  "https://docs.moov.io/sdks/typescript/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "moov_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx -y --package @moovio/sdk -- mcp start --access-token <token>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.moov.io/sdks/typescript/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@moovio/sdk",
+            "runtimeHint": "node >=20"
+          }
+        ],
+        "command": "npx -y --package @moovio/sdk -- mcp start"
+      },
+      {
+        "slug": "moov-rest-api",
+        "name": "Moov REST API",
+        "type": "http",
+        "docs": "https://docs.moov.io/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.moov.io/api/",
+            "https://docs.moov.io/api/authentication/api-authentication/",
+            "https://spec.speakeasy.com/moov/moov/api-v2026.04.00"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "moov_api_keys",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.moov.io/api/authentication/api-authentication/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "moov_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.moov.io/api/",
+                  "https://docs.moov.io/api/authentication/access-tokens/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.moov.io",
+        "requiredHeaders": [
+          {
+            "name": "X-Moov-Version",
+            "source": {
+              "kind": "static",
+              "value": "v2026.04.00"
+            },
+            "description": "Moov docs show requests versioned with `X-Moov-Version`; if omitted, Moov defaults to `v2024.01.00`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:39:24.087Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 104693,
+    "completion_tokens": 1652,
+    "total_tokens": 106345
+  },
+  "visited": [
+    "https://docs.moov.io/api/",
+    "https://docs.moov.io/api/authentication/access-tokens/",
+    "https://docs.moov.io/api/authentication/api-authentication/",
+    "https://docs.moov.io/api/authentication/scopes/",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/docs-mcp/",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/mcp/",
+    "https://docs.moov.io/guides/get-started/api-keys/",
+    "https://docs.moov.io/moovjs/installation/",
+    "https://docs.moov.io/sdks/",
+    "https://docs.moov.io/sdks/typescript/",
+    "https://moov.io/llms.txt",
+    "https://spec.speakeasy.com/moov/moov/api-v2026.04.00",
+    "https://spec.speakeasy.com/moov/moov/api-v2026.04.00?raw=1"
+  ],
+  "grounding": [
+    "http://www.apache.org/licenses/LICENSE-2.0.html",
+    "https://api.moov.io",
+    "https://api.moov.io/accounts/",
+    "https://api.moov.io/oauth2/token",
+    "https://bun.sh/",
+    "https://classic.yarnpkg.com/en/",
+    "https://claude.ai/settings/connectors",
+    "https://code.claude.com/docs/en/mcp",
+    "https://code.visualstudio.com/docs/copilot/customization/mcp-servers",
+    "https://cursor.com/docs/context/model-context-protocol",
+    "https://dashboard.moov.io",
+    "https://dashboard.moov.io/developers/api",
+    "https://dashboard.moov.io/signup",
+    "https://docs.cline.bot/mcp/configuring-mcp-servers",
+    "https://docs.moov.io",
+    "https://docs.moov.io/",
+    "https://docs.moov.io/#",
+    "https://docs.moov.io/#authenticate",
+    "https://docs.moov.io/#available-tools",
+    "https://docs.moov.io/#bun",
+    "https://docs.moov.io/#client-side-oauth-with-jwt",
+    "https://docs.moov.io/#create-a-new-api-key",
+    "https://docs.moov.io/#create-an-access-token",
+    "https://docs.moov.io/#deactivate-api-keys",
+    "https://docs.moov.io/#docs-mcp-vs-moov-mcp",
+    "https://docs.moov.io/#example-prompts",
+    "https://docs.moov.io/#example-usage",
+    "https://docs.moov.io/#find-your-api-keys",
+    "https://docs.moov.io/#initialize",
+    "https://docs.moov.io/#install",
+    "https://docs.moov.io/#installation",
+    "https://docs.moov.io/#llm-context-files",
+    "https://docs.moov.io/#model-context-protocol-mcp-server",
+    "https://docs.moov.io/#next-steps",
+    "https://docs.moov.io/#npm",
+    "https://docs.moov.io/#pnpm",
+    "https://docs.moov.io/#quick-start",
+    "https://docs.moov.io/#required-headers-for-token-requests",
+    "https://docs.moov.io/#sdk-installation",
+    "https://docs.moov.io/#sdks",
+    "https://docs.moov.io/#server-side-basic-authentication",
+    "https://docs.moov.io/#set-up-your-ide",
+    "https://docs.moov.io/#tab-246873915-3-0",
+    "https://docs.moov.io/#tab-246873915-3-1",
+    "https://docs.moov.io/#tab-268571493-3-0",
+    "https://docs.moov.io/#tab-291463587-2-0",
+    "https://docs.moov.io/#tab-291463587-2-1",
+    "https://docs.moov.io/#tab-291463587-2-2",
+    "https://docs.moov.io/#tab-291463587-2-3",
+    "https://docs.moov.io/#tab-291463587-2-4",
+    "https://docs.moov.io/#tab-291463587-2-5",
+    "https://docs.moov.io/#tab-291463587-2-6",
+    "https://docs.moov.io/#tab-291463587-2-7",
+    "https://docs.moov.io/#tab-326947581-4-0",
+    "https://docs.moov.io/#tab-326947581-4-1",
+    "https://docs.moov.io/#tab-761928453-3-0",
+    "https://docs.moov.io/#tab-782316954-1-0",
+    "https://docs.moov.io/#tab-782316954-1-1",
+    "https://docs.moov.io/#understand-scopes",
+    "https://docs.moov.io/#what-is-mcp",
+    "https://docs.moov.io/#yarn",
+    "https://docs.moov.io/api",
+    "https://docs.moov.io/api/",
+    "https://docs.moov.io/api/authentication/",
+    "https://docs.moov.io/api/authentication/access-tokens",
+    "https://docs.moov.io/api/authentication/access-tokens/",
+    "https://docs.moov.io/api/authentication/access-tokens/create/",
+    "https://docs.moov.io/api/authentication/access-tokens/revoke/",
+    "https://docs.moov.io/api/authentication/api-authentication/",
+    "https://docs.moov.io/api/authentication/api-authentication/index.md",
+    "https://docs.moov.io/api/authentication/e2ee/",
+    "https://docs.moov.io/api/authentication/scopes/",
+    "https://docs.moov.io/api/enrichment/",
+    "https://docs.moov.io/api/enrichment/branding/",
+    "https://docs.moov.io/api/enrichment/form-shortening/",
+    "https://docs.moov.io/api/enrichment/institutions/",
+    "https://docs.moov.io/api/errors/",
+    "https://docs.moov.io/api/money-movement/",
+    "https://docs.moov.io/api/money-movement/disputes/",
+    "https://docs.moov.io/api/money-movement/invoices/",
+    "https://docs.moov.io/api/money-movement/issuing/",
+    "https://docs.moov.io/api/money-movement/payment-links/",
+    "https://docs.moov.io/api/money-movement/receipts/",
+    "https://docs.moov.io/api/money-movement/refunds/",
+    "https://docs.moov.io/api/money-movement/schedules/",
+    "https://docs.moov.io/api/money-movement/sweeps/",
+    "https://docs.moov.io/api/money-movement/transfers/",
+    "https://docs.moov.io/api/moov-accounts/",
+    "https://docs.moov.io/api/moov-accounts/accounts/",
+    "https://docs.moov.io/api/moov-accounts/accounts/patch/",
+    "https://docs.moov.io/api/moov-accounts/billing/",
+    "https://docs.moov.io/api/moov-accounts/capabilities/",
+    "https://docs.moov.io/api/moov-accounts/files/",
+    "https://docs.moov.io/api/moov-accounts/onboarding/",
+    "https://docs.moov.io/api/moov-accounts/partner-billing/",
+    "https://docs.moov.io/api/moov-accounts/representatives/",
+    "https://docs.moov.io/api/moov-accounts/resolution-links/",
+    "https://docs.moov.io/api/moov-accounts/underwriting/",
+    "https://docs.moov.io/api/rate-limits/",
+    "https://docs.moov.io/api/sources/",
+    "https://docs.moov.io/api/sources/apple-pay/",
+    "https://docs.moov.io/api/sources/bank-accounts/",
+    "https://docs.moov.io/api/sources/cards/",
+    "https://docs.moov.io/api/sources/google-pay/",
+    "https://docs.moov.io/api/sources/payment-methods/",
+    "https://docs.moov.io/api/sources/terminal-applications/",
+    "https://docs.moov.io/api/sources/wallets/",
+    "https://docs.moov.io/api/tools/",
+    "https://docs.moov.io/api/tools/images/",
+    "https://docs.moov.io/api/tools/products/",
+    "https://docs.moov.io/api/tools/support/",
+    "https://docs.moov.io/api/version-reference/",
+    "https://docs.moov.io/changelog",
+    "https://docs.moov.io/guides",
+    "https://docs.moov.io/guides/",
+    "https://docs.moov.io/guides/account-tools/",
+    "https://docs.moov.io/guides/accounts/",
+    "https://docs.moov.io/guides/accounts/capabilities/reference/",
+    "https://docs.moov.io/guides/accounts/create-accounts/",
+    "https://docs.moov.io/guides/accounts/hosted-onboarding/",
+    "https://docs.moov.io/guides/accounts/requirements/",
+    "https://docs.moov.io/guides/accounts/requirements/identity-verification/",
+    "https://docs.moov.io/guides/accounts/requirements/platform-agreement/",
+    "https://docs.moov.io/guides/accounts/resolution-links/",
+    "https://docs.moov.io/guides/billing/",
+    "https://docs.moov.io/guides/dashboard/",
+    "https://docs.moov.io/guides/dashboard/managing-teams",
+    "https://docs.moov.io/guides/developer-tools",
+    "https://docs.moov.io/guides/developer-tools/",
+    "https://docs.moov.io/guides/developer-tools/breaking-changes-api/",
+    "https://docs.moov.io/guides/developer-tools/data-sync/",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/ai-integration/",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/ai-skill/",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/docs-mcp/",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/docs-mcp/index.md",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/mcp/",
+    "https://docs.moov.io/guides/developer-tools/mcp-ai/mcp/index.md",
+    "https://docs.moov.io/guides/developer-tools/postman-collection/",
+    "https://docs.moov.io/guides/get-started/",
+    "https://docs.moov.io/guides/get-started/api-keys/",
+    "https://docs.moov.io/guides/get-started/api-keys/index.md",
+    "https://docs.moov.io/guides/get-started/data-migrations/",
+    "https://docs.moov.io/guides/get-started/glossary/",
+    "https://docs.moov.io/guides/get-started/integration-options/",
+    "https://docs.moov.io/guides/get-started/launch-checklist/",
+    "https://docs.moov.io/guides/get-started/production-mode/",
+    "https://docs.moov.io/guides/get-started/test-mode/",
+    "https://docs.moov.io/guides/get-started/ux-best-practices/",
+    "https://docs.moov.io/guides/glossary",
+    "https://docs.moov.io/guides/issue-cards/",
+    "https://docs.moov.io/guides/money-movement/",
+    "https://docs.moov.io/guides/money-movement/accept-payments/card-acceptance/",
+    "https://docs.moov.io/guides/money-movement/accept-payments/card-acceptance/tap-to-pay-android/",
+    "https://docs.moov.io/guides/money-movement/accept-payments/card-acceptance/tap-to-pay-iphone/",
+    "https://docs.moov.io/guides/money-movement/invoices/",
+    "https://docs.moov.io/guides/money-movement/overview/",
+    "https://docs.moov.io/guides/money-movement/payment-links",
+    "https://docs.moov.io/guides/money-movement/payment-links/",
+    "https://docs.moov.io/guides/quick-start",
+    "https://docs.moov.io/guides/quick-start/",
+    "https://docs.moov.io/guides/sources/",
+    "https://docs.moov.io/guides/webhooks/",
+    "https://docs.moov.io/llms-full.txt",
+    "https://docs.moov.io/llms.txt",
+    "https://docs.moov.io/mcp",
+    "https://docs.moov.io/moovjs",
+    "https://docs.moov.io/moovjs/",
+    "https://docs.moov.io/moovjs/accounts/",
+    "https://docs.moov.io/moovjs/drops",
+    "https://docs.moov.io/moovjs/drops/",
+    "https://docs.moov.io/moovjs/drops/theming/",
+    "https://docs.moov.io/moovjs/enrichment/",
+    "https://docs.moov.io/moovjs/installation/",
+    "https://docs.moov.io/moovjs/installation/index.md",
+    "https://docs.moov.io/moovjs/institutions/",
+    "https://docs.moov.io/moovjs/sources/",
+    "https://docs.moov.io/moovjs/transfers/",
+    "https://docs.moov.io/sdks",
+    "https://docs.moov.io/sdks/",
+    "https://docs.moov.io/sdks/#client-side-sdks",
+    "https://docs.moov.io/sdks/#server-side-sdks",
+    "https://docs.moov.io/sdks/dotnet/",
+    "https://docs.moov.io/sdks/go/",
+    "https://docs.moov.io/sdks/java/",
+    "https://docs.moov.io/sdks/php/",
+    "https://docs.moov.io/sdks/python/",
+    "https://docs.moov.io/sdks/ruby/",
+    "https://docs.moov.io/sdks/tap-to-pay-android/",
+    "https://docs.moov.io/sdks/tap-to-pay-iphone/",
+    "https://docs.moov.io/sdks/typescript/",
+    "https://docs.moov.io/use-cases",
+    "https://docs.windsurf.com/windsurf/cascade/mcp",
+    "https://github.com/moov-io",
+    "https://github.com/moov-io/ach",
+    "https://github.com/moovfinancial/moov-go",
+    "https://github.com/moovfinancial/moov-typescript",
+    "https://github.com/{org}/{repo}/releases/download/{tag}/mcp-server-bun-darwin-arm64",
+    "https://google-gemini.github.io/gemini-cli/docs/tools/mcp-server.html",
+    "https://hackerone.com/a83a9377-fe8c-4bde-b9e4-e7cf0c6f98e2/embedded_submissions/new",
+    "https://js.moov.io/v1",
+    "https://llmstxt.org/",
+    "https://modelcontextprotocol.io/",
+    "https://moov.io",
+    "https://moov.io/blog",
+    "https://moov.io/careers",
+    "https://moov.io/community",
+    "https://moov.io/company",
+    "https://moov.io/contact",
+    "https://moov.io/dashboard-demo",
+    "https://moov.io/demo",
+    "https://moov.io/legal/beta-test-terms",
+    "https://moov.io/legal/cookies-policy",
+    "https://moov.io/legal/esign-disclosure",
+    "https://moov.io/legal/platform-agreement",
+    "https://moov.io/legal/platform-agreement/ach-transfer-services-terms",
+    "https://moov.io/legal/platform-agreement/card-issuing-services-terms",
+    "https://moov.io/legal/platform-agreement/card-network-disbursement-services",
+    "https://moov.io/legal/platform-agreement/commercial-user-terms",
+    "https://moov.io/legal/platform-agreement/consent-to-electronic-delivery-of-irs-form",
+    "https://moov.io/legal/platform-agreement/consumer-user-terms",
+    "https://moov.io/legal/platform-agreement/fednow-transfer-services-terms",
+    "https://moov.io/legal/platform-agreement/financial-institution-card-funding-and-disbursement-terms",
+    "https://moov.io/legal/platform-agreement/merchant-processing-services-terms",
+    "https://moov.io/legal/platform-agreement/prohibited-restricted-businesses",
+    "https://moov.io/legal/platform-agreement/prohibited-restricted-businesses/",
+    "https://moov.io/legal/platform-agreement/rtp-transfer-services-terms",
+    "https://moov.io/legal/platform-integration-agreement",
+    "https://moov.io/legal/privacy-policy",
+    "https://moov.io/legal/privacy-policy/",
+    "https://moov.io/legal/website-terms-of-use",
+    "https://moov.io/llms.txt",
+    "https://moov.io/media-resources",
+    "https://moov.io/news",
+    "https://moov.io/platform",
+    "https://moov.io/platform/accept",
+    "https://moov.io/platform/ach",
+    "https://moov.io/platform/apple-pay",
+    "https://moov.io/platform/card-issuing",
+    "https://moov.io/platform/dashboard",
+    "https://moov.io/platform/data-sync",
+    "https://moov.io/platform/drops",
+    "https://moov.io/platform/features",
+    "https://moov.io/platform/invoicing",
+    "https://moov.io/platform/onboarding",
+    "https://moov.io/platform/payment-links",
+    "https://moov.io/platform/roadmap",
+    "https://moov.io/platform/rtp",
+    "https://moov.io/platform/send",
+    "https://moov.io/platform/tap-to-pay-on-iphone",
+    "https://moov.io/platform/wallets",
+    "https://moov.io/pricing",
+    "https://moov.io/resources",
+    "https://moov.io/resources/glossary",
+    "https://moov.io/rtp-demo",
+    "https://moov.io/use-cases/construction",
+    "https://moov.io/use-cases/digital-banking",
+    "https://moov.io/use-cases/fundraising",
+    "https://moov.io/use-cases/loan-servicing",
+    "https://moov.io/use-cases/small-business",
+    "https://moov.io/use-cases/transportation",
+    "https://pnpm.io/",
+    "https://spec.speakeasy.com/moov/moov/api-v2026.04.00",
+    "https://spec.speakeasy.com/moov/moov/api-v2026.04.00?raw=1",
+    "https://status.moov.io",
+    "https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp",
+    "https://support.moov.io",
+    "https://support.moov.io/",
+    "https://trust.moov.io",
+    "https://www.npmjs.com/",
+    "https://www.npmjs.com/package/@moovio/moov-js?activeTab=readme",
+    "https://your-domain.com",
+    "https://zed.dev/docs/ai/mcp"
+  ]
+}

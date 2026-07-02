@@ -417,6 +417,17 @@ export function createExports(manifest: SSRManifest) {
       const enc = new TextEncoder();
       const send = (event: string, data: unknown) => writer.write(enc.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
 
+      // Cached results are free to serve; an uncached run costs an LLM loop —
+      // cap those per client IP. 429 before the stream starts.
+      const cachedProbe = await cache.match(cacheKey);
+      if (!cachedProbe && env.DISCOVER_LIMITER) {
+        const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+        const { success } = await env.DISCOVER_LIMITER.limit({ key: ip });
+        if (!success) {
+          track(env, ctx, request, "discovery_ratelimited", { domain });
+          return json({ error: "rate limited — try again in a minute" }, 429, { "retry-after": "60" });
+        }
+      }
       const producer = (async () => {
         try {
           const cached = await cache.match(cacheKey);
@@ -476,6 +487,15 @@ export function createExports(manifest: SSRManifest) {
       const cacheKey = new Request(keyUrl.toString(), { method: "GET" });
       const cached = await cache.match(cacheKey);
       if (cached) return cached;
+      // Uncached /discover runs the LLM loop — same per-IP cap as the stream.
+      if (url.pathname.includes("/discover") && env.DISCOVER_LIMITER) {
+        const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+        const { success } = await env.DISCOVER_LIMITER.limit({ key: ip });
+        if (!success) {
+          track(env, ctx, request, "discovery_ratelimited", { path: url.pathname });
+          return json({ error: "rate limited — try again in a minute" }, 429, { "retry-after": "60" });
+        }
+      }
       const res = await apiHandler(request);
       if (request.method === "GET" && res.status === 200) {
         const out = new Response(res.clone().body, res);

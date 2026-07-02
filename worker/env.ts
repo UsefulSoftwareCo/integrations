@@ -40,7 +40,13 @@ export interface EdgeCaches {
   default: Cache;
 }
 
+export interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 export interface Env {
+  /** Per-IP limiter for LLM discovery runs (wrangler `unsafe.bindings` ratelimit). */
+  DISCOVER_LIMITER?: RateLimiter;
   ASSETS: Fetcher;
   /** PostHog project token for server-side captures (same value as the public
    * client token — it can only ingest). */

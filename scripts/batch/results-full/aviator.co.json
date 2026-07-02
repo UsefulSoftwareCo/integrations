@@ -12,68 +12,18 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T10:46:31.665Z",
-    "summary": "Aviator exposes a bearer-authenticated JSON API, a bearer-authenticated GraphQL API, an unauthenticated webhook delivery surface (auth unknown from docs), a GitHub-authenticated `av` CLI, and a Slack workspace integration for notifications.",
+    "discoveredAt": "2026-07-02T14:55:50.572Z",
+    "summary": "Aviator exposes a Bearer-authenticated GraphQL API, a Bearer-authenticated JSON API, webhook delivery, and the `av` CLI (which relies on GitHub auth rather than an Aviator-issued developer credential).",
     "credentials": {
-      "aviator_user_token": {
+      "aviator_user_access_token": {
         "type": "bearer",
         "label": "Aviator user access token",
         "generateUrl": "https://app.aviator.co/account/apitoken",
-        "setup": "Go to [Aviator account API tokens](https://app.aviator.co/account/apitoken), create a new user access token, and save it immediately because it is shown only once. The docs’ quickstart uses the `av_uat_...` format and says to set `AV_API_TOKEN` before calling Aviator APIs.",
-        "acquisition": "manual"
-      },
-      "github_creds": {
-        "type": "basic",
-        "label": "GitHub credential for `av` CLI",
-        "generateUrl": "https://cli.github.com/",
-        "setup": "Install [GitHub CLI](https://cli.github.com/) and sign in with `gh auth login`, or create a GitHub Personal Access Token if you prefer. The `av` CLI uses the same GitHub credential to create and update PRs.",
-        "acquisition": "manual"
-      },
-      "slack_workspace_access": {
-        "type": "oauth2",
-        "label": "Slack workspace connection for Aviator notifications",
-        "generateUrl": "https://docs.aviator.co/api/personal-integrations",
-        "setup": "In Aviator, go to `Settings > Workspace > Integrations`, click `Connect to Slack`, and complete the Slack consent flow. This connects Aviator to your Slack workspace for channel notifications; admins can then choose a channel and customize notification settings.",
+        "setup": "Go to [Aviator’s token page](https://app.aviator.co/account/apitoken), create a new user access token, and copy it immediately. The quickstart says to name it `GraphQL tutorial`, set an expiration such as `30 days`, and the token format looks like `av_uat_...`. Store it as `AV_API_TOKEN` (or equivalent) and send it as `Authorization: Bearer <token>`.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
-      {
-        "slug": "aviator-json-api",
-        "name": "Aviator JSON API",
-        "type": "http",
-        "docs": "https://docs.aviator.co/api/reference/json-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.aviator.co/api/reference/json-api"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "aviator_user_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.aviator.co/api/reference/json-api"
-                ]
-              }
-            }
-          ]
-        }
-      },
       {
         "slug": "aviator-graphql-api",
         "name": "Aviator GraphQL API",
@@ -92,7 +42,7 @@
             {
               "use": [
                 {
-                  "id": "aviator_user_token",
+                  "id": "aviator_user_access_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -111,11 +61,49 @@
             }
           ]
         },
-        "url": "https://app.aviator.co/graphql"
+        "spec": "introspection",
+        "url": "https://api.aviator.co/graphql"
+      },
+      {
+        "slug": "aviator-json-api",
+        "name": "Aviator JSON API",
+        "type": "http",
+        "docs": "https://docs.aviator.co/api/reference/json-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.aviator.co/api/reference/json-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "aviator_user_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aviator.co/api/reference/json-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.aviator.co/api/v1"
       },
       {
         "slug": "aviator-webhooks",
-        "name": "Aviator Webhooks",
+        "name": "Aviator webhooks",
         "type": "http",
         "docs": "https://docs.aviator.co/api/reference/webhooks",
         "basis": {
@@ -145,27 +133,13 @@
             {
               "use": [
                 {
-                  "id": "github_creds",
+                  "id": "aviator_user_access_token",
                   "mechanics": {
                     "source": "cli",
-                    "command": "gh auth login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.aviator.co/aviator-cli"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "github_creds",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "use a GitHub Personal Access Token"
+                    "command": "gh auth login",
+                    "env": [
+                      "GH_TOKEN"
+                    ]
                   }
                 }
               ],
@@ -180,68 +154,34 @@
         },
         "packages": [
           {
-            "registryType": "homebrew",
+            "registryType": "brew",
             "identifier": "aviator-co/tap/av",
-            "runtimeHint": "macOS"
+            "runtimeHint": "macOS/Homebrew"
           }
         ],
         "command": "av"
-      },
-      {
-        "slug": "aviator-slack-integration",
-        "name": "Aviator Slack integration",
-        "type": "http",
-        "docs": "https://docs.aviator.co/api/personal-integrations",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.aviator.co/api/personal-integrations"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "slack_workspace_access",
-                  "mechanics": {
-                    "source": "unknown"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.aviator.co/api/personal-integrations"
-                ]
-              }
-            }
-          ]
-        }
       }
     ]
   },
-  "discoveredAt": "2026-07-02T10:46:31.665Z",
+  "discoveredAt": "2026-07-02T14:55:50.572Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 147223,
-    "completion_tokens": 1242,
-    "total_tokens": 148465
+    "prompt_tokens": 91859,
+    "completion_tokens": 910,
+    "total_tokens": 92769
   },
   "visited": [
     "https://aviator.co/llms.txt",
     "https://chillicream.com/blog/2026-05-28-mcp-hotchocolate-fusion",
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
     "https://docs.aviator.co/api/graphql-api-quickstart",
-    "https://docs.aviator.co/api/personal-integrations",
     "https://docs.aviator.co/api/reference/graphql",
     "https://docs.aviator.co/api/reference/json-api",
     "https://docs.aviator.co/api/reference/webhooks",
     "https://docs.aviator.co/aviator-cli",
     "https://github.com/blurrah/mcp-graphql",
-    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
     "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
-    "https://zuplo.com/docs/mcp-server/graphql"
+    "https://zuplo.com/blog/mcp-server-graphql"
   ],
   "grounding": [
     "https://api.aviator.co/api/v1/branches",
@@ -277,6 +217,7 @@
     "https://aviator.co/verify",
     "https://chillicream.com/blog/2026-05-28-mcp-hotchocolate-fusion",
     "https://cli.github.com/",
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
     "https://docs.aviator.co",
     "https://docs.aviator.co/",
     "https://docs.aviator.co/#actions",
@@ -288,14 +229,10 @@
     "https://docs.aviator.co/#botpullrequest",
     "https://docs.aviator.co/#branches",
     "https://docs.aviator.co/#change-the-yaml-config-associated-with-the-given-github-repository",
-    "https://docs.aviator.co/#channel-notifications",
     "https://docs.aviator.co/#config",
     "https://docs.aviator.co/#config-change",
     "https://docs.aviator.co/#config-change-event",
     "https://docs.aviator.co/#creating-a-stack",
-    "https://docs.aviator.co/#customizing-notifications",
-    "https://docs.aviator.co/#customizing-the-notification-channel",
-    "https://docs.aviator.co/#default-notifications",
     "https://docs.aviator.co/#fetch-information-of-a-pr-based-on-the-branch-name-or-number",
     "https://docs.aviator.co/#fetch-information-of-prs-associated-with-a-provided-bot-pullrequest",
     "https://docs.aviator.co/#fetch-information-of-prs-that-are-in-the-queued-state",
@@ -310,7 +247,6 @@
     "https://docs.aviator.co/#id-1.-create-a-user-access-token",
     "https://docs.aviator.co/#id-2.-make-a-simple-graphql-request",
     "https://docs.aviator.co/#id-3.-fetch-data-about-a-pull-request",
-    "https://docs.aviator.co/#initial-slack-setup",
     "https://docs.aviator.co/#learn-more",
     "https://docs.aviator.co/#man-pages-and-help-docs",
     "https://docs.aviator.co/#merging-the-stack",
@@ -318,7 +254,6 @@
     "https://docs.aviator.co/#pause-unpause-the-merging-of-prs-on-a-repository",
     "https://docs.aviator.co/#payload",
     "https://docs.aviator.co/#payload-1",
-    "https://docs.aviator.co/#personal-notifications",
     "https://docs.aviator.co/#pullrequest",
     "https://docs.aviator.co/#pullrequest-events",
     "https://docs.aviator.co/#queue",
@@ -337,8 +272,6 @@
     "https://docs.aviator.co/api/graphql-api-quickstart.md",
     "https://docs.aviator.co/api/how-to-collect-monitoring-metrics-in-gcp-prometheus",
     "https://docs.aviator.co/api/personal-integrations",
-    "https://docs.aviator.co/api/personal-integrations#personal-notifications",
-    "https://docs.aviator.co/api/personal-integrations.md",
     "https://docs.aviator.co/api/reference",
     "https://docs.aviator.co/api/reference/graphql",
     "https://docs.aviator.co/api/reference/graphql.md",
@@ -387,13 +320,12 @@
     "https://github.com/blurrah/mcp-graphql",
     "https://github.com/org-name/repo-name/pull/201",
     "https://graphql.org/learn/",
-    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
     "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
     "https://www.aviator.co/",
     "https://www.aviator.co/about-us",
     "https://www.aviator.co/blog",
     "https://www.aviator.co/blog/stacked-prs-code-changes-as-narrative/",
     "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=OAPqUQVbLbsfI5YESl32&utm_content=site_L02QT",
-    "https://zuplo.com/docs/mcp-server/graphql"
+    "https://zuplo.com/blog/mcp-server-graphql"
   ]
 }

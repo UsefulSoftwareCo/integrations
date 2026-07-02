@@ -12,39 +12,44 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T10:19:51.791Z",
-    "summary": "Algolia exposes REST APIs for Search, Recommend, and Analytics; CLI access via algolia; and two MCP surfaces (Productivity and Public), with auth via Application ID + API key, Search API key, or CLI OAuth session depending on the surface.",
+    "discoveredAt": "2026-07-02T14:54:30.924Z",
+    "summary": "Algolia exposes the authenticated Search REST API and a Streamable HTTP Productivity MCP server; no GraphQL or CLI integration surface was confirmed.",
     "credentials": {
       "algolia_app_id": {
         "type": "api_key",
-        "label": "Algolia Search API key",
-        "generateUrl": "https://dashboard.algolia.com/account/api-keys",
-        "setup": "Create or copy a Search API key in the [Algolia dashboard](https://dashboard.algolia.com/account/api-keys). This key is used for read/search-style access, including Public MCP auth.",
+        "label": "Algolia Application ID",
+        "setup": "Go to the [Algolia dashboard](https://dashboard.algolia.com/account/api-keys) and copy your **Application ID**. Algolia uses it together with an API key for most REST requests.",
         "acquisition": "manual"
       },
-      "algolia_oauth_session": {
-        "type": "oauth2",
-        "label": "Algolia OAuth session",
-        "generateUrl": "https://dashboard.algolia.com/users/sign_in",
-        "setup": "Run `algolia auth login` to start the browser sign-in flow and create an OAuth session for the Algolia CLI. You do not need to register a separate OAuth app for this path.",
-        "acquisition": "manual"
-      },
-      "algolia_crawler_user_id": {
+      "algolia_api_key": {
         "type": "api_key",
-        "label": "Algolia Crawler user ID",
-        "generateUrl": "https://dashboard.algolia.com/explorer/browse",
-        "setup": "In the [Algolia dashboard](https://dashboard.algolia.com/explorer/browse), select your application, then open **Data sources** → **Crawler** → **Settings** to find the Crawler user ID."
+        "label": "Algolia API Key",
+        "setup": "Go to the [Algolia dashboard](https://dashboard.algolia.com/account/api-keys) and create or copy an API key with the ACLs required for the endpoint you want to call. For API access, send it in the `x-algolia-api-key` header together with your Application ID.",
+        "acquisition": "manual"
+      },
+      "algolia_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Algolia account OAuth session for MCP",
+        "setup": "Enable Algolia Productivity MCP in the [Algolia dashboard](https://dashboard.algolia.com/generativeAi/mcp-servers/servers) under **Generate AI > MCP Servers > Productivity**, then connect from your MCP client using the MCP server URL shown there. Sign in when prompted; you do not need to create your own OAuth client ID or secret.",
+        "acquisition": "manual"
+      },
+      "algolia_mcp_auth_token": {
+        "type": "bearer",
+        "label": "Algolia MCP authorization token",
+        "setup": "When adding an Algolia MCP tool in Agent Studio, the docs say the **Authorization token** is optional and for Algolia MCP uses the format `{APP_ID}:{SEARCH_API_KEY}`. Use the MCP server URL from the dashboard and supply that token only if your client or setup asks for it.",
+        "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "algolia-cli",
-        "name": "Algolia CLI",
-        "type": "cli",
+        "slug": "algolia-search-api",
+        "name": "Algolia Search API",
+        "type": "http",
+        "docs": "https://www.algolia.com/doc/rest-api/search",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.algolia.com/doc/tools/cli/authentication"
+            "https://www.algolia.com/doc/rest-api/search"
           ]
         },
         "auth": {
@@ -55,54 +60,41 @@
                 {
                   "id": "algolia_app_id",
                   "mechanics": {
-                    "source": "cli",
-                    "command": "algolia --application-id <APPLICATION_ID>"
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-algolia-application-id"
                   }
                 },
                 {
-                  "id": "algolia_app_id",
+                  "id": "algolia_api_key",
                   "mechanics": {
-                    "source": "cli",
-                    "command": "algolia --api-key <API_KEY>"
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-algolia-api-key"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.algolia.com/doc/tools/cli/authentication"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "algolia_oauth_session",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "algolia auth login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.algolia.com/doc/tools/cli/authentication"
+                  "https://www.algolia.com/doc/rest-api/search"
                 ]
               }
             }
           ]
         },
-        "command": "algolia"
+        "url": "https://{APPLICATION_ID}.algolia.net"
       },
       {
         "slug": "algolia-productivity-mcp",
         "name": "Algolia Productivity MCP",
         "type": "mcp",
+        "docs": "https://www.algolia.com/doc/guides/model-context-protocol/productivity-mcp",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.algolia.com/doc/guides/model-context-protocol/productivity-mcp"
+            "https://www.algolia.com/doc/guides/model-context-protocol/productivity-mcp",
+            "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/tools/mcp-tools"
           ]
         },
         "auth": {
@@ -111,7 +103,7 @@
             {
               "use": [
                 {
-                  "id": "algolia_oauth_session",
+                  "id": "algolia_mcp_oauth",
                   "mechanics": {
                     "source": "well-known"
                   }
@@ -123,31 +115,11 @@
                   "https://www.algolia.com/doc/guides/model-context-protocol/productivity-mcp"
                 ]
               }
-            }
-          ]
-        },
-        "url": "https://mcp.algolia.com/mcp",
-        "transports": [
-          "streamable-http"
-        ]
-      },
-      {
-        "slug": "algolia-public-mcp",
-        "name": "Algolia Public MCP",
-        "type": "mcp",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.algolia.com/doc/guides/model-context-protocol/public-mcp"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
+            },
             {
               "use": [
                 {
-                  "id": "algolia_app_id",
+                  "id": "algolia_mcp_auth_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -159,195 +131,33 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.algolia.com/doc/guides/model-context-protocol/public-mcp"
+                  "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/tools/mcp-tools"
                 ]
               }
             }
           ]
         },
-        "url": "https://{APP_ID}.algolia.net/mcp/1/{UNIQ_ID}/mcp",
+        "url": "https://mcp.algolia.com/mcp",
         "transports": [
           "streamable-http"
-        ],
-        "variables": [
-          {
-            "name": "APP_ID",
-            "resolveFrom": "algolia_app_id"
-          },
-          {
-            "name": "UNIQ_ID",
-            "description": "Unique MCP instance ID from the Algolia dashboard"
-          }
         ]
-      },
-      {
-        "slug": "algolia-agent-studio-mcp-tools",
-        "name": "Algolia Agent Studio MCP tools",
-        "type": "mcp",
-        "docs": "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/tools/mcp-tools",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/tools/mcp-tools"
-          ]
-        },
-        "auth": {
-          "status": "unknown"
-        }
-      },
-      {
-        "slug": "algolia-recommend-api",
-        "name": "Algolia Recommend API",
-        "type": "http",
-        "docs": "https://www.algolia.com/doc/rest-api/recommend/",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.algolia.com/doc/rest-api/recommend/"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "algolia_app_id",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "x-algolia-application-id"
-                  }
-                },
-                {
-                  "id": "algolia_app_id",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "x-algolia-api-key",
-                    "scheme": "apiKey"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.algolia.com/doc/rest-api/recommend/"
-                ]
-              }
-            }
-          ]
-        }
-      },
-      {
-        "slug": "algolia-analytics-api",
-        "name": "Algolia Analytics API",
-        "type": "http",
-        "docs": "https://www.algolia.com/doc/rest-api/analytics/",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.algolia.com/doc/rest-api/analytics/"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "algolia_app_id",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "x-algolia-application-id"
-                  }
-                },
-                {
-                  "id": "algolia_app_id",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "x-algolia-api-key",
-                    "scheme": "apiKey"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.algolia.com/doc/rest-api/analytics/"
-                ]
-              }
-            }
-          ]
-        }
-      },
-      {
-        "slug": "algolia-website-search-index",
-        "name": "Algolia website search index",
-        "type": "http",
-        "docs": "https://www.algolia.com/llms.txt",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.algolia.com/llms.txt"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "algolia_app_id",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "X-Algolia-Application-Id"
-                  }
-                },
-                {
-                  "id": "algolia_app_id",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "X-Algolia-API-Key",
-                    "scheme": "apiKey"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.algolia.com/llms.txt"
-                ]
-              }
-            }
-          ]
-        }
       }
     ]
   },
-  "discoveredAt": "2026-07-02T10:19:51.792Z",
+  "discoveredAt": "2026-07-02T14:54:30.925Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 143735,
-    "completion_tokens": 2279,
-    "total_tokens": 146014
+    "prompt_tokens": 66667,
+    "completion_tokens": 1202,
+    "total_tokens": 67869
   },
   "visited": [
     "https://www.algolia.com/blog/engineering/graphql-search-and-indexing-with-algolia",
     "https://www.algolia.com/blog/engineering/integrating-third-party-apis-into-graphql-with-apollo-client",
-    "https://www.algolia.com/doc/api-reference/",
+    "https://www.algolia.com/developers",
     "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/tools/mcp-tools",
-    "https://www.algolia.com/doc/guides/model-context-protocol/",
     "https://www.algolia.com/doc/guides/model-context-protocol/productivity-mcp",
-    "https://www.algolia.com/doc/guides/model-context-protocol/public-mcp",
-    "https://www.algolia.com/doc/rest-api/analytics/",
-    "https://www.algolia.com/doc/rest-api/recommend/",
-    "https://www.algolia.com/doc/rest-api/search/",
-    "https://www.algolia.com/doc/tools/cli/authentication",
+    "https://www.algolia.com/doc/rest-api/search",
     "https://www.algolia.com/llms.txt",
     "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ],
@@ -356,73 +166,51 @@
     "https://1QDAWL72TQ-dsn.algolia.net/1/indexes/ALGOLIA_WWW_PROD/query",
     "https://ALGOLIA_APPLICATION_ID.algolia.net/mcp/1/abc123/mcp",
     "https://abc123.ngrok.io",
+    "https://academy.algolia.com",
     "https://alg.li/discord",
-    "https://analytics.algolia.com",
-    "https://analytics.de.algolia.com",
-    "https://analytics.us.algolia.com",
-    "https://aws.amazon.com/q/",
-    "https://chatgpt.com",
+    "https://changelog.algolia.com/",
     "https://chatgpt.com/#settings/Connectors",
-    "https://claude.ai",
     "https://claude.ai/settings/connectors",
-    "https://cloud.google.com/vertex-ai",
     "https://dashboard.algolia.com/",
     "https://dashboard.algolia.com/account/api-keys",
-    "https://dashboard.algolia.com/account/api-keys/all",
-    "https://dashboard.algolia.com/account/infrastructure/analytics",
-    "https://dashboard.algolia.com/dashboard?utm_source=docs&utm_medium=page_link",
-    "https://dashboard.algolia.com/explorer/browse",
     "https://dashboard.algolia.com/generativeAi/agent-studio/agents?utm_source=docs&utm_medium=page_link",
-    "https://dashboard.algolia.com/generativeAi/mcp-servers/servers/new?utm_source=docs&utm_medium=page_link",
     "https://dashboard.algolia.com/generativeAi/mcp-servers/servers?utm_source=docs&utm_medium=page_link",
     "https://dashboard.algolia.com/infra",
     "https://dashboard.algolia.com/users/sign_in",
+    "https://dashboard.algolia.com/users/sign_out",
+    "https://dashboard.algolia.com/users/sign_up",
     "https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding",
     "https://mcp.algolia.com/mcp",
     "https://modelcontextprotocol.io/",
     "https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http",
     "https://ngrok.com/",
     "https://platform.openai.com/docs/mcp#create-an-mcp-server",
-    "https://platform.openai.com/playground",
     "https://registry.modelcontextprotocol.io/",
     "https://status.algolia.com/",
+    "https://support.algolia.com/",
     "https://support.algolia.com/hc/en-us",
+    "https://trust.algolia.com/",
     "https://twitter.com/algolia",
     "https://weather-api.example.com/mcp",
     "https://www.algolia.com",
     "https://www.algolia.com/",
-    "https://www.algolia.com/#algolia-productivity-mcp",
-    "https://www.algolia.com/#algolia-public-mcp",
+    "https://www.algolia.com/#",
     "https://www.algolia.com/#approve-multiple-tools-at-once",
     "https://www.algolia.com/#authentication",
-    "https://www.algolia.com/#availability-and-authentication",
     "https://www.algolia.com/#base-urls",
     "https://www.algolia.com/#before-you-begin",
-    "https://www.algolia.com/#choose-the-right-mcp",
     "https://www.algolia.com/#client-libraries",
-    "https://www.algolia.com/#command-line-options",
     "https://www.algolia.com/#configuration",
     "https://www.algolia.com/#configure-tool-approval",
     "https://www.algolia.com/#connect-from-your-mcp-client",
     "https://www.algolia.com/#connect-mcp-tools-to-your-agent",
-    "https://www.algolia.com/#connect-to-an-mcp-client",
     "https://www.algolia.com/#content-area",
-    "https://www.algolia.com/#crawler-commands",
-    "https://www.algolia.com/#create-or-locate-an-mcp-server",
     "https://www.algolia.com/#enable-algolia-productivity-mcp",
-    "https://www.algolia.com/#environment-variables",
-    "https://www.algolia.com/#environment-variables-2",
-    "https://www.algolia.com/#get-started",
     "https://www.algolia.com/#guidelines",
     "https://www.algolia.com/#how-approval-works",
-    "https://www.algolia.com/#manage-applications",
     "https://www.algolia.com/#mcp-servers",
     "https://www.algolia.com/#optional-fields",
     "https://www.algolia.com/#parameters",
-    "https://www.algolia.com/#profiles",
-    "https://www.algolia.com/#profiles-2",
-    "https://www.algolia.com/#query-aggregation",
-    "https://www.algolia.com/#rate-limits",
     "https://www.algolia.com/#receive-the-approval-request",
     "https://www.algolia.com/#request-format",
     "https://www.algolia.com/#required-fields",
@@ -431,22 +219,44 @@
     "https://www.algolia.com/#security-notes",
     "https://www.algolia.com/#see-also",
     "https://www.algolia.com/#send-the-user-message",
-    "https://www.algolia.com/#set-the-active-application",
     "https://www.algolia.com/#submit-the-approval-decision",
     "https://www.algolia.com/#tool-filtering-behavior",
     "https://www.algolia.com/#tools-exposed-by-algolia-productivity-mcp",
-    "https://www.algolia.com/#tools-exposed-by-algolia-public-mcp",
     "https://www.algolia.com/#version",
     "https://www.algolia.com/#what-you-can-do",
+    "https://www.algolia.com/about",
+    "https://www.algolia.com/about/news",
+    "https://www.algolia.com/ai-search-grader/",
+    "https://www.algolia.com/blog",
+    "https://www.algolia.com/blog/engineering",
     "https://www.algolia.com/blog/engineering/graphql-search-and-indexing-with-algolia",
     "https://www.algolia.com/blog/engineering/integrating-third-party-apis-into-graphql-with-apollo-client",
+    "https://www.algolia.com/customer-hub",
+    "https://www.algolia.com/customers",
+    "https://www.algolia.com/de/developers",
+    "https://www.algolia.com/demorequest",
+    "https://www.algolia.com/department/digital-experience",
+    "https://www.algolia.com/department/ecommerce",
+    "https://www.algolia.com/department/engineering",
+    "https://www.algolia.com/department/merchandisers",
+    "https://www.algolia.com/department/product-management",
+    "https://www.algolia.com/dev-agentic-readiness",
+    "https://www.algolia.com/devcon?utm_cta=topbannerpromo",
+    "https://www.algolia.com/developers",
     "https://www.algolia.com/developers/",
+    "https://www.algolia.com/developers/code-exchange",
+    "https://www.algolia.com/developers/code-exchange/kega-accelerator-for-composable",
+    "https://www.algolia.com/developers/code-exchange/klaviyo-connector",
+    "https://www.algolia.com/developers/code-exchange/supabase-connector",
+    "https://www.algolia.com/developers/integrations",
+    "https://www.algolia.com/developers/lp-mcp",
+    "https://www.algolia.com/developers/search-ui",
+    "https://www.algolia.com/distributed-secure/global-infrastructure",
     "https://www.algolia.com/distributed-secure/security-compliance/",
     "https://www.algolia.com/doc",
     "https://www.algolia.com/doc/",
     "https://www.algolia.com/doc/api-reference/",
     "https://www.algolia.com/doc/glossary",
-    "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/agent-configuration",
     "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/memory/overview",
     "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/tools/algolia-search",
     "https://www.algolia.com/doc/guides/algolia-ai/agent-studio/how-to/tools/client-side-tools",
@@ -461,18 +271,13 @@
     "https://www.algolia.com/doc/guides/managing-results/relevance-overview/",
     "https://www.algolia.com/doc/guides/managing-results/rules/rules-overview/",
     "https://www.algolia.com/doc/guides/model-context-protocol",
-    "https://www.algolia.com/doc/guides/model-context-protocol/",
     "https://www.algolia.com/doc/guides/model-context-protocol/productivity-mcp",
     "https://www.algolia.com/doc/guides/model-context-protocol/public-mcp",
-    "https://www.algolia.com/doc/guides/search-analytics/concepts/query-aggregation",
-    "https://www.algolia.com/doc/guides/security/api-keys#rights-and-restrictions",
     "https://www.algolia.com/doc/guides/sending-and-managing-data/send-and-update-your-data/",
     "https://www.algolia.com/doc/libraries",
     "https://www.algolia.com/doc/libraries/sdk/install",
     "https://www.algolia.com/doc/llms.txt",
     "https://www.algolia.com/doc/rest-api/agent-studio",
-    "https://www.algolia.com/doc/rest-api/analytics",
-    "https://www.algolia.com/doc/rest-api/analytics/",
     "https://www.algolia.com/doc/rest-api/analytics/get-click-positions",
     "https://www.algolia.com/doc/rest-api/analytics/get-no-click-rate",
     "https://www.algolia.com/doc/rest-api/analytics/get-no-results-rate",
@@ -485,34 +290,38 @@
     "https://www.algolia.com/doc/rest-api/analytics/get-top-hits",
     "https://www.algolia.com/doc/rest-api/analytics/get-top-searches",
     "https://www.algolia.com/doc/rest-api/analytics/get-users-count",
-    "https://www.algolia.com/doc/rest-api/recommend",
-    "https://www.algolia.com/doc/rest-api/recommend/",
-    "https://www.algolia.com/doc/rest-api/recommend/batch-recommend-rules",
-    "https://www.algolia.com/doc/rest-api/recommend/delete-recommend-rule",
-    "https://www.algolia.com/doc/rest-api/recommend/get-recommend-rule",
-    "https://www.algolia.com/doc/rest-api/recommend/get-recommend-status",
     "https://www.algolia.com/doc/rest-api/recommend/get-recommendations",
-    "https://www.algolia.com/doc/rest-api/recommend/search-recommend-rules",
     "https://www.algolia.com/doc/rest-api/search",
-    "https://www.algolia.com/doc/rest-api/search/",
     "https://www.algolia.com/doc/rest-api/search/get-object",
     "https://www.algolia.com/doc/rest-api/search/list-indices",
     "https://www.algolia.com/doc/rest-api/search/search-for-facet-values",
     "https://www.algolia.com/doc/rest-api/search/search-single-index",
-    "https://www.algolia.com/doc/tools/cli/authentication",
-    "https://www.algolia.com/doc/tools/cli/automation",
-    "https://www.algolia.com/doc/tools/cli/commands/crawler",
-    "https://www.algolia.com/doc/tools/cli/commands/profile/add",
-    "https://www.algolia.com/doc/tools/cli/commands/profile/setdefault",
-    "https://www.algolia.com/doc/tools/cli/completion",
-    "https://www.algolia.com/doc/tools/cli/examples",
-    "https://www.algolia.com/doc/tools/cli/get-started",
-    "https://www.algolia.com/doc/tools/cli/telemetry",
+    "https://www.algolia.com/es/developers",
+    "https://www.algolia.com/events",
+    "https://www.algolia.com/for-open-source",
+    "https://www.algolia.com/fr/developers",
+    "https://www.algolia.com/industries",
+    "https://www.algolia.com/industries/auto-parts",
+    "https://www.algolia.com/industries/b2b-ecommerce",
     "https://www.algolia.com/industries/b2b-ecommerce/",
+    "https://www.algolia.com/industries/ecommerce",
     "https://www.algolia.com/industries/ecommerce/",
+    "https://www.algolia.com/industries/ecommerce/digital-merchandising",
+    "https://www.algolia.com/industries/fashion",
+    "https://www.algolia.com/industries/grocery",
+    "https://www.algolia.com/industries/higher-education",
+    "https://www.algolia.com/industries/marketplaces",
+    "https://www.algolia.com/industries/media",
     "https://www.algolia.com/industries/media/",
+    "https://www.algolia.com/industries/saas",
     "https://www.algolia.com/industries/saas/",
+    "https://www.algolia.com/it/developers",
+    "https://www.algolia.com/javascript:void(0",
+    "https://www.algolia.com/llm-leaderboard",
     "https://www.algolia.com/llms.txt",
+    "https://www.algolia.com/lp/gartner-magic-quadrant-2026?utm_cta=topbannerpromo",
+    "https://www.algolia.com/lp/subscription-newsletter",
+    "https://www.algolia.com/partprog",
     "https://www.algolia.com/policies/privacy",
     "https://www.algolia.com/policies/privacy/",
     "https://www.algolia.com/policies/sla",
@@ -520,18 +329,43 @@
     "https://www.algolia.com/policies/terms/",
     "https://www.algolia.com/pricing",
     "https://www.algolia.com/pricing/",
+    "https://www.algolia.com/products",
+    "https://www.algolia.com/products/ai-browse",
+    "https://www.algolia.com/products/ai-recommendations",
+    "https://www.algolia.com/products/ai-search",
     "https://www.algolia.com/products/ai-search/",
+    "https://www.algolia.com/products/ai/agent-studio",
+    "https://www.algolia.com/products/ai/ask-ai",
+    "https://www.algolia.com/products/ai/generative-experiences",
     "https://www.algolia.com/products/analytics/",
+    "https://www.algolia.com/products/features/analytics",
+    "https://www.algolia.com/products/features/data-enrichment",
+    "https://www.algolia.com/products/features/data-transformation",
+    "https://www.algolia.com/products/features/personalization",
+    "https://www.algolia.com/products/features/search-autocomplete",
+    "https://www.algolia.com/products/intelligent-data-kit",
     "https://www.algolia.com/products/merchandising-studio/",
     "https://www.algolia.com/products/recommendations/",
     "https://www.algolia.com/products/search-and-discovery/browse/",
     "https://www.algolia.com/products/search-and-discovery/personalization/",
-    "https://www.algolia.com/ref/docsearch/?utm_source=www.algolia.com&utm_medium=referral&utm_content=powered_by&utm_campaign=docsearch",
+    "https://www.algolia.com/products?utm_cta=aioverview",
+    "https://www.algolia.com/professional-services-support",
+    "https://www.algolia.com/profit-simulator/",
+    "https://www.algolia.com/pt-br/developers",
+    "https://www.algolia.com/resources",
+    "https://www.algolia.com/resources?contentType=Product%20Demos",
+    "https://www.algolia.com/search-audit",
+    "https://www.algolia.com/use-cases",
+    "https://www.algolia.com/use-cases/documentation-search",
+    "https://www.algolia.com/use-cases/enterprise",
+    "https://www.algolia.com/use-cases/headless-commerce",
+    "https://www.algolia.com/use-cases/image-search",
+    "https://www.algolia.com/use-cases/retail-media-network",
+    "https://www.algolia.com/use-cases/site-search",
+    "https://www.algolia.com/use-cases/visual-search",
+    "https://www.algolia.com/use-cases/voice-search",
     "https://www.algolia.com/users/sign_up",
     "https://www.linkedin.com/company/algolia",
-    "https://www.microsoft.com/en-us/microsoft-copilot",
-    "https://www.perplexity.ai",
-    "https://www.salesforce.com/agentforce/",
     "https://www.youtube.com/channel/UCTNkiq-SO8hay1PRx-it9Cw",
     "https://www.youtube.com/watch?v=tMTsNn09GNo",
     "https://{APPLICATION_ID}-1.algolianet.com",
@@ -539,7 +373,6 @@
     "https://{APPLICATION_ID}-3.algolianet.com",
     "https://{APPLICATION_ID}-dsn.algolia.net",
     "https://{APPLICATION_ID}.algolia.net",
-    "https://{APP_ID}.algolia.net/mcp/1/{UNIQUE_ID}/mcp",
-    "https://{APP_ID}.algolia.net/mcp/1/{UNIQ_ID}/mcp"
+    "https://{APP_ID}.algolia.net/mcp/1/{UNIQUE_ID}/mcp"
   ]
 }

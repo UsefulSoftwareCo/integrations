@@ -12,18 +12,178 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T10:52:42.837Z",
-    "summary": "Baseten’s public developer surface is a Management API, Inference API, Frontier Gateway API, two MCP servers (api.baseten.co/mcp and public docs MCP), and two CLIs (truss and baseten), all authenticated with a Baseten API key (sent as `Authorization: Api-Key ...` for the HTTP APIs, `Authorization: Bearer ...` for the MCP server, and via `truss login` / `baseten auth login` using `BASETEN_API_KEY` for the CLIs), while the docs MCP is public.",
+    "discoveredAt": "2026-07-02T14:56:25.853Z",
+    "summary": "Baseten’s public developer surface includes the Inference API, Management API, and CLI; authentication is via a Baseten API key and a browser OAuth device-flow login for Truss/CLI.",
     "credentials": {
       "baseten_api_key": {
         "type": "api_key",
         "label": "Baseten API key",
-        "generateUrl": "https://app.baseten.co/settings/api_keys",
-        "setup": "Go to [API key settings](https://app.baseten.co/settings/api_keys) and create either a personal API key or a team API key. Prefer a team key for CI/CD or shared automation; personal keys are tied to your user account. Copy the key value once and store it securely.",
-        "acquisition": "manual"
+        "generateUrl": "https://docs.baseten.co/organization/api-keys",
+        "setup": "Go to the [API keys](https://docs.baseten.co/organization/api-keys) page in your Baseten organization settings and create a new API key. Baseten notes that the CLI can also prompt you to paste an API key during `truss push`, and `baseten auth login` can use `BASETEN_API_KEY`."
+      },
+      "baseten_oauth_device": {
+        "type": "oauth2",
+        "label": "Baseten browser OAuth via device flow",
+        "generateUrl": "https://docs.baseten.co/reference/cli/truss/auth",
+        "setup": "Use the browser-based login flow in `truss auth login --browser` or `truss login --browser`. The CLI uses an OAuth 2.0 device flow: it opens your browser to approve a code, then stores the resulting tokens for the configured remote in your keyring (or `~/.trussrc` if no keyring backend is available)."
       }
     },
     "surfaces": [
+      {
+        "slug": "baseten-cli",
+        "name": "Baseten CLI",
+        "type": "cli",
+        "docs": "https://docs.baseten.co/reference/cli/baseten/model-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.baseten.co/reference/cli/baseten/model-api",
+            "https://www.baseten.co/resources/changelog/authenticate-from-cli-with-truss-login/",
+            "https://docs.baseten.co/organization/api-keys"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "baseten_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "baseten auth login",
+                    "env": [
+                      "BASETEN_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.baseten.co/reference/cli/baseten/model-api",
+                  "https://www.baseten.co/resources/changelog/authenticate-from-cli-with-truss-login/",
+                  "https://docs.baseten.co/organization/api-keys"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "baseten"
+      },
+      {
+        "slug": "baseten-frontier-gateway-api",
+        "name": "Baseten Frontier Gateway API",
+        "type": "http",
+        "docs": "https://docs.baseten.co/reference/gateway/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.baseten.co/reference/gateway/overview"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://docs.baseten.co/reference/gateway/overview"
+      },
+      {
+        "slug": "baseten-cli-auth",
+        "name": "Baseten CLI auth",
+        "type": "cli",
+        "docs": "https://docs.baseten.co/reference/cli/truss/auth",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.baseten.co/reference/cli/truss/auth",
+            "https://docs.baseten.co/reference/cli/truss/login"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "baseten_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "truss auth login --api-key $BASETEN_API_KEY",
+                    "env": [
+                      "BASETEN_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.baseten.co/reference/cli/truss/auth",
+                  "https://docs.baseten.co/reference/cli/truss/login"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "baseten_oauth_device",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "truss auth login --browser"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.baseten.co/reference/cli/truss/auth",
+                  "https://docs.baseten.co/reference/cli/truss/login"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "truss"
+      },
+      {
+        "slug": "baseten-inference-api",
+        "name": "Baseten Inference API",
+        "type": "http",
+        "docs": "https://docs.baseten.co/reference/inference-api/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.baseten.co/reference/inference-api/overview",
+            "https://docs.baseten.co/inference/model-apis/overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "baseten_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.baseten.co/reference/inference-api/overview",
+                  "https://docs.baseten.co/inference/model-apis/overview"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://inference.baseten.co/v1"
+      },
       {
         "slug": "baseten-management-api",
         "name": "Baseten Management API",
@@ -46,80 +206,6 @@
                     "source": "http",
                     "in": "header",
                     "headerName": "Authorization",
-                    "scheme": "Api-Key"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.baseten.co/reference/management-api/overview",
-                  "https://docs.baseten.co/organization/api-keys"
-                ]
-              }
-            }
-          ]
-        }
-      },
-      {
-        "slug": "baseten-inference-api",
-        "name": "Baseten Inference API",
-        "type": "http",
-        "docs": "https://docs.baseten.co/reference/inference-api/overview",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.baseten.co/reference/inference-api/overview"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "baseten_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Api-Key"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.baseten.co/reference/inference-api/overview",
-                  "https://docs.baseten.co/organization/api-keys"
-                ]
-              }
-            }
-          ]
-        }
-      },
-      {
-        "slug": "baseten-ai-tools-mcp-server",
-        "name": "Baseten AI tools MCP server",
-        "type": "mcp",
-        "docs": "https://docs.baseten.co/ai-tools.md",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.baseten.co/ai-tools.md"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "baseten_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
                     "scheme": "Bearer"
                   }
                 }
@@ -127,312 +213,195 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.baseten.co/ai-tools.md"
+                  "https://docs.baseten.co/reference/management-api/overview"
                 ]
               }
             }
           ]
         },
-        "url": "https://api.baseten.co/mcp",
-        "transports": [
-          "streamable-http",
-          "sse"
-        ]
-      },
-      {
-        "slug": "baseten-docs-mcp-server",
-        "name": "Baseten docs MCP server",
-        "type": "mcp",
-        "docs": "https://docs.baseten.co/ai-tools.md",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.baseten.co/ai-tools.md"
-          ]
-        },
-        "auth": {
-          "status": "none",
-          "basis": {
-            "via": "discovered",
-            "evidence": [
-              "https://docs.baseten.co/ai-tools.md"
-            ]
-          }
-        },
-        "url": "https://docs.baseten.co/mcp",
-        "transports": [
-          "streamable-http",
-          "sse"
-        ]
-      },
-      {
-        "slug": "truss-cli",
-        "name": "Truss CLI",
-        "type": "cli",
-        "docs": "https://docs.baseten.co/reference/cli",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.baseten.co/reference/cli",
-            "https://www.baseten.co/resources/changelog/authenticate-from-cli-with-truss-login/"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "baseten_api_key",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "truss login",
-                    "env": [
-                      "BASETEN_API_KEY"
-                    ]
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.baseten.co/resources/changelog/authenticate-from-cli-with-truss-login/",
-                  "https://docs.baseten.co/reference/cli"
-                ]
-              }
-            }
-          ]
-        },
-        "packages": [
-          {
-            "registryType": "pypi",
-            "identifier": "truss",
-            "runtimeHint": "python"
-          }
-        ],
-        "command": "truss"
-      },
-      {
-        "slug": "baseten-cli",
-        "name": "Baseten CLI",
-        "type": "cli",
-        "docs": "https://docs.baseten.co/reference/cli",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.baseten.co/reference/cli"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "baseten_api_key",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "baseten auth login",
-                    "env": [
-                      "BASETEN_API_KEY"
-                    ]
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.baseten.co/reference/cli"
-                ]
-              }
-            }
-          ]
-        },
-        "command": "baseten"
+        "url": "https://api.baseten.co/v1"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T10:52:42.838Z",
+  "discoveredAt": "2026-07-02T14:56:25.854Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 330396,
-    "completion_tokens": 1763,
-    "total_tokens": 332159
+    "prompt_tokens": 82628,
+    "completion_tokens": 1758,
+    "total_tokens": 84386
   },
   "visited": [
-    "https://docs.baseten.co/ai-tools.md",
-    "https://docs.baseten.co/llms.txt",
+    "https://docs.baseten.co/inference/calling-your-model",
+    "https://docs.baseten.co/inference/model-apis/overview",
     "https://docs.baseten.co/organization/api-keys",
-    "https://docs.baseten.co/reference/cli",
-    "https://docs.baseten.co/reference/gateway/overview",
+    "https://docs.baseten.co/overview",
+    "https://docs.baseten.co/reference/cli/baseten/model",
+    "https://docs.baseten.co/reference/cli/baseten/model-api",
+    "https://docs.baseten.co/reference/cli/truss/auth",
+    "https://docs.baseten.co/reference/cli/truss/login",
+    "https://docs.baseten.co/reference/cli/truss/overview",
     "https://docs.baseten.co/reference/inference-api/overview",
     "https://docs.baseten.co/reference/management-api/overview",
+    "https://docs.baseten.co/reference/overview",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
     "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
     "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
-    "https://www.baseten.co/resources/changelog/authenticate-from-cli-with-truss-login/",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+    "https://www.baseten.co/llms.txt",
+    "https://www.baseten.co/resources/changelog/authenticate-from-cli-with-truss-login/"
   ],
   "grounding": [
     "https://api.baseten.co/inference-spec",
-    "https://api.baseten.co/mcp",
     "https://api.baseten.co/v1/spec",
     "https://app.baseten.co",
     "https://app.baseten.co/",
-    "https://app.baseten.co/settings/api_keys",
     "https://chain-{chain_id}-{env_name}.api.baseten.co/{endpoint}",
     "https://chain-{chain_id}.api.baseten.co/{deployment_type_or_id}/{endpoint}",
+    "https://datatracker.ietf.org/doc/html/rfc8628",
     "https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html",
     "https://docs.baseten.co",
     "https://docs.baseten.co/",
     "https://docs.baseten.co/#activate-a-model-deployment",
-    "https://docs.baseten.co/#api-key-types",
-    "https://docs.baseten.co/#api-keys",
+    "https://docs.baseten.co/#authentication-methods",
     "https://docs.baseten.co/#autoscaling",
     "https://docs.baseten.co/#autoscaling-2",
-    "https://docs.baseten.co/#billing-webhooks",
     "https://docs.baseten.co/#chain-endpoints",
     "https://docs.baseten.co/#content-area",
-    "https://docs.baseten.co/#create-an-api-key",
     "https://docs.baseten.co/#deactivate-a-chain-deployment",
     "https://docs.baseten.co/#deactivate-a-model-deployment",
     "https://docs.baseten.co/#deployed-model-endpoints",
     "https://docs.baseten.co/#deployment-endpoints",
-    "https://docs.baseten.co/#endpoints",
+    "https://docs.baseten.co/#describe",
     "https://docs.baseten.co/#environment-endpoints",
-    "https://docs.baseten.co/#environment-scoped-api-keys",
-    "https://docs.baseten.co/#groups",
-    "https://docs.baseten.co/#manage-api-keys",
+    "https://docs.baseten.co/#environment-variables",
+    "https://docs.baseten.co/#examples",
+    "https://docs.baseten.co/#examples-2",
+    "https://docs.baseten.co/#examples-3",
+    "https://docs.baseten.co/#examples-4",
+    "https://docs.baseten.co/#feature-support",
+    "https://docs.baseten.co/#filter-output-with-jq",
+    "https://docs.baseten.co/#filter-output-with-jq-2",
+    "https://docs.baseten.co/#filter-output-with-jq-3",
+    "https://docs.baseten.co/#list",
+    "https://docs.baseten.co/#list-available-models",
+    "https://docs.baseten.co/#login",
+    "https://docs.baseten.co/#logout",
     "https://docs.baseten.co/#manage-chain-deployments",
     "https://docs.baseten.co/#manage-deployment-endpoints",
+    "https://docs.baseten.co/#migrate",
     "https://docs.baseten.co/#model-apis",
     "https://docs.baseten.co/#model-endpoints",
-    "https://docs.baseten.co/#next-steps",
-    "https://docs.baseten.co/#overlapping-commands",
+    "https://docs.baseten.co/#options",
+    "https://docs.baseten.co/#options-2",
+    "https://docs.baseten.co/#options-3",
+    "https://docs.baseten.co/#options-4",
+    "https://docs.baseten.co/#options-5",
+    "https://docs.baseten.co/#output",
+    "https://docs.baseten.co/#output-2",
+    "https://docs.baseten.co/#output-3",
+    "https://docs.baseten.co/#output-4",
+    "https://docs.baseten.co/#param-api-key",
+    "https://docs.baseten.co/#param-baseten-api-key",
+    "https://docs.baseten.co/#param-baseten-truss-auth-keyring-disabled",
+    "https://docs.baseten.co/#param-browser",
+    "https://docs.baseten.co/#param-data",
+    "https://docs.baseten.co/#param-deploy-timeout",
+    "https://docs.baseten.co/#param-deployment-id",
+    "https://docs.baseten.co/#param-deployment-name",
+    "https://docs.baseten.co/#param-develop",
+    "https://docs.baseten.co/#param-dir",
+    "https://docs.baseten.co/#param-dir-1",
+    "https://docs.baseten.co/#param-disable-archive-download",
+    "https://docs.baseten.co/#param-dry-run",
+    "https://docs.baseten.co/#param-environment",
+    "https://docs.baseten.co/#param-environment-1",
+    "https://docs.baseten.co/#param-file",
+    "https://docs.baseten.co/#param-hot-reload",
+    "https://docs.baseten.co/#param-labels",
+    "https://docs.baseten.co/#param-log",
+    "https://docs.baseten.co/#param-log-1",
+    "https://docs.baseten.co/#param-log-2",
+    "https://docs.baseten.co/#param-model-id",
+    "https://docs.baseten.co/#param-model-id-1",
+    "https://docs.baseten.co/#param-model-name",
+    "https://docs.baseten.co/#param-model-name-1",
+    "https://docs.baseten.co/#param-no-build-cache",
+    "https://docs.baseten.co/#param-no-keepalive",
+    "https://docs.baseten.co/#param-non-interactive",
+    "https://docs.baseten.co/#param-non-interactive-1",
+    "https://docs.baseten.co/#param-non-interactive-2",
+    "https://docs.baseten.co/#param-o-output",
+    "https://docs.baseten.co/#param-o-output-1",
+    "https://docs.baseten.co/#param-o-output-2",
+    "https://docs.baseten.co/#param-o-output-3",
+    "https://docs.baseten.co/#param-o-output-4",
+    "https://docs.baseten.co/#param-override-env-instance-type",
+    "https://docs.baseten.co/#param-override-name",
+    "https://docs.baseten.co/#param-profile",
+    "https://docs.baseten.co/#param-profile-1",
+    "https://docs.baseten.co/#param-profile-2",
+    "https://docs.baseten.co/#param-profile-3",
+    "https://docs.baseten.co/#param-q-jq",
+    "https://docs.baseten.co/#param-q-jq-1",
+    "https://docs.baseten.co/#param-q-jq-2",
+    "https://docs.baseten.co/#param-q-jq-3",
+    "https://docs.baseten.co/#param-q-jq-4",
+    "https://docs.baseten.co/#param-remote",
+    "https://docs.baseten.co/#param-remote-1",
+    "https://docs.baseten.co/#param-remote-2",
+    "https://docs.baseten.co/#param-tail",
+    "https://docs.baseten.co/#param-team",
+    "https://docs.baseten.co/#param-team-1",
+    "https://docs.baseten.co/#param-team-2",
+    "https://docs.baseten.co/#param-team-3",
+    "https://docs.baseten.co/#param-v-verbose",
+    "https://docs.baseten.co/#param-v-verbose-1",
+    "https://docs.baseten.co/#param-v-verbose-2",
+    "https://docs.baseten.co/#param-v-verbose-3",
+    "https://docs.baseten.co/#param-wait",
+    "https://docs.baseten.co/#param-watch",
+    "https://docs.baseten.co/#param-watch-hot-reload",
+    "https://docs.baseten.co/#param-watch-no-keepalive",
+    "https://docs.baseten.co/#predict",
     "https://docs.baseten.co/#predict-endpoints",
+    "https://docs.baseten.co/#pricing",
     "https://docs.baseten.co/#promote-a-chain-deployment",
     "https://docs.baseten.co/#promote-a-model-deployment",
+    "https://docs.baseten.co/#push",
+    "https://docs.baseten.co/#remotes",
     "https://docs.baseten.co/#request-size",
     "https://docs.baseten.co/#retry-a-model-deployment",
-    "https://docs.baseten.co/#security-recommendations",
+    "https://docs.baseten.co/#run-inference",
+    "https://docs.baseten.co/#status",
     "https://docs.baseten.co/#status-endpoints",
+    "https://docs.baseten.co/#supported-models",
     "https://docs.baseten.co/#timeouts",
-    "https://docs.baseten.co/#use-api-keys-with-endpoints",
-    "https://docs.baseten.co/#use-api-keys-with-the-cli",
-    "https://docs.baseten.co/#use-both-together",
+    "https://docs.baseten.co/#use-the-anthropic-sdk",
+    "https://docs.baseten.co/#use-the-openai-sdk",
     "https://docs.baseten.co/#wake-endpoints",
-    "https://docs.baseten.co/#which-one-do-i-use",
+    "https://docs.baseten.co/#watch",
+    "https://docs.baseten.co/#where-credentials-are-stored",
     "https://docs.baseten.co/ai-tools",
-    "https://docs.baseten.co/ai-tools.md",
-    "https://docs.baseten.co/api-reference/cancel-a-queued-async-request.md",
-    "https://docs.baseten.co/api-reference/get-the-status-of-an-async-request.md",
-    "https://docs.baseten.co/api-reference/non-regional/asynchronously-call-a-named-environment-of-a-chain.md",
-    "https://docs.baseten.co/api-reference/non-regional/asynchronously-call-a-named-environment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/non-regional/asynchronously-call-a-specific-deployment-of-a-chain.md",
-    "https://docs.baseten.co/api-reference/non-regional/asynchronously-call-a-specific-deployment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/non-regional/asynchronously-call-the-development-deployment-of-a-chain.md",
-    "https://docs.baseten.co/api-reference/non-regional/asynchronously-call-the-development-deployment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/non-regional/asynchronously-call-the-production-environment-of-a-chain.md",
-    "https://docs.baseten.co/api-reference/non-regional/asynchronously-call-the-production-environment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/non-regional/call-a-specific-chain-deployment-by-deployment-id.md",
-    "https://docs.baseten.co/api-reference/non-regional/call-a-specific-deployment-of-a-model-by-deployment-id.md",
-    "https://docs.baseten.co/api-reference/non-regional/call-the-chain-deployment-associated-with-a-specified-environment.md",
-    "https://docs.baseten.co/api-reference/non-regional/call-the-development-deployment-of-a-chain.md",
-    "https://docs.baseten.co/api-reference/non-regional/call-the-development-deployment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/non-regional/call-the-model-deployment-associated-with-a-specified-environment.md",
-    "https://docs.baseten.co/api-reference/non-regional/call-the-production-environment-of-a-chain.md",
-    "https://docs.baseten.co/api-reference/non-regional/call-the-production-environment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/non-regional/get-async-queue-status-for-a-named-environment.md",
-    "https://docs.baseten.co/api-reference/non-regional/get-async-queue-status-for-a-specific-deployment.md",
-    "https://docs.baseten.co/api-reference/non-regional/get-async-queue-status-for-the-development-deployment.md",
-    "https://docs.baseten.co/api-reference/non-regional/get-async-queue-status-for-the-production-environment.md",
-    "https://docs.baseten.co/api-reference/non-regional/wake-a-named-environment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/non-regional/wake-a-specific-deployment-of-a-model-by-deployment-id.md",
-    "https://docs.baseten.co/api-reference/non-regional/wake-the-development-deployment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/non-regional/wake-the-production-environment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/regional/asynchronously-call-a-regional-environment-of-a-chain.md",
-    "https://docs.baseten.co/api-reference/regional/asynchronously-call-a-regional-environment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/regional/call-a-regional-environment-of-a-chain.md",
-    "https://docs.baseten.co/api-reference/regional/call-a-regional-environment-of-a-model.md",
-    "https://docs.baseten.co/api-reference/regional/get-async-queue-status-for-a-regional-environment.md",
-    "https://docs.baseten.co/api-reference/regional/wake-a-regional-environment-of-a-model.md",
     "https://docs.baseten.co/concepts/howbasetenworks",
-    "https://docs.baseten.co/concepts/howbasetenworks.md",
     "https://docs.baseten.co/concepts/whybaseten",
-    "https://docs.baseten.co/concepts/whybaseten.md",
-    "https://docs.baseten.co/deployment/autoscaling/cold-starts.md",
-    "https://docs.baseten.co/deployment/autoscaling/overview.md",
-    "https://docs.baseten.co/deployment/autoscaling/request-lifecycle.md",
-    "https://docs.baseten.co/deployment/autoscaling/traffic-patterns.md",
+    "https://docs.baseten.co/deployment/autoscaling",
     "https://docs.baseten.co/deployment/ci-cd",
-    "https://docs.baseten.co/deployment/ci-cd.md",
     "https://docs.baseten.co/deployment/concepts",
-    "https://docs.baseten.co/deployment/concepts.md",
-    "https://docs.baseten.co/deployment/deployments.md",
+    "https://docs.baseten.co/deployment/deployments",
     "https://docs.baseten.co/deployment/environments",
     "https://docs.baseten.co/deployment/environments#regional-environments",
-    "https://docs.baseten.co/deployment/environments.md",
     "https://docs.baseten.co/deployment/regional-environments",
-    "https://docs.baseten.co/deployment/regional-environments.md",
     "https://docs.baseten.co/deployment/resources",
-    "https://docs.baseten.co/deployment/resources.md",
-    "https://docs.baseten.co/deployment/rolling-deployments.md",
-    "https://docs.baseten.co/development/chain/binaryio.md",
-    "https://docs.baseten.co/development/chain/concepts.md",
-    "https://docs.baseten.co/development/chain/deploy.md",
-    "https://docs.baseten.co/development/chain/design.md",
-    "https://docs.baseten.co/development/chain/engine-builder-models.md",
-    "https://docs.baseten.co/development/chain/errorhandling.md",
-    "https://docs.baseten.co/development/chain/getting-started",
-    "https://docs.baseten.co/development/chain/getting-started.md",
-    "https://docs.baseten.co/development/chain/invocation.md",
-    "https://docs.baseten.co/development/chain/localdev.md",
-    "https://docs.baseten.co/development/chain/overview.md",
-    "https://docs.baseten.co/development/chain/streaming.md",
-    "https://docs.baseten.co/development/chain/stub.md",
-    "https://docs.baseten.co/development/chain/subclassing.md",
-    "https://docs.baseten.co/development/chain/watch.md",
-    "https://docs.baseten.co/development/model/bdn.md",
     "https://docs.baseten.co/development/model/build-your-first-model",
-    "https://docs.baseten.co/development/model/build-your-first-model.md",
-    "https://docs.baseten.co/development/model/configuration.md",
     "https://docs.baseten.co/development/model/custom-server",
-    "https://docs.baseten.co/development/model/custom-server.md",
-    "https://docs.baseten.co/development/model/dependencies.md",
     "https://docs.baseten.co/development/model/deploy-and-iterate",
-    "https://docs.baseten.co/development/model/deploy-and-iterate.md",
-    "https://docs.baseten.co/development/model/environments.md",
-    "https://docs.baseten.co/development/model/grpc.md",
-    "https://docs.baseten.co/development/model/health-checks.md",
-    "https://docs.baseten.co/development/model/model-cache.md",
-    "https://docs.baseten.co/development/model/model-class.md",
     "https://docs.baseten.co/development/model/overview",
-    "https://docs.baseten.co/development/model/overview.md",
     "https://docs.baseten.co/development/model/performance-optimization",
-    "https://docs.baseten.co/development/model/performance-optimization.md",
-    "https://docs.baseten.co/development/model/runtime-caching.md",
-    "https://docs.baseten.co/development/model/secrets.md",
-    "https://docs.baseten.co/development/model/streaming-and-endpoints.md",
-    "https://docs.baseten.co/development/model/websockets.md",
     "https://docs.baseten.co/engines",
-    "https://docs.baseten.co/engines/bei/bei-bert.md",
-    "https://docs.baseten.co/engines/bei/bei-reference.md",
-    "https://docs.baseten.co/engines/bei/ner.md",
-    "https://docs.baseten.co/engines/bei/overview.md",
-    "https://docs.baseten.co/engines/bis-llm/advanced-features.md",
-    "https://docs.baseten.co/engines/bis-llm/bis-llm-config.md",
-    "https://docs.baseten.co/engines/bis-llm/migrate-from-v1.md",
-    "https://docs.baseten.co/engines/bis-llm/overview.md",
-    "https://docs.baseten.co/engines/engine-builder-llm/custom-engine-builder.md",
-    "https://docs.baseten.co/engines/engine-builder-llm/engine-builder-config.md",
-    "https://docs.baseten.co/engines/engine-builder-llm/lookahead-decoding.md",
-    "https://docs.baseten.co/engines/engine-builder-llm/lora-support.md",
-    "https://docs.baseten.co/engines/engine-builder-llm/overview.md",
-    "https://docs.baseten.co/engines/index.md",
-    "https://docs.baseten.co/engines/performance-concepts",
-    "https://docs.baseten.co/engines/performance-concepts/autoscaling-engines.md",
     "https://docs.baseten.co/examples/create-a-model-with-rest",
     "https://docs.baseten.co/examples/deploy-a-hugging-face-model",
     "https://docs.baseten.co/examples/overview",
+    "https://docs.baseten.co/examples/sglang",
+    "https://docs.baseten.co/examples/vllm",
     "https://docs.baseten.co/frontier-gateway/api-keys",
     "https://docs.baseten.co/frontier-gateway/billing-webhooks",
     "https://docs.baseten.co/frontier-gateway/calling-your-model",
@@ -460,12 +429,12 @@
     "https://docs.baseten.co/inference/ssh",
     "https://docs.baseten.co/inference/streaming",
     "https://docs.baseten.co/inference/structured-outputs",
-    "https://docs.baseten.co/llms-full.txt",
     "https://docs.baseten.co/llms.txt",
-    "https://docs.baseten.co/mcp",
+    "https://docs.baseten.co/observability/access",
     "https://docs.baseten.co/observability/health",
     "https://docs.baseten.co/observability/logs",
     "https://docs.baseten.co/observability/metrics",
+    "https://docs.baseten.co/observability/secrets",
     "https://docs.baseten.co/observability/security",
     "https://docs.baseten.co/observability/tracing",
     "https://docs.baseten.co/organization/access",
@@ -477,40 +446,51 @@
     "https://docs.baseten.co/organization/restricted-environments",
     "https://docs.baseten.co/organization/secrets",
     "https://docs.baseten.co/organization/sso-and-scim",
-    "https://docs.baseten.co/organization/sso-and-scim#deprovisioning",
     "https://docs.baseten.co/organization/teams",
     "https://docs.baseten.co/overview",
     "https://docs.baseten.co/quickstart",
     "https://docs.baseten.co/reference/ci/github-action",
     "https://docs.baseten.co/reference/cli",
+    "https://docs.baseten.co/reference/cli/baseten/api",
+    "https://docs.baseten.co/reference/cli/baseten/auth",
+    "https://docs.baseten.co/reference/cli/baseten/model",
+    "https://docs.baseten.co/reference/cli/baseten/model-api",
+    "https://docs.baseten.co/reference/cli/baseten/model-deployment",
+    "https://docs.baseten.co/reference/cli/baseten/model-deployment-replica",
+    "https://docs.baseten.co/reference/cli/baseten/model-environment",
+    "https://docs.baseten.co/reference/cli/baseten/org-api-key",
+    "https://docs.baseten.co/reference/cli/baseten/org-billing",
+    "https://docs.baseten.co/reference/cli/baseten/org-secret",
     "https://docs.baseten.co/reference/cli/baseten/overview",
+    "https://docs.baseten.co/reference/cli/baseten/truss",
+    "https://docs.baseten.co/reference/cli/baseten/version",
     "https://docs.baseten.co/reference/cli/chains/chains-cli",
     "https://docs.baseten.co/reference/cli/loops/loops-cli",
     "https://docs.baseten.co/reference/cli/training/training-cli",
     "https://docs.baseten.co/reference/cli/truss/auth",
+    "https://docs.baseten.co/reference/cli/truss/auth#login",
+    "https://docs.baseten.co/reference/cli/truss/cleanup",
+    "https://docs.baseten.co/reference/cli/truss/configure",
+    "https://docs.baseten.co/reference/cli/truss/container",
+    "https://docs.baseten.co/reference/cli/truss/download",
+    "https://docs.baseten.co/reference/cli/truss/image",
+    "https://docs.baseten.co/reference/cli/truss/init",
+    "https://docs.baseten.co/reference/cli/truss/login",
+    "https://docs.baseten.co/reference/cli/truss/migrate",
+    "https://docs.baseten.co/reference/cli/truss/model-config",
+    "https://docs.baseten.co/reference/cli/truss/model-logs",
     "https://docs.baseten.co/reference/cli/truss/overview",
-    "https://docs.baseten.co/reference/gateway/api-keys/create-an-api-key",
-    "https://docs.baseten.co/reference/gateway/api-keys/get-an-api-key",
-    "https://docs.baseten.co/reference/gateway/api-keys/list-api-keys-for-a-group",
-    "https://docs.baseten.co/reference/gateway/api-keys/register-an-api-key",
-    "https://docs.baseten.co/reference/gateway/api-keys/revoke-an-api-key",
+    "https://docs.baseten.co/reference/cli/truss/push",
+    "https://docs.baseten.co/reference/cli/truss/run-python",
+    "https://docs.baseten.co/reference/cli/truss/ssh",
+    "https://docs.baseten.co/reference/cli/truss/upgrade",
+    "https://docs.baseten.co/reference/cli/truss/watch",
+    "https://docs.baseten.co/reference/cli/truss/whoami",
     "https://docs.baseten.co/reference/gateway/billing-webhooks",
-    "https://docs.baseten.co/reference/gateway/endpoints/create-an-endpoint",
-    "https://docs.baseten.co/reference/gateway/endpoints/delete-an-endpoint",
-    "https://docs.baseten.co/reference/gateway/endpoints/get-an-endpoint",
-    "https://docs.baseten.co/reference/gateway/endpoints/list-endpoints",
-    "https://docs.baseten.co/reference/gateway/endpoints/replace-endpoint-targets",
-    "https://docs.baseten.co/reference/gateway/groups/create-a-group",
-    "https://docs.baseten.co/reference/gateway/groups/delete-a-group",
-    "https://docs.baseten.co/reference/gateway/groups/get-a-group",
-    "https://docs.baseten.co/reference/gateway/groups/get-group-usage",
-    "https://docs.baseten.co/reference/gateway/groups/list-groups",
-    "https://docs.baseten.co/reference/gateway/groups/update-a-group",
     "https://docs.baseten.co/reference/gateway/overview",
     "https://docs.baseten.co/reference/inference-api/chat-completions",
+    "https://docs.baseten.co/reference/inference-api/messages",
     "https://docs.baseten.co/reference/inference-api/overview",
-    "https://docs.baseten.co/reference/loops-api/server/get-capabilities",
-    "https://docs.baseten.co/reference/management-api/api-keys/creates-an-api-key",
     "https://docs.baseten.co/reference/management-api/chains/deletes-a-chain-by-id",
     "https://docs.baseten.co/reference/management-api/chains/gets-a-chain-by-id",
     "https://docs.baseten.co/reference/management-api/chains/gets-all-chains",
@@ -573,7 +553,6 @@
     "https://docs.baseten.co/reference/sdk/training",
     "https://docs.baseten.co/reference/training-api/overview",
     "https://docs.baseten.co/reference/truss-configuration",
-    "https://docs.baseten.co/skill.md",
     "https://docs.baseten.co/status/status",
     "https://docs.baseten.co/training/deploy-with-engine-builder",
     "https://docs.baseten.co/training/deployment",
@@ -585,69 +564,139 @@
     "https://docs.baseten.co/training/slurm",
     "https://docs.baseten.co/troubleshooting/deployments",
     "https://docs.baseten.co/troubleshooting/inference",
-    "https://docs.baseten.co/truss-reference/cli/login",
     "https://github.com/basetenlabs",
-    "https://github.com/basetenlabs/baseten-cli",
-    "https://github.com/basetenlabs/baseten-cli/releases",
-    "https://github.com/basetenlabs/baseten-skills",
-    "https://github.com/basetenlabs/baseten-skills/blob/main/evals/baseten/README.md",
+    "https://inference.baseten.co",
+    "https://inference.baseten.co/v1",
     "https://inference.baseten.co/v1/chat/completions",
-    "https://login.baseten.co/",
-    "https://login.baseten.co/sign-up",
+    "https://inference.baseten.co/v1/messages",
+    "https://inference.baseten.co/v1/models",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
     "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
-    "https://mintcdn.com/baseten-preview/f3Xm7Ysn9_rbmtpW/images/ai-tools-contextual-menu.png?fit=max&auto=format&n=f3Xm7Ysn9_rbmtpW&q=85&s=93400b5d90ac95c158618ad846555bc3",
     "https://model-{model_id}-{env_name}.api.baseten.co/{endpoint}",
     "https://model-{model_id}.api.baseten.co/{deployment_type_or_id}/{endpoint}",
     "https://status.baseten.co/",
-    "https://trust.baseten.co",
     "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
-    "https://www.baseten.co/about-us/",
     "https://www.baseten.co/blog/",
-    "https://www.baseten.co/blog/announcing-our-series-f/",
+    "https://www.baseten.co/blog/33-faster-llm-inference-with-fp8-quantization/",
+    "https://www.baseten.co/blog/a-quick-introduction-to-speculative-decoding/",
+    "https://www.baseten.co/blog/ai-inference-explained/",
+    "https://www.baseten.co/blog/ai-model-performance-metrics-explained/",
+    "https://www.baseten.co/blog/announcing-baseten-75m-series-c/",
+    "https://www.baseten.co/blog/build-a-production-ready-voice-agent-with-baseten-livekit-and-llamaindex/",
+    "https://www.baseten.co/blog/comparing-nvidia-gpus-for-ai-t4-vs-a10/",
+    "https://www.baseten.co/blog/comparing-tokens-per-second-across-llms/",
+    "https://www.baseten.co/blog/continuous-vs-dynamic-batching-for-ai-inference/",
+    "https://www.baseten.co/blog/day-zero-benchmarks-for-qwen-3-with-sglang-on-baseten/",
+    "https://www.baseten.co/blog/evaluating-nvidia-h200-gpus-for-llm-inference/",
+    "https://www.baseten.co/blog/fp8-efficient-model-inference-with-8-bit-floating-point-numbers/",
+    "https://www.baseten.co/blog/high-performance-agents-for-financial-services-with-nvidia-nemotron-on-baseten/",
+    "https://www.baseten.co/blog/how-multi-node-inference-works-llms-deepseek-r1/",
+    "https://www.baseten.co/blog/how-to-build-reliable-ai-agents/",
+    "https://www.baseten.co/blog/how-to-run-llm-performance-benchmarks-and-why-you-should/",
+    "https://www.baseten.co/blog/kimi-k2-explained-the-1-trillion-parameter-model-redefining-how-to-build-agents/",
+    "https://www.baseten.co/blog/kimi-k2-thinking-at-140-tps-on-nvidia-blackwell/",
+    "https://www.baseten.co/blog/llm-transformer-inference-guide/",
+    "https://www.baseten.co/blog/nvidia-a10-vs-a100-gpus-for-llm-and-stable-diffusion-inference/",
+    "https://www.baseten.co/blog/nvidia-a10-vs-a10g-for-ml-model-inference/",
+    "https://www.baseten.co/blog/run-qwen3-embedding-on-nvidia-blackwell-gpus/",
+    "https://www.baseten.co/blog/sdxl-inference-in-under-2-seconds-the-ultimate-guide-to-stable-diffusion-optimiza/",
+    "https://www.baseten.co/blog/sota-performance-for-gpt-oss-120b-on-nvidia-gpus/",
+    "https://www.baseten.co/blog/streaming-real-time-text-to-speech-with-xtts-v2/",
+    "https://www.baseten.co/blog/testing-llama-inference-performance-nvidia-gh200-lambda-cloud/",
+    "https://www.baseten.co/blog/the-best-open-source-embedding-models/",
+    "https://www.baseten.co/blog/the-best-open-source-image-generation-model/",
+    "https://www.baseten.co/blog/the-best-open-source-large-language-model/",
+    "https://www.baseten.co/blog/the-fastest-most-accurate-and-cost-efficient-whisper-transcription/",
+    "https://www.baseten.co/blog/the-fastest-whisper-transcription-with-streaming-and-diarization/",
+    "https://www.baseten.co/blog/tool-calling-in-inference/",
+    "https://www.baseten.co/blog/understanding-nvidias-datacenter-gpu-line/",
+    "https://www.baseten.co/blog/understanding-performance-benchmarks-for-llm-inference/",
+    "https://www.baseten.co/blog/understanding-voxtral-vs-whisper-build-a-voice-controlled-smart-home-app/",
+    "https://www.baseten.co/blog/unlocking-the-full-power-of-nvidia-h100-gpus-for-ml-inference-with-tensorrt/",
+    "https://www.baseten.co/blog/what-i-learned-as-a-forward-deployed-engineer-working-at-an-ai-startup/",
+    "https://www.baseten.co/blog/zero-to-real-time-text-to-speech-the-complete-orpheus-websockets-tutorial/",
+    "https://www.baseten.co/blog/zero-to-real-time-transcription-the-complete-whisper-v3-websockets-tutorial/",
     "https://www.baseten.co/changelog",
+    "https://www.baseten.co/changelog/",
+    "https://www.baseten.co/compare/fireworks-ai/",
+    "https://www.baseten.co/compare/together-ai/",
     "https://www.baseten.co/deployments/baseten-cloud/",
     "https://www.baseten.co/deployments/baseten-hybrid/",
     "https://www.baseten.co/deployments/baseten-self-hosted/",
     "https://www.baseten.co/enterprise/",
-    "https://www.baseten.co/healthcare/",
-    "https://www.baseten.co/library/",
-    "https://www.baseten.co/library/deepseek-v4/",
-    "https://www.baseten.co/library/glm-52/",
+    "https://www.baseten.co/library/deepseek-r1/",
+    "https://www.baseten.co/library/deepseek-v3/",
+    "https://www.baseten.co/library/glm-4-5-v/",
+    "https://www.baseten.co/library/glm-5/",
     "https://www.baseten.co/library/gpt-oss-120b/",
-    "https://www.baseten.co/library/kimi-k27-code/",
-    "https://www.baseten.co/library/nvidia-nemotron-ultra/",
+    "https://www.baseten.co/library/gpt-oss-20b/",
+    "https://www.baseten.co/library/kimi-k2-thinking/",
+    "https://www.baseten.co/library/kimi-k25/",
+    "https://www.baseten.co/library/kimi-v2/",
+    "https://www.baseten.co/library/kokoro/",
+    "https://www.baseten.co/library/llama-4-maverick/",
+    "https://www.baseten.co/library/llama-4-scout/",
+    "https://www.baseten.co/library/mars6/",
+    "https://www.baseten.co/library/minimax-m2-5/",
+    "https://www.baseten.co/library/orpheus-tts/",
+    "https://www.baseten.co/library/qwen-image/",
+    "https://www.baseten.co/library/qwen3-235b-a22b-instruct-2507/",
+    "https://www.baseten.co/library/qwen3-coder-480b-a35b-instruct/",
+    "https://www.baseten.co/library/whisper-large-turbo/",
     "https://www.baseten.co/library/whisper/",
+    "https://www.baseten.co/llms.txt",
     "https://www.baseten.co/platform/cloud-native-infrastructure/",
     "https://www.baseten.co/platform/embedded-engineering/",
+    "https://www.baseten.co/platform/model-management/",
     "https://www.baseten.co/platform/model-performance/",
+    "https://www.baseten.co/pricing",
     "https://www.baseten.co/pricing/",
-    "https://www.baseten.co/privacy-policy/",
-    "https://www.baseten.co/products/dedicated-inference/",
-    "https://www.baseten.co/products/frontier-gateway/",
+    "https://www.baseten.co/products/chains/",
+    "https://www.baseten.co/products/dedicated-deployments/",
     "https://www.baseten.co/products/model-apis/",
     "https://www.baseten.co/products/multi-cloud-capacity-management/",
     "https://www.baseten.co/products/training/",
-    "https://www.baseten.co/research/",
-    "https://www.baseten.co/resources/calculator/",
-    "https://www.baseten.co/resources/careers/",
-    "https://www.baseten.co/resources/changelog/",
     "https://www.baseten.co/resources/changelog/authenticate-from-cli-with-truss-login/",
-    "https://www.baseten.co/resources/customers/",
+    "https://www.baseten.co/resources/customers/patreon/",
+    "https://www.baseten.co/resources/customers/praktika/",
+    "https://www.baseten.co/resources/customers/rime/",
+    "https://www.baseten.co/resources/customers/toby/",
+    "https://www.baseten.co/resources/customers/wispr-flow/",
+    "https://www.baseten.co/resources/customers/writer/",
+    "https://www.baseten.co/resources/customers/zed-industries-serves-2x-faster-code-completions-with-baseten/",
+    "https://www.baseten.co/resources/guide/choosing-a-hosting-option-for-ai-model-inference/",
+    "https://www.baseten.co/resources/guide/high-performance-embedding-model-inference/",
+    "https://www.baseten.co/resources/guide/the-baseten-inference-stack/",
+    "https://www.baseten.co/resources/guide/the-complete-deepseek-model-guide/",
+    "https://www.baseten.co/resources/research/amnesiac-generalist-behemoths-are-not-the-future-of-language-models/",
+    "https://www.baseten.co/resources/research/attention-based-attribution/",
+    "https://www.baseten.co/resources/research/byo-swe-grep/",
+    "https://www.baseten.co/resources/research/continual-learning/",
+    "https://www.baseten.co/resources/research/distillation-without-the-dark/",
+    "https://www.baseten.co/resources/research/do-transformers-notice-their-own-mistakes/",
+    "https://www.baseten.co/resources/research/introducing-radixmlp-intra-batch-deduplication-for-causal-transformers/",
+    "https://www.baseten.co/resources/research/iterative-sft/",
+    "https://www.baseten.co/resources/research/lumina-building-self-improving-evaluation-through-customer-in-the-loop-refinement/",
+    "https://www.baseten.co/resources/research/mechanistic-interpretability/",
+    "https://www.baseten.co/resources/research/practical-lora-research/",
+    "https://www.baseten.co/resources/research/resurrecting-the-salmon/",
+    "https://www.baseten.co/resources/research/robust-sample-efficient-sft-with-prompt-mutations/",
+    "https://www.baseten.co/resources/research/self-study/",
+    "https://www.baseten.co/resources/research/the-bitter-lesson-of-llm-evals/",
+    "https://www.baseten.co/resources/research/the-michael-scott-paper-company-of-ai/",
+    "https://www.baseten.co/resources/research/the-shifting-role-of-mles/",
+    "https://www.baseten.co/resources/research/training-loss-predicts-evaluation-performance-even-for-non-verifiable-tasks/",
+    "https://www.baseten.co/resources/research/upweight-the-strategy-not-the-tokens-faster-training-with-explicit-reasoning-thro/",
+    "https://www.baseten.co/resources/research/write-small-learn-forever/",
     "https://www.baseten.co/resources/type/event/",
     "https://www.baseten.co/resources/type/guide/",
-    "https://www.baseten.co/service-level-agreement/",
     "https://www.baseten.co/solutions/compound-ai/",
     "https://www.baseten.co/solutions/embeddings/",
     "https://www.baseten.co/solutions/image-generation/",
     "https://www.baseten.co/solutions/llms/",
     "https://www.baseten.co/solutions/text-to-speech/",
     "https://www.baseten.co/solutions/transcription/",
-    "https://www.baseten.co/startup-program/",
-    "https://www.baseten.co/talk-to-us/",
-    "https://www.baseten.co/talk-to-us/partner/",
-    "https://www.baseten.co/terms-and-conditions/",
     "https://www.linkedin.com/company/baseten",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo",
     "https://x.com/basetenco"
   ]
 }

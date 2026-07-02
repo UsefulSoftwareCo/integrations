@@ -12,28 +12,43 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:07:55.281Z",
-    "summary": "Fern exposes a public docs website and public MCP server, plus a token-gated HTTP docs Q&A endpoint; no public GraphQL or standalone CLI integration surface was confirmed for Fern itself.",
+    "discoveredAt": "2026-07-02T14:56:42.963Z",
+    "summary": "Fern exposes a public docs HTTP API and MCP server for AI/doc access, plus a Fern CLI that requires a logged-in Fern account session.",
     "credentials": {
-      "fern_docs_jwt": {
+      "fern_dashboard_account": {
+        "type": "oauth2",
+        "label": "Fern dashboard account",
+        "generateUrl": "https://dashboard.buildwithfern.com/sign-up?redirect_on_login=%2Fget-started&utm_source=fern-website&utm_content=nav-top-right",
+        "setup": "Create a Fern account at [Start for free](https://dashboard.buildwithfern.com/sign-up?redirect_on_login=%2Fget-started&utm_source=fern-website&utm_content=nav-top-right) or sign in at [Dashboard login](https://dashboard.buildwithfern.com/login?utm_source=fern-docs). Use this account to access the dashboard and associated project settings.",
+        "acquisition": "manual"
+      },
+      "fern_api_key": {
+        "type": "api_key",
+        "label": "Fern API key",
+        "generateUrl": "https://buildwithfern.com/learn/docs/fern-api-reference/get-jwt",
+        "setup": "In the dashboard, go to the API key settings referenced from [API keys](https://buildwithfern.com/learn/dashboard/configuration/api-keys.md) and create a new key for your workspace/project. Keep the key secret and copy it into your integration config when prompted.",
+        "acquisition": "manual"
+      },
+      "fern_cli_login": {
         "type": "bearer",
-        "label": "Fern docs short-lived JWT",
-        "generateUrl": "https://buildwithfern.com/llms.txt",
-        "setup": "Fetch a fresh token from [https://buildwithfern.com/llms.txt](https://buildwithfern.com/llms.txt) when needed. It is a short-lived JWT (about 5 minutes, 10 requests) used to rate-limit direct docs प्रश्न/query access, not a long-lived account credential.",
-        "acquisition": "ambient"
+        "label": "Fern CLI logged-in session",
+        "generateUrl": "https://buildwithfern.com/learn/cli-api-reference/cli-reference/overview.md",
+        "setup": "Install the Fern CLI and run the login flow described in the CLI reference. The CLI stores a logged-in session for commands that manage your Fern projects; use the CLI's own login command when prompted.",
+        "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "fern-docs-website",
-        "name": "Fern docs website",
+        "slug": "fern-docs-api",
+        "name": "Fern Docs API",
         "type": "http",
-        "docs": "https://buildwithfern.com/docs",
+        "docs": "https://buildwithfern.com/learn/docs/ai-features/mcp-server",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://buildwithfern.com/docs",
-            "https://buildwithfern.com/llms.txt"
+            "https://buildwithfern.com/llms.txt",
+            "https://buildwithfern.com/learn/llms.txt",
+            "https://buildwithfern.com/learn/docs/ai-features/mcp-server"
           ]
         },
         "auth": {
@@ -41,22 +56,24 @@
           "basis": {
             "via": "discovered",
             "evidence": [
-              "https://buildwithfern.com/docs",
-              "https://buildwithfern.com/llms.txt"
+              "https://buildwithfern.com/llms.txt",
+              "https://buildwithfern.com/learn/llms.txt"
             ]
           }
-        }
+        },
+        "url": "https://buildwithfern.com/learn/api/fern-docs"
       },
       {
-        "slug": "fern-mcp-server",
-        "name": "Fern MCP server",
+        "slug": "fern-docs-mcp-server",
+        "name": "Fern docs MCP server",
         "type": "mcp",
         "docs": "https://buildwithfern.com/learn/docs/ai-features/mcp-server",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://buildwithfern.com/learn/docs/ai-features/mcp-server",
-            "https://buildwithfern.com/llms.txt"
+            "https://buildwithfern.com/llms.txt",
+            "https://buildwithfern.com/learn/llms.txt",
+            "https://buildwithfern.com/learn/docs/ai-features/mcp-server"
           ]
         },
         "auth": {
@@ -64,8 +81,8 @@
           "basis": {
             "via": "discovered",
             "evidence": [
-              "https://buildwithfern.com/learn/docs/ai-features/mcp-server",
-              "https://buildwithfern.com/llms.txt"
+              "https://buildwithfern.com/llms.txt",
+              "https://buildwithfern.com/learn/llms.txt"
             ]
           }
         },
@@ -75,14 +92,15 @@
         ]
       },
       {
-        "slug": "fern-docs-question-http-endpoint",
-        "name": "Fern docs question HTTP endpoint",
-        "type": "http",
-        "docs": "https://buildwithfern.com/llms.txt",
+        "slug": "fern-cli",
+        "name": "Fern CLI",
+        "type": "cli",
+        "docs": "https://buildwithfern.com/learn/cli-generator/get-started/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://buildwithfern.com/llms.txt"
+            "https://buildwithfern.com/learn/cli-generator/get-started/overview",
+            "https://buildwithfern.com/post/cli-generator"
           ]
         },
         "auth": {
@@ -91,52 +109,54 @@
             {
               "use": [
                 {
-                  "id": "fern_docs_jwt",
+                  "id": "fern_cli_login",
                   "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "scheme": "Bearer",
-                    "paramName": "token"
+                    "source": "cli",
+                    "command": "fern login"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://buildwithfern.com/llms.txt"
+                  "https://buildwithfern.com/learn/cli-generator/get-started/overview",
+                  "https://buildwithfern.com/post/cli-generator"
                 ]
               }
             }
           ]
-        }
+        },
+        "command": "fern"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:07:55.281Z",
+  "discoveredAt": "2026-07-02T14:56:42.963Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 164809,
-    "completion_tokens": 877,
-    "total_tokens": 165686
+    "prompt_tokens": 91071,
+    "completion_tokens": 1062,
+    "total_tokens": 92133
   },
   "visited": [
+    "https://apis.io/apis/fern/fern/",
     "https://buildwithfern.com/",
-    "https://buildwithfern.com/cli",
     "https://buildwithfern.com/docs",
+    "https://buildwithfern.com/learn/cli-generator/get-started/overview",
+    "https://buildwithfern.com/learn/docs/ai-features/llms-txt",
     "https://buildwithfern.com/learn/docs/ai-features/mcp-server",
-    "https://buildwithfern.com/learn/docs/api-references/overview",
-    "https://buildwithfern.com/learn/docs/fern-api-reference/get-jwt",
-    "https://buildwithfern.com/learn/docs/fern-api-reference/get-search-key",
-    "https://buildwithfern.com/learn/docs/fern-api-reference/whoami",
+    "https://buildwithfern.com/learn/llms.txt",
     "https://buildwithfern.com/llms.txt",
     "https://buildwithfern.com/post/cli-generator",
-    "https://buildwithfern.com/post/mcp-vs-cli-api-access"
+    "https://buildwithfern.com/post/fern-developer-first-sdk-generation-api-documentation"
   ],
   "grounding": [
     "http://Claude.ai",
+    "https://apis.io/apis/fern/fern/",
     "https://brandfetch.com/buildwithfern.com",
     "https://buildwithfern.com/",
     "https://buildwithfern.com/#",
+    "https://buildwithfern.com/#built-for-agents-and-humans",
+    "https://buildwithfern.com/#how-it-works",
     "https://buildwithfern.com/agent-score",
     "https://buildwithfern.com/blog",
     "https://buildwithfern.com/blog.md",
@@ -164,8 +184,41 @@
     "https://buildwithfern.com/learn",
     "https://buildwithfern.com/learn/_mcp/server",
     "https://buildwithfern.com/learn/api-definition/openapi/overview",
+    "https://buildwithfern.com/learn/api-definitions/asyncapi/overview",
+    "https://buildwithfern.com/learn/api-definitions/grpc/overview",
+    "https://buildwithfern.com/learn/api-definitions/llms.txt",
+    "https://buildwithfern.com/learn/api-definitions/openapi/overlays.md",
+    "https://buildwithfern.com/learn/api-definitions/openapi/overrides.md",
+    "https://buildwithfern.com/learn/api-definitions/openapi/overview",
+    "https://buildwithfern.com/learn/api-definitions/openapi/overview.md",
+    "https://buildwithfern.com/learn/api-definitions/openrpc/overview",
+    "https://buildwithfern.com/learn/api-definitions/overview/project-structure.md",
+    "https://buildwithfern.com/learn/api-definitions/overview/what-is-an-api-definition.md",
     "https://buildwithfern.com/learn/api/fern-docs/ask?q=",
+    "https://buildwithfern.com/learn/cli-api-reference/cli-reference/changelog/2026/7/1.md",
+    "https://buildwithfern.com/learn/cli-api-reference/cli-reference/changelog/2026/7/2.md",
+    "https://buildwithfern.com/learn/cli-api-reference/cli-reference/commands.md",
+    "https://buildwithfern.com/learn/cli-api-reference/cli-reference/options.md",
+    "https://buildwithfern.com/learn/cli-api-reference/cli-reference/overview",
+    "https://buildwithfern.com/learn/cli-api-reference/cli-reference/overview.md",
+    "https://buildwithfern.com/learn/cli-api-reference/llms.txt",
+    "https://buildwithfern.com/learn/cli-generator/get-started/authentication",
+    "https://buildwithfern.com/learn/cli-generator/get-started/authentication.md",
+    "https://buildwithfern.com/learn/cli-generator/get-started/customization",
+    "https://buildwithfern.com/learn/cli-generator/get-started/customization.md",
+    "https://buildwithfern.com/learn/cli-generator/get-started/features",
+    "https://buildwithfern.com/learn/cli-generator/get-started/features.md",
+    "https://buildwithfern.com/learn/cli-generator/get-started/openapi-extensions",
+    "https://buildwithfern.com/learn/cli-generator/get-started/openapi-extensions.md",
     "https://buildwithfern.com/learn/cli-generator/get-started/overview",
+    "https://buildwithfern.com/learn/cli-generator/get-started/overview.md",
+    "https://buildwithfern.com/learn/cli-generator/llms.txt",
+    "https://buildwithfern.com/learn/dashboard/configuration/api-keys.md",
+    "https://buildwithfern.com/learn/dashboard/configuration/github-repo.md",
+    "https://buildwithfern.com/learn/dashboard/configuration/permissions.md",
+    "https://buildwithfern.com/learn/dashboard/configuration/sso.md",
+    "https://buildwithfern.com/learn/dashboard/getting-started/overview.md",
+    "https://buildwithfern.com/learn/dashboard/llms.txt",
     "https://buildwithfern.com/learn/docs/ai-features/agent-directives",
     "https://buildwithfern.com/learn/docs/ai-features/agent-skills",
     "https://buildwithfern.com/learn/docs/ai-features/ai-examples",
@@ -181,7 +234,6 @@
     "https://buildwithfern.com/learn/docs/ai-features/overview",
     "https://buildwithfern.com/learn/docs/ai-features/overview#optimize-for-ai",
     "https://buildwithfern.com/learn/docs/api-references/generate-api-ref",
-    "https://buildwithfern.com/learn/docs/api-references/overview",
     "https://buildwithfern.com/learn/docs/authentication/features/api-key-injection",
     "https://buildwithfern.com/learn/docs/authentication/features/rbac",
     "https://buildwithfern.com/learn/docs/authentication/overview",
@@ -281,6 +333,7 @@
     "https://buildwithfern.com/learn/docs/changelog/2026/6/23",
     "https://buildwithfern.com/learn/docs/changelog/2026/6/30",
     "https://buildwithfern.com/learn/docs/changelog/2026/7/1",
+    "https://buildwithfern.com/learn/docs/changelog/2026/7/1.md",
     "https://buildwithfern.com/learn/docs/configuration/changelogs",
     "https://buildwithfern.com/learn/docs/configuration/navigation",
     "https://buildwithfern.com/learn/docs/configuration/overview",
@@ -298,9 +351,14 @@
     "https://buildwithfern.com/learn/docs/fern-api-reference/get-search-key",
     "https://buildwithfern.com/learn/docs/fern-api-reference/whoami",
     "https://buildwithfern.com/learn/docs/getting-started/how-it-works",
+    "https://buildwithfern.com/learn/docs/getting-started/how-it-works.md",
     "https://buildwithfern.com/learn/docs/getting-started/overview",
+    "https://buildwithfern.com/learn/docs/getting-started/overview.md",
     "https://buildwithfern.com/learn/docs/getting-started/project-structure",
+    "https://buildwithfern.com/learn/docs/getting-started/project-structure.md",
     "https://buildwithfern.com/learn/docs/getting-started/quickstart",
+    "https://buildwithfern.com/learn/docs/getting-started/quickstart.md",
+    "https://buildwithfern.com/learn/docs/llms.txt",
     "https://buildwithfern.com/learn/docs/localization/overview",
     "https://buildwithfern.com/learn/docs/preview-publish/multi-source-docs",
     "https://buildwithfern.com/learn/docs/preview-publish/preview-changes#preview-links",
@@ -341,59 +399,120 @@
     "https://buildwithfern.com/learn/docs/writing-content/markdown-media",
     "https://buildwithfern.com/learn/docs/writing-content/reusable-snippets",
     "https://buildwithfern.com/learn/home",
+    "https://buildwithfern.com/learn/home#get-support",
+    "https://buildwithfern.com/learn/home.md",
+    "https://buildwithfern.com/learn/home/llms.txt",
     "https://buildwithfern.com/learn/llms-full.txt",
     "https://buildwithfern.com/learn/llms.txt",
     "https://buildwithfern.com/learn/sdks/introduction/overview",
+    "https://buildwithfern.com/learn/sdks/llms.txt",
+    "https://buildwithfern.com/learn/sdks/overview/custom-code.md",
+    "https://buildwithfern.com/learn/sdks/overview/how-it-works.md",
+    "https://buildwithfern.com/learn/sdks/overview/introduction",
+    "https://buildwithfern.com/learn/sdks/overview/introduction.md",
+    "https://buildwithfern.com/learn/sdks/overview/project-structure.md",
+    "https://buildwithfern.com/learn/sdks/overview/quickstart.md",
     "https://buildwithfern.com/llms.txt",
     "https://buildwithfern.com/lp/leave-stainless.md",
     "https://buildwithfern.com/post/agent-friendly-docs.md",
     "https://buildwithfern.com/post/agent-score.md",
     "https://buildwithfern.com/post/ai-assisted-technical-writer.md",
+    "https://buildwithfern.com/post/announcing-websocket-support-with-asyncapi-v3.md",
     "https://buildwithfern.com/post/api-design-best-practices-guide.md",
+    "https://buildwithfern.com/post/api-developer-portal-enterprise-branding.md",
     "https://buildwithfern.com/post/api-development-tools-guide.md",
     "https://buildwithfern.com/post/api-documentation-best-practices-guide.md",
     "https://buildwithfern.com/post/api-documentation-for-non-technical-users.md",
     "https://buildwithfern.com/post/api-documentation-platforms-ai-ml-companies.md",
     "https://buildwithfern.com/post/api-documentation-platforms-git-integration.md",
     "https://buildwithfern.com/post/api-documentation-platforms-mdx-component-support.md",
+    "https://buildwithfern.com/post/api-documentation-platforms-style-guide-enforcement.md",
+    "https://buildwithfern.com/post/api-documentation-sdk-generation-tools.md",
     "https://buildwithfern.com/post/api-documentation-writing-platforms-wysiwyg-editors.md",
+    "https://buildwithfern.com/post/api-first-development-platforms.md",
     "https://buildwithfern.com/post/api-governance-documentation-enterprise-sync.md",
     "https://buildwithfern.com/post/api-testing-complete-guide-developers.md",
+    "https://buildwithfern.com/post/ask-fern-sidebar.md",
     "https://buildwithfern.com/post/best-api-documentation-platforms-enterprise.md",
+    "https://buildwithfern.com/post/best-conversational-api-documentation-platforms.md",
+    "https://buildwithfern.com/post/best-llms-txt-implementation-platforms-ai-discoverable-apis.md",
+    "https://buildwithfern.com/post/best-sdk-generation-tools-multi-language-api.md",
     "https://buildwithfern.com/post/building-fern-site",
     "https://buildwithfern.com/post/building-fern-site.md",
+    "https://buildwithfern.com/post/candid.md",
     "https://buildwithfern.com/post/cli-generator",
     "https://buildwithfern.com/post/cli-generator.md",
     "https://buildwithfern.com/post/cli-vs-mcp-which-api-interface-first.md",
+    "https://buildwithfern.com/post/cohere.md",
+    "https://buildwithfern.com/post/developer-documentation-metrics.md",
     "https://buildwithfern.com/post/developer-portal-platforms-hr-tech-partner-ecosystems.md",
     "https://buildwithfern.com/post/different-types-of-apis-guide.md",
+    "https://buildwithfern.com/post/docs-as-code-solutions-api-teams.md",
+    "https://buildwithfern.com/post/docs-as-code.md",
+    "https://buildwithfern.com/post/docs-linting-guide.md",
+    "https://buildwithfern.com/post/documentation-maintenance-best-practices.md",
     "https://buildwithfern.com/post/enterprise-security-api-documentation-platforms.md",
+    "https://buildwithfern.com/post/evergreen-sdks-developer-guide.md",
+    "https://buildwithfern.com/post/fern-autorelease.md",
+    "https://buildwithfern.com/post/fern-developer-first-sdk-generation-api-documentation",
     "https://buildwithfern.com/post/fern-developer-first-sdk-generation-api-documentation.md",
+    "https://buildwithfern.com/post/fern-editor.md",
     "https://buildwithfern.com/post/fern-replay",
     "https://buildwithfern.com/post/fern-replay.md",
+    "https://buildwithfern.com/post/fern-site.md",
+    "https://buildwithfern.com/post/fern-vs-mintlify.md",
     "https://buildwithfern.com/post/fern-vs-readme.md",
+    "https://buildwithfern.com/post/fern-vs-speakeasy-sdk-generator.md",
     "https://buildwithfern.com/post/fern-vs-stainless-sdk-generator.md",
+    "https://buildwithfern.com/post/fernie-sandeep.md",
     "https://buildwithfern.com/post/from-fern-customer-to-fern-contributor.md",
     "https://buildwithfern.com/post/generate-cli-from-openapi-spec.md",
+    "https://buildwithfern.com/post/generate-typescript-sdk.md",
+    "https://buildwithfern.com/post/generated-vs-manual-documentation-which-approach.md",
+    "https://buildwithfern.com/post/gitbook-reviews-pricing-alternatives.md",
     "https://buildwithfern.com/post/how-to-add-ai-chat-to-documentation.md",
     "https://buildwithfern.com/post/how-to-build-an-api.md",
     "https://buildwithfern.com/post/how-to-write-llm-friendly-documentation.md",
+    "https://buildwithfern.com/post/information-architecture-best-practices-documentation.md",
     "https://buildwithfern.com/post/insurance-carriers-build-api-partner-portals.md",
-    "https://buildwithfern.com/post/mcp-vs-cli-api-access",
+    "https://buildwithfern.com/post/interactive-api-documentation-tools-live-testing.md",
+    "https://buildwithfern.com/post/llms-txt-improvements.md",
+    "https://buildwithfern.com/post/mcp-servers-documentation-sites.md",
     "https://buildwithfern.com/post/mcp-vs-cli-api-access.md",
+    "https://buildwithfern.com/post/merge.md",
+    "https://buildwithfern.com/post/multi-audience-api-platform-solutions.md",
+    "https://buildwithfern.com/post/on-prem-hosting-security-data-governance-benefits.md",
+    "https://buildwithfern.com/post/open-source-vs-closed-source-sdk-generators.md",
+    "https://buildwithfern.com/post/openapi-code-generation-enterprise.md",
+    "https://buildwithfern.com/post/optimizing-api-docs-ai-agents-llms-txt-guide.md",
+    "https://buildwithfern.com/post/payabli-fern-api-docs-case-study.md",
+    "https://buildwithfern.com/post/pinecone.md",
+    "https://buildwithfern.com/post/postman-acquires-fern.md",
     "https://buildwithfern.com/post/prepare-apis-documentation-ai-agent-consumption.md",
+    "https://buildwithfern.com/post/rbac-role-based-access-control-guide.md",
     "https://buildwithfern.com/post/rebuilding-docs-pages.md",
     "https://buildwithfern.com/post/revamping-website",
     "https://buildwithfern.com/post/revamping-website.md",
+    "https://buildwithfern.com/post/rust-sdk-generator.md",
     "https://buildwithfern.com/post/sdk-vs-cli-vs-mcp-choosing-interface.md",
+    "https://buildwithfern.com/post/self-hosted-documentation-tools-enterprise-security.md",
+    "https://buildwithfern.com/post/self-hosted-launch.md",
+    "https://buildwithfern.com/post/series-a.md",
+    "https://buildwithfern.com/post/sps-commerce-internal-documentation.md",
+    "https://buildwithfern.com/post/stainless-pricing-alternatives.md",
+    "https://buildwithfern.com/post/stainless-vs-gitbook-vs-speakeasy-api-docs-sdk-comparison.md",
+    "https://buildwithfern.com/post/swift-sdk-launch.md",
     "https://buildwithfern.com/post/tag/cli",
     "https://buildwithfern.com/post/tag/product",
+    "https://buildwithfern.com/post/technical-writing-ai-agents-devin-cursor-claude-code.md",
     "https://buildwithfern.com/post/ui-fixes.md",
     "https://buildwithfern.com/post/visual-editors-technical-documentation.md",
+    "https://buildwithfern.com/post/webflow-product-switcher.md",
     "https://buildwithfern.com/post/what-is-api-catalog.md",
     "https://buildwithfern.com/post/what-is-api-endpoint.md",
     "https://buildwithfern.com/post/what-is-api-first-approach.md",
     "https://buildwithfern.com/post/why-docs-as-code-needs-client-libraries.md",
+    "https://buildwithfern.com/post/why-is-documentation-important.md",
     "https://buildwithfern.com/post/workday-adp-rippling-api-documentation-comparison.md",
     "https://buildwithfern.com/pricing",
     "https://buildwithfern.com/pricing.md",
@@ -408,6 +527,7 @@
     "https://buildwithfern.com/trust",
     "https://buildwithfern.com/trust.md",
     "https://dashboard.buildwithfern.com",
+    "https://dashboard.buildwithfern.com/fern/edit-page?docsUrl=buildwithfern.com%2Flearn&slug=learn%2Fcli-generator%2Fget-started%2Foverview&fallbackUrl=https%3A%2F%2Fgithub.com%2Ffern-api%2Fdocs%2Fblob%2Fmain%2Ffern%2Fproducts%2Fcli-generator%2Foverview.mdx%3Fplain%3D1",
     "https://dashboard.buildwithfern.com/login?utm_source=fern-docs",
     "https://dashboard.buildwithfern.com/sign-up?redirect_on_login=%2Fget-started&utm_source=fern-docs",
     "https://dashboard.buildwithfern.com/sign-up?redirect_on_login=%2Fget-started&utm_source=fern-website&utm_content=homepage-animation",
@@ -415,6 +535,8 @@
     "https://dashboard.buildwithfern.com/sign-up?redirect_on_login=%2Fget-started&utm_source=fern-website&utm_content=nav-mobile-footer",
     "https://dashboard.buildwithfern.com/sign-up?redirect_on_login=%2Fget-started&utm_source=fern-website&utm_content=nav-top-right",
     "https://github.com/fern-api/fern",
+    "https://security.buildwithfern.com/",
+    "https://status.buildwithfern.com",
     "https://status.buildwithfern.com/",
     "https://www.linkedin.com/in/amckinney01/"
   ]

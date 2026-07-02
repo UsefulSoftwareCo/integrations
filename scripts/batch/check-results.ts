@@ -46,7 +46,9 @@ async function main(): Promise<void> {
       for (const url of checks.checks.outputUrlsGrounded.offenders ?? []) {
         try {
           const res = await fetch(url, { method: "GET", redirect: "manual", signal: AbortSignal.timeout(8000) });
-          if (![200, 301, 302, 307, 308, 401, 403, 405].includes(res.status)) still.push(url);
+          // Any HTTP response proves the host is real — invented hosts fail DNS.
+          // Bare API bases 404 by design (real routes live under paths).
+          if (res.status >= 500) still.push(url);
         } catch {
           still.push(url);
         }

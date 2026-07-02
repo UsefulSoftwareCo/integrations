@@ -32,28 +32,21 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T11:06:21.312Z",
-    "summary": "Builder exposes a public Content API and GraphQL Content API plus authenticated Admin API, CLI, and MCP server; auth uses a public API key, private API key, personal access token, and MCP OAuth.",
+    "discoveredAt": "2026-07-02T14:56:39.470Z",
+    "summary": "Builder.io exposes a Content API, a GraphQL Content API, and an MCP server; the HTTP/GraphQL APIs use a public API key, and the MCP server uses OAuth.",
     "credentials": {
-      "builder_public_api_key": {
+      "builder_api_key": {
         "type": "api_key",
         "label": "Builder Public API Key",
         "generateUrl": "https://www.builder.io/c/docs/using-your-api-key",
-        "setup": "Go to your Builder space settings and copy the **Public API Key**. Builder says this is the key you use to integrate code with Builder, and forum guidance indicates the space ID is the public API key in space settings. Use the value as the project/space identifier for public content APIs.",
+        "setup": "Go to [Using the Builder API Key](https://www.builder.io/c/docs/using-your-api-key) and create or copy your Builder Public API Key from your Builder space settings. Use it as the `apiKey` / public key for Builder content integrations.",
         "acquisition": "manual"
       },
-      "builder_private_api_key": {
-        "type": "api_key",
-        "label": "Builder Private API Key",
-        "generateUrl": "https://www.builder.io/c/docs/api-authentication",
-        "setup": "Create or copy a **Private API Key** from Builder’s API authentication settings for server-side/admin access. Use this when docs call for private access to protected Builder APIs.",
-        "acquisition": "manual"
-      },
-      "builder_personal_access_token": {
-        "type": "bearer",
-        "label": "Builder Personal Access Token",
-        "generateUrl": "https://www.builder.io/c/docs/api-authentication",
-        "setup": "Create a **Personal Access Token** in Builder’s API authentication settings when a page asks for user-scoped authenticated access instead of an API key. Save the token securely and send it as a bearer token where required.",
+      "builder_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Builder MCP OAuth access token",
+        "generateUrl": "https://mcp.builder.io/oauth/register",
+        "setup": "Register an OAuth client at [Builder MCP OAuth registration](https://mcp.builder.io/oauth/register) if needed, then authorize against [https://mcp.builder.io/oauth/authorize](https://mcp.builder.io/oauth/authorize) and exchange the code at [https://mcp.builder.io/oauth/token](https://mcp.builder.io/oauth/token). The documented scopes are `mcp:publish:read` and `mcp:publish:write`.",
         "acquisition": "manual"
       }
     },
@@ -76,10 +69,11 @@
             {
               "use": [
                 {
-                  "id": "builder_public_api_key",
+                  "id": "builder_api_key",
                   "mechanics": {
-                    "source": "spec",
-                    "scheme": "apiKey"
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "apiKey"
                   }
                 }
               ],
@@ -92,45 +86,8 @@
               }
             }
           ]
-        }
-      },
-      {
-        "slug": "builder-admin-api",
-        "name": "Builder Admin API",
-        "type": "http",
-        "docs": "https://www.builder.io/c/docs/admin-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.builder.io/c/docs/api-authentication",
-            "https://www.builder.io/c/docs/admin-api"
-          ]
         },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "builder_private_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.builder.io/c/docs/api-authentication",
-                  "https://www.builder.io/c/docs/admin-api"
-                ]
-              }
-            }
-          ]
-        }
+        "url": "https://cdn.builder.io/api"
       },
       {
         "slug": "builder-graphql-content-api",
@@ -150,7 +107,7 @@
             {
               "use": [
                 {
-                  "id": "builder_public_api_key",
+                  "id": "builder_api_key",
                   "mechanics": {
                     "source": "http",
                     "in": "query",
@@ -168,54 +125,17 @@
             }
           ]
         },
-        "url": "https://www.builder.io/c/docs/graphql-api"
-      },
-      {
-        "slug": "builder-cli",
-        "name": "Builder CLI",
-        "type": "cli",
-        "docs": "https://www.builder.io/c/docs/builder-cli-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.builder.io/c/docs/builder-cli-api",
-            "https://www.builder.io/c/docs/api-authentication"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "builder_personal_access_token",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "builder login"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.builder.io/c/docs/builder-cli-api",
-                  "https://www.builder.io/c/docs/api-authentication"
-                ]
-              }
-            }
-          ]
-        },
-        "command": "builder"
+        "url": "https://cdn.builder.io/api/v2/graphql"
       },
       {
         "slug": "builder-mcp-server",
         "name": "Builder MCP Server",
         "type": "mcp",
-        "docs": "https://www.builder.io/c/docs/mcp-builder-server",
+        "docs": "https://www.builder.io/c/docs/builder-mcp",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.builder.io/c/docs/mcp-builder-server"
+            "https://www.builder.io/c/docs/builder-mcp"
           ]
         },
         "auth": {
@@ -224,7 +144,7 @@
             {
               "use": [
                 {
-                  "id": "builder_personal_access_token",
+                  "id": "builder_mcp_oauth",
                   "mechanics": {
                     "source": "well-known"
                   }
@@ -233,64 +153,43 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.builder.io/c/docs/mcp-builder-server"
+                  "https://www.builder.io/c/docs/builder-mcp"
                 ]
               }
             }
           ]
         },
-        "url": "https://mcp.builder.io",
+        "url": "https://mcp.builder.io/mcp",
         "transports": [
           "streamable-http"
         ]
       }
     ]
   },
-  "discoveredAt": "2026-07-02T11:06:21.312Z",
+  "discoveredAt": "2026-07-02T14:56:39.470Z",
   "model": "loop-gpt-5.4-mini",
   "usage": {
-    "prompt_tokens": 220684,
-    "completion_tokens": 1417,
-    "total_tokens": 222101
+    "prompt_tokens": 207549,
+    "completion_tokens": 1073,
+    "total_tokens": 208622
   },
   "visited": [
     "https://apitracker.io/a/builder-io",
-    "https://community.openai.com/t/mcp-oauth-working-perfectly-via-api-or-agent-builder-but-getting-connector-not-safe-via-dev-method-on-frontend/1362705",
-    "https://forum.builder.io/t/builder-io-space-related-questions/2534",
-    "https://forum.builder.io/t/where-do-i-find-the-space-id/914",
     "https://github.com/api-evangelist/builder-io/blob/main/graphql/builder-io-graphql.md",
-    "https://www.builder.io/blog/claude-code-figma-mcp-server",
-    "https://www.builder.io/blog/claude-code-mcp-servers",
-    "https://www.builder.io/blog/linear-mcp-server",
-    "https://www.builder.io/blog/model-context-protocol",
-    "https://www.builder.io/blog/why-is-agent-auth-so-hard",
     "https://www.builder.io/c/docs/admin-api",
-    "https://www.builder.io/c/docs/admin-api-content",
-    "https://www.builder.io/c/docs/admin-api-manage-spaces",
-    "https://www.builder.io/c/docs/api-authentication",
     "https://www.builder.io/c/docs/api-intro",
-    "https://www.builder.io/c/docs/api-reference",
-    "https://www.builder.io/c/docs/builder-cli-api",
-    "https://www.builder.io/c/docs/cli-code-generation",
-    "https://www.builder.io/c/docs/connecting-api-data",
+    "https://www.builder.io/c/docs/builder-mcp",
     "https://www.builder.io/c/docs/graphql-api",
-    "https://www.builder.io/c/docs/managing-spaces",
-    "https://www.builder.io/c/docs/mcp-builder-server",
-    "https://www.builder.io/c/docs/using-your-api-key"
+    "https://www.builder.io/c/docs/using-your-api-key",
+    "https://www.builder.io/c/docs/write-api",
+    "https://www.builder.io/glossary/api",
+    "https://www.builder.io/glossary/graphql"
   ],
   "grounding": [
     "https://apitracker.io/a/builder-io",
-    "https://community.openai.com/t/mcp-oauth-working-perfectly-via-api-or-agent-builder-but-getting-connector-not-safe-via-dev-method-on-frontend/1362705",
-    "https://forum.builder.io/t/builder-io-space-related-questions/2534",
-    "https://forum.builder.io/t/where-do-i-find-the-space-id/914",
     "https://github.com/api-evangelist/builder-io/blob/main/graphql/builder-io-graphql.md",
     "https://luma.com/builder-make-validation-a-practice",
     "https://www.builder.io/#main-content",
-    "https://www.builder.io/blog/claude-code-figma-mcp-server",
-    "https://www.builder.io/blog/claude-code-mcp-servers",
-    "https://www.builder.io/blog/linear-mcp-server",
-    "https://www.builder.io/blog/model-context-protocol",
-    "https://www.builder.io/blog/why-is-agent-auth-so-hard",
     "https://www.builder.io/c/docs/101-structure",
     "https://www.builder.io/c/docs/101-visual-editor",
     "https://www.builder.io/c/docs/abtesting",
@@ -300,20 +199,15 @@
     "https://www.builder.io/c/docs/add-remove-locales",
     "https://www.builder.io/c/docs/adding-inputs-to-symbols",
     "https://www.builder.io/c/docs/admin-api",
-    "https://www.builder.io/c/docs/admin-api-content",
-    "https://www.builder.io/c/docs/admin-api-manage-spaces",
     "https://www.builder.io/c/docs/agent-for-slack",
     "https://www.builder.io/c/docs/agents-md",
     "https://www.builder.io/c/docs/agents-run-api",
     "https://www.builder.io/c/docs/ai-instruction-best-practices",
     "https://www.builder.io/c/docs/ai-models",
     "https://www.builder.io/c/docs/announcement-bar",
-    "https://www.builder.io/c/docs/api-authentication",
     "https://www.builder.io/c/docs/api-intro",
-    "https://www.builder.io/c/docs/api-reference",
     "https://www.builder.io/c/docs/asset-library",
     "https://www.builder.io/c/docs/block-types",
-    "https://www.builder.io/c/docs/builder-cli-api",
     "https://www.builder.io/c/docs/builder-cli-code-sync",
     "https://www.builder.io/c/docs/builder-figma-plugin",
     "https://www.builder.io/c/docs/builder-mcp",
@@ -443,7 +337,6 @@
     "https://www.builder.io/c/docs/make-footer",
     "https://www.builder.io/c/docs/managing-content",
     "https://www.builder.io/c/docs/managing-content-size",
-    "https://www.builder.io/c/docs/managing-spaces",
     "https://www.builder.io/c/docs/markdown",
     "https://www.builder.io/c/docs/mcp-builder-server",
     "https://www.builder.io/c/docs/multiple-repositories-in-projects",
@@ -507,9 +400,12 @@
     "https://www.builder.io/c/docs/visual-editor",
     "https://www.builder.io/c/docs/visual-editor-data-tab",
     "https://www.builder.io/c/docs/visual-editor-style-tab",
+    "https://www.builder.io/c/docs/write-api",
     "https://www.builder.io/c/docs/zapier",
     "https://www.builder.io/demo",
     "https://www.builder.io/enterprise",
+    "https://www.builder.io/glossary/api",
+    "https://www.builder.io/glossary/graphql",
     "https://www.builder.io/pricing",
     "https://www.builder.io/signup"
   ]

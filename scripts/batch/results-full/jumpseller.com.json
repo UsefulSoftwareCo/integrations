@@ -1,0 +1,426 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "jumpseller.com",
+    "detect": {
+      "domain": "jumpseller.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:55:58.598Z",
+    "summary": "Jumpseller exposes a REST API, authenticated admin MCP server, public storefront MCP, and CLI; admin integrations use either store Login Key/Auth Token or OAuth 2.0 bearer tokens.",
+    "credentials": {
+      "jumpseller_api_token": {
+        "type": "compound",
+        "label": "Jumpseller Login Key + Auth Token",
+        "generateUrl": "https://jumpseller.com/support/mcp-server/",
+        "setup": "In your Jumpseller Admin, go to **Account → Preferences**, click your user name, then open the **API and MCP** section. Copy the per-store **Login Key** and **Auth Token**. Use them together for the REST API, admin MCP server, and CLI. Configure them as `X-LOGIN-KEY` and `X-AUTH-TOKEN` headers, or as the `JUMPSELLER_LOGIN_KEY` and `JUMPSELLER_AUTH_TOKEN` environment variables for supported clients.",
+        "acquisition": "manual"
+      },
+      "jumpseller_oauth_app": {
+        "type": "oauth2",
+        "label": "Jumpseller OAuth 2.0 app",
+        "generateUrl": "https://jumpseller.com/support/oauth-2/",
+        "setup": "Register an OAuth application in Jumpseller, then have merchants authorize it through the Authorization Code flow. The flow returns an access token and refresh token; use the access token to call the API. The docs also note the token is sent as `Authorization: Bearer <token>` for third-party apps.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "jumpseller-rest-api",
+        "name": "Jumpseller REST API",
+        "type": "http",
+        "docs": "https://jumpseller.com/support/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://jumpseller.com/support/api/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "jumpseller_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-LOGIN-KEY",
+                    "scheme": "API token"
+                  }
+                },
+                {
+                  "id": "jumpseller_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-AUTH-TOKEN",
+                    "scheme": "API token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://jumpseller.com/support/api/",
+                  "https://jumpseller.com/support/mcp-server/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "jumpseller_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://jumpseller.com/support/api/",
+                  "https://jumpseller.com/support/oauth-2/"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "jumpseller-admin-mcp-server",
+        "name": "Jumpseller Admin MCP Server",
+        "type": "mcp",
+        "docs": "https://jumpseller.com/support/mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://jumpseller.com/support/mcp-server/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "jumpseller_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-LOGIN-KEY",
+                    "scheme": "API token"
+                  }
+                },
+                {
+                  "id": "jumpseller_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-AUTH-TOKEN",
+                    "scheme": "API token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://jumpseller.com/support/mcp-server/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "jumpseller_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://jumpseller.com/support/mcp-server/",
+                  "https://jumpseller.com/support/oauth-2/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.jumpseller.com",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "jumpseller-storefront-mcp",
+        "name": "Jumpseller Storefront MCP",
+        "type": "mcp",
+        "docs": "https://jumpseller.com/support/storefront-mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": []
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://jumpseller.com/support/storefront-mcp/"
+            ]
+          }
+        },
+        "url": "https://your-store.com/api/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "jumpseller-cli",
+        "name": "Jumpseller CLI",
+        "type": "cli",
+        "docs": "https://jumpseller.com/support/ai-toolkit/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://jumpseller.com/support/ai-toolkit/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "jumpseller_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "jumpseller login",
+                    "env": [
+                      "JUMPSELLER_LOGIN_KEY",
+                      "JUMPSELLER_AUTH_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://jumpseller.com/support/ai-toolkit/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "Jumpseller/jumpseller-cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "jumpseller"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:55:58.599Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 127802,
+    "completion_tokens": 1241,
+    "total_tokens": 129043
+  },
+  "visited": [
+    "https://claudemarketplaces.com/mcp/com.jumpseller/admin-mcp",
+    "https://jumpseller.com/support/ai-toolkit/",
+    "https://jumpseller.com/support/api-support/",
+    "https://jumpseller.com/support/api/",
+    "https://jumpseller.com/support/mcp-server/",
+    "https://jumpseller.com/support/oauth-2/",
+    "https://jumpseller.com/support/storefront-mcp/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://localhost:8000/callback",
+    "http://localhost:8000/callback?code=f04bb200f5779644a65e0a174f49776004bc3de060a96f961f72c5835533d006",
+    "https://accounts.jumpseller.com/oauth/authorize",
+    "https://accounts.jumpseller.com/oauth/authorize?client_id=e27af9be9e7343dc29095d292d7a1103383a5d010c8912783e0fa54f993ca751&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fcallback&response_type=code&scope=read_orders%20write_products%20read_customers%20write_promotions",
+    "https://accounts.jumpseller.com/oauth/token",
+    "https://accounts.jumpseller.com/oauth/token/info",
+    "https://api.jumpseller.com/swagger.json",
+    "https://api.jumpseller.com/v1/path.json",
+    "https://api.jumpseller.com/v1/products.json",
+    "https://api.jumpseller.com/v1/products.json?login=XXXXX&authtoken=YYYYY",
+    "https://api.jumpseller.com/v1/products/123.json",
+    "https://api.jumpseller.com/v1/products/123.json?login=XXXXX&authtoken=YYYYY",
+    "https://api.jumpseller.com/v1/store/info.json",
+    "https://chatgpt.com",
+    "https://chatgpt.com/g/g-69c47ed319008191ae04b175c40721a3-jumpseller",
+    "https://claude.ai",
+    "https://claude.com/claude-code",
+    "https://claudemarketplaces.com/mcp/com.jumpseller/admin-mcp",
+    "https://codeium.com/windsurf",
+    "https://cursor.com",
+    "https://developers.openai.com/codex",
+    "https://docs.anthropic.com/en/docs/agents",
+    "https://github.com/Jumpseller/ai",
+    "https://github.com/Jumpseller/jumpseller-cli",
+    "https://github.com/features/copilot",
+    "https://github.com/google-gemini/gemini-cli",
+    "https://jumpseller.com/#",
+    "https://jumpseller.com/#1-detailed-description-of-the-issue",
+    "https://jumpseller.com/#2-request-details",
+    "https://jumpseller.com/#3-response-details",
+    "https://jumpseller.com/#4-error-messages",
+    "https://jumpseller.com/#5-timestamps",
+    "https://jumpseller.com/#6-screenshots-or-logs",
+    "https://jumpseller.com/#7-code-samples",
+    "https://jumpseller.com/#8-attempts-at-troubleshooting",
+    "https://jumpseller.com/#agentic-e-commerce",
+    "https://jumpseller.com/#api-token-recommended-for-store-owners",
+    "https://jumpseller.com/#authentication",
+    "https://jumpseller.com/#available-tools",
+    "https://jumpseller.com/#claude-code",
+    "https://jumpseller.com/#claudeai-custom-connector",
+    "https://jumpseller.com/#coming-soon",
+    "https://jumpseller.com/#compatible-ai-tools",
+    "https://jumpseller.com/#compatible-platforms",
+    "https://jumpseller.com/#connecting-an-ai-agent",
+    "https://jumpseller.com/#connecting-to-the-mcp-server",
+    "https://jumpseller.com/#credentials",
+    "https://jumpseller.com/#discoverability",
+    "https://jumpseller.com/#email-template",
+    "https://jumpseller.com/#endpoint",
+    "https://jumpseller.com/#example-getting-a-product",
+    "https://jumpseller.com/#example-searching-for-products",
+    "https://jumpseller.com/#gemini-cli",
+    "https://jumpseller.com/#getting-ready-to-reach-out",
+    "https://jumpseller.com/#installation",
+    "https://jumpseller.com/#oauth-20-for-third-party-apps",
+    "https://jumpseller.com/#openai-codex",
+    "https://jumpseller.com/#privacy-and-security",
+    "https://jumpseller.com/#rate-limits",
+    "https://jumpseller.com/#scopes",
+    "https://jumpseller.com/#setup-guides",
+    "https://jumpseller.com/#storefront-mcp-vs-admin-mcp",
+    "https://jumpseller.com/#the-client-receives-the-api-response",
+    "https://jumpseller.com/#the-client-receives-the-new-tokens",
+    "https://jumpseller.com/#the-client-requests-an-authorization",
+    "https://jumpseller.com/#the-client-requests-new-tokens-when-they-are-expired-or-revoked",
+    "https://jumpseller.com/#the-client-requests-the-access-and-refresh-tokens-using-the-received-code",
+    "https://jumpseller.com/#the-client-uses-the-access-token-to-make-request-to-the-jumpseller-api",
+    "https://jumpseller.com/#the-importance-of-clarity-and-detail",
+    "https://jumpseller.com/#the-user-is-asked-to-authorize-access-within-the-scopes",
+    "https://jumpseller.com/#the-user-is-redirected-back-to-your-specified-uri",
+    "https://jumpseller.com/#the-user-receives-the-tokens",
+    "https://jumpseller.com/#types-of-support",
+    "https://jumpseller.com/#what-can-ai-do-for-your-store",
+    "https://jumpseller.com/#what-data-is-returned",
+    "https://jumpseller.com/#what-is-mcp",
+    "https://jumpseller.com/#what-to-include-in-your-support-request",
+    "https://jumpseller.com/#whats-included",
+    "https://jumpseller.com/#where-to-next",
+    "https://jumpseller.com/#why-a-toolkit",
+    "https://jumpseller.com/#why-does-this-matter",
+    "https://jumpseller.com/#wrap-up",
+    "https://jumpseller.com/#wrapper",
+    "https://jumpseller.com/about/",
+    "https://jumpseller.com/ai-ecommerce/",
+    "https://jumpseller.com/apps",
+    "https://jumpseller.com/apps/",
+    "https://jumpseller.com/automations",
+    "https://jumpseller.com/brand-guidelines/",
+    "https://jumpseller.com/design/",
+    "https://jumpseller.com/domains/",
+    "https://jumpseller.com/dropshipping",
+    "https://jumpseller.com/dropshipping/",
+    "https://jumpseller.com/facebook",
+    "https://jumpseller.com/facebook/",
+    "https://jumpseller.com/features-tour",
+    "https://jumpseller.com/features-tour/",
+    "https://jumpseller.com/features/appointments/",
+    "https://jumpseller.com/features/product-subscriptions",
+    "https://jumpseller.com/fulfillment",
+    "https://jumpseller.com/google-commerce",
+    "https://jumpseller.com/google-commerce/",
+    "https://jumpseller.com/inquiry",
+    "https://jumpseller.com/inquiry/",
+    "https://jumpseller.com/instagram",
+    "https://jumpseller.com/instagram/",
+    "https://jumpseller.com/jobs/",
+    "https://jumpseller.com/jumpdesign/",
+    "https://jumpseller.com/learn/",
+    "https://jumpseller.com/learn/payment-methods/",
+    "https://jumpseller.com/login",
+    "https://jumpseller.com/login/",
+    "https://jumpseller.com/mobile-pos",
+    "https://jumpseller.com/mobile-pos/",
+    "https://jumpseller.com/partners/",
+    "https://jumpseller.com/payment-gateways",
+    "https://jumpseller.com/payment-gateways/",
+    "https://jumpseller.com/professionals/",
+    "https://jumpseller.com/sell-pages",
+    "https://jumpseller.com/sell/blog",
+    "https://jumpseller.com/sell/deliver-food/",
+    "https://jumpseller.com/sell/digital",
+    "https://jumpseller.com/shipping-methods",
+    "https://jumpseller.com/shipping-methods/",
+    "https://jumpseller.com/showcase",
+    "https://jumpseller.com/sign-up/",
+    "https://jumpseller.com/support/",
+    "https://jumpseller.com/support/advanced-settings/",
+    "https://jumpseller.com/support/ai-toolkit/",
+    "https://jumpseller.com/support/api",
+    "https://jumpseller.com/support/api-support/",
+    "https://jumpseller.com/support/api/",
+    "https://jumpseller.com/support/apps",
+    "https://jumpseller.com/support/apps/",
+    "https://jumpseller.com/support/javascript-library/",
+    "https://jumpseller.com/support/liquid/",
+    "https://jumpseller.com/support/mcp",
+    "https://jumpseller.com/support/mcp-server/",
+    "https://jumpseller.com/support/migration/",
+    "https://jumpseller.com/support/mobile-app/",
+    "https://jumpseller.com/support/oauth-2",
+    "https://jumpseller.com/support/oauth-2/",
+    "https://jumpseller.com/support/plan-enterprise/",
+    "https://jumpseller.com/support/storefront-mcp/",
+    "https://jumpseller.com/support/webhooks/",
+    "https://jumpseller.com/terms",
+    "https://jumpseller.com/terms/privacy",
+    "https://jumpseller.com/terms/security",
+    "https://jumpseller.com/themes",
+    "https://jumpseller.com/themes/",
+    "https://jumpseller.com/tiktok",
+    "https://jumpseller.com/tiktok/",
+    "https://jumpseller.com/tools/",
+    "https://jumpseller.com/webinars/",
+    "https://jumpseller.com/whatsapp-business",
+    "https://jumpseller.com/whatsapp-business/",
+    "https://mcp.jumpseller.com",
+    "https://mcp.jumpseller.com/",
+    "https://modelcontextprotocol.io",
+    "https://redocly.com/redoc/",
+    "https://status.jumpseller.com?jslr=https%3A%2F%2Fjumpseller.com%2Fsupport%2Fai-toolkit%2F&jsr=",
+    "https://status.jumpseller.com?jslr=https%3A%2F%2Fjumpseller.com%2Fsupport%2Fapi-support%2F&jsr=",
+    "https://status.jumpseller.com?jslr=https%3A%2F%2Fjumpseller.com%2Fsupport%2Fstorefront-mcp%2F&jsr=",
+    "https://www.langchain.com/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://your-store.com/api/mcp",
+    "https://yourapp.com/callback"
+  ]
+}

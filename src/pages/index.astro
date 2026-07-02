@@ -64,9 +64,7 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
       <!-- Whatever you typed, if it isn't already a domain — click to open it
            (un-cataloged domains land on the 404/discover page). tfoot always
            renders below the paginated tbody. -->
-      <tfoot>
-        <tr id="typeahead" class="ta-row" hidden></tr>
-      </tfoot>
+      <tfoot id="typeahead" hidden></tfoot>
     </table>
     <div id="sentinel" aria-hidden="true"></div>
     <p class="status" id="status">{total.toLocaleString()} domains</p>
@@ -134,21 +132,26 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
     return `<tr><td class="c-icon">${icon}</td><td class="c-name"><a href="${dpath(g.domain)}">${esc(g.domain)}</a></td><td class="c-chips">${chips}</td></tr>`;
   };
 
-  // The "go to what you typed" row — shown whenever the term isn't already a
-  // known domain. Clicking opens /{term}/ (the 404/discover page if new).
+  // The "go to what you typed" rows — shown whenever the term isn't already a
+  // known domain. Clicking opens /{domain}/ (the 404/discover page if new).
+  // A full domain gets one row; a bare name ("mintlify") fans out across
+  // common TLDs so the empty state always offers somewhere to go.
+  const TA_TLDS = ["com", "io", "dev", "ai", "co", "sh", "org", "net", "app"];
+  const taRow = (d: string) => {
+    const L = esc((d[0] || "?").toUpperCase());
+    return `<tr class="ta-row"><td class="c-icon"><span class="ph">${L}</span></td>` +
+      `<td class="c-name"><a href="${dpath(d)}">${esc(d)}</a></td>` +
+      `<td class="c-chips"><span class="ta-go">discover →</span></td></tr>`;
+  };
   const updateTypeahead = () => {
     const t = term.trim().toLowerCase();
-    const exists = !!t && all.some((g) => g.domain.toLowerCase() === t);
-    if (t && isDomain(t) && !exists) {
-      const L = esc((t[0] || "?").toUpperCase());
-      typeahead.innerHTML =
-        `<td class="c-icon"><span class="ph">${L}</span></td>` +
-        `<td class="c-name"><a href="${dpath(t)}">${esc(t)}</a></td>` +
-        `<td class="c-chips"><span class="ta-go">discover →</span></td>`;
-      typeahead.hidden = false;
-    } else {
-      typeahead.hidden = true;
-    }
+    const known = new Set(all.map((g) => g.domain.toLowerCase()));
+    let candidates: string[] = [];
+    if (t && isDomain(t)) candidates = [t];
+    else if (/^[a-z0-9-]+$/.test(t) && filtered.length === 0) candidates = TA_TLDS.map((tld) => `${t}.${tld}`);
+    candidates = candidates.filter((d) => !known.has(d));
+    typeahead.innerHTML = candidates.map(taRow).join("");
+    typeahead.hidden = candidates.length === 0;
   };
 
   const render = (reset: boolean) => {
@@ -159,10 +162,9 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
     if (filtered.length) {
       status.textContent = `${filtered.length.toLocaleString()} domain${filtered.length === 1 ? "" : "s"}`;
     } else {
-      const t = term.trim();
-      // Valid domain not in the registry → the discover row offers it. Otherwise
-      // nudge toward a full domain (that's the path to finding something new).
-      status.textContent = isDomain(t.toLowerCase()) ? "Not in the registry yet — discover it below." : "Enter a valid domain to search.";
+      // The typeahead rows below offer /{domain}/ candidates to discover —
+      // unless the term can't become a domain (multi-word, symbols).
+      status.textContent = typeahead.hidden ? "No matches." : "Not in the registry yet — discover it below.";
     }
   };
 
@@ -180,8 +182,8 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
     kind ? u.searchParams.set("kind", kind) : u.searchParams.delete("kind");
     term.trim() ? u.searchParams.set("q", term.trim()) : u.searchParams.delete("q");
     history.replaceState(null, "", u);
+    updateTypeahead(); // before render — the empty-state status reads typeahead.hidden
     render(true);
-    updateTypeahead();
   };
 
   fetch("/api/domains.json").then((r) => r.json()).then((data: DomainRow[]) => {
@@ -286,8 +288,8 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
   :global(.c-chips .chip:hover) { color: var(--gray-1000); border-color: var(--gray-300); }
   :global(.c-chips .chip .n) { opacity: 0.5; }
 
-  /* "go to what you typed" row (cells set via JS → :global) */
-  :global(.ta-row[hidden]) { display: none; }
+  /* "go to what you typed" rows (cells set via JS → :global) */
+  :global(table.rows tfoot[hidden]) { display: none; }
   :global(table.rows tfoot td) { border-top: 1px solid var(--gray-100); }
   :global(.ta-go) { font-family: var(--font-mono); font-size: 12px; color: var(--gray-400); }
 

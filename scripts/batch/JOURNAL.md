@@ -32,3 +32,13 @@
   concurrency after the TPM bump, alongside asana/kensho/ramp.
 - algolia shows residual over-splitting (7 surfaces; 'website search index'
   should not be a surface) — acceptable rate for now, rerun list catches it.
+
+## 04:30 update
+- batch-01 at ~154/200, failures still 4. drive.sh chained to start batch-02
+  when batch-01's process exits (concurrency 2, gates armed).
+- checker refined twice more (negated 'do not use default credentials' text;
+  {template} URLs and brand sibling-TLDs exempt from grounding).
+- Capacity: median 129K tokens/domain, p90 248K. At the 200K TPM limit the
+  remaining ~2,900 domains ≈ 32h — the morning TPM bump is the lever. When it
+  lands: kill drive.sh, restart with concurrency 8-10 (resumable, skips done).
+- No push notification sent: nothing user-actionable; everything proceeding.

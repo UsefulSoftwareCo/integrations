@@ -25,28 +25,28 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:39:32.344Z",
-    "summary": "Found 3 developer surfaces for apidog.com: 1 authenticated REST API at https://api.apidog.com using a personal API access token plus required version header, 1 MCP server documented by Apidog but without a confirmed connect endpoint/auth mechanism in the scraped docs, and 1 npm CLI (`apidog-cli`, command `apidog`) with install docs but no confirmed auth mechanics in the scraped docs.",
+    "discoveredAt": "2026-07-02T20:02:30.461Z",
+    "summary": "Apidog exposes a public REST API at `https://api.apidog.com`, an `apidog` CLI, and documents an MCP server for AI integrations; the REST API and CLI use a personal API access token.",
+    "description": "Apidog is an API development platform for designing, documenting, testing, and sharing APIs. It also provides AI-oriented MCP connectivity for working with Apidog projects, published API docs, and OpenAPI files.",
     "credentials": {
-      "apidog_pat": {
+      "apidog_access_token": {
         "type": "bearer",
-        "label": "Apidog API Access Token",
-        "generateUrl": "https://app.apidog.com/user/login",
-        "setup": "Sign in to the [Apidog web app](https://app.apidog.com/user/login). In Apidog, go to Avatar → Account Settings → API Access Token, click `New Token`, choose a name and expiration, then click `Save and generate token`. Copy the token immediately; the [Authentication docs](https://openapi.apidog.io/authentication-525799m0) say it is only shown once and grants the same access as your account across teams and projects.",
+        "label": "Apidog personal API access token",
+        "generateUrl": "https://docs.apidog.com/api-access-token",
+        "setup": "In Apidog, open your avatar menu, then go to [Account Settings → API Access Token](https://docs.apidog.com/api-access-token) or see the [OpenAPI authentication guide](https://openapi.apidog.io/authentication-525799m0). Click `New Token`/`Create a new personal token`, choose a name and expiration, then `Save and generate token`. Copy the token immediately; Apidog says it is only shown once.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "apidog-rest-api",
-        "name": "Apidog REST API",
+        "slug": "apidog-openapi",
+        "name": "Apidog OpenAPI",
         "type": "http",
         "docs": "https://openapi.apidog.io/",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://openapi.apidog.io/introduction-525797m0",
-            "https://openapi.apidog.io/api-versions-525798m0",
+            "https://openapi.apidog.io/",
             "https://openapi.apidog.io/authentication-525799m0"
           ]
         },
@@ -56,7 +56,7 @@
             {
               "use": [
                 {
-                  "id": "apidog_pat",
+                  "id": "apidog_access_token",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -74,17 +74,54 @@
             }
           ]
         },
-        "url": "https://api.apidog.com",
-        "requiredHeaders": [
+        "url": "https://api.apidog.com"
+      },
+      {
+        "slug": "apidog-cli",
+        "name": "Apidog CLI",
+        "type": "cli",
+        "docs": "https://docs.apidog.com/introduction-to-apidog-cli-605134m0",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.apidog.com/apidog-cli-options-609656m0",
+            "https://docs.apidog.com/installing-and-running-apidog-cli-605135m0"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "apidog_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "apidog login",
+                    "env": [
+                      "APIDOG_ACCESS_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.apidog.com/apidog-cli-options-609656m0",
+                  "https://docs.apidog.com/installing-and-running-apidog-cli-605135m0"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
           {
-            "name": "X-Apidog-Api-Version",
-            "source": {
-              "kind": "static",
-              "value": "2024-03-28"
-            },
-            "description": "Docs say this header is required; omitting it returns 422."
+            "registryType": "npm",
+            "identifier": "apidog",
+            "runtimeHint": "node"
           }
-        ]
+        ],
+        "command": "apidog"
       },
       {
         "slug": "apidog-mcp-server",
@@ -94,154 +131,95 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://apidog.com/",
             "https://docs.apidog.com/apidog-mcp-server",
             "https://docs.apidog.com/connect-apidog-project-to-ai-901476m0",
-            "https://docs.apidog.com/connect-published-documentation-to-ai-901468m0"
-          ]
-        },
-        "auth": {
-          "status": "unknown"
-        }
-      },
-      {
-        "slug": "apidog-cli",
-        "name": "Apidog CLI",
-        "type": "cli",
-        "docs": "https://docs.apidog.com/installing-and-running-apidog-cli-605135m0",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.apidog.com/installing-and-running-apidog-cli-605135m0",
-            "https://docs.apidog.com/apidog-cli-options-609656m0",
-            "https://apidog.com/"
+            "https://docs.apidog.com/connect-published-documentation-to-ai-901468m0",
+            "https://docs.apidog.com/connect-openapi-files-to-ai-901477m0"
           ]
         },
         "auth": {
           "status": "unknown"
         },
-        "packages": [
-          {
-            "registryType": "npm",
-            "identifier": "apidog-cli",
-            "runtimeHint": "node"
-          }
-        ],
-        "command": "apidog"
+        "notes": "Apidog documents an MCP server for connecting AI tools to Apidog projects, published documentation, and OpenAPI files, but the scraped pages did not expose a stable MCP connect endpoint URL or clearly readable auth mechanics. The docs indicate project connections use an access token and published docs/OpenAPI-file connections may be shareable/public, but the exact binding could not be confirmed from the retrieved page text."
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:39:32.344Z",
+  "discoveredAt": "2026-07-02T20:02:30.462Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 142544,
-    "completion_tokens": 1074,
-    "total_tokens": 143618
+    "prompt_tokens": 219999,
+    "completion_tokens": 1536,
+    "total_tokens": 221535
   },
   "visited": [
-    "https://apidog.com/",
-    "https://apidog.com/articles/graphql/",
-    "https://apidog.com/blog/apidog-cli-ai-agent-workflows/",
+    "https://apidog.com/blog/apidog-cli-authentication/",
     "https://apidog.com/blog/apidog-cli-ci-cd-pipeline/",
-    "https://apidog.com/blog/apidog-cli-vs-newman/",
-    "https://apidog.com/blog/apidog-mcp-server/",
-    "https://apidog.com/blog/demystifying-graphql-endpoints-a-developers-perspective/",
-    "https://apidog.com/blog/graphql-request/",
-    "https://apidog.com/blog/mcp-servers-explained/",
-    "https://apidog.com/blog/rest-vs-graphql/",
-    "https://apidog.com/blog/what-is-graphql/",
-    "https://apidog.com/solutions/multi-protocol-api-development/",
-    "https://chromewebstore.google.com/detail/apidog-browser-extension/dmhljjnonlhapikmelaefohecogokhio",
+    "https://dev.to/pipipi-dev/streamlining-api-development-with-apidog-mcp-x-claude-code-5dlg",
+    "https://docs.apidog.com/api-access-token",
     "https://docs.apidog.com/apidog-cli-options-609656m0",
     "https://docs.apidog.com/apidog-mcp-server",
+    "https://docs.apidog.com/apidog-openapi-specificaiton-extensions-645605m0",
+    "https://docs.apidog.com/authentication-and-authorization-in-apidog-629096m0",
     "https://docs.apidog.com/connect-apidog-project-to-ai-901476m0",
+    "https://docs.apidog.com/connect-openapi-files-to-ai-901477m0",
     "https://docs.apidog.com/connect-published-documentation-to-ai-901468m0",
+    "https://docs.apidog.com/create-a-security-scheme-965342m0",
+    "https://docs.apidog.com/endpoint-basics-533932m0",
+    "https://docs.apidog.com/es/conectar-documentaci%C3%B3n-publicada-a-la-ia-2193455m0",
+    "https://docs.apidog.com/es/conectar-un-proyecto-de-apidog-a-la-ia-2193454m0",
+    "https://docs.apidog.com/import-openapi-spec-635046m0",
+    "https://docs.apidog.com/import-options-633930m0",
     "https://docs.apidog.com/installing-and-running-apidog-cli-605135m0",
     "https://docs.apidog.com/introduction-to-apidog-cli-605134m0",
+    "https://docs.apidog.com/ko/%EB%B3%B4%EC%95%88-%EC%8A%A4%ED%82%A4%EB%A7%88-%EC%83%9D%EC%84%B1-2193840m0",
+    "https://docs.apidog.com/managing-authentication-state-646326m0",
     "https://docs.apidog.com/mcp-client-1930835m0",
-    "https://en.wikipedia.org/wiki/Apidog",
-    "https://github.com/apidog",
-    "https://openapi.apidog.io/api-versions-525798m0",
+    "https://docs.apidog.com/migration-guide-overview-633036m0",
+    "https://docs.apidog.com/spec-first-mode-beta-2058268m0",
+    "https://docs.apidog.com/vi/k%E1%BA%BFt-n%E1%BB%91i-t%C3%A0i-li%E1%BB%87u-%C4%91%C3%A3-xu%E1%BA%A5t-b%E1%BA%A3n-v%E1%BB%9Bi-ai-2200844m0",
+    "https://docs.apidog.com/vi/mcp-client-2200614m0",
+    "https://docs.apidog.com/viewing-api-documentation-631148m0",
+    "https://docs.apidog.com/zh-cn/%E9%80%9A%E7%9F%A5%E8%AE%BE%E7%BD%AE-2194875m0",
+    "https://docs.apidog.com/zh-tr/%E5%B0%87%E5%B7%B2%E7%99%BC%E5%B8%83%E7%9A%84%E6%96%87%E4%BB%B6%E9%80%A3%E6%8E%A5%E8%87%B3-ai-2201325m0",
+    "https://docs.apidog.com/zh-tr/%E5%BB%BA%E7%AB%8B%E5%AE%89%E5%85%A8%E6%80%A7%E6%96%B9%E6%A1%88-2201239m0",
+    "https://docs.apidog.com/zh-tw/%E9%80%9A%E7%9F%A5%E8%A8%AD%E5%AE%9A-2201333m0",
+    "https://openapi.apidog.io/",
     "https://openapi.apidog.io/authentication-525799m0",
-    "https://openapi.apidog.io/export-data-in-openapiswagger-format-7312737e0",
-    "https://openapi.apidog.io/import-openapiswagger-data-7312738e0",
-    "https://openapi.apidog.io/introduction-525797m0",
-    "https://www.linkedin.com/company/apidog"
+    "https://openapi.apidog.io/introduction-525797m0"
   ],
   "grounding": [
-    "https://academy.apidog.com/",
     "https://api.apidog.com",
     "https://apidog.canny.io/changelog/",
     "https://apidog.com",
-    "https://apidog.com/",
-    "https://apidog.com/about/",
-    "https://apidog.com/ai-powered-workflow/",
-    "https://apidog.com/api-clients/",
-    "https://apidog.com/api-debugging/",
-    "https://apidog.com/api-design-tools/",
-    "https://apidog.com/api-design/",
-    "https://apidog.com/api-doc/",
-    "https://apidog.com/api-documentation-tools/",
-    "https://apidog.com/api-mocking-tools/",
-    "https://apidog.com/api-mocking/",
-    "https://apidog.com/api-testing-tools/",
-    "https://apidog.com/api-testing/",
-    "https://apidog.com/articles/",
-    "https://apidog.com/articles/graphql/",
-    "https://apidog.com/blog/",
-    "https://apidog.com/blog/apidog-cli-ai-agent-workflows/",
+    "https://apidog.com/blog/apidog-cli-authentication/",
     "https://apidog.com/blog/apidog-cli-ci-cd-pipeline/",
-    "https://apidog.com/blog/apidog-cli-vs-newman/",
-    "https://apidog.com/blog/apidog-mcp-server/",
-    "https://apidog.com/blog/demystifying-graphql-endpoints-a-developers-perspective/",
-    "https://apidog.com/blog/graphql-request/",
-    "https://apidog.com/blog/mcp-servers-explained/",
-    "https://apidog.com/blog/product-updates/",
-    "https://apidog.com/blog/rest-vs-graphql/",
-    "https://apidog.com/blog/what-is-graphql/",
-    "https://apidog.com/compare/apidog-vs-bruno/",
-    "https://apidog.com/compare/apidog-vs-competitors/",
-    "https://apidog.com/compare/apidog-vs-hoppscotch/",
-    "https://apidog.com/compare/apidog-vs-insomnia/",
-    "https://apidog.com/compare/apidog-vs-mintlify/",
-    "https://apidog.com/compare/apidog-vs-postman/",
-    "https://apidog.com/compare/apidog-vs-rapidapi/",
-    "https://apidog.com/compare/apidog-vs-readme/",
-    "https://apidog.com/compare/apidog-vs-stoplight/",
     "https://apidog.com/download",
-    "https://apidog.com/download/",
-    "https://apidog.com/help/eu/",
-    "https://apidog.com/mcp-client/",
-    "https://apidog.com/mcp-server/",
-    "https://apidog.com/mcp-testing-tools/",
-    "https://apidog.com/pricing/",
-    "https://apidog.com/solutions/multi-protocol-api-development/",
-    "https://app.apidog.com/",
-    "https://app.apidog.com/user/login",
-    "https://chromewebstore.google.com/detail/apidog-browser-extension/dmhljjnonlhapikmelaefohecogokhio",
+    "https://dev.to/pipipi-dev/streamlining-api-development-with-apidog-mcp-x-claude-code-5dlg",
     "https://docs.apidog.com/",
     "https://docs.apidog.com/a2a-debugger-2152018m0",
     "https://docs.apidog.com/adding-an-assertion-645440m0",
     "https://docs.apidog.com/ai-agent-debugger-2152013m0",
     "https://docs.apidog.com/ai-features-1097197m0",
+    "https://docs.apidog.com/api-access-token",
     "https://docs.apidog.com/api-technologies-supported-895780m0",
     "https://docs.apidog.com/api-versions-in-apidog-645639m0",
     "https://docs.apidog.com/apidog-cli-commands-options-609656m0",
     "https://docs.apidog.com/apidog-cli-options-609656m0",
     "https://docs.apidog.com/apidog-learning-center-532959m0",
     "https://docs.apidog.com/apidog-mcp-server",
+    "https://docs.apidog.com/apidog-openapi-specificaiton-extensions-645605m0",
     "https://docs.apidog.com/apidog-support-center-748035m0?nav=01JDH22ZGD5S7Q55YY2KYH0QJT",
     "https://docs.apidog.com/apl-design-guidelines-1343750m0",
     "https://docs.apidog.com/appearance-of-parameter-lists-539781m0",
     "https://docs.apidog.com/assertion-588467m0",
     "https://docs.apidog.com/assertion-scripts-593739m0",
     "https://docs.apidog.com/associated-test-scenarios-756473m0",
+    "https://docs.apidog.com/authentication-and-authorization-in-apidog-629096m0",
     "https://docs.apidog.com/automated-tests-in-apidog-599176m0",
     "https://docs.apidog.com/aws-secrets-manager-781902m0",
     "https://docs.apidog.com/azure-key-vault-781845m0",
     "https://docs.apidog.com/basic-concepts-in-apidog-644342m0",
     "https://docs.apidog.com/batch-endpoint-management-539859m0",
-    "https://docs.apidog.com/branches-in-apidog-616421m0",
     "https://docs.apidog.com/build-a-schema-534897m0",
     "https://docs.apidog.com/calling-other-programming-languages-593730m0",
     "https://docs.apidog.com/cicd-in-apidog-609698m0",
@@ -251,6 +229,7 @@
     "https://docs.apidog.com/components-533976m0",
     "https://docs.apidog.com/configure-multiple-request-body-examples-865454m0",
     "https://docs.apidog.com/connect-apidog-project-to-ai-901476m0",
+    "https://docs.apidog.com/connect-openapi-files-to-ai-901477m0",
     "https://docs.apidog.com/connect-published-documentation-to-ai-901468m0",
     "https://docs.apidog.com/contract-testing-1792227m0",
     "https://docs.apidog.com/cors-proxy-780225m0",
@@ -259,6 +238,7 @@
     "https://docs.apidog.com/create-a-security-scheme-965342m0",
     "https://docs.apidog.com/create-a-test-scenario-599311m0",
     "https://docs.apidog.com/create-a-test-suite-1913654m0",
+    "https://docs.apidog.com/creati",
     "https://docs.apidog.com/creating-an-endpoint-644726m0",
     "https://docs.apidog.com/creating-api-versions-645641m0",
     "https://docs.apidog.com/creating-test-scenarios-645499m0",
@@ -282,12 +262,13 @@
     "https://docs.apidog.com/end-to-end-testing-610068m0",
     "https://docs.apidog.com/endpoint-basics-533932m0",
     "https://docs.apidog.com/endpoint-change-history-539804m0",
-    "https://docs.apidog.com/endpoint-compliance-check-1343782m0",
     "https://docs.apidog.com/endpoint-status-539760m0",
     "https://docs.apidog.com/endpoint-unique-identification-539790m0",
     "https://docs.apidog.com/environment-management-584758m0",
     "https://docs.apidog.com/environments-variables-in-apidog-577823m0",
     "https://docs.apidog.com/es",
+    "https://docs.apidog.com/es/conectar-documentaci%C3%B3n-publicada-a-la-ia-2193455m0",
+    "https://docs.apidog.com/es/conectar-un-proyecto-de-apidog-a-la-ia-2193454m0",
     "https://docs.apidog.com/explore-more-645526m0",
     "https://docs.apidog.com/export-data-635117m0",
     "https://docs.apidog.com/export-test-scenarios-603716m0",
@@ -295,11 +276,9 @@
     "https://docs.apidog.com/flow-control-conditions-599419m0",
     "https://docs.apidog.com/folder-tree-settings-646356m0",
     "https://docs.apidog.com/generate-schemas-from-json-etc-534963m0",
-    "https://docs.apidog.com/generate-test-cases-1624860m0",
     "https://docs.apidog.com/generating-code-541770m0",
     "https://docs.apidog.com/generating-requests-541765m0",
     "https://docs.apidog.com/get-started-with-apidog-644404m0",
-    "https://docs.apidog.com/git-connection-1369507m0",
     "https://docs.apidog.com/global-parameters-851212m0",
     "https://docs.apidog.com/hashicorp-vault-780714m0",
     "https://docs.apidog.com/id",
@@ -325,13 +304,13 @@
     "https://docs.apidog.com/introduction-to-schema-533975m0",
     "https://docs.apidog.com/jp",
     "https://docs.apidog.com/ko",
-    "https://docs.apidog.com/llm-friendly-features-1097197m0",
+    "https://docs.apidog.com/ko/%EB%B3%B4%EC%95%88-%EC%8A%A4%ED%82%A4%EB%A7%88-%EC%83%9D%EC%84%B1-2193840m0",
     "https://docs.apidog.com/making-a-request-645415m0",
     "https://docs.apidog.com/manage-runtime-environment-of-apis-from-other-projects-603705m0",
+    "https://docs.apidog.com/managing-authentication-state-646326m0",
     "https://docs.apidog.com/manual-import-633884m0",
     "https://docs.apidog.com/markdown-documentation-1262996m0",
     "https://docs.apidog.com/mcp-client-1930835m0",
-    "https://docs.apidog.com/member-roles-permission-settings-616186m0",
     "https://docs.apidog.com/migration-guide-overview-633036m0",
     "https://docs.apidog.com/mock-api-data-in-apidog-617869m0",
     "https://docs.apidog.com/mock-language-locales-965986m0",
@@ -346,9 +325,6 @@
     "https://docs.apidog.com/oracle-client-593551m0",
     "https://docs.apidog.com/orchestrate-test-suite-1913655m0",
     "https://docs.apidog.com/other-examples-597448m0",
-    "https://docs.apidog.com/overview-633036m0",
-    "https://docs.apidog.com/overview-644404m0",
-    "https://docs.apidog.com/overview-778134m0",
     "https://docs.apidog.com/pass-data-between-requests-601617m0",
     "https://docs.apidog.com/performance-testing-603638m0",
     "https://docs.apidog.com/post-processor-scripts-593611m0",
@@ -383,7 +359,6 @@
     "https://docs.apidog.com/sharing-endpoints-with-api-versions-645645m0",
     "https://docs.apidog.com/smart-mock-618190m0",
     "https://docs.apidog.com/spec-first-mode-beta-2058268m0",
-    "https://docs.apidog.com/sso-overview-616325m0",
     "https://docs.apidog.com/sync-data-from-endpoints-and-endpoint-cases-603709m0",
     "https://docs.apidog.com/test-cases-1605608m0",
     "https://docs.apidog.com/test-reports-603898m0",
@@ -395,32 +370,28 @@
     "https://docs.apidog.com/using-js-libraries-593738m0",
     "https://docs.apidog.com/using-variables-577908m0",
     "https://docs.apidog.com/using-variables-597443m0",
-    "https://docs.apidog.com/validate-responses-541768m0",
     "https://docs.apidog.com/validating-responses-541768m0",
     "https://docs.apidog.com/vault-secret-in-apidog-778134m0",
     "https://docs.apidog.com/vi",
+    "https://docs.apidog.com/vi/k%E1%BA%BFt-n%E1%BB%91i-t%C3%A0i-li%E1%BB%87u-%C4%91%C3%A3-xu%E1%BA%A5t-b%E1%BA%A3n-v%E1%BB%9Bi-ai-2200844m0",
+    "https://docs.apidog.com/vi/mcp-client-2200614m0",
     "https://docs.apidog.com/viewing-api-documentation-631148m0",
     "https://docs.apidog.com/visibility-settings-662939m0",
     "https://docs.apidog.com/visualizing-responses-597452m0",
     "https://docs.apidog.com/wait-588474m0",
     "https://docs.apidog.com/zh-cn",
+    "https://docs.apidog.com/zh-cn/%E9%80%9A%E7%9F%A5%E8%AE%BE%E7%BD%AE-2194875m0",
+    "https://docs.apidog.com/zh-tr/%E5%B0%87%E5%B7%B2%E7%99%BC%E5%B8%83%E7%9A%84%E6%96%87%E4%BB%B6%E9%80%A3%E6%8E%A5%E8%87%B3-ai-2201325m0",
+    "https://docs.apidog.com/zh-tr/%E5%BB%BA%E7%AB%8B%E5%AE%89%E5%85%A8%E6%80%A7%E6%96%B9%E6%A1%88-2201239m0",
     "https://docs.apidog.com/zh-tw",
-    "https://en.wikipedia.org/wiki/Apidog",
-    "https://github.com/apidog",
-    "https://github.com/orgs/apidog/projects/4",
-    "https://legal.apidog.com/security-measures-645653m0",
-    "https://legal.apidog.io/",
-    "https://medusa.apidog.io/list-currencies-18089900e0",
+    "https://docs.apidog.com/zh-tw/%E9%80%9A%E7%9F%A5%E8%A8%AD%E5%AE%9A-2201333m0",
     "https://openapi.apidog.io/",
-    "https://openapi.apidog.io/#about-api-versioning",
     "https://openapi.apidog.io/#authorization",
     "https://openapi.apidog.io/#common-components-for-requesting-apis",
     "https://openapi.apidog.io/#create-a-new-token",
     "https://openapi.apidog.io/#generating-the-api-access-token",
     "https://openapi.apidog.io/#header",
     "https://openapi.apidog.io/#path",
-    "https://openapi.apidog.io/#specifying-an-api-version",
-    "https://openapi.apidog.io/#supported-api-versions",
     "https://openapi.apidog.io/525798m0",
     "https://openapi.apidog.io/525799m0",
     "https://openapi.apidog.io/api-versions-525798m0",
@@ -430,15 +401,6 @@
     "https://openapi.apidog.io/import-openapiswagger-data-7312738e0",
     "https://openapi.apidog.io/import-postman-collection-data-7312736e0",
     "https://openapi.apidog.io/introduction-525797m0",
-    "https://openapi.apidog.io/llms.txt",
-    "https://plugins.jetbrains.com/plugin/25925-apidog-fast-request--auto-detect-endpoints-http-rest-client",
-    "https://status.apidog.com/",
-    "https://testimonial.to/apidog/all",
-    "https://trust.apidog.com",
-    "https://trust.apidog.com/",
-    "https://www.g2.com/products/apidog/reviews",
-    "https://www.linkedin.com/company/apidog",
-    "https://www.youtube.com/@Apidoghq",
-    "https://zcal.co/apidog/demo"
+    "https://openapi.apidog.io/llms.txt"
   ]
 }

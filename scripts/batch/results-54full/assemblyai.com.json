@@ -18,14 +18,15 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:41:13.636Z",
-    "summary": "AssemblyAI exposes 4 authenticated developer APIs (REST, streaming WebSocket, LLM Gateway, Voice Agent), 1 public docs MCP server, and 1 authenticated CLI; all authenticated surfaces use the same AssemblyAI API key.",
+    "discoveredAt": "2026-07-02T20:03:48.260Z",
+    "summary": "AssemblyAI exposes authenticated REST and WebSocket APIs for speech-to-text, voice agents, and LLM Gateway, plus a public docs MCP server and an authenticated CLI.",
+    "description": "AssemblyAI provides voice AI infrastructure including pre-recorded and streaming speech-to-text, voice agent capabilities, and an LLM gateway. Its platform is used to transcribe, analyze, and build applications around audio and spoken conversations.",
     "credentials": {
       "assemblyai_api_key": {
         "type": "api_key",
         "label": "AssemblyAI API key",
         "generateUrl": "https://www.assemblyai.com/dashboard/home",
-        "setup": "Sign in to the [AssemblyAI dashboard](https://www.assemblyai.com/dashboard/home) and copy your API key. The docs consistently say to get the key from [your dashboard](https://www.assemblyai.com/dashboard/home). Many examples store it in `ASSEMBLYAI_API_KEY` first, e.g. `export ASSEMBLYAI_API_KEY=<your-key>`.",
+        "setup": "Log in to the [AssemblyAI dashboard](https://www.assemblyai.com/dashboard/home), then go to **Workspace → Manage → API Keys** and click **Create New API Key**. Name the key and copy it. Docs note each key is tied to a specific project, and uploaded files must be transcribed with an API key from the same project.",
         "acquisition": "manual"
       }
     },
@@ -34,12 +35,14 @@
         "slug": "assemblyai-rest-api",
         "name": "AssemblyAI REST API",
         "type": "http",
-        "docs": "https://www.assemblyai.com/docs/api-reference/overview.md",
+        "docs": "https://www.assemblyai.com/docs/api-reference/overview",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://www.assemblyai.com/openapi.json",
-            "https://www.assemblyai.com/docs/api-reference/overview.md"
+            "https://assemblyai.com/openapi.json",
+            "https://www.assemblyai.com/docs/api-reference/overview.md",
+            "https://www.assemblyai.com/docs/voice-agents/voice-agent-api.md",
+            "https://www.assemblyai.com/docs/llm-gateway/overview.md"
           ]
         },
         "auth": {
@@ -58,58 +61,31 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.assemblyai.com/openapi.json",
+                  "https://assemblyai.com/openapi.json",
                   "https://www.assemblyai.com/docs/api-reference/overview.md"
                 ]
               }
             }
           ]
         },
-        "url": "https://api.assemblyai.com",
-        "variables": [
-          {
-            "name": "region",
-            "resolveFrom": "Use the EU hostname `api.eu.assemblyai.com` instead of `api.assemblyai.com` for supported pre-recorded STT operations.",
-            "description": "Optional region-specific hostname."
-          }
-        ]
+        "url": "https://api.assemblyai.com"
       },
       {
-        "slug": "assemblyai-streaming-websocket-api",
-        "name": "AssemblyAI Streaming WebSocket API",
+        "slug": "assemblyai-streaming-speech-to-text-websocket-api",
+        "name": "AssemblyAI Streaming Speech-to-Text WebSocket API",
         "type": "http",
-        "docs": "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-streaming.md",
+        "docs": "https://www.assemblyai.com/docs/streaming/getting-started/transcribe-streaming-audio",
         "basis": {
           "via": "discovered",
           "evidence": [
             "https://www.assemblyai.com/docs/api-reference/overview.md",
-            "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-streaming.md",
             "https://www.assemblyai.com/docs/streaming/getting-started/transcribe-streaming-audio.md",
-            "https://www.assemblyai.com/docs/api-reference/streaming-api/generate-streaming-token.md"
+            "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-streaming.md"
           ]
         },
         "auth": {
           "status": "required",
           "entries": [
-            {
-              "use": [
-                {
-                  "id": "assemblyai_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "query",
-                    "scheme": "token",
-                    "paramName": "token"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-streaming.md"
-                ]
-              }
-            },
             {
               "use": [
                 {
@@ -127,69 +103,34 @@
                   "https://www.assemblyai.com/docs/streaming/getting-started/transcribe-streaming-audio.md"
                 ]
               }
-            }
-          ]
-        },
-        "url": "wss://streaming.assemblyai.com/v3/ws",
-        "variables": [
-          {
-            "name": "region",
-            "resolveFrom": "Use the EU hostname `streaming.eu.assemblyai.com` instead of `streaming.assemblyai.com` if needed.",
-            "description": "Optional region-specific hostname."
-          }
-        ],
-        "notes": "Docs say you can use your API key directly, or alternatively generate a temporary streaming token via `GET /v3/token` and pass that via the `token` query parameter. The temporary token is minted from the developer's API key rather than being a separately acquired dashboard credential."
-      },
-      {
-        "slug": "assemblyai-llm-gateway-api",
-        "name": "AssemblyAI LLM Gateway API",
-        "type": "http",
-        "docs": "https://www.assemblyai.com/docs/llm-gateway/overview.md",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://www.assemblyai.com/docs/api-reference/overview.md",
-            "https://www.assemblyai.com/docs/llm-gateway/overview.md"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
+            },
             {
               "use": [
                 {
                   "id": "assemblyai_api_key",
                   "mechanics": {
                     "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization"
+                    "in": "query",
+                    "paramName": "token"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.assemblyai.com/docs/api-reference/overview.md",
-                  "https://www.assemblyai.com/docs/llm-gateway/overview.md"
+                  "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-streaming.md"
                 ]
               }
             }
           ]
         },
-        "url": "https://llm-gateway.assemblyai.com/v1",
-        "variables": [
-          {
-            "name": "region",
-            "resolveFrom": "Use the EU hostname `llm-gateway.eu.assemblyai.com` instead of `llm-gateway.assemblyai.com` if needed.",
-            "description": "Optional region-specific hostname."
-          }
-        ]
+        "url": "wss://streaming.assemblyai.com/v3/ws"
       },
       {
         "slug": "assemblyai-voice-agent-api",
         "name": "AssemblyAI Voice Agent API",
         "type": "http",
-        "docs": "https://www.assemblyai.com/docs/voice-agents/voice-agent-api.md",
+        "docs": "https://www.assemblyai.com/docs/voice-agents/voice-agent-api",
         "basis": {
           "via": "discovered",
           "evidence": [
@@ -231,26 +172,63 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://www.assemblyai.com/docs/voice-agents/voice-agent-api.md"
+                  "https://www.assemblyai.com/docs/voice-agents/voice-agent-api.md#api-reference"
                 ]
               }
             }
           ]
         },
-        "url": "https://agents.assemblyai.com",
-        "notes": "Docs show REST creation of agents at `POST https://agents.assemblyai.com/v1/agents` with `Authorization: $ASSEMBLYAI_API_KEY`, and browser/WebSocket sessions at `wss://agents.assemblyai.com/v1/ws?token=...`. Recorded as one product API surface because the guide presents both under the Voice Agent API."
+        "url": "https://agents.assemblyai.com"
+      },
+      {
+        "slug": "assemblyai-llm-gateway-api",
+        "name": "AssemblyAI LLM Gateway API",
+        "type": "http",
+        "docs": "https://www.assemblyai.com/docs/llm-gateway/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.assemblyai.com/docs/api-reference/overview.md",
+            "https://www.assemblyai.com/docs/llm-gateway/overview.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "assemblyai_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.assemblyai.com/docs/api-reference/overview.md",
+                  "https://www.assemblyai.com/docs/llm-gateway/overview.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://llm-gateway.assemblyai.com/v1"
       },
       {
         "slug": "assemblyai-docs-mcp-server",
         "name": "AssemblyAI Docs MCP Server",
         "type": "mcp",
-        "docs": "https://www.assemblyai.com/docs/agent-instructions.md",
+        "docs": "https://www.assemblyai.com/docs/agent-instructions",
         "basis": {
           "via": "discovered",
           "evidence": [
             "https://www.assemblyai.com/docs/agent-instructions.md",
             "https://www.assemblyai.com/docs/mcp",
-            "https://www.assemblyai.com/docs/pre-recorded-audio/getting-started/transcribe-an-audio-file.md"
+            "https://assemblyai.com/llms.txt"
           ]
         },
         "auth": {
@@ -259,7 +237,7 @@
             "via": "discovered",
             "evidence": [
               "https://www.assemblyai.com/docs/mcp",
-              "https://www.assemblyai.com/docs/agent-instructions.md"
+              "https://mcp.assemblyai.com/docs"
             ]
           }
         },
@@ -307,52 +285,41 @@
             "identifier": "assemblyai/assemblyai/assemblyai"
           },
           {
-            "registryType": "other",
-            "identifier": "install.sh",
-            "runtimeHint": "macOS/Linux install script from the GitHub repo"
-          },
-          {
-            "registryType": "scoop",
-            "identifier": "assemblyai"
-          },
-          {
-            "registryType": "other",
-            "identifier": "install.ps1",
-            "runtimeHint": "Windows PowerShell install script from the GitHub repo"
+            "registryType": "github",
+            "identifier": "AssemblyAI/assemblyai-cli"
           }
         ],
         "command": "assemblyai"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:41:13.636Z",
+  "discoveredAt": "2026-07-02T20:03:48.260Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 410321,
-    "completion_tokens": 2657,
-    "total_tokens": 412978
+    "prompt_tokens": 368332,
+    "completion_tokens": 2024,
+    "total_tokens": 370356
   },
   "visited": [
     "https://assemblyai.com/llms.txt",
     "https://assemblyai.com/openapi.json",
-    "https://assemblyai.github.io/assemblyai-node-sdk/?utm_source=email&utm_medium=newsletter",
     "https://github.com/AssemblyAI/assemblyai-cli",
     "https://mcp.assemblyai.com/docs",
     "https://raw.githubusercontent.com/AssemblyAI/assemblyai-cli/main/README.md",
+    "https://www.assemblyai.com/",
     "https://www.assemblyai.com/blog/assemblyai-april-2026-recap",
     "https://www.assemblyai.com/blog/what-is-model-context-protocol-mcp",
+    "https://www.assemblyai.com/docs/account-management.md",
     "https://www.assemblyai.com/docs/agent-instructions.md",
-    "https://www.assemblyai.com/docs/api-reference/llm-gateway/overview.md",
     "https://www.assemblyai.com/docs/api-reference/overview.md",
-    "https://www.assemblyai.com/docs/api-reference/streaming-api/generate-streaming-token.md",
     "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-streaming.md",
-    "https://www.assemblyai.com/docs/api-reference/voice-agents/overview.md",
     "https://www.assemblyai.com/docs/llm-gateway/overview.md",
+    "https://www.assemblyai.com/docs/llms.txt",
     "https://www.assemblyai.com/docs/mcp",
     "https://www.assemblyai.com/docs/pre-recorded-audio/getting-started/transcribe-an-audio-file.md",
     "https://www.assemblyai.com/docs/streaming/getting-started/transcribe-streaming-audio.md",
     "https://www.assemblyai.com/docs/voice-agents/voice-agent-api.md",
-    "https://www.assemblyai.com/openapi.json",
+    "https://www.assemblyai.com/docs/voice-agents/voice-agent-api.md#api-reference",
     "https://www.augmentcode.com/mcp/mcp-graphql",
     "https://www.youtube.com/watch?v=WuaNOTJ8aNg"
   ],
@@ -373,7 +340,6 @@
     "https://assemblyai.com/docs/mcp",
     "https://assemblyai.com/llms.txt",
     "https://assemblyai.com/openapi.json",
-    "https://assemblyai.github.io/assemblyai-node-sdk/?utm_source=email&utm_medium=newsletter",
     "https://cal.com/docs/api-reference/v2/bookings/create-a-booking",
     "https://cal.com/docs/api-reference/v2/event-types/get-all-event-types",
     "https://docs.github.com",
@@ -500,66 +466,170 @@
     "https://skills.github.com",
     "https://stars.github.com",
     "https://status.assemblyai.com",
-    "https://streaming.assemblyai.com",
     "https://support.github.com",
+    "https://www.ass",
+    "https://www.assemblyai.com/",
     "https://www.assemblyai.com/app",
+    "https://www.assemblyai.com/benchmarks",
     "https://www.assemblyai.com/benchmarks.md",
+    "https://www.assemblyai.com/blog",
     "https://www.assemblyai.com/blog.md",
     "https://www.assemblyai.com/blog/assemblyai-april-2026-recap",
+    "https://www.assemblyai.com/blog/universal-3-5-pro-realtime",
     "https://www.assemblyai.com/blog/what-is-model-context-protocol-mcp",
     "https://www.assemblyai.com/changelog",
     "https://www.assemblyai.com/changelog.md",
+    "https://www.assemblyai.com/contact",
+    "https://www.assemblyai.com/contact/sales",
     "https://www.assemblyai.com/contact/support",
+    "https://www.assemblyai.com/customers",
     "https://www.assemblyai.com/customers.md",
+    "https://www.assemblyai.com/customers/siro-customer-story",
+    "https://www.assemblyai.com/customers/zoom-customer-story",
     "https://www.assemblyai.com/dashboard/home",
+    "https://www.assemblyai.com/dashboard/login",
+    "https://www.assemblyai.com/dashboard/playground/voice-agent",
+    "https://www.assemblyai.com/dashboard/signup",
+    "https://www.assemblyai.com/deployments/cloud",
+    "https://www.assemblyai.com/deployments/self-hosted",
+    "https://www.assemblyai.com/docs",
     "https://www.assemblyai.com/docs/",
     "https://www.assemblyai.com/docs/Concepts/faq#supported-languages",
     "https://www.assemblyai.com/docs/Models/pii_redaction",
     "https://www.assemblyai.com/docs/Models/speech_recognition#automatic-language-detection",
     "https://www.assemblyai.com/docs/Models/summarization",
+    "https://www.assemblyai.com/docs/account-management",
+    "https://www.assemblyai.com/docs/account-management.md",
     "https://www.assemblyai.com/docs/agent-instructions.md",
-    "https://www.assemblyai.com/docs/api-reference/llm-gateway/overview.md",
+    "https://www.assemblyai.com/docs/api-reference/files/upload",
+    "https://www.assemblyai.com/docs/api-reference/llm-gateway/create-chat-completion",
+    "https://www.assemblyai.com/docs/api-reference/llm-gateway/create-speech-understanding",
+    "https://www.assemblyai.com/docs/api-reference/overview",
     "https://www.assemblyai.com/docs/api-reference/overview.md",
-    "https://www.assemblyai.com/docs/api-reference/streaming-api/generate-streaming-token.md",
+    "https://www.assemblyai.com/docs/api-reference/streaming-api/generate-streaming-token",
+    "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-3-pro-streaming",
+    "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-streaming",
     "https://www.assemblyai.com/docs/api-reference/streaming-api/universal-streaming.md",
-    "https://www.assemblyai.com/docs/api-reference/voice-agents/overview.md",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/delete",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/get",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/get-paragraphs",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/get-redacted-audio",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/get-sentences",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/get-subtitles",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/list",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/submit",
+    "https://www.assemblyai.com/docs/api-reference/transcripts/word-search",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/create-agent",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/create-webhook-subscription",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/delete-agent",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/generate-voice-agent-token",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/get-agent",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/get-webhook-subscription",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/list-agents",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/list-webhook-subscriptions",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/update-agent",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/update-webhook-subscription",
+    "https://www.assemblyai.com/docs/api-reference/voice-agent-api/voice-agent-web-socket",
+    "https://www.assemblyai.com/docs/billing-and-pricing",
+    "https://www.assemblyai.com/docs/coding-agent-prompts",
+    "https://www.assemblyai.com/docs/contact-center-best-practices",
+    "https://www.assemblyai.com/docs/cookbooks",
+    "https://www.assemblyai.com/docs/data-retention-and-model-training",
+    "https://www.assemblyai.com/docs/evaluations",
     "https://www.assemblyai.com/docs/faq.md",
+    "https://www.assemblyai.com/docs/getting-started/end-to-end-examples",
     "https://www.assemblyai.com/docs/getting-started/end-to-end-examples.md",
+    "https://www.assemblyai.com/docs/getting-started/end-to-end-examples/content-repurposing",
+    "https://www.assemblyai.com/docs/getting-started/end-to-end-examples/medical-scribe",
+    "https://www.assemblyai.com/docs/getting-started/end-to-end-examples/meeting-notetaker",
+    "https://www.assemblyai.com/docs/getting-started/end-to-end-examples/real-time-live-captioner",
+    "https://www.assemblyai.com/docs/getting-started/end-to-end-examples/real-time-meeting-assistant",
+    "https://www.assemblyai.com/docs/getting-started/end-to-end-examples/sales-call-intelligence",
+    "https://www.assemblyai.com/docs/getting-started/models",
     "https://www.assemblyai.com/docs/getting-started/models.md",
+    "https://www.assemblyai.com/docs/getting-started/universal-3-pro",
     "https://www.assemblyai.com/docs/getting-started/universal-3-pro.md",
     "https://www.assemblyai.com/docs/guides/real_time_llm_gateway",
     "https://www.assemblyai.com/docs/guides/transcribing-an-audio-file",
+    "https://www.assemblyai.com/docs/integrations",
+    "https://www.assemblyai.com/docs/integrations/activepieces",
+    "https://www.assemblyai.com/docs/integrations/amazon-connect",
+    "https://www.assemblyai.com/docs/integrations/genesys-cloud",
+    "https://www.assemblyai.com/docs/integrations/haystack",
+    "https://www.assemblyai.com/docs/integrations/langchain",
+    "https://www.assemblyai.com/docs/integrations/langchain/js",
+    "https://www.assemblyai.com/docs/integrations/langchain/python",
+    "https://www.assemblyai.com/docs/integrations/make",
+    "https://www.assemblyai.com/docs/integrations/n-8-n",
+    "https://www.assemblyai.com/docs/integrations/postman",
+    "https://www.assemblyai.com/docs/integrations/power-automate",
+    "https://www.assemblyai.com/docs/integrations/recall",
+    "https://www.assemblyai.com/docs/integrations/semantic-kernel",
+    "https://www.assemblyai.com/docs/integrations/telnyx",
+    "https://www.assemblyai.com/docs/integrations/twilio",
+    "https://www.assemblyai.com/docs/integrations/zapier",
+    "https://www.assemblyai.com/docs/integrations/zoom-rtms",
     "https://www.assemblyai.com/docs/llm-gateway/overview.md",
     "https://www.assemblyai.com/docs/llms-full.txt",
     "https://www.assemblyai.com/docs/llms.txt",
     "https://www.assemblyai.com/docs/mcp",
+    "https://www.assemblyai.com/docs/medical-scribe-best-practices",
+    "https://www.assemblyai.com/docs/medical-scribe-best-practices/medical-scribe-post-visit",
+    "https://www.assemblyai.com/docs/medical-scribe-best-practices/medical-scribe-real-time",
+    "https://www.assemblyai.com/docs/meeting-notetaker-best-practices",
+    "https://www.assemblyai.com/docs/nav-links/bubble-by-knowcode",
+    "https://www.assemblyai.com/docs/nav-links/cloudflare",
+    "https://www.assemblyai.com/docs/nav-links/drupal",
+    "https://www.assemblyai.com/docs/nav-links/pipedream",
+    "https://www.assemblyai.com/docs/nav-links/relay-app",
+    "https://www.assemblyai.com/docs/nav-links/security-overview",
+    "https://www.assemblyai.com/docs/nav-links/trust-center",
     "https://www.assemblyai.com/docs/pre-recorded-audio/getting-started/transcribe-an-audio-file.md",
     "https://www.assemblyai.com/docs/speech-understanding/getting-started.md",
-    "https://www.assemblyai.com/docs/streaming/authenticate-with-a-temporary-token",
     "https://www.assemblyai.com/docs/streaming/getting-started/optimizing-accuracy-and-latency",
     "https://www.assemblyai.com/docs/streaming/getting-started/transcribe-streaming-audio.md",
     "https://www.assemblyai.com/docs/streaming/keyterms-prompting",
     "https://www.assemblyai.com/docs/streaming/label-speakers-and-separate-channels",
     "https://www.assemblyai.com/docs/streaming/medical-mode",
     "https://www.assemblyai.com/docs/streaming/select-the-speech-model",
+    "https://www.assemblyai.com/docs/voice-agents/best-practices",
+    "https://www.assemblyai.com/docs/voice-agents/livekit-u3-rt-pro",
+    "https://www.assemblyai.com/docs/voice-agents/u3pro-pipecat",
     "https://www.assemblyai.com/docs/voice-agents/voice-agent-api",
     "https://www.assemblyai.com/docs/voice-agents/voice-agent-api.md",
+    "https://www.assemblyai.com/docs/voice-agents/voice-agent-api.md#api-reference",
+    "https://www.assemblyai.com/enterprise",
     "https://www.assemblyai.com/index.md",
     "https://www.assemblyai.com/legal/terms-of-service",
     "https://www.assemblyai.com/llms/models.md",
     "https://www.assemblyai.com/llms/pricing.md",
-    "https://www.assemblyai.com/openapi.json",
+    "https://www.assemblyai.com/partners",
     "https://www.assemblyai.com/playground",
     "https://www.assemblyai.com/pricing",
     "https://www.assemblyai.com/pricing.md",
+    "https://www.assemblyai.com/products",
     "https://www.assemblyai.com/products.md",
+    "https://www.assemblyai.com/products/guardrails",
     "https://www.assemblyai.com/products/guardrails.md",
+    "https://www.assemblyai.com/products/llm-gateway",
     "https://www.assemblyai.com/products/llm-gateway.md",
+    "https://www.assemblyai.com/products/speech-to-text",
     "https://www.assemblyai.com/products/speech-to-text.md",
+    "https://www.assemblyai.com/products/speech-understanding",
     "https://www.assemblyai.com/products/speech-understanding.md",
+    "https://www.assemblyai.com/products/streaming-speech-to-text",
     "https://www.assemblyai.com/products/streaming-speech-to-text.md",
+    "https://www.assemblyai.com/products/voice-agent-api",
     "https://www.assemblyai.com/products/voice-agent-api.md",
+    "https://www.assemblyai.com/research",
     "https://www.assemblyai.com/security",
+    "https://www.assemblyai.com/solutions/voice-agents",
+    "https://www.assemblyai.com/use-cases/agent-assist",
+    "https://www.assemblyai.com/use-cases/ai-notetakers",
+    "https://www.assemblyai.com/use-cases/ai-scribes",
+    "https://www.assemblyai.com/use-cases/call-analytics",
+    "https://www.assemblyai.com/use-cases/conversational-intelligence",
+    "https://www.assemblyai.com/use-cases/medical-transcription",
     "https://www.augmentcode.com/mcp/mcp-graphql",
     "https://www.gnu.org/software/bash/manual/html_node/Redirections.html",
     "https://www.json.org/json-en.html",

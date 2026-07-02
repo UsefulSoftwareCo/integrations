@@ -10,28 +10,29 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:41:46.143Z",
-    "summary": "atomicfi.com exposes 3 documented developer integration surfaces: 2 REST APIs (UserLink and PayLink, both authenticated with API key+secret or end-user publicToken) and the Transact hosted SDK/UI initialized with a publicToken; no public GraphQL, MCP, or CLI surface found.",
+    "discoveredAt": "2026-07-02T20:04:42.645Z",
+    "summary": "Atomic exposes documented REST APIs for UserLink and PayLink, a PCI-scoped PayLink host for Switch flows, the Transact embedded web app/SDKs for end-user flows, and SDK packages for iOS and React Native; authentication uses an Atomic API key+secret pair server-side and per-user public tokens client-side.",
+    "description": "Atomic provides embedded financial connectivity products for payroll, direct-deposit switching, income and employment verification, payment switching, and subscription or bill management. Its platform connects users to payroll providers, merchants, and service providers so partner apps can retrieve data and initiate permitted account actions.",
     "credentials": {
       "atomic_api_key_secret": {
         "type": "compound",
         "label": "Atomic API key and API secret",
         "generateUrl": "https://console.atomicfi.com/settings/credentials",
-        "setup": "In the [Atomic Console credentials page](https://console.atomicfi.com/settings/credentials), create or view your environment-specific API credentials. Use the pair together as `x-api-key` and `x-api-secret` headers in server-side API calls. Keep the secret out of client-side code.",
+        "setup": "Sign in to [Atomic Console](https://console.atomicfi.com/), then open [Settings → Credentials](https://console.atomicfi.com/settings/credentials). Create or copy your `API Key` and `API Secret`. Atomic docs say server-side API calls use these together in headers `x-api-key` and `x-api-secret`. Keep the secret off client devices and out of public code.",
         "acquisition": "manual"
       },
       "atomic_public_token": {
         "type": "bearer",
-        "label": "Atomic publicToken access token",
+        "label": "Atomic public token for an end user session",
         "generateUrl": "https://docs.atomicfi.com/reference/api#access-token__create-access-token",
-        "setup": "Create a user access token by calling Atomic's `POST /access-token` from your server using your [API key and secret](https://docs.atomicfi.com/reference/api#authentication__api-key-and-secret). The response includes `publicToken`, which you pass to Atomic client SDKs or send as the `x-public-token` header on end-user scoped API requests. The docs say this token defaults to a 24 hour expiry and can be configured from 30 minutes to 30 days.",
+        "setup": "From your server, call Atomic's `POST /access-token` endpoint using your [API key and secret](https://console.atomicfi.com/settings/credentials). The response contains a `publicToken`, which you then pass to client-side Transact SDK initialization or use in end-user-scoped API requests as `x-public-token`. Docs state this token defaults to a 24 hour expiry and can be set from 30 minutes to 30 days.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "atomic-userlink-api",
-        "name": "Atomic UserLink API",
+        "slug": "atomic-userlink-rest-api",
+        "name": "Atomic UserLink REST API",
         "type": "http",
         "docs": "https://docs.atomicfi.com/reference/api",
         "basis": {
@@ -87,8 +88,7 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.atomicfi.com/reference/api#authentication__access-token",
-                  "https://docs.atomicfi.com/reference/api"
+                  "https://docs.atomicfi.com/reference/api#authentication__access-token"
                 ]
               }
             }
@@ -97,20 +97,104 @@
         "url": "https://sandbox-api.atomicfi.com"
       },
       {
-        "slug": "atomic-transact-sdk",
-        "name": "Atomic Transact SDK",
+        "slug": "atomic-paylink-pci-rest-api",
+        "name": "Atomic PayLink PCI REST API",
         "type": "http",
+        "docs": "https://docs.atomicfi.com/products/switch/implementation",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.atomicfi.com/products/switch/implementation",
+            "https://docs.atomicfi.com/paylink/reference/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "atomic_api_key_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-key"
+                  }
+                },
+                {
+                  "id": "atomic_api_key_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-secret"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.atomicfi.com/products/switch/implementation",
+                  "https://docs.atomicfi.com/paylink/reference/api#authentication__api-key-and-secret"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://sandbox-pci.atomicfi.com",
+        "notes": "Switch implementation shows `POST /access-token` against the PCI sandbox host for card-data-related flows."
+      },
+      {
+        "slug": "atomic-transact-web-app",
+        "name": "Atomic Transact web app",
+        "type": "http",
+        "docs": "https://docs.atomicfi.com/reference/transact-sdk",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://transact.atomicfi.com/",
+            "https://docs.atomicfi.com/reference/transact-sdk",
+            "https://docs.atomicfi.com/paylink/reference/transact-sdk"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "atomic_public_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-public-token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.atomicfi.com/reference/api#authentication__access-token",
+                  "https://docs.atomicfi.com/paylink/reference/api#authentication__access-token",
+                  "https://docs.atomicfi.com/reference/transact-sdk",
+                  "https://docs.atomicfi.com/paylink/reference/transact-sdk"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://transact.atomicfi.com"
+      },
+      {
+        "slug": "atomic-transact-sdk-for-react-native",
+        "name": "Atomic Transact SDK for React Native",
+        "type": "cli",
         "docs": "https://docs.atomicfi.com/reference/transact-sdk",
         "basis": {
           "via": "discovered",
           "evidence": [
             "https://docs.atomicfi.com/reference/transact-sdk",
             "https://docs.atomicfi.com/paylink/reference/transact-sdk",
-            "https://transact.atomicfi.com/",
-            "https://docs.atomicfi.com/products/deposit/implementation",
-            "https://docs.atomicfi.com/products/verify/implementation",
-            "https://docs.atomicfi.com/products/switch/implementation",
-            "https://docs.atomicfi.com/products/manage/implementation"
+            "https://docs.atomicfi.com/paylink/guides/connect-accounts"
           ]
         },
         "auth": {
@@ -130,46 +214,125 @@
                 "evidence": [
                   "https://docs.atomicfi.com/reference/transact-sdk",
                   "https://docs.atomicfi.com/paylink/reference/transact-sdk",
-                  "https://docs.atomicfi.com/products/deposit/implementation",
-                  "https://docs.atomicfi.com/products/verify/implementation",
-                  "https://docs.atomicfi.com/products/switch/implementation",
-                  "https://docs.atomicfi.com/products/manage/implementation"
+                  "https://docs.atomicfi.com/paylink/guides/connect-accounts"
                 ]
               }
             }
           ]
         },
-        "url": "https://transact.atomicfi.com",
-        "notes": "Atomic documents Transact as a client-side SDK/UI initialized with `publicToken`. The hosted web app is served from `transact.atomicfi.com`; native SDKs for iOS, Android, React Native, Flutter, Capacitor, Browser, and WebView are documented, but these are SDK libraries rather than separate API surfaces."
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@atomicfi/transact-react-native",
+            "runtimeHint": "React Native"
+          }
+        ],
+        "command": "npm install @atomicfi/transact-react-native"
+      },
+      {
+        "slug": "atomic-transact-ios-sdk",
+        "name": "Atomic Transact iOS SDK",
+        "type": "cli",
+        "docs": "https://docs.atomicfi.com/reference/transact-sdk",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.atomicfi.com/reference/transact-sdk",
+            "https://docs.atomicfi.com/paylink/reference/transact-sdk"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "atomic_public_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.atomicfi.com/reference/transact-sdk",
+                  "https://docs.atomicfi.com/paylink/reference/transact-sdk"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "swift",
+            "identifier": "https://github.com/atomicfi/atomic-transact-ios",
+            "runtimeHint": "Swift Package Manager"
+          }
+        ],
+        "command": "Add package https://github.com/atomicfi/atomic-transact-ios in Xcode"
+      },
+      {
+        "slug": "atomic-transact-sdk-for-android",
+        "name": "Atomic Transact SDK for Android",
+        "type": "unknown",
+        "basis": {
+          "via": "discovered",
+          "evidence": []
+        },
+        "auth": {
+          "status": "unknown"
+        }
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:41:46.143Z",
+  "discoveredAt": "2026-07-02T20:04:42.646Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 237384,
-    "completion_tokens": 1744,
-    "total_tokens": 239128
+    "prompt_tokens": 250829,
+    "completion_tokens": 2445,
+    "total_tokens": 253274
   },
   "visited": [
     "https://atomic.financial/about/",
     "https://docs.atomicfi.com/",
+    "https://docs.atomicfi.com/guides/plaid-processor-token",
+    "https://docs.atomicfi.com/guides/transact-events",
+    "https://docs.atomicfi.com/guides/transact-events/best-practices-for-re-engagement",
+    "https://docs.atomicfi.com/guides/transact-events/create-a-conversion-funnel",
+    "https://docs.atomicfi.com/guides/webhooks",
     "https://docs.atomicfi.com/guides/webhooks/how-to-secure-webhook-endpoints",
+    "https://docs.atomicfi.com/guides/webhooks/how-to-set-up-webhooks",
+    "https://docs.atomicfi.com/integrations/co-auth",
     "https://docs.atomicfi.com/paylink",
+    "https://docs.atomicfi.com/paylink/guides/cde-bypass",
     "https://docs.atomicfi.com/paylink/guides/connect-accounts",
+    "https://docs.atomicfi.com/paylink/guides/execute-actions",
+    "https://docs.atomicfi.com/paylink/guides/get-started",
+    "https://docs.atomicfi.com/paylink/guides/ingest-data",
+    "https://docs.atomicfi.com/paylink/guides/jit-flow",
+    "https://docs.atomicfi.com/paylink/guides/optimistic-actions",
+    "https://docs.atomicfi.com/paylink/guides/order-monitoring",
+    "https://docs.atomicfi.com/paylink/guides/single-switch",
     "https://docs.atomicfi.com/paylink/reference/api",
+    "https://docs.atomicfi.com/paylink/reference/api?output=openapi",
+    "https://docs.atomicfi.com/paylink/reference/glossary",
     "https://docs.atomicfi.com/paylink/reference/transact-sdk",
+    "https://docs.atomicfi.com/paylink/reference/webhooks",
     "https://docs.atomicfi.com/products/deposit/implementation",
     "https://docs.atomicfi.com/products/manage/implementation",
     "https://docs.atomicfi.com/products/switch/implementation",
     "https://docs.atomicfi.com/products/verify/implementation",
     "https://docs.atomicfi.com/reference/api",
+    "https://docs.atomicfi.com/reference/api?output=openapi",
+    "https://docs.atomicfi.com/reference/employment-data",
+    "https://docs.atomicfi.com/reference/okta",
     "https://docs.atomicfi.com/reference/transact-sdk",
-    "https://docs.atomicfi.com/sitemap.xml",
+    "https://docs.atomicfi.com/reference/webhooks",
     "https://docs.atomicfi.com/userlink",
+    "https://finovate.com/videos/finovatefall-2021-atomic-fi/",
     "https://transact.atomicfi.com/",
     "https://www.atomicfi.com/",
-    "https://www.crunchbase.com/organization/atomic-fi",
     "https://www.linkedin.com/company/atomic-fi"
   ],
   "grounding": [
@@ -177,10 +340,14 @@
     "http://schemas.android.com/tools",
     "https://atomic.financial/about/",
     "https://atomic.financial/insights/atomic-unveils-paylink-manage-the-actionable-subscription-management-tool-for-financial-institutions/",
+    "https://atomicfi-public-production.s3.amazonaws.com/979115f4-34a0-44f5-901e-753a33337444_atomic-logo-dark.png",
     "https://atomicfi-public-production.s3.amazonaws.com/a8d7e778-b718-45e0-b639-2305e33e7f95_ADP.png",
     "https://auth.atomicfi.com/u/login/",
     "https://blog.cocoapods.org/CocoaPods-Specs-Repo/",
+    "https://cdn.atomicfi.com/mocky-logo.svg",
     "https://central.sonatype.com/artifact/financial.atomic/transact/versions",
+    "https://cloud.google.com/functions/docs/calling/http",
+    "https://cloudevents.io",
     "https://console.atomicfi.com/",
     "https://console.atomicfi.com/emulator",
     "https://console.atomicfi.com/settings/credentials",
@@ -191,7 +358,6 @@
     "https://developers.basistheory.com/docs/api/network-tokens/testing#test-cards",
     "https://docs.atomicfi.com/",
     "https://docs.atomicfi.com/coverage-explorer",
-    "https://docs.atomicfi.com/coverage-explorer/detail",
     "https://docs.atomicfi.com/guides/jit-flow",
     "https://docs.atomicfi.com/guides/plaid-processor-token",
     "https://docs.atomicfi.com/guides/search-experiences",
@@ -204,6 +370,10 @@
     "https://docs.atomicfi.com/guides/webhooks/how-to-secure-webhook-endpoints#hmac-signature-validation",
     "https://docs.atomicfi.com/guides/webhooks/how-to-secure-webhook-endpoints#ip-address-allowlist",
     "https://docs.atomicfi.com/guides/webhooks/how-to-set-up-webhooks",
+    "https://docs.atomicfi.com/guides/webhooks/how-to-set-up-webhooks#create-an-endpoint",
+    "https://docs.atomicfi.com/guides/webhooks/how-to-set-up-webhooks#further-reading",
+    "https://docs.atomicfi.com/guides/webhooks/how-to-set-up-webhooks#retry-policy",
+    "https://docs.atomicfi.com/guides/webhooks/how-to-set-up-webhooks#subscribe-to-events-in-console",
     "https://docs.atomicfi.com/guides/webhooks/how-to-test-webhook-endpoints",
     "https://docs.atomicfi.com/integrations/co-auth",
     "https://docs.atomicfi.com/paylink",
@@ -268,6 +438,7 @@
     "https://docs.atomicfi.com/paylink/reference/api#task__get-task-status",
     "https://docs.atomicfi.com/paylink/reference/api#user",
     "https://docs.atomicfi.com/paylink/reference/api#user__update-user",
+    "https://docs.atomicfi.com/paylink/reference/api?output=openapi",
     "https://docs.atomicfi.com/paylink/reference/glossary",
     "https://docs.atomicfi.com/paylink/reference/transact-sdk",
     "https://docs.atomicfi.com/paylink/reference/transact-sdk#event-listeners",
@@ -296,6 +467,25 @@
     "https://docs.atomicfi.com/paylink/reference/transact-sdk#transact-lifecycle__pause",
     "https://docs.atomicfi.com/paylink/reference/transact-sdk#transact-lifecycle__present-transact",
     "https://docs.atomicfi.com/paylink/reference/webhooks",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#accounts",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#accounts__accounts-updated",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#cloud-events",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#company",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#company__company-created",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#company__company-deleted",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#company__company-updated",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#company__maintenance-mode-updated",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#event-object",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#event-types__task-status-patched",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#pii-data-deleted",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#pii-data-deleted__pii-data-deleted",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#retry-policy",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#tasks",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#tasks__task-authentication-status-updated",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#tasks__task-event-object",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#tasks__task-failures",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#tasks__task-status-patched",
+    "https://docs.atomicfi.com/paylink/reference/webhooks#tasks__task-status-updated",
     "https://docs.atomicfi.com/plugins/banno",
     "https://docs.atomicfi.com/plugins/uplink-handoff",
     "https://docs.atomicfi.com/products/deposit/best-practices",
@@ -418,6 +608,7 @@
     "https://docs.atomicfi.com/reference/api#webhooks__delete-endpoint",
     "https://docs.atomicfi.com/reference/api#webhooks__get-endpoints",
     "https://docs.atomicfi.com/reference/api#webhooks__update-endpoint",
+    "https://docs.atomicfi.com/reference/api?output=openapi",
     "https://docs.atomicfi.com/reference/employment-data",
     "https://docs.atomicfi.com/reference/okta",
     "https://docs.atomicfi.com/reference/transact-sdk",
@@ -449,17 +640,74 @@
     "https://docs.atomicfi.com/reference/transact-sdk#transact-lifecycle__pause",
     "https://docs.atomicfi.com/reference/transact-sdk#transact-lifecycle__present-transact",
     "https://docs.atomicfi.com/reference/webhooks",
-    "https://docs.atomicfi.com/sitemap.xml",
-    "https://docs.atomicfi.com/testing/redirect",
+    "https://docs.atomicfi.com/reference/webhooks#cloud-events",
+    "https://docs.atomicfi.com/reference/webhooks#company",
+    "https://docs.atomicfi.com/reference/webhooks#company__company-created",
+    "https://docs.atomicfi.com/reference/webhooks#company__company-deleted",
+    "https://docs.atomicfi.com/reference/webhooks#company__company-updated",
+    "https://docs.atomicfi.com/reference/webhooks#conversion",
+    "https://docs.atomicfi.com/reference/webhooks#conversion__conversion-opportunity",
+    "https://docs.atomicfi.com/reference/webhooks#deposit-accounts",
+    "https://docs.atomicfi.com/reference/webhooks#deposit-accounts__deposit-accounts-added",
+    "https://docs.atomicfi.com/reference/webhooks#deposit-accounts__deposit-accounts-removed",
+    "https://docs.atomicfi.com/reference/webhooks#deposit-accounts__deposit-accounts-synced",
+    "https://docs.atomicfi.com/reference/webhooks#deposit-accounts__deposit-accounts-updated",
+    "https://docs.atomicfi.com/reference/webhooks#employer-classification",
+    "https://docs.atomicfi.com/reference/webhooks#employer-classification__employer-classification-completed",
+    "https://docs.atomicfi.com/reference/webhooks#employment",
+    "https://docs.atomicfi.com/reference/webhooks#employment__employment-synced",
+    "https://docs.atomicfi.com/reference/webhooks#employment__employment-updated",
+    "https://docs.atomicfi.com/reference/webhooks#event-object",
+    "https://docs.atomicfi.com/reference/webhooks#identity",
+    "https://docs.atomicfi.com/reference/webhooks#identity__identity-synced",
+    "https://docs.atomicfi.com/reference/webhooks#identity__identity-updated",
+    "https://docs.atomicfi.com/reference/webhooks#income",
+    "https://docs.atomicfi.com/reference/webhooks#income__income-synced",
+    "https://docs.atomicfi.com/reference/webhooks#income__income-updated",
+    "https://docs.atomicfi.com/reference/webhooks#linked-account",
+    "https://docs.atomicfi.com/reference/webhooks#linked-account__linked-account-connected",
+    "https://docs.atomicfi.com/reference/webhooks#linked-account__linked-account-disconnected",
+    "https://docs.atomicfi.com/reference/webhooks#payroll-data",
+    "https://docs.atomicfi.com/reference/webhooks#payroll-data__payroll-data-fetched",
+    "https://docs.atomicfi.com/reference/webhooks#pii-data-deleted",
+    "https://docs.atomicfi.com/reference/webhooks#pii-data-deleted__pii-data-deleted",
+    "https://docs.atomicfi.com/reference/webhooks#plaid-error",
+    "https://docs.atomicfi.com/reference/webhooks#plaid-error__plaid-error",
+    "https://docs.atomicfi.com/reference/webhooks#recurring-transaction-detection",
+    "https://docs.atomicfi.com/reference/webhooks#recurring-transaction-detection__recurring-transaction-detection-completed",
+    "https://docs.atomicfi.com/reference/webhooks#retry-policy",
+    "https://docs.atomicfi.com/reference/webhooks#statements",
+    "https://docs.atomicfi.com/reference/webhooks#statements__statements-added",
+    "https://docs.atomicfi.com/reference/webhooks#statements__statements-synced",
+    "https://docs.atomicfi.com/reference/webhooks#task-workflow",
+    "https://docs.atomicfi.com/reference/webhooks#task-workflow__task-workflow-finished",
+    "https://docs.atomicfi.com/reference/webhooks#tasks",
+    "https://docs.atomicfi.com/reference/webhooks#tasks__task-authentication-status-updated",
+    "https://docs.atomicfi.com/reference/webhooks#tasks__task-event-object",
+    "https://docs.atomicfi.com/reference/webhooks#tasks__task-failures",
+    "https://docs.atomicfi.com/reference/webhooks#tasks__task-outputs",
+    "https://docs.atomicfi.com/reference/webhooks#tasks__task-status-patched",
+    "https://docs.atomicfi.com/reference/webhooks#tasks__task-status-updated",
+    "https://docs.atomicfi.com/reference/webhooks#taxes",
+    "https://docs.atomicfi.com/reference/webhooks#taxes__taxes-added",
+    "https://docs.atomicfi.com/reference/webhooks#taxes__taxes-synced",
+    "https://docs.atomicfi.com/reference/webhooks#timesheets",
+    "https://docs.atomicfi.com/reference/webhooks#timesheets__timesheets-added",
+    "https://docs.atomicfi.com/reference/webhooks#timesheets__timesheets-synced",
     "https://docs.atomicfi.com/userlink",
+    "https://docs.aws.amazon.com/lambda/latest/dg/services-apigatearny-tutorial.html",
     "https://en.wikipedia.org/wiki/Representational_state_transfer",
     "https://example.galileo.com",
     "https://expressjs.com/",
     "https://expressjs.com/en/guide/writing-middleware.html",
+    "https://expressjs.com/en/starter/hello-world.html",
+    "https://finovate.com/videos/finovatefall-2021-atomic-fi/",
     "https://github.com/atomicfi/atomic-transact-ios",
     "https://github.com/atomicfi/atomic-transact-ios.git",
     "https://github.com/atomicfi/atomic-transact-ios/releases",
+    "https://github.com/cloudevents/spec/blob/3cffde5f0cfadea24dea156e9b65a17df41bc2c2/cloudevents/bindings/http-protocol-binding.md#31-binary-content-mode",
     "https://hookbin.com",
+    "https://ngrok.com/",
     "https://nodejs.org/",
     "https://sandbox-api.atomicfi.com/access-token",
     "https://sandbox-api.atomicfi.com/access-token/:publicToken/revoke",
@@ -468,6 +716,8 @@
     "https://sandbox-pci.atomicfi.com/user",
     "https://transact.atomicfi.com/",
     "https://webhook.site",
+    "https://webhook.site/",
+    "https://webhooks.fyi",
     "https://www.atomicfi.com/",
     "https://www.atomicfi.com/#main",
     "https://www.atomicfi.com/#overview",
@@ -495,7 +745,6 @@
     "https://www.atomicfi.com/switch/",
     "https://www.atomicfi.com/tax/",
     "https://www.atomicfi.com/verify/",
-    "https://www.crunchbase.com/organization/atomic-fi",
     "https://www.json.org/",
     "https://www.linkedin.com/company/atomic-fi",
     "https://www.postman.com/"

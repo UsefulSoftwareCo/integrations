@@ -10,21 +10,15 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:39:54.173Z",
-    "summary": "Mapped 1 HTTP API surface (Apigee control-plane REST API at apigee.googleapis.com) and 1 CLI surface (apigeecli); both authenticate with Google Cloud-issued OAuth access tokens, and the CLI can also derive them from a service account JSON key.",
+    "discoveredAt": "2026-07-02T20:02:26.641Z",
+    "summary": "apigee.com exposes a Google Cloud-hosted Apigee management REST API and an official `apigeecli` command-line client; both authenticate with Google Cloud OAuth access tokens.",
+    "description": "Apigee is Google’s API management platform for building, securing, publishing, and operating API proxies. It provides hosted and hybrid tooling for managing API products, environments, proxies, and related control-plane resources.",
     "credentials": {
       "gcp_oauth_access_token": {
         "type": "bearer",
         "label": "Google Cloud OAuth 2.0 access token for Apigee",
-        "generateUrl": "https://cloud.google.com/sdk/gcloud/reference/auth/print-access-token",
-        "setup": "Easiest path: install and sign in with the Google Cloud CLI, then mint an access token with `gcloud auth print-access-token`. For local ADC-backed use, you can also run [`gcloud auth application-default login`](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login). The `apigeecli` README shows using `gcloud auth print-access-token` directly against Apigee APIs. You must have access to an Apigee-enabled Google Cloud project/org.",
-        "acquisition": "manual"
-      },
-      "gcp_service_account_key": {
-        "type": "app",
-        "label": "Google Cloud service account JSON key",
-        "generateUrl": "https://console.cloud.google.com/iam-admin/serviceaccounts",
-        "setup": "Create or select a service account in the [Google Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts), grant it the needed Apigee/IAM permissions, then create and download a JSON key. The `apigeecli` docs show using this file with `apigeecli token gen -a serviceaccount.json` or by passing `-a`/`--account` so the CLI can obtain an access token for Apigee.",
+        "generateUrl": "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli",
+        "setup": "Use Google Cloud credentials and mint an access token with `gcloud`. The easiest path shown by Apigee is to install/configure Google Cloud CLI, then run `gcloud auth print-access-token` and pass that token to Apigee, or let `apigeecli` read Application Default Credentials created with `gcloud auth application-default login`. For non-user automation, you can generate a token from a service-account JSON key or use instance metadata as described in the [`apigeecli` README](https://raw.githubusercontent.com/apigee/apigeecli/main/README.md) and the [Apigee command-line setup guide](https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli).",
         "acquisition": "manual"
       }
     },
@@ -38,7 +32,8 @@
           "via": "discovered",
           "evidence": [
             "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest",
-            "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md"
+            "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list",
+            "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get"
           ]
         },
         "auth": {
@@ -60,20 +55,13 @@
                 "via": "discovered",
                 "evidence": [
                   "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md",
-                  "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest"
+                  "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli"
                 ]
               }
             }
           ]
         },
-        "url": "https://apigee.googleapis.com",
-        "variables": [
-          {
-            "name": "organization",
-            "resolveFrom": "your Apigee organization / Google Cloud project",
-            "description": "Many Apigee API resource paths are under `v1/organizations/{organization}`."
-          }
-        ]
+        "url": "https://apigee.googleapis.com/v1"
       },
       {
         "slug": "apigeecli",
@@ -83,8 +71,8 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md",
-            "https://raw.githubusercontent.com/apigee/apigeecli/main/docs/apigeecli.md"
+            "https://github.com/apigee/apigeecli",
+            "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md"
           ]
         },
         "auth": {
@@ -96,22 +84,41 @@
                   "id": "gcp_oauth_access_token",
                   "mechanics": {
                     "source": "cli",
-                    "command": "gcloud auth print-access-token"
+                    "command": "gcloud auth print-access-token",
+                    "env": [
+                      "TOKEN"
+                    ]
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md",
-                  "https://raw.githubusercontent.com/apigee/apigeecli/main/docs/apigeecli.md"
+                  "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md"
                 ]
               }
             },
             {
               "use": [
                 {
-                  "id": "gcp_service_account_key",
+                  "id": "gcp_oauth_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "gcloud auth application-default login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gcp_oauth_access_token",
                   "mechanics": {
                     "source": "cli",
                     "command": "apigeecli token gen -a serviceaccount.json"
@@ -121,8 +128,7 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md",
-                  "https://raw.githubusercontent.com/apigee/apigeecli/main/docs/apigeecli.md"
+                  "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md"
                 ]
               }
             },
@@ -132,33 +138,14 @@
                   "id": "gcp_oauth_access_token",
                   "mechanics": {
                     "source": "cli",
-                    "command": "apigeecli --default-token"
+                    "command": "apigeecli orgs list --metadata-token"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md",
-                  "https://raw.githubusercontent.com/apigee/apigeecli/main/docs/apigeecli.md"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "gcp_oauth_access_token",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "apigeecli --metadata-token"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md",
-                  "https://raw.githubusercontent.com/apigee/apigeecli/main/docs/apigeecli.md"
+                  "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md"
                 ]
               }
             }
@@ -168,44 +155,40 @@
           {
             "registryType": "github",
             "identifier": "apigee/apigeecli",
-            "runtimeHint": "Go-based standalone binary; container image also available at ghcr.io/apigee/apigeecli"
+            "runtimeHint": "prebuilt binary"
+          },
+          {
+            "registryType": "container",
+            "identifier": "ghcr.io/apigee/apigeecli:latest",
+            "runtimeHint": "docker image"
           }
         ],
         "command": "apigeecli"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:39:54.173Z",
+  "discoveredAt": "2026-07-02T20:02:26.642Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 203919,
-    "completion_tokens": 1645,
-    "total_tokens": 205564
+    "prompt_tokens": 120300,
+    "completion_tokens": 1229,
+    "total_tokens": 121529
   },
   "visited": [
     "https://apidocs.apigee.com",
+    "https://discuss.google.dev/t/mcp-authorization-in-apigee-edge/264589",
     "https://docs.apigee.com/",
-    "https://docs.apigee.com/api-platform/publish/specs/intro",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview",
     "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-quickstart",
-    "https://docs.cloud.google.com/apigee/docs/apihub/manage-mcp-tools",
-    "https://docs.cloud.google.com/apigee/docs/apihub/operations-intro",
-    "https://docs.cloud.google.com/apigee/docs/apihub/register-mcp-apis",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest#discovery-document",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/ApiDocDocumentation",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/ApiProxyRevision",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list",
     "https://github.com/apigee/apigeecli",
     "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md",
-    "https://raw.githubusercontent.com/apigee/apigeecli/main/docs/apigeecli.md",
-    "https://raw.githubusercontent.com/thorwhalen/yp/refs/heads/master/yp/data/pkg_list.txt",
     "https://www.reddit.com/r/mcp/comments/1rit6ri/i_built_a_cli_that_generates_mcp_servers_from_any/",
     "https://www.youtube.com/watch?v=q9w39U0LVG4"
   ],
   "grounding": [
-    "http://cloud.google.com/apigee/docs/api-platform/publish/api-design-overview",
     "http://petstore.swagger.io/api/oauth/dialog",
     "https://apidocs.apigee.com",
     "https://apidocs.apigee.com/",
@@ -233,7 +216,6 @@
     "https://cloud.google.com/apigee/docs/reference/apis/apigee/rest",
     "https://cloud.google.com/apigee/support",
     "https://cloud.google.com/application-integration/docs/overview",
-    "https://cloud.google.com/blog/products/api-management/interacting-with-apis-rest-and-graphql",
     "https://cloud.google.com/blog/products/apigee",
     "https://cloud.google.com/endpoints",
     "https://cloud.google.com/endpoints/docs/openapi/openapi-extensions",
@@ -246,14 +228,11 @@
     "https://developer.chrome.com/home",
     "https://developers.google.com/products/",
     "https://discuss.google.dev/c/google-cloud/cloud-apigee/104",
+    "https://discuss.google.dev/t/mcp-authorization-in-apigee-edge/264589",
     "https://docs.apigee.com",
     "https://docs.apigee.com/",
     "https://docs.apigee.com/#",
-    "https://docs.apigee.com/#create-api-proxy-from-spec",
     "https://docs.apigee.com/#main-content",
-    "https://docs.apigee.com/#what-graphql",
-    "https://docs.apigee.com/#what-happens-if-modify-spec",
-    "https://docs.apigee.com/#what-openapi",
     "https://docs.apigee.com/?hl=ar",
     "https://docs.apigee.com/?hl=bn",
     "https://docs.apigee.com/?hl=de",
@@ -275,7 +254,6 @@
     "https://docs.apigee.com/?hl=zh-cn",
     "https://docs.apigee.com/?hl=zh-tw",
     "https://docs.apigee.com/_d/signin?continue=https%3A%2F%2Fdocs.apigee.com%2F&prompt=select_account",
-    "https://docs.apigee.com/_d/signin?continue=https%3A%2F%2Fdocs.apigee.com%2Fapi-platform%2Fpublish%2Fspecs%2Fintro&prompt=select_account",
     "https://docs.apigee.com/api-monitoring",
     "https://docs.apigee.com/api-platform/analytics/analytics-reference",
     "https://docs.apigee.com/api-platform/analytics/analytics-services-overview",
@@ -288,7 +266,6 @@
     "https://docs.apigee.com/api-platform/develop/adding-cors-support-api-proxy",
     "https://docs.apigee.com/api-platform/develop/exposing-soap-service-api-proxy",
     "https://docs.apigee.com/api-platform/develop/policy-attachment-and-enforcement",
-    "https://docs.apigee.com/api-platform/faq/edge-network-design-firewalls",
     "https://docs.apigee.com/api-platform/fundamentals/api-development-lifecycle",
     "https://docs.apigee.com/api-platform/fundamentals/apigee-edge-command-line-tools",
     "https://docs.apigee.com/api-platform/fundamentals/best-practices-api-proxy-design-and-development",
@@ -300,89 +277,14 @@
     "https://docs.apigee.com/api-platform/fundamentals/understanding-routes",
     "https://docs.apigee.com/api-platform/fundamentals/what-are-flows",
     "https://docs.apigee.com/api-platform/get-started/get-started",
-    "https://docs.apigee.com/api-platform/get-started/learn-edge",
-    "https://docs.apigee.com/api-platform/integrations/apigee-edge-uapim-overview",
     "https://docs.apigee.com/api-platform/monetization/basics-monetization",
     "https://docs.apigee.com/api-platform/monetization/set-monetization",
     "https://docs.apigee.com/api-platform/nodejs/overview-nodejs-apigee-edge",
     "https://docs.apigee.com/api-platform/publish/adding-developers-your-api-product",
     "https://docs.apigee.com/api-platform/publish/create-api-products",
     "https://docs.apigee.com/api-platform/publish/creating-apps-surface-your-api",
-    "https://docs.apigee.com/api-platform/publish/developer-portal",
-    "https://docs.apigee.com/api-platform/publish/drupal/d7-d10-module-comparison",
-    "https://docs.apigee.com/api-platform/publish/drupal/open-source-drupal",
-    "https://docs.apigee.com/api-platform/publish/drupal/support-for-apigee-drupal-modules",
-    "https://docs.apigee.com/api-platform/publish/import-existing-consumer-keys-and-secrets",
-    "https://docs.apigee.com/api-platform/publish/portal/api-portal-analytics",
-    "https://docs.apigee.com/api-platform/publish/portal/api-portal-themes",
-    "https://docs.apigee.com/api-platform/publish/portal/api-portal-users",
-    "https://docs.apigee.com/api-platform/publish/portal/build-integrated-portal",
-    "https://docs.apigee.com/api-platform/publish/portal/configure-email",
-    "https://docs.apigee.com/api-platform/publish/portal/configure-register-sign-in",
-    "https://docs.apigee.com/api-platform/publish/portal/cookies",
-    "https://docs.apigee.com/api-platform/publish/portal/csp",
-    "https://docs.apigee.com/api-platform/publish/portal/custom-domain",
-    "https://docs.apigee.com/api-platform/publish/portal/custom-scripts",
-    "https://docs.apigee.com/api-platform/publish/portal/default-audience",
     "https://docs.apigee.com/api-platform/publish/portal/developer-services-portal",
-    "https://docs.apigee.com/api-platform/publish/portal/developer-teams",
-    "https://docs.apigee.com/api-platform/publish/portal/get-started",
-    "https://docs.apigee.com/api-platform/publish/portal/manage-api-keys",
-    "https://docs.apigee.com/api-platform/publish/portal/manage-portals",
-    "https://docs.apigee.com/api-platform/publish/portal/markdown-reference",
-    "https://docs.apigee.com/api-platform/publish/portal/migrate",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/configure-email-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/overview-portal-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/portal-audience-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/portal-interact-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/portal-menus-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/portal-steps-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/portal-themes-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/publish-apis-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/original-theme/search-page-v1",
-    "https://docs.apigee.com/api-platform/publish/portal/page-editor",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-audience",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-best-practices",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-files",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-identity-provider",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-interact",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-menus",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-pages",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-publish",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-quick-tips",
-    "https://docs.apigee.com/api-platform/publish/portal/portal-steps",
-    "https://docs.apigee.com/api-platform/publish/portal/publish-apis",
-    "https://docs.apigee.com/api-platform/publish/portal/search-page",
-    "https://docs.apigee.com/api-platform/publish/portal/view-live-portal",
-    "https://docs.apigee.com/api-platform/publish/publishing-overview",
-    "https://docs.apigee.com/api-platform/publish/specs/folders",
-    "https://docs.apigee.com/api-platform/publish/specs/intro",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=ar",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=bn",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=de",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=es-419",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=fa",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=fr",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=he",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=hi",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=id",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=it",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=ja",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=ko",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=pl",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=pt-br",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=ru",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=th",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=tr",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=vi",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=zh-cn",
-    "https://docs.apigee.com/api-platform/publish/specs/intro?hl=zh-tw",
-    "https://docs.apigee.com/api-platform/publish/specs/manage-specs",
-    "https://docs.apigee.com/api-platform/publish/specs/spec-editor",
-    "https://docs.apigee.com/api-platform/publish/using-edge-management-api-publish-apis",
-    "https://docs.apigee.com/api-platform/publish/what-api-product",
     "https://docs.apigee.com/api-platform/reference/api-proxy-configuration-reference",
-    "https://docs.apigee.com/api-platform/reference/apigee-reference",
     "https://docs.apigee.com/api-platform/reference/conditions-reference",
     "https://docs.apigee.com/api-platform/reference/javascript-object-model",
     "https://docs.apigee.com/api-platform/reference/policies/reference-overview-policy",
@@ -390,10 +292,7 @@
     "https://docs.apigee.com/api-platform/reference/variables-reference",
     "https://docs.apigee.com/api-platform/samples/samples-reference",
     "https://docs.apigee.com/api-platform/security/api-security",
-    "https://docs.apigee.com/api-platform/system-administration/service-requests",
-    "https://docs.apigee.com/api-platform/troubleshoot/integrated-portal/introduction",
     "https://docs.apigee.com/api-platform/troubleshoot/support",
-    "https://docs.apigee.com/how-to-guides/how-to-guides-introduction",
     "https://docs.apigee.com/private-cloud",
     "https://docs.apigee.com/private-cloud/latest/overview",
     "https://docs.apigee.com/private-cloud/v4.16.01",
@@ -417,21 +316,12 @@
     "https://docs.apigee.com/release/notes/apigee-release-notes",
     "https://docs.apigee.com/sense/what-apigee-sense",
     "https://docs.cloud.google.com/#main-content",
-    "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Fapi-platform%2Fapigee-mcp%2Fapigee-mcp-overview&prompt=select_account",
     "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Fapi-platform%2Fapigee-mcp%2Fapigee-mcp-quickstart&prompt=select_account",
-    "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Freference%2Fapis%2Fapigee%2Frest%23discovery-document&prompt=select_account",
-    "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Freference%2Fapis%2Fapigee%2Frest%2Fv1%2Forganizations.apis&prompt=select_account",
+    "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Fapi-platform%2Fget-started%2Finstall-cli&prompt=select_account",
+    "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Freference%2Fapis%2Fapigee%2Frest%2Fv1%2Forganizations%2Fget&prompt=select_account",
+    "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Freference%2Fapis%2Fapigee%2Frest%2Fv1%2Forganizations%2Flist&prompt=select_account",
     "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Freference%2Fapis%2Fapigee%2Frest&prompt=select_account",
-    "https://docs.cloud.google.com/_d/signin?continue=https%3A%2F%2Fdocs.cloud.google.com%2Fapigee%2Fdocs%2Freference%2Fapis%2Fapihub%2Fmcp&prompt=select_account",
     "https://docs.cloud.google.com/apigee/docs",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview?hl=de",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview?hl=es-419",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview?hl=fr",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview?hl=ja",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview?hl=ko",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview?hl=pt-br",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-overview?hl=zh-cn",
     "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-quickstart",
     "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-quickstart?hl=de",
     "https://docs.cloud.google.com/apigee/docs/api-platform/apigee-mcp/apigee-mcp-quickstart?hl=es-419",
@@ -515,6 +405,19 @@
     "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli-non-peered-eval",
     "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli-non-peered-paygo",
     "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli-paygo",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=de",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=es",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=es-419",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=fr",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=he",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=id",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=it",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=ja",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=ko",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=pt",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=pt-br",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=zh-cn",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/install-cli?hl=zh-tw",
     "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/networking-options",
     "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/one-click",
     "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/overview",
@@ -533,22 +436,12 @@
     "https://docs.cloud.google.com/apigee/docs/api-platform/get-started/wizard-select-project",
     "https://docs.cloud.google.com/apigee/docs/api-platform/security/api-security",
     "https://docs.cloud.google.com/apigee/docs/api-platform/security/iam/iam-overview",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/security/oauth/oauth-20-client-credentials-grant-type",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/security/oauth/oauth-home",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/security/oauth/oauth-introduction",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/security/oauth/oauth2-videos",
     "https://docs.cloud.google.com/apigee/docs/api-platform/tutorials/add-spike-arrest",
     "https://docs.cloud.google.com/apigee/docs/api-platform/tutorials/create-api-proxy-openapi-spec",
     "https://docs.cloud.google.com/apigee/docs/api-platform/tutorials/secure-call",
-    "https://docs.cloud.google.com/apigee/docs/api-platform/tutorials/secure-calls-your-api-through-oauth-20-client-credentials",
-    "https://docs.cloud.google.com/apigee/docs/apihub/manage-mcp-tools",
-    "https://docs.cloud.google.com/apigee/docs/apihub/operations-intro",
-    "https://docs.cloud.google.com/apigee/docs/apihub/register-mcp-apis",
+    "https://docs.cloud.google.com/apigee/docs/api-platform/tutorials/secure-calls-your-api-through-oauth-20-",
     "https://docs.cloud.google.com/apigee/docs/locations",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest#discovery-document",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/ApiDocDocumentation",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/ApiProxyRevision",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.analytics.datastores",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.analytics.datastores/create",
@@ -612,15 +505,9 @@
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis/list",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis/move",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis/patch",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis?hl=de",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis?hl=es-419",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis?hl=fr",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis?hl=ja",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis?hl=ko",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis?hl=pt-br",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.apis?hl=zh-cn",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.appgr",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.app",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.appgroups",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.appgroups.ap",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.appgroups.apps",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.appgroups.apps.keys",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.appgroups.apps.keys/create",
@@ -643,38 +530,37 @@
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/create",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/delete",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get?hl=de",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get?hl=es-419",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get?hl=fr",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get?hl=ja",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get?hl=ko",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get?hl=pt-br",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/get?hl=zh-cn",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/getControlPlaneAccess",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/getProjectMapping",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/getSecuritySettings",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/getSyncAuthorization",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list?hl=de",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list?hl=es-419",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list?hl=fr",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list?hl=ja",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list?hl=ko",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list?hl=pt-br",
+    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/list?hl=zh-cn",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/setAddons",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/setSyncAuthorization",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/update",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/updateControlPlaneAccess",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations/updateSecuritySettings",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=de",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=de#discovery-document",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=es-419",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=es-419#discovery-document",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=fr",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=fr#discovery-document",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=ja",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=ja#discovery-document",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=ko",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=ko#discovery-document",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=pt-br",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=pt-br#discovery-document",
     "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=zh-cn",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apigee/rest?hl=zh-cn#discovery-document",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp?hl=de",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp?hl=es-419",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp?hl=fr",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp?hl=ja",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp?hl=ko",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp?hl=pt-br",
-    "https://docs.cloud.google.com/apigee/docs/reference/apis/apihub/mcp?hl=zh-cn",
     "https://docs.cloud.google.com/apigee/docs/release-notes",
     "https://docs.cloud.google.com/apigee/docs/support/getting-started-with-support",
     "https://docs.cloud.google.com/docs",
@@ -807,14 +693,11 @@
     "https://img.shields.io/badge/License-Apache%202.0-blue.svg",
     "https://img.shields.io/github/v/release/apigee/apigeecli",
     "https://maintainers.github.com",
-    "https://openapis.org",
     "https://opensource.org/licenses/Apache-2.0",
     "https://policies.google.com/privacy",
     "https://policies.google.com/terms",
     "https://raw.githubusercontent.com/apigee/apigeecli/main/README.md",
-    "https://raw.githubusercontent.com/apigee/apigeecli/main/docs/apigeecli.md",
     "https://raw.githubusercontent.com/apigee/apigeecli/main/downloadLatest.sh",
-    "https://raw.githubusercontent.com/thorwhalen/yp/refs/heads/master/yp/data/pkg_list.txt",
     "https://securitylab.github.com",
     "https://skills.github.com",
     "https://stars.github.com",

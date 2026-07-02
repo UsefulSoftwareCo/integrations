@@ -12,63 +12,26 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:38:39.993Z",
-    "summary": "Mapped 3 Alpic developer surfaces: a Bearer-authenticated REST API at https://api.alpic.ai/v1, an OAuth-protected hosted MCP server at https://mcp.alpic.ai, and the `alpic` npm CLI authenticated via `alpic login` or `ALPIC_API_KEY`.",
+    "discoveredAt": "2026-07-02T20:01:22.136Z",
+    "summary": "Alpic exposes a REST API at `https://api.alpic.ai/v1`, a hosted MCP server at `https://mcp.alpic.ai/mcp`, and an npm-distributed `alpic` CLI; all require authentication via Alpic-issued credentials, with OAuth supported for MCP/CLI and API keys for REST/CLI.",
+    "description": "Alpic is a cloud platform for building, deploying, and distributing MCP servers and ChatGPT apps. It provides hosted project management, deployments, analytics, monitoring, and related developer tooling.",
     "credentials": {
       "alpic_api_key": {
-        "type": "api_key",
+        "type": "bearer",
         "label": "Alpic API key",
         "generateUrl": "https://app.alpic.ai",
-        "setup": "In the [Alpic dashboard](https://app.alpic.ai), open your team, go to **API Keys** in the sidebar, click **New API key**, name it, and copy the key immediately. Use it as a Bearer token for the REST API, or set `ALPIC_API_KEY` for the CLI.",
+        "setup": "In the [Alpic dashboard](https://app.alpic.ai), open your team, go to **API Keys** in the sidebar, click **New API key**, name it, and copy the key. Use it as a bearer token in the REST API, or set `ALPIC_API_KEY` for the CLI.",
         "acquisition": "manual"
       },
-      "alpic_cli_oauth": {
+      "alpic_oauth": {
         "type": "oauth2",
-        "label": "Alpic account OAuth login for CLI/MCP",
+        "label": "Alpic account OAuth login",
         "generateUrl": "https://app.alpic.ai",
-        "setup": "For the CLI, run `alpic login` to open a browser and authenticate with your Alpic account; the CLI stores the resulting tokens locally. For the hosted MCP server, add `https://mcp.alpic.ai/` (or Claude connector `https://mcp.alpic.ai/mcp`) in your MCP client and complete the browser sign-in flow with your Alpic account when prompted.",
+        "setup": "Use a first-party login flow initiated by the client: run `alpic login` for the CLI, or start connection from your MCP client against `https://mcp.alpic.ai/` / `https://mcp.alpic.ai/mcp`. A browser opens to authenticate with your Alpic account, and the client stores/reuses the resulting tokens locally.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
-      {
-        "slug": "alpic-rest-api",
-        "name": "Alpic REST API",
-        "type": "http",
-        "docs": "https://docs.alpic.ai/api-reference",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.alpic.ai/api-reference",
-            "https://docs.alpic.ai/developer-tools/api"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "alpic_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.alpic.ai/api-reference"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://api.alpic.ai/v1"
-      },
       {
         "slug": "alpic-mcp-server",
         "name": "Alpic MCP Server",
@@ -87,7 +50,7 @@
             {
               "use": [
                 {
-                  "id": "alpic_cli_oauth",
+                  "id": "alpic_oauth",
                   "mechanics": {
                     "source": "well-known"
                   }
@@ -96,14 +59,13 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.alpic.ai/developer-tools/mcp",
-                  "https://mcp.alpic.ai"
+                  "https://docs.alpic.ai/developer-tools/mcp"
                 ]
               }
             }
           ]
         },
-        "url": "https://mcp.alpic.ai",
+        "url": "https://mcp.alpic.ai/mcp",
         "transports": [
           "streamable-http"
         ]
@@ -127,7 +89,7 @@
             {
               "use": [
                 {
-                  "id": "alpic_cli_oauth",
+                  "id": "alpic_oauth",
                   "mechanics": {
                     "source": "cli",
                     "command": "alpic login"
@@ -158,6 +120,7 @@
                 "via": "discovered",
                 "evidence": [
                   "https://docs.alpic.ai/cli/overview",
+                  "https://docs.alpic.ai/cli/login",
                   "https://alpic.ai/blog/alpic-mcp-cli-two-interfaces-one-platform"
                 ]
               }
@@ -172,40 +135,93 @@
           }
         ],
         "command": "alpic"
+      },
+      {
+        "slug": "alpic-rest-api",
+        "name": "Alpic REST API",
+        "type": "http",
+        "docs": "https://docs.alpic.ai/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.alpic.ai/api-reference",
+            "https://docs.alpic.ai/api-reference.md",
+            "https://docs.alpic.ai/api-reference/tunnels/get-a-tunnel-ticket.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "alpic_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.alpic.ai/api-reference",
+                  "https://docs.alpic.ai/api-reference.md",
+                  "https://docs.alpic.ai/api-reference/tunnels/get-a-tunnel-ticket.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "alpic_oauth",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.alpic.ai/api-reference/tunnels/get-a-tunnel-ticket.md"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://api.alpic.ai/openapi.json",
+        "url": "https://api.alpic.ai/v1"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:38:39.993Z",
+  "discoveredAt": "2026-07-02T20:01:22.136Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 90767,
-    "completion_tokens": 1248,
-    "total_tokens": 92015
+    "prompt_tokens": 98023,
+    "completion_tokens": 1293,
+    "total_tokens": 99316
   },
   "visited": [
-    "https://alpic.ai/",
+    "https://alpic.ai/blog/alpic-dcr-proxy",
     "https://alpic.ai/blog/alpic-mcp-cli-two-interfaces-one-platform",
     "https://alpic.ai/llms.txt",
-    "https://docs.alpic.ai/",
     "https://docs.alpic.ai/api-reference",
-    "https://docs.alpic.ai/cli/authentication",
+    "https://docs.alpic.ai/api-reference.md",
+    "https://docs.alpic.ai/api-reference/tunnels/get-a-tunnel-ticket.md",
     "https://docs.alpic.ai/cli/login",
     "https://docs.alpic.ai/cli/overview",
     "https://docs.alpic.ai/developer-tools/api",
     "https://docs.alpic.ai/developer-tools/mcp",
     "https://docs.alpic.ai/llms.txt",
-    "https://docs.alpic.ai/openapi.json",
-    "https://github.com/alpic-ai/grizzly",
+    "https://docs.omni.co/ai/mcp/authentication",
+    "https://github.com/alpic-ai/skybridge",
     "https://mcp.alpic.ai",
-    "https://tyk.io/docs/ai-management/mcps/api-to-mcp",
     "https://www.npmjs.com/package/@alpic-ai/mcp-remote",
-    "https://www.stainless.com/mcp/mcp-api-documentation-the-complete-guide/"
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/"
   ],
   "grounding": [
-    "http://internal-service.vpc/sse",
-    "http://status.npmjs.org/",
     "https://alpic.ai",
-    "https://alpic.ai/",
     "https://alpic.ai/../about",
     "https://alpic.ai/../blog",
     "https://alpic.ai/../contact",
@@ -220,27 +236,11 @@
     "https://alpic.ai/../pricing",
     "https://alpic.ai/../solutions/build/studio",
     "https://alpic.ai/../solutions/cloud",
-    "https://alpic.ai/./about",
-    "https://alpic.ai/./blog",
-    "https://alpic.ai/./blog/behind-the-kiwi-com-mcp-server-deploying-an-agentic-flight-booking-service",
-    "https://alpic.ai/./case-studies/awaze",
-    "https://alpic.ai/./case-studies/bitmovin",
-    "https://alpic.ai/./contact",
-    "https://alpic.ai/./events",
-    "https://alpic.ai/./faq",
     "https://alpic.ai/./how-ai-reshape-the-travel-industry",
-    "https://alpic.ai/./industries/insurance",
-    "https://alpic.ai/./industries/retail",
-    "https://alpic.ai/./industries/travel",
-    "https://alpic.ai/./legal",
-    "https://alpic.ai/./partners",
-    "https://alpic.ai/./press",
-    "https://alpic.ai/./pricing",
-    "https://alpic.ai/./solutions/build/studio",
-    "https://alpic.ai/./solutions/cloud",
     "https://alpic.ai/./webmcp-explained-what-it-is-how-it-works-and-how-to-use-your-existing-mcp-server-as-an-entry-point",
     "https://alpic.ai/about",
     "https://alpic.ai/blog",
+    "https://alpic.ai/blog/alpic-dcr-proxy",
     "https://alpic.ai/blog/alpic-mcp-cli-two-interfaces-one-platform",
     "https://alpic.ai/llms.txt",
     "https://alpic.ai/pricing",
@@ -250,12 +250,8 @@
     "https://api.alpic.ai/openapi.json",
     "https://api.alpic.ai/v1/projects",
     "https://app.alpic.ai",
-    "https://app.alpic.ai/",
-    "https://bundlephobia.com/package/%40alpic-ai%2Fmcp-remote",
     "https://chatgpt.com/apps/alpic/asdk_app_6996e5762c508191846b87c57edbbebe",
     "https://claude.ai",
-    "https://developers.cloudflare.com/agents/guides/remote-mcp-server/",
-    "https://developers.cloudflare.com/agents/guides/test-remote-mcp-server/",
     "https://discord.gg/2jc92tZQdn",
     "https://docs.alpic.ai",
     "https://docs.alpic.ai/",
@@ -271,10 +267,8 @@
     "https://docs.alpic.ai/#clients-supporting-mcp-apps",
     "https://docs.alpic.ai/#connect-your-mcp-client",
     "https://docs.alpic.ai/#content-area",
-    "https://docs.alpic.ai/#features",
     "https://docs.alpic.ai/#get-your-api-key",
     "https://docs.alpic.ai/#getting-started",
-    "https://docs.alpic.ai/#guides",
     "https://docs.alpic.ai/#installing-alpic-cli",
     "https://docs.alpic.ai/#options",
     "https://docs.alpic.ai/#overview",
@@ -340,7 +334,6 @@
     "https://docs.alpic.ai/build-deploy/environments.md",
     "https://docs.alpic.ai/cli/audit",
     "https://docs.alpic.ai/cli/audit.md",
-    "https://docs.alpic.ai/cli/authentication",
     "https://docs.alpic.ai/cli/deploy",
     "https://docs.alpic.ai/cli/deploy.md",
     "https://docs.alpic.ai/cli/deployment-inspect",
@@ -421,105 +414,46 @@
     "https://docs.alpic.ai/developer-tools/cli.md",
     "https://docs.alpic.ai/developer-tools/mcp",
     "https://docs.alpic.ai/developer-tools/mcp.md",
-    "https://docs.alpic.ai/distribution/domains",
     "https://docs.alpic.ai/distribution/domains.md",
     "https://docs.alpic.ai/distribution/playground.md",
     "https://docs.alpic.ai/distribution/publishing",
     "https://docs.alpic.ai/distribution/publishing.md",
-    "https://docs.alpic.ai/distribution/registry",
     "https://docs.alpic.ai/distribution/registry.md",
     "https://docs.alpic.ai/distribution/versioning.md",
     "https://docs.alpic.ai/guides/work-with-deploy-button",
     "https://docs.alpic.ai/guides/work-with-deploy-button.md",
     "https://docs.alpic.ai/index.md",
     "https://docs.alpic.ai/llms.txt",
-    "https://docs.alpic.ai/monitoring/analytics",
     "https://docs.alpic.ai/monitoring/analytics.md",
-    "https://docs.alpic.ai/openapi.json",
     "https://docs.alpic.ai/pricing/plans.md",
     "https://docs.alpic.ai/quickstart",
     "https://docs.alpic.ai/quickstart.md",
     "https://docs.alpic.ai/secure/auth/dcr-proxy.md",
     "https://docs.alpic.ai/secure/auth/oauth-providers.md",
     "https://docs.alpic.ai/secure/auth/oauth-setup.md",
-    "https://docs.alpic.ai/secure/auth/overview",
     "https://docs.alpic.ai/secure/auth/overview.md",
     "https://docs.alpic.ai/secure/auth/token-bearer-setup.md",
     "https://docs.alpic.ai/secure/fixed-outbound-ip.md",
     "https://docs.alpic.ai/secure/ip-whitelisting.md",
     "https://docs.alpic.ai/testing/beacon.md",
-    "https://docs.alpic.ai/testing/playground",
     "https://docs.alpic.ai/testing/playground.md",
     "https://docs.alpic.ai/troubleshooting",
     "https://docs.alpic.ai/troubleshooting.md",
     "https://docs.alpic.ai/user-insights/user-feedbacks.md",
-    "https://docs.alpic.ai/user-insights/user-intents",
     "https://docs.alpic.ai/user-insights/user-intents.md",
-    "https://docs.codeium.com/windsurf/mcp",
-    "https://docs.cursor.com/context/model-context-protocol",
-    "https://docs.npmjs.com",
-    "https://example.remote/server",
-    "https://github.blog/tag/npm/",
-    "https://github.com/advisories",
+    "https://docs.omni.co/ai/mcp/authentication",
     "https://github.com/alpic-ai",
-    "https://github.com/alpic-ai/apps-sdk-template/",
-    "https://github.com/alpic-ai/grizzly",
-    "https://github.com/alpic-ai/mcp-remote",
-    "https://github.com/alpic-ai/mcp-remote#readme",
-    "https://github.com/alpic-ai/mcp-remote/issues",
-    "https://github.com/alpic-ai/mcp-remote/pulls",
     "https://github.com/alpic-ai/skybridge",
     "https://github.com/alpic-ai/skybridge/",
-    "https://github.com/cloudflare/agents/tree/main/examples/mcp",
-    "https://github.com/cloudflare/workers-oauth-provider",
     "https://jobs.ashbyhq.com/alpic",
     "https://linkedin.com/company/alpic-ai",
     "https://mcp.alpic.ai",
     "https://mcp.alpic.ai/",
     "https://mcp.alpic.ai/mcp",
-    "https://modelcontextprotocol.io/docs/tools/debugging#debugging-in-claude-desktop",
-    "https://modelcontextprotocol.io/quickstart/server",
-    "https://modelcontextprotocol.io/quickstart/user",
-    "https://modelcontextprotocol.io/quickstart/user#2-add-the-filesystem-mcp-server",
-    "https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization",
-    "https://npmgraph.js.org/?q=%40alpic-ai%2Fmcp-remote",
-    "https://npmjs.com/package/agents",
-    "https://remote.mcp.server/sse",
     "https://skybridge.tech",
-    "https://skybridge.tech/",
-    "https://snyk.io/advisor/npm-package/%40alpic-ai%2Fmcp-remote",
-    "https://socket.dev/npm/package/%40alpic-ai%2Fmcp-remote",
-    "https://tyk.io/docs/ai-management/mcps/api-to-mcp",
     "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=alpic",
-    "https://www.npmjs.com/#main",
-    "https://www.npmjs.com/#search",
-    "https://www.npmjs.com/#signin",
-    "https://www.npmjs.com/?activeTab=code",
-    "https://www.npmjs.com/?activeTab=dependencies",
-    "https://www.npmjs.com/?activeTab=dependents",
-    "https://www.npmjs.com/?activeTab=readme",
-    "https://www.npmjs.com/?activeTab=versions",
-    "https://www.npmjs.com/about",
-    "https://www.npmjs.com/login",
     "https://www.npmjs.com/package/@alpic-ai/mcp-remote",
-    "https://www.npmjs.com/policies/",
-    "https://www.npmjs.com/policies/conduct",
-    "https://www.npmjs.com/policies/privacy",
-    "https://www.npmjs.com/policies/terms",
-    "https://www.npmjs.com/press",
-    "https://www.npmjs.com/products",
-    "https://www.npmjs.com/products/pro",
-    "https://www.npmjs.com/products/teams",
-    "https://www.npmjs.com/search?q=keywords:mcp",
-    "https://www.npmjs.com/search?q=keywords:oauth",
-    "https://www.npmjs.com/search?q=keywords:remote",
-    "https://www.npmjs.com/search?q=keywords:sse",
-    "https://www.npmjs.com/search?q=keywords:stdio",
-    "https://www.npmjs.com/signup",
-    "https://www.npmjs.com/support",
-    "https://www.npmjs.com/support?inquire=security&security-inquire=malware&package=%40alpic-ai%2Fmcp-remote&version=0.1.0",
-    "https://www.stainless.com/mcp/mcp-api-documentation-the-complete-guide/",
-    "https://www.twelvelabs.io/blog/twelve-labs-mcp-server",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/",
     "https://x.com/alpic_ai"
   ]
 }

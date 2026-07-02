@@ -10,17 +10,77 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:40:57.008Z",
-    "summary": "Mapped 2 HTTP surfaces for ashbyhq.com: the authenticated Ashby API using an Ashby-issued API key via HTTP Basic Auth, and the public Job Postings API with no credential required.",
+    "discoveredAt": "2026-07-02T20:03:45.032Z",
+    "summary": "Ashby exposes two developer-facing HTTP APIs on ashbyhq.com: an authenticated RPC-style Ashby API at https://api.ashbyhq.com using Basic auth with an API key, and a public Job Postings API at https://api.ashbyhq.com/posting-api/job-board/{JOB_BOARD_NAME}; no GraphQL, MCP, or CLI surfaces were found.",
+    "description": "Ashby provides recruiting and hiring software, including applicant tracking, job boards, applications, interviews, and related hiring workflows. Its public documentation covers programmatic access to hiring data and job postings.",
     "credentials": {
       "ashby_api_key": {
         "type": "api_key",
         "label": "Ashby API key",
         "generateUrl": "https://developers.ashbyhq.com/docs/authentication",
-        "setup": "In the Ashby app, create an API key and assign the needed endpoint permissions, then use that key as the HTTP Basic username with a blank password. The public docs describe this credential on [Authentication](https://developers.ashbyhq.com/docs/authentication) and expose an `apiKey.info` endpoint to inspect the current key in [API Reference](https://developers.ashbyhq.com/reference/apikeyinfo)."
+        "setup": "In Ashby, create an API key from the product's admin/settings area and grant the needed module permissions. Then use it with the [Authentication guide](https://developers.ashbyhq.com/docs/authentication). Send the API key as the HTTP Basic auth username and leave the password blank.",
+        "acquisition": "manual"
       }
     },
     "surfaces": [
+      {
+        "slug": "ashby-api",
+        "name": "Ashby API",
+        "type": "http",
+        "docs": "https://developers.ashbyhq.com/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.ashbyhq.com/docs/introduction",
+            "https://developers.ashbyhq.com/docs/authentication",
+            "https://developers.ashbyhq.com/reference"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ashby_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.ashbyhq.com/docs/introduction",
+                  "https://developers.ashbyhq.com/docs/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.ashbyhq.com",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/json"
+            },
+            "description": "Request parameters must be sent in JSON bodies except where noted otherwise."
+          },
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "application/json; version=1"
+            },
+            "description": "Shown in the authentication example request for API versioning/content negotiation."
+          }
+        ]
+      },
       {
         "slug": "ashby-job-postings-api",
         "name": "Ashby Job Postings API",
@@ -45,110 +105,37 @@
         "variables": [
           {
             "name": "JOB_BOARD_NAME",
-            "resolveFrom": "Your Ashby-hosted job board URL; the docs say the final path segment of `https://jobs.ashbyhq.com/<name>` is the jobs page name.",
-            "description": "Organization job board name used to fetch published postings."
-          }
-        ]
-      },
-      {
-        "slug": "ashby-api",
-        "name": "Ashby API",
-        "type": "http",
-        "docs": "https://developers.ashbyhq.com/reference",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://developers.ashbyhq.com/reference/introduction.md",
-            "https://developers.ashbyhq.com/reference/authentication.md",
-            "https://developers.ashbyhq.com/reference/apikeyinfo.md",
-            "https://developers.ashbyhq.com/reference"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "ashby_api_key",
-                  "mechanics": {
-                    "source": "spec",
-                    "scheme": "BasicAuth"
-                  }
-                },
-                {
-                  "id": "ashby_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Basic"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://developers.ashbyhq.com/reference/apikeyinfo.md",
-                  "https://developers.ashbyhq.com/reference/authentication.md"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://api.ashbyhq.com",
-        "requiredHeaders": [
-          {
-            "name": "Accept",
-            "source": {
-              "kind": "static",
-              "value": "application/json; version=1"
-            },
-            "description": "Authentication examples require this versioned Accept header."
-          },
-          {
-            "name": "Content-Type",
-            "source": {
-              "kind": "static",
-              "value": "application/json"
-            },
-            "description": "The introduction says request parameters must be sent in JSON bodies with `application/json`, except where noted otherwise for specific endpoints."
+            "resolveFrom": "Ashby-hosted job board URL path segment",
+            "description": "The organization's jobs page name from https://jobs.ashbyhq.com/{JOB_BOARD_NAME}."
           }
         ]
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:40:57.008Z",
+  "discoveredAt": "2026-07-02T20:03:45.032Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 103726,
-    "completion_tokens": 1304,
-    "total_tokens": 105030
+    "prompt_tokens": 68880,
+    "completion_tokens": 986,
+    "total_tokens": 69866
   },
   "visited": [
     "https://developers.ashbyhq.com/",
-    "https://developers.ashbyhq.com/api-reference",
     "https://developers.ashbyhq.com/docs/authentication",
-    "https://developers.ashbyhq.com/docs/creating-an-assessments-integration.md",
     "https://developers.ashbyhq.com/docs/getting-started",
     "https://developers.ashbyhq.com/docs/introduction",
     "https://developers.ashbyhq.com/docs/public-job-posting-api",
     "https://developers.ashbyhq.com/llms.txt",
     "https://developers.ashbyhq.com/reference",
-    "https://developers.ashbyhq.com/reference/apikeyinfo.md",
-    "https://developers.ashbyhq.com/reference/authentication.md",
-    "https://developers.ashbyhq.com/reference/introduction.md",
-    "https://github.com/blurrah/mcp-graphql",
+    "https://developers.ashbyhq.com/reference/departmentlist",
+    "https://docs.secureauth.com/iam/blog/build-a-graphql-client-application-to-consumer-protected-graphql-api-resources-part-1",
     "https://www.apollographql.com/docs/apollo-mcp-server",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo",
-    "https://zuplo.com/docs/mcp-server/graphql"
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ],
   "grounding": [
-    "https://api.ashbyhq.com",
     "https://api.ashbyhq.com/application.list",
     "https://api.ashbyhq.com/posting-api/job-board/{JOB_BOARD_NAME}?includeCompensation=true",
     "https://api.ashbyhq.com/posting-api/job-board/{JOB_BOARD_NAME}?includeCompensation={true/false}",
-    "https://app.ashbyhq.com/support",
     "https://developers.ashby",
     "https://developers.ashbyhq.com/",
     "https://developers.ashbyhq.com/#api",
@@ -156,7 +143,6 @@
     "https://developers.ashbyhq.com/#example",
     "https://developers.ashbyhq.com/#how-to-find-your-jobs-page-name",
     "https://developers.ashbyhq.com/#introduction",
-    "https://developers.ashbyhq.com/api-reference",
     "https://developers.ashbyhq.com/apikeyinfo",
     "https://developers.ashbyhq.com/applicationaddhiringteammember",
     "https://developers.ashbyhq.com/applicationchange_source",
@@ -380,7 +366,6 @@
     "https://developers.ashbyhq.com/reference/applicationupdate.md",
     "https://developers.ashbyhq.com/reference/applicationupdatehistory",
     "https://developers.ashbyhq.com/reference/applicationupdatehistory.md",
-    "https://developers.ashbyhq.com/reference/applicationupdatewebhook",
     "https://developers.ashbyhq.com/reference/approvaldefinitionupdate",
     "https://developers.ashbyhq.com/reference/approvaldefinitionupdate.md",
     "https://developers.ashbyhq.com/reference/approvallist",
@@ -411,7 +396,6 @@
     "https://developers.ashbyhq.com/reference/candidateanonymize",
     "https://developers.ashbyhq.com/reference/candidatecreate",
     "https://developers.ashbyhq.com/reference/candidatecreatenote",
-    "https://developers.ashbyhq.com/reference/candidatehirewebhook",
     "https://developers.ashbyhq.com/reference/candidateinfo",
     "https://developers.ashbyhq.com/reference/candidatelist",
     "https://developers.ashbyhq.com/reference/candidatelistclientinfo",
@@ -423,7 +407,6 @@
     "https://developers.ashbyhq.com/reference/candidateremovetag",
     "https://developers.ashbyhq.com/reference/candidatesearch",
     "https://developers.ashbyhq.com/reference/candidatesetfraudstatus",
-    "https://developers.ashbyhq.com/reference/candidatestagechangewebhook",
     "https://developers.ashbyhq.com/reference/candidatetagarchive",
     "https://developers.ashbyhq.com/reference/candidatetagarchive.md",
     "https://developers.ashbyhq.com/reference/candidatetagcreate-1",
@@ -476,7 +459,6 @@
     "https://developers.ashbyhq.com/reference/interviewstageinfo",
     "https://developers.ashbyhq.com/reference/interviewstagelist",
     "https://developers.ashbyhq.com/reference/introduction",
-    "https://developers.ashbyhq.com/reference/introduction.md",
     "https://developers.ashbyhq.com/reference/jobboardlist",
     "https://developers.ashbyhq.com/reference/jobcreate",
     "https://developers.ashbyhq.com/reference/jobinfo",
@@ -491,7 +473,6 @@
     "https://developers.ashbyhq.com/reference/jobtemplatelist",
     "https://developers.ashbyhq.com/reference/jobupdate",
     "https://developers.ashbyhq.com/reference/jobupdatecompensation",
-    "https://developers.ashbyhq.com/reference/jobupdatewebhook",
     "https://developers.ashbyhq.com/reference/locationarchive-1",
     "https://developers.ashbyhq.com/reference/locationcreate-1",
     "https://developers.ashbyhq.com/reference/locationinfo",
@@ -536,12 +517,11 @@
     "https://developers.ashbyhq.com/webhookdelete",
     "https://developers.ashbyhq.com/webhookinfo",
     "https://developers.ashbyhq.com/webhookupdate",
-    "https://github.com/blurrah/mcp-graphql",
+    "https://docs.secureauth.com/iam/blog/build-a-graphql-client-application-to-consumer-protected-graphql-api-resources-part-1",
     "https://jobs.ashbyhq.com/Ashby",
     "https://jobs.ashbyhq.com/example/apply",
     "https://jobs.ashbyhq.com/example_job",
     "https://www.apollographql.com/docs/apollo-mcp-server",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo",
-    "https://zuplo.com/docs/mcp-server/graphql"
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ]
 }

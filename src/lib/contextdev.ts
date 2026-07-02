@@ -34,7 +34,7 @@ async function retrying(run: () => Promise<Response>): Promise<Response> {
 // Global politeness cap on concurrent context.dev requests, shared across all
 // discovery loops in the process — bulk runs multiply per-domain parallelism,
 // and their API shouldn't absorb the product of both.
-const CTX_MAX_CONCURRENT = 8;
+const CTX_MAX_CONCURRENT = 12;
 let ctxInFlight = 0;
 const ctxWaiters: Array<() => void> = [];
 async function ctxSlot<T>(run: () => Promise<T>): Promise<T> {

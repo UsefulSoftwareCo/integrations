@@ -12,32 +12,23 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:41:06.241Z",
-    "summary": "Mapped Appwrite’s public developer integration surfaces: 2 REST APIs (client/server; curated OpenAPI refs noted in evidence), 1 GraphQL API, 1 Realtime WebSocket API, and the Appwrite CLI; auth uses Appwrite API keys, JWTs, session cookies, and dev keys where documented.",
+    "discoveredAt": "2026-07-02T20:03:10.896Z",
+    "summary": "Appwrite exposes REST and GraphQL APIs plus an official CLI; HTTP/GraphQL use project-scoped auth via user session cookies or API keys, and the CLI supports interactive console login or non-interactive API-key configuration.",
+    "description": "Appwrite is a backend platform for building web, mobile, and server applications with services such as authentication, databases, storage, functions, and messaging. It is available as Appwrite Cloud and as a self-hosted deployment with project-specific API endpoints.",
     "credentials": {
       "appwrite_api_key": {
         "type": "api_key",
         "label": "Appwrite API key",
-        "generateUrl": "https://appwrite.io/docs/advanced/security/api-keys",
-        "setup": "In the [Appwrite Console](https://cloud.appwrite.io/console), open your project, then go to [API keys](https://appwrite.io/docs/advanced/security/api-keys) under **Overview** → **Integration** / **Integrations** and click **Create API key**. Grant only the scopes you need. Use the resulting key in server integrations and the Appwrite CLI."
+        "generateUrl": "https://cloud.appwrite.io/console",
+        "setup": "In the [Appwrite Console](https://cloud.appwrite.io/console), open your project and go to **Overview** → **Integration** → **API keys**, then click **Create API key**. Grant only the scopes your integration needs. The docs describe API keys as the credential used by Server SDKs and the Appwrite CLI, and show them sent in the `X-Appwrite-Key` header for HTTP or configured with `appwrite client --key` for the CLI.",
+        "acquisition": "manual"
       },
-      "appwrite_jwt": {
-        "type": "jwt",
-        "label": "Appwrite JWT",
-        "generateUrl": "https://appwrite.io/docs/products/auth/jwt",
-        "setup": "Create a user session first, then mint a JWT with the Appwrite account **Create JWT** flow described in the [REST auth guide](https://appwrite.io/docs/apis/rest) and the [JWT docs](https://appwrite.io/docs/products/auth/jwt). This token lets a server act on behalf of the authenticated user."
-      },
-      "appwrite_session": {
-        "type": "compound",
-        "label": "Appwrite account session cookie",
-        "generateUrl": "https://appwrite.io/docs/products/auth",
-        "setup": "Authenticate an end user through Appwrite Auth, for example by creating an email/password session or another supported account session. Appwrite persists the session in secure cookies as shown in the [REST authentication docs](https://appwrite.io/docs/apis/rest). Use that session for client requests and Realtime subscriptions."
-      },
-      "appwrite_dev_key": {
-        "type": "api_key",
-        "label": "Appwrite dev key",
-        "generateUrl": "https://appwrite.io/docs/advanced/security/dev-keys",
-        "setup": "In the [Appwrite Console](https://cloud.appwrite.io/console), open your project, then go to [Dev keys](https://appwrite.io/docs/advanced/security/dev-keys) under **Overview** → **Integrations** and click **Create Dev key**. Dev keys are for client SDKs in development/testing only and are deprecated after September 1, 2026."
+      "appwrite_console_session": {
+        "type": "oauth2",
+        "label": "Appwrite Console account session",
+        "generateUrl": "https://cloud.appwrite.io/",
+        "setup": "Run `appwrite login` and sign in with the same console account you use for the [Appwrite Console](https://cloud.appwrite.io/). The CLI docs say `login` authenticates into the CLI using your console account; add `--endpoint \"<URL_HERE>\"` for self-hosted instances.",
+        "acquisition": "manual"
       }
     },
     "surfaces": [
@@ -50,9 +41,8 @@
           "via": "discovered",
           "evidence": [
             "https://appwrite.io/docs/apis/rest",
-            "https://api.apis.guru/v2/specs/appwrite.io/client/0.9.3/openapi.json",
-            "https://appwrite.io/docs/references/quick-start",
-            "https://appwrite.io/docs/advanced/security/dev-keys"
+            "https://appwrite.io/docs/references",
+            "https://appwrite.io/docs/references/quick-start"
           ]
         },
         "auth": {
@@ -61,7 +51,7 @@
             {
               "use": [
                 {
-                  "id": "appwrite_session",
+                  "id": "appwrite_console_session",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -75,44 +65,10 @@
                   "https://appwrite.io/docs/apis/rest"
                 ]
               }
-            },
-            {
-              "use": [
-                {
-                  "id": "appwrite_jwt",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "X-Appwrite-JWT"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://appwrite.io/docs/apis/rest"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "appwrite_dev_key",
-                  "mechanics": {
-                    "source": "unknown"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://appwrite.io/docs/advanced/security/dev-keys"
-                ]
-              }
             }
           ]
         },
-        "url": "https://appwrite.io/v1",
+        "url": "https://<REGION>.cloud.appwrite.io/v1",
         "requiredHeaders": [
           {
             "name": "Content-Type",
@@ -120,7 +76,7 @@
               "kind": "static",
               "value": "application/json"
             },
-            "description": "Typically required for JSON requests; upload endpoints use multipart/form-data."
+            "description": "Typical content type for JSON requests; upload endpoints use multipart/form-data."
           }
         ]
       },
@@ -142,7 +98,7 @@
             {
               "use": [
                 {
-                  "id": "appwrite_session",
+                  "id": "appwrite_console_session",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -161,77 +117,26 @@
             {
               "use": [
                 {
-                  "id": "appwrite_dev_key",
+                  "id": "appwrite_api_key",
                   "mechanics": {
-                    "source": "unknown"
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Appwrite-Key"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://appwrite.io/docs/advanced/security/dev-keys"
+                  "https://appwrite.io/docs/apis",
+                  "https://appwrite.io/docs/advanced/security/api-keys"
                 ]
               }
             }
           ]
         },
         "spec": "introspection",
-        "url": "https://appwrite.io/v1/graphql"
-      },
-      {
-        "slug": "appwrite-realtime-api",
-        "name": "Appwrite Realtime API",
-        "type": "http",
-        "docs": "https://appwrite.io/docs/apis/realtime",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://appwrite.io/docs/apis/realtime",
-            "https://appwrite.io/docs/apis/realtime/authentication",
-            "https://appwrite.io/docs/apis/realtime/custom-endpoint"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "appwrite_session",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Cookie"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://appwrite.io/docs/apis/realtime/authentication"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "appwrite_dev_key",
-                  "mechanics": {
-                    "source": "unknown"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://appwrite.io/docs/advanced/security/dev-keys"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "wss://<REGION>.cloud.appwrite.io/v1/realtime"
+        "url": "https://<REGION>.cloud.appwrite.io/v1/graphql"
       },
       {
         "slug": "appwrite-cli",
@@ -242,6 +147,8 @@
           "via": "discovered",
           "evidence": [
             "https://appwrite.io/docs/tooling/command-line/installation",
+            "https://appwrite.io/docs/tooling/command-line/commands",
+            "https://appwrite.io/docs/tooling/command-line/non-interactive",
             "https://appwrite.io/docs/advanced/security/api-keys"
           ]
         },
@@ -251,7 +158,7 @@
             {
               "use": [
                 {
-                  "id": "appwrite_session",
+                  "id": "appwrite_console_session",
                   "mechanics": {
                     "source": "cli",
                     "command": "appwrite login"
@@ -261,7 +168,8 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://appwrite.io/docs/tooling/command-line/installation"
+                  "https://appwrite.io/docs/tooling/command-line/installation",
+                  "https://appwrite.io/docs/tooling/command-line/commands"
                 ]
               }
             },
@@ -270,13 +178,15 @@
                 {
                   "id": "appwrite_api_key",
                   "mechanics": {
-                    "source": "unknown"
+                    "source": "cli",
+                    "command": "appwrite client --endpoint https://<REGION>.cloud.appwrite.io/v1 --project-id <PROJECT_ID> --key <YOUR_API_KEY>"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
+                  "https://appwrite.io/docs/tooling/command-line/non-interactive",
                   "https://appwrite.io/docs/advanced/security/api-keys"
                 ]
               }
@@ -298,93 +208,88 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:41:06.241Z",
+  "discoveredAt": "2026-07-02T20:03:10.897Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 181582,
-    "completion_tokens": 2956,
-    "total_tokens": 184538
+    "prompt_tokens": 312444,
+    "completion_tokens": 2411,
+    "total_tokens": 314855
   },
   "visited": [
-    "https://api.apis.guru/v2/specs/appwrite.io/client/0.9.3/openapi.json",
-    "https://api.apis.guru/v2/specs/appwrite.io/server/0.9.3/openapi.json",
-    "https://appwrite.io/blog/post/appwrite-oauth",
-    "https://appwrite.io/blog/post/appwrite-realtime",
-    "https://appwrite.io/blog/post/ci-cd-examples-in-appwrite",
     "https://appwrite.io/docs/advanced/security/api-keys",
-    "https://appwrite.io/docs/advanced/security/dev-keys",
     "https://appwrite.io/docs/apis",
     "https://appwrite.io/docs/apis/graphql",
-    "https://appwrite.io/docs/apis/realtime",
-    "https://appwrite.io/docs/apis/realtime/authentication",
-    "https://appwrite.io/docs/apis/realtime/custom-endpoint",
-    "https://appwrite.io/docs/apis/realtime/subscribe",
     "https://appwrite.io/docs/apis/rest",
     "https://appwrite.io/docs/products/auth/quick-start",
-    "https://appwrite.io/docs/products/functions/develop-locally",
     "https://appwrite.io/docs/references",
     "https://appwrite.io/docs/references/cloud/client-web/account",
     "https://appwrite.io/docs/references/quick-start",
-    "https://appwrite.io/docs/sdks",
-    "https://appwrite.io/docs/sdks#cli",
-    "https://appwrite.io/docs/specs/open-api3?platform=client",
-    "https://appwrite.io/docs/specs/open-api3?platform=server",
-    "https://appwrite.io/docs/tooling/command-line/functions",
+    "https://appwrite.io/docs/tooling/command-line/commands",
     "https://appwrite.io/docs/tooling/command-line/installation",
-    "https://appwrite.io/docs/tooling/command-line/sites",
+    "https://appwrite.io/docs/tooling/command-line/non-interactive",
+    "https://appwrite.io/docs/tutorials/nextjs/step-3",
     "https://appwrite.io/llms.txt",
-    "https://appwrite.io/threads/1079531935279353911",
-    "https://appwrite.io/threads/1121753945593872455",
-    "https://appwrite.io/threads/1143217637929787393",
+    "https://appwrite.io/specs/open-api3?platform=client",
+    "https://appwrite.io/specs/open-api3?platform=server",
+    "https://appwrite.io/threads/1229063120618655774",
     "https://github.com/appwrite/sdk-for-cli"
   ],
   "grounding": [
     "http://localhost:3000",
-    "https://api.apis.guru/v2/cache/logo/_images_apple.svg",
-    "https://api.apis.guru/v2/specs/appwrite.io/client/0.9.3/openapi.json",
-    "https://api.apis.guru/v2/specs/appwrite.io/server/0.9.3/openapi.json",
+    "https://appwrite.io/#account-commands",
     "https://appwrite.io/#admin-client",
+    "https://appwrite.io/#all",
     "https://appwrite.io/#api",
+    "https://appwrite.io/#api-keys",
     "https://appwrite.io/#api-keys-vs-dev-keys",
+    "https://appwrite.io/#api-responses",
+    "https://appwrite.io/#appwrite-project-commands",
     "https://appwrite.io/#array",
     "https://appwrite.io/#authentication",
-    "https://appwrite.io/#client",
+    "https://appwrite.io/#ci-cd-integrations",
     "https://appwrite.io/#client-app",
     "https://appwrite.io/#client-integration",
     "https://appwrite.io/#client-vs-server",
-    "https://appwrite.io/#community",
+    "https://appwrite.io/#command-options",
+    "https://appwrite.io/#commands",
     "https://appwrite.io/#configuration",
     "https://appwrite.io/#configure-project",
+    "https://appwrite.io/#console-flow",
     "https://appwrite.io/#create-an-api-key",
     "https://appwrite.io/#create-api-key",
-    "https://appwrite.io/#create-dev-key",
+    "https://appwrite.io/#create-row",
+    "https://appwrite.io/#create-user",
     "https://appwrite.io/#database-queries",
     "https://appwrite.io/#delete-an-api-key",
-    "https://appwrite.io/#dev-keys-vs-api-keys",
-    "https://appwrite.io/#enums",
+    "https://appwrite.io/#deployment",
+    "https://appwrite.io/#deployment-commands",
     "https://appwrite.io/#error-handling",
+    "https://appwrite.io/#event-driven-workflows",
     "https://appwrite.io/#examples",
-    "https://appwrite.io/#file-io",
     "https://appwrite.io/#files",
-    "https://appwrite.io/#generate-a-custom-id",
-    "https://appwrite.io/#generate-a-unique-id",
+    "https://appwrite.io/#filter-sort-paginate",
+    "https://appwrite.io/#force",
+    "https://appwrite.io/#general-commands",
     "https://appwrite.io/#get-an-api-key",
     "https://appwrite.io/#get-resquest",
+    "https://appwrite.io/#get-table",
     "https://appwrite.io/#getting-started",
+    "https://appwrite.io/#github",
     "https://appwrite.io/#graphql-model-parameters",
     "https://appwrite.io/#graphql-vs-rest",
     "https://appwrite.io/#headers",
     "https://appwrite.io/#help",
-    "https://appwrite.io/#ids",
     "https://appwrite.io/#images",
     "https://appwrite.io/#impersonation-headers",
     "https://appwrite.io/#initialization",
     "https://appwrite.io/#initialize-sdks",
     "https://appwrite.io/#install-with-npm",
     "https://appwrite.io/#install-with-script",
+    "https://appwrite.io/#json",
     "https://appwrite.io/#jwt",
-    "https://appwrite.io/#limitations",
     "https://appwrite.io/#list-api-keys",
+    "https://appwrite.io/#list-tables",
+    "https://appwrite.io/#list-users",
     "https://appwrite.io/#login",
     "https://appwrite.io/#main",
     "https://appwrite.io/#manage-api-keys-with-a-server-sdk",
@@ -396,11 +301,11 @@
     "https://appwrite.io/#post-request",
     "https://appwrite.io/#protocols",
     "https://appwrite.io/#queries",
-    "https://appwrite.io/#queries-and-permissions",
     "https://appwrite.io/#queries-string-format",
     "https://appwrite.io/#query-batching",
     "https://appwrite.io/#query-nesting",
     "https://appwrite.io/#rate-limits",
+    "https://appwrite.io/#report",
     "https://appwrite.io/#requests",
     "https://appwrite.io/#responses",
     "https://appwrite.io/#roles",
@@ -408,21 +313,16 @@
     "https://appwrite.io/#sdk-usage",
     "https://appwrite.io/#select-the-right-API",
     "https://appwrite.io/#selection-sets",
-    "https://appwrite.io/#server",
     "https://appwrite.io/#server-app",
     "https://appwrite.io/#server-integrations",
-    "https://appwrite.io/#server-sdks",
     "https://appwrite.io/#session-client",
-    "https://appwrite.io/#session-lifecycle",
     "https://appwrite.io/#specifications",
-    "https://appwrite.io/#subscription-changes",
     "https://appwrite.io/#uninstall",
     "https://appwrite.io/#unique-id",
     "https://appwrite.io/#update-an-api-key",
     "https://appwrite.io/#update-your-cli",
-    "https://appwrite.io/#utility-classes",
+    "https://appwrite.io/#verbose",
     "https://appwrite.io/#verify-installation",
-    "https://appwrite.io/blog",
     "https://appwrite.io/blog/post/10-best-mcp-server-client",
     "https://appwrite.io/blog/post/10-git-commands-you-should-start-using",
     "https://appwrite.io/blog/post/15-git-cli-tips",
@@ -947,10 +847,8 @@
     "https://appwrite.io/blog/post/why-you-need-to-try-the-new-bun-runtime",
     "https://appwrite.io/blog/post/will-claude-design-replace-designers",
     "https://appwrite.io/blog/post/x-oauth2-appwrite",
-    "https://appwrite.io/changelog",
     "https://appwrite.io/cli/install.ps1",
     "https://appwrite.io/cli/install.sh",
-    "https://appwrite.io/contact-us",
     "https://appwrite.io/discord",
     "https://appwrite.io/docs",
     "https://appwrite.io/docs/advanced/billing",
@@ -1220,9 +1118,7 @@
     "https://appwrite.io/docs/products/storage/permissions",
     "https://appwrite.io/docs/products/storage/quick-start",
     "https://appwrite.io/docs/products/storage/upload-download",
-    "https://appwrite.io/docs/products/storage/upload-download#input-file",
     "https://appwrite.io/docs/products/storage/upload-download#large-files",
-    "https://appwrite.io/docs/quick-starts",
     "https://appwrite.io/docs/quick-starts/android",
     "https://appwrite.io/docs/quick-starts/android-java",
     "https://appwrite.io/docs/quick-starts/android-java/prompt",
@@ -1301,11 +1197,8 @@
     "https://appwrite.io/docs/references/cloud/server-nodejs/users",
     "https://appwrite.io/docs/references/quick-start",
     "https://appwrite.io/docs/sdks",
-    "https://appwrite.io/docs/sdks#cli",
     "https://appwrite.io/docs/sdks#client",
     "https://appwrite.io/docs/sdks#server",
-    "https://appwrite.io/docs/specs/open-api3?platform=client",
-    "https://appwrite.io/docs/specs/open-api3?platform=server",
     "https://appwrite.io/docs/tooling/ai",
     "https://appwrite.io/docs/tooling/ai/agents-md",
     "https://appwrite.io/docs/tooling/ai/agents/antigravity",
@@ -1368,6 +1261,8 @@
     "https://appwrite.io/docs/tooling/command-line/functions",
     "https://appwrite.io/docs/tooling/command-line/generate",
     "https://appwrite.io/docs/tooling/command-line/installation",
+    "https://appwrite.io/docs/tooling/command-line/installation#multi-file-configuration",
+    "https://appwrite.io/docs/tooling/command-line/installation#update-your-cli",
     "https://appwrite.io/docs/tooling/command-line/non-interactive",
     "https://appwrite.io/docs/tooling/command-line/sites",
     "https://appwrite.io/docs/tooling/command-line/tables",
@@ -1383,7 +1278,6 @@
     "https://appwrite.io/docs/tooling/terraform/resources/sites",
     "https://appwrite.io/docs/tooling/terraform/resources/storage",
     "https://appwrite.io/docs/tooling/terraform/resources/webhooks",
-    "https://appwrite.io/docs/tutorials",
     "https://appwrite.io/docs/tutorials/android/step-1",
     "https://appwrite.io/docs/tutorials/android/step-2",
     "https://appwrite.io/docs/tutorials/android/step-3",
@@ -1539,14 +1433,9 @@
     "https://appwrite.io/integrations/terraform-provider",
     "https://appwrite.io/integrations/whatsapp-vonage",
     "https://appwrite.io/llms.txt",
-    "https://appwrite.io/policy/terms",
     "https://appwrite.io/specs/open-api3?platform=client",
     "https://appwrite.io/specs/open-api3?platform=server",
-    "https://appwrite.io/support",
-    "https://appwrite.io/threads/1079531935279353911",
-    "https://appwrite.io/threads/1121753945593872455",
-    "https://appwrite.io/threads/1143217637929787393",
-    "https://appwrite.io/v1",
+    "https://appwrite.io/threads/1229063120618655774",
     "https://appwrite.online",
     "https://archiveprogram.github.com",
     "https://brew.sh/",
@@ -1562,21 +1451,7 @@
     "https://github.com/accelerator",
     "https://github.com/appwrite",
     "https://github.com/appwrite/appwrite",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/create-jwt.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/create.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/delete.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/get-logs.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/get-prefs.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/get.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/update-email.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/update-name.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/update-password.md",
-    "https://github.com/appwrite/appwrite/edit/master/docs/references/account/update-prefs.md",
     "https://github.com/appwrite/appwrite/tree/master/app/config/specs",
-    "https://github.com/appwrite/sdk-for-android",
-    "https://github.com/appwrite/sdk-for-android/tree/dev/library/src/main/java/io/appwrite/enums",
-    "https://github.com/appwrite/sdk-for-apple",
-    "https://github.com/appwrite/sdk-for-apple/tree/dev/Sources/AppwriteEnums",
     "https://github.com/appwrite/sdk-for-cli",
     "https://github.com/appwrite/sdk-for-cli/actions",
     "https://github.com/appwrite/sdk-for-cli/blob/master/.gitignore",
@@ -1624,44 +1499,16 @@
     "https://github.com/appwrite/sdk-for-cli/tree/master/docs/examples",
     "https://github.com/appwrite/sdk-for-cli/tree/master/lib",
     "https://github.com/appwrite/sdk-for-cli/tree/master/scoop",
-    "https://github.com/appwrite/sdk-for-dart",
-    "https://github.com/appwrite/sdk-for-dart/blob/dev/lib/enums.dart",
-    "https://github.com/appwrite/sdk-for-dotnet",
-    "https://github.com/appwrite/sdk-for-dotnet/tree/dev/src/Appwrite/Enums",
-    "https://github.com/appwrite/sdk-for-flutter",
-    "https://github.com/appwrite/sdk-for-flutter/tree/dev/lib/src/enums",
-    "https://github.com/appwrite/sdk-for-go",
-    "https://github.com/appwrite/sdk-for-kotlin",
-    "https://github.com/appwrite/sdk-for-kotlin/tree/dev/src/main/kotlin/io/appwrite/enums",
-    "https://github.com/appwrite/sdk-for-node",
-    "https://github.com/appwrite/sdk-for-node/tree/dev/lib/enums",
-    "https://github.com/appwrite/sdk-for-php",
-    "https://github.com/appwrite/sdk-for-php/tree/dev/src/Appwrite/Enums",
-    "https://github.com/appwrite/sdk-for-python",
-    "https://github.com/appwrite/sdk-for-python/tree/dev/appwrite/enums",
-    "https://github.com/appwrite/sdk-for-react",
-    "https://github.com/appwrite/sdk-for-react-native",
-    "https://github.com/appwrite/sdk-for-ruby",
-    "https://github.com/appwrite/sdk-for-ruby/tree/dev/lib/appwrite/enums",
-    "https://github.com/appwrite/sdk-for-rust",
-    "https://github.com/appwrite/sdk-for-rust/tree/dev/src/enums",
-    "https://github.com/appwrite/sdk-for-swift",
-    "https://github.com/appwrite/sdk-for-swift/tree/dev/Sources/AppwriteEnums",
-    "https://github.com/appwrite/sdk-for-web",
-    "https://github.com/appwrite/sdk-for-web/tree/dev/src/enums",
-    "https://github.com/appwrite/sdk-generator",
-    "https://github.com/appwrite/sdk-generator/blob/master/CONTRIBUTING.md",
+    "https://github.com/appwrite/setup-for-appwrite?tab=readme-ov-file#introduction",
     "https://github.com/appwrite/websit",
     "https://github.com/appwrite/website/tree/main/src/routes/docs/advanced/security/api-keys",
-    "https://github.com/appwrite/website/tree/main/src/routes/docs/advanced/security/dev-keys",
+    "https://github.com/appwrite/website/tree/main/src/routes/docs/apis/(overview",
     "https://github.com/appwrite/website/tree/main/src/routes/docs/apis/graphql",
-    "https://github.com/appwrite/website/tree/main/src/routes/docs/apis/realtime",
-    "https://github.com/appwrite/website/tree/main/src/routes/docs/apis/realtime/authentication",
-    "https://github.com/appwrite/website/tree/main/src/routes/docs/apis/realtime/custom-endpoint",
     "https://github.com/appwrite/website/tree/main/src/routes/docs/references",
     "https://github.com/appwrite/website/tree/main/src/routes/docs/references/quick-start",
-    "https://github.com/appwrite/website/tree/main/src/routes/docs/sdks",
+    "https://github.com/appwrite/website/tree/main/src/routes/docs/tooling/command-line/commands",
     "https://github.com/appwrite/website/tree/main/src/routes/docs/tooling/command-line/installation",
+    "https://github.com/appwrite/website/tree/main/src/routes/docs/tooling/command-line/non-interactive",
     "https://github.com/collections",
     "https://github.com/customer-stories",
     "https://github.com/enterprise",
@@ -1715,7 +1562,6 @@
     "https://github.com/why-github",
     "https://learn.microsoft.com/en-us/powershell/",
     "https://maintainers.github.com",
-    "https://raw.githubusercontent.com/appwrite/appwrite/master/LICENSE",
     "https://raw.githubusercontent.com/appwrite/sdk-for-cli/master/scoop/appwrite.config.json",
     "https://scoop.sh/",
     "https://securitylab.github.com",

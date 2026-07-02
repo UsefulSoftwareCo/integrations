@@ -12,26 +12,27 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:37:59.751Z",
-    "summary": "Agility CMS exposes 4 developer HTTP APIs (Content Fetch, GraphQL, Content Sync, and Management), 2 MCP servers (one OAuth-protected CMS server and one public docs server), and an npm CLI; auth uses instance API keys for fetch/sync/GraphQL, OAuth for CLI/CMS MCP, and PATs are documented for Management API but on-wire mechanics were not confirmed from public docs.",
+    "discoveredAt": "2026-07-02T20:00:31.890Z",
+    "summary": "Agility CMS exposes REST APIs for content fetch, sync, and management; a GraphQL API; two MCP servers (one OAuth-protected CMS server and one public docs server); and an npm-distributed CLI.",
+    "description": "Agility CMS is a headless, cloud-based content management system for modeling, managing, and delivering content and pages across digital channels. It provides REST, GraphQL, CLI, and MCP-based access for developers and AI assistants.",
     "credentials": {
-      "fetch_api_key": {
+      "api_key": {
         "type": "api_key",
-        "label": "Content Fetch/Preview API key",
+        "label": "Agility API key",
         "generateUrl": "https://agilitycms.com/docs/developers/content-fetch-api",
-        "setup": "In Agility CMS, go to [Settings > API Keys](https://agilitycms.com/docs/developers/content-fetch-api). Create an API key, choose its type (`fetch` for published content or `preview` for staging content), and copy the secret. The same page shows your instance GUID and regional API host."
-      },
-      "agility_oauth_user": {
-        "type": "oauth2",
-        "label": "Agility user OAuth login",
-        "generateUrl": "https://agilitycms.com/docs/developers/cli",
-        "setup": "Use the easiest supported login path for developer tools: run `agility login` for the CLI or connect from an MCP client to the Agility CMS MCP server, which uses OAuth 2.0. For PAT creation, the docs state PATs can only be created by users authenticated via OAuth; manage them via the Management API Swagger at [mgmt.aglty.io](https://mgmt.aglty.io/index.html)."
+        "setup": "Sign in to your Agility instance at [Agility CMS](https://manager.agilitycms.com/) and go to [Content Fetch API docs](https://agilitycms.com/docs/developers/content-fetch-api), which state your keys are under `Settings > API Keys`. Create or copy a `Fetch` key for published content or a `Preview` key for staging content. Use the key in the `APIKey` request header."
       },
       "pat": {
         "type": "bearer",
-        "label": "Personal Access Token",
+        "label": "Agility Personal Access Token",
         "generateUrl": "https://mgmt.aglty.io/index.html",
-        "setup": "First authenticate as an Agility user via OAuth; the docs say PATs can only be created by users authenticated via OAuth. Then create and manage the token through the Management API's “Personal Access Tokens” section in [Management API Swagger](https://mgmt.aglty.io/index.html), as described in [Personal Access Tokens - Public Beta](https://agilitycms.com/docs/developers/personal-access-tokens-public-beta). Copy the token secret when shown — it is displayed only once."
+        "setup": "Create a Personal Access Token using the `Personal Access Tokens` section of the [Management API Swagger docs](https://mgmt.aglty.io/index.html). The [PAT docs](https://agilitycms.com/docs/developers/personal-access-tokens-public-beta) say PATs are created and managed through the Management API, require an OAuth-authenticated user to create them, are shown only once at creation, and are intended for automation and CI/CD. Store the token securely and send it as a bearer token."
+      },
+      "oauth_user": {
+        "type": "oauth2",
+        "label": "Agility user OAuth login",
+        "generateUrl": "https://agilitycms.com/docs/developers/cli",
+        "setup": "Authenticate interactively by running `agility login`, which opens a browser to complete Agility authentication, as described in the [CLI docs](https://agilitycms.com/docs/developers/cli). The same Agility user OAuth authentication is also required to create Personal Access Tokens per the [PAT docs](https://agilitycms.com/docs/developers/personal-access-tokens-public-beta)."
       }
     },
     "surfaces": [
@@ -52,7 +53,7 @@
             {
               "use": [
                 {
-                  "id": "fetch_api_key",
+                  "id": "api_key",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -69,78 +70,20 @@
             }
           ]
         },
+        "spec": "introspection",
         "url": "https://api.aglty.io/{guid}/{apitype}",
         "variables": [
           {
             "name": "guid",
-            "description": "Agility instance GUID."
+            "resolveFrom": "Agility instance Settings > API Keys",
+            "description": "Instance GUID shown in Agility settings/API keys."
           },
           {
             "name": "apitype",
-            "description": "Use `fetch` for published content or `preview` for staging content, matching the key type."
+            "resolveFrom": "API key type",
+            "description": "Use `fetch` for published content or `preview` for staging content."
           }
         ]
-      },
-      {
-        "slug": "content-sync-api",
-        "name": "Content Sync API",
-        "type": "http",
-        "docs": "https://agilitycms.com/docs/developers/content-sync-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://agilitycms.com/docs/developers/content-sync-api",
-            "https://agilitycms.com/docs/developers/content-fetch-api"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "fetch_api_key",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "APIKey"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://agilitycms.com/docs/developers/content-sync-api",
-                  "https://agilitycms.com/docs/developers/content-fetch-api"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://api.aglty.io/{guid}/fetch",
-        "variables": [
-          {
-            "name": "guid",
-            "description": "Agility instance GUID."
-          }
-        ]
-      },
-      {
-        "slug": "content-management-api",
-        "name": "Content Management API",
-        "type": "http",
-        "docs": "https://agilitycms.com/docs/developers/content-management-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://agilitycms.com/docs/developers/content-management-api",
-            "https://agilitycms.com/docs/developers/personal-access-tokens-public-beta"
-          ]
-        },
-        "auth": {
-          "status": "unknown"
-        },
-        "url": "https://mgmt.aglty.io"
       },
       {
         "slug": "agility-cms-mcp-server",
@@ -159,7 +102,7 @@
             {
               "use": [
                 {
-                  "id": "agility_oauth_user",
+                  "id": "oauth_user",
                   "mechanics": {
                     "source": "well-known"
                   }
@@ -220,7 +163,7 @@
             {
               "use": [
                 {
-                  "id": "agility_oauth_user",
+                  "id": "oauth_user",
                   "mechanics": {
                     "source": "cli",
                     "command": "agility login"
@@ -240,10 +183,65 @@
           {
             "registryType": "npm",
             "identifier": "@agility/cli",
-            "runtimeHint": "node"
+            "runtimeHint": "Node.js"
           }
         ],
         "command": "agility"
+      },
+      {
+        "slug": "content-sync-api",
+        "name": "Content Sync API",
+        "type": "http",
+        "docs": "https://agilitycms.com/docs/developers/content-sync-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://agilitycms.com/docs/developers/content-sync-api",
+            "https://agilitycms.com/docs/developers/content-fetch-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "APIKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://agilitycms.com/docs/developers/content-sync-api",
+                  "https://agilitycms.com/docs/developers/content-fetch-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.aglty.io/{guid}/{apitype}/{locale}/sync",
+        "variables": [
+          {
+            "name": "guid",
+            "resolveFrom": "Agility instance Settings > API Keys",
+            "description": "Instance GUID shown in Agility settings/API keys."
+          },
+          {
+            "name": "apitype",
+            "resolveFrom": "API key type",
+            "description": "Use `fetch` or `preview`."
+          },
+          {
+            "name": "locale",
+            "resolveFrom": "Agility locale settings",
+            "description": "Locale code such as `en-us`."
+          }
+        ]
       },
       {
         "slug": "content-fetch-api",
@@ -254,7 +252,8 @@
           "via": "discovered",
           "evidence": [
             "https://agilitycms.com/docs/developers/content-fetch-api",
-            "https://agilitycms.com/docs/training-guide/developer-api-basics"
+            "https://agilitycms.com/docs/training-guide/developer-api-basics",
+            "https://api.aglty.io/swagger/index.html"
           ]
         },
         "auth": {
@@ -263,7 +262,7 @@
             {
               "use": [
                 {
-                  "id": "fetch_api_key",
+                  "id": "api_key",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -285,22 +284,84 @@
         "variables": [
           {
             "name": "guid",
-            "description": "Agility instance GUID shown under Settings > API Keys."
+            "resolveFrom": "Agility instance Settings > API Keys",
+            "description": "Instance GUID shown in Agility settings/API keys."
           },
           {
             "name": "apitype",
+            "resolveFrom": "API key type",
             "description": "Use `fetch` for published content or `preview` for staging content."
+          }
+        ]
+      },
+      {
+        "slug": "content-management-api",
+        "name": "Content Management API",
+        "type": "http",
+        "docs": "https://agilitycms.com/docs/developers/content-management-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://agilitycms.com/docs/developers/content-management-api",
+            "https://mgmt.aglty.io/index.html",
+            "https://agilitycms.com/docs/developers/personal-access-tokens-public-beta"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "pat",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://agilitycms.com/docs/developers/personal-access-tokens-public-beta"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "oauth_user",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://mgmt.aglty.io/index.html",
+                  "https://agilitycms.com/docs/developers/content-management-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mgmt.aglty.io/api/v1/instance/{guid}",
+        "variables": [
+          {
+            "name": "guid",
+            "resolveFrom": "Agility instance GUID",
+            "description": "Target Agility instance GUID."
           }
         ]
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:37:59.752Z",
+  "discoveredAt": "2026-07-02T20:00:31.891Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 112874,
-    "completion_tokens": 2129,
-    "total_tokens": 115003
+    "prompt_tokens": 158247,
+    "completion_tokens": 3077,
+    "total_tokens": 161324
   },
   "visited": [
     "https://agilitycms.com/docs/developers/agility-cms-mcp-server",
@@ -313,7 +374,10 @@
     "https://agilitycms.com/docs/overview/agility-knowledgebase-mcp-server",
     "https://agilitycms.com/docs/training-guide/developer-api-basics",
     "https://agilitycms.com/llms.txt",
+    "https://api.aglty.io/swagger/index.html",
     "https://github.com/api-evangelist/agility-cms",
+    "https://mcp.agilitycms.com",
+    "https://mgmt.aglty.io/index.html",
     "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ],
   "grounding": [
@@ -361,6 +425,7 @@
     "https://agilitycms.com/about-us/team",
     "https://agilitycms.com/best-canadian-headless-cms",
     "https://agilitycms.com/contact-agility-cms",
+    "https://agilitycms.com/contact-us/get-a-demo",
     "https://agilitycms.com/customer-agreement",
     "https://agilitycms.com/docs",
     "https://agilitycms.com/docs/apps",
@@ -415,6 +480,7 @@
     "https://agilitycms.com/docs/training-guide/developer-overview",
     "https://agilitycms.com/docs/training-guide/developer-preview-mode",
     "https://agilitycms.com/docs/training-guide/developer-setup",
+    "https://agilitycms.com/free",
     "https://agilitycms.com/gdpr",
     "https://agilitycms.com/glossary",
     "https://agilitycms.com/join-slack",
@@ -457,6 +523,7 @@
     "https://api.aglty.io/e13c7b01-u/preview/en-us/list/posts",
     "https://api.aglty.io/swagger",
     "https://api.aglty.io/swagger/index.html",
+    "https://api.aglty.io/swagger/v1/swagger.json",
     "https://api.aglty.io/{guid}/{apitype",
     "https://api.aglty.io/{instance-guid}/fetch",
     "https://cdn.agilitycms.com/",
@@ -476,6 +543,7 @@
     "https://github.com/agility/agilitycms-nextjs-starter",
     "https://github.com/api-evangelist/agility-cms",
     "https://github.com/vercel/mcp-handler",
+    "https://help.agilitycms.com",
     "https://help.agilitycms.com/hc/en-us/articles/360048730131-Syncing-Content-using-the-JS-SDK",
     "https://help.agilitycms.com/hc/en-us/requests/new",
     "https://lmstudio.ai/install-mcp",
@@ -485,6 +553,7 @@
     "https://mcp.agilitycms.com/instructions",
     "https://mcp.agilitycms.com/tools",
     "https://mgmt.aglty.io/index.html",
+    "https://mgmt.aglty.io/swagger/v1/swagger.json",
     "https://modelcontextprotocol.io",
     "https://modelcontextprotocol.io/",
     "https://roadmap.agilitycms.com",

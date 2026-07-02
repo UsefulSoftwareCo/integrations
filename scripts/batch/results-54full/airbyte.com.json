@@ -61,83 +61,55 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:34:00.008Z",
-    "summary": "Mapped Airbyte’s developer-facing surfaces: 2 HTTP APIs (Airbyte Public API and Airbyte Agents API), 1 hosted MCP server, and the airbyte-agent CLI; all require Airbyte-issued credentials/auth.",
+    "discoveredAt": "2026-07-02T19:38:35.346Z",
+    "summary": "Mapped 2 HTTP APIs (Airbyte API and Airbyte Agents API), 3 MCP servers (Agent MCP, Knowledge MCP, Replication MCP), and 1 CLI, with bearer/OAuth, CLI login/env, and Google-sign-in auth documented from Airbyte’s public docs.",
     "credentials": {
-      "airbyte_app": {
-        "type": "oauth2_cc",
-        "label": "Airbyte application client credentials",
-        "generateUrl": "https://cloud.airbyte.com/signup",
-        "setup": "For Airbyte Data Replication, sign in to the Airbyte UI, then go to **User settings** → **Applications** and create an application or reveal an existing app's credentials; you’ll get a `client_id` and `client_secret`. Then exchange them at `https://api.airbyte.com/v1/applications/token` (Cloud) or `<YOUR_AIRBYTE_URL>/api/public/v1/applications/token` (self-managed) for a short-lived bearer token. Docs: [Get an API access token](https://docs.airbyte.com/platform/using-airbyte/configuring-api-access).",
+      "airbyte_cloud_access_token": {
+        "type": "oauth2",
+        "label": "Airbyte Cloud API access token",
+        "generateUrl": "https://docs.airbyte.com/platform/using-airbyte/configuring-api-access",
+        "setup": "For Airbyte Cloud or self-managed Airbyte API access, follow [Get an access token](https://docs.airbyte.com/platform/using-airbyte/configuring-api-access) from the Airbyte docs, then send the resulting bearer token in API requests to the Airbyte API base URL for your deployment. The API docs show Cloud requests using `Authorization: Bearer <YOUR_ACCESS_TOKEN>` against `https://api.airbyte.com/v1/`, and self-managed requests using the same header against `http://localhost:8000/api/public/v1/` or `<YOUR_AIRBYTE_URL>/api/public/v1/`.",
         "acquisition": "manual"
       },
-      "airbyte_agents_client": {
+      "airbyte_agents_client_creds": {
         "type": "oauth2_cc",
         "label": "Airbyte Agents client credentials",
         "generateUrl": "https://app.airbyte.ai",
-        "setup": "Sign in to [app.airbyte.ai](https://app.airbyte.ai) and copy `AIRBYTE_CLIENT_ID` and `AIRBYTE_CLIENT_SECRET` from your Profile page. Exchange them at `https://api.airbyte.ai/api/v1/account/applications/token` for a short-lived application bearer token. Docs: [Agent API authentication](https://docs.airbyte.com/ai-agents/interfaces/api/authentication).",
+        "setup": "Sign in to [Airbyte Agents](https://app.airbyte.ai), open your Profile page, and copy `AIRBYTE_CLIENT_ID` and `AIRBYTE_CLIENT_SECRET`. Exchange them at `POST https://api.airbyte.ai/api/v1/account/applications/token` to mint a short-lived application bearer token. Optionally call `POST https://api.airbyte.ai/api/v1/account/applications/scoped-token` with that bearer token to mint a workspace-scoped token.",
         "acquisition": "manual"
       },
-      "airbyte_agents_account": {
+      "airbyte_cli_saved_login": {
+        "type": "compound",
+        "label": "Airbyte Agent CLI saved login",
+        "generateUrl": "https://app.airbyte.ai",
+        "setup": "Install the CLI, then run `airbyte-agent login` for the browser flow or `airbyte-agent login --manual` on a headless machine. The CLI saves the required trio — `client_id`, `client_secret`, and `organization_id` — into `$HOME/.airbyte-agent/settings.json`.",
+        "acquisition": "manual"
+      },
+      "airbyte_agent_mcp_oauth": {
         "type": "oauth2",
-        "label": "Airbyte account OAuth login for MCP",
+        "label": "Airbyte Agent MCP Airbyte account authorization",
         "generateUrl": "https://cloud.airbyte.com/signup",
-        "setup": "Create or sign in to your Airbyte account via [Airbyte signup/login](https://cloud.airbyte.com/signup) or [app.airbyte.ai](https://app.airbyte.ai). Then add the MCP server URL `https://mcp.airbyte.ai/mcp` in your MCP client and complete the browser-based OAuth consent flow when prompted. Docs: [Agent MCP](https://docs.airbyte.com/ai-agents/interfaces/mcp).",
+        "setup": "Add the Agent MCP server URL `https://mcp.airbyte.ai/mcp` in your MCP client. On first connection, the client opens your browser; sign in to Airbyte and grant access to the Agent MCP. Automated probes detected the OAuth authorization and dynamic registration entry point at [Airbyte signup](https://cloud.airbyte.com/signup), with token exchange at `https://api.airbyte.com/v1/applications/token` and scope `api`.",
+        "acquisition": "manual"
+      },
+      "airbyte_knowledge_mcp_google_login": {
+        "type": "oauth2",
+        "label": "Airbyte Knowledge MCP Google sign-in",
+        "setup": "Connect your MCP client to `https://airbyte.mcp.kapa.ai`. On first connection, the client prompts you to sign in with a Google account. The docs state this Google authentication is only used to enforce rate limits and prevent abuse.",
         "acquisition": "manual"
       }
     },
     "surfaces": [
       {
-        "slug": "airbyte-public-api",
-        "name": "Airbyte Public API",
-        "type": "http",
-        "docs": "https://docs.airbyte.com/developers/api-documentation",
-        "basis": {
-          "via": "detected",
-          "signal": "openapi:schema",
-          "verifiedAt": "2026-07-02T19:34:00.007Z"
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "airbyte_app",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.airbyte.com/developers/api-documentation",
-                  "https://docs.airbyte.com/platform/using-airbyte/configuring-api-access"
-                ]
-              }
-            }
-          ]
-        },
-        "spec": "https://airbyte.com/openapi.json",
-        "url": "https://api.airbyte.com/v1/",
-        "notes": "Docs also describe equivalent self-managed base URLs: `http://localhost:8000/api/public/v1/` or `<YOUR_AIRBYTE_URL>/api/public/v1/`."
-      },
-      {
         "slug": "airbyte-agents-api",
         "name": "Airbyte Agents API",
         "type": "http",
-        "docs": "https://docs.airbyte.com/ai-agents/interfaces/api",
+        "docs": "https://docs.airbyte.com/ai-agents/interfaces/api/",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.airbyte.com/ai-agents/interfaces/api",
-            "https://docs.airbyte.com/ai-agents/interfaces/api/authentication",
-            "https://docs.airbyte.com/ai-agents/reference/api",
-            "https://airbyte.com/llms.txt"
+            "https://docs.airbyte.com/ai-agents/interfaces/api/",
+            "https://docs.airbyte.com/ai-agents/interfaces/api/authentication/"
           ]
         },
         "auth": {
@@ -146,7 +118,7 @@
             {
               "use": [
                 {
-                  "id": "airbyte_agents_client",
+                  "id": "airbyte_agents_client_creds",
                   "mechanics": {
                     "source": "http",
                     "in": "header",
@@ -158,9 +130,8 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.airbyte.com/ai-agents/interfaces/api",
-                  "https://docs.airbyte.com/ai-agents/interfaces/api/authentication",
-                  "https://docs.airbyte.com/ai-agents/reference/api"
+                  "https://docs.airbyte.com/ai-agents/interfaces/api/",
+                  "https://docs.airbyte.com/ai-agents/interfaces/api/authentication/"
                 ]
               }
             }
@@ -169,56 +140,16 @@
         "url": "https://api.airbyte.ai"
       },
       {
-        "slug": "airbyte-agent-mcp",
-        "name": "Airbyte Agent MCP",
-        "type": "mcp",
-        "docs": "https://docs.airbyte.com/ai-agents/interfaces/mcp",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.airbyte.com/ai-agents/interfaces/mcp",
-            "https://docs.airbyte.com/ai-agents/get-started/choose-how-to-use",
-            "https://airbyte.com/llms.txt"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "airbyte_agents_account",
-                  "mechanics": {
-                    "source": "well-known"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://docs.airbyte.com/ai-agents/interfaces/mcp",
-                  "https://docs.airbyte.com/ai-agents/get-started/choose-how-to-use"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://mcp.airbyte.ai/mcp",
-        "transports": [
-          "streamable-http"
-        ]
-      },
-      {
         "slug": "airbyte-agent-cli",
-        "name": "airbyte-agent CLI",
+        "name": "Airbyte Agent CLI",
         "type": "cli",
-        "docs": "https://docs.airbyte.com/ai-agents/interfaces/cli",
+        "docs": "https://docs.airbyte.com/ai-agents/interfaces/cli/",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.airbyte.com/ai-agents/interfaces/cli",
+            "https://docs.airbyte.com/ai-agents/interfaces/cli/",
             "https://docs.airbyte.com/ai-agents/interfaces/cli/authenticate",
-            "https://docs.airbyte.com/ai-agents/get-started/choose-how-to-use"
+            "https://docs.airbyte.com/ai-agents/interfaces/cli/using-with-ai-agents"
           ]
         },
         "auth": {
@@ -227,18 +158,7 @@
             {
               "use": [
                 {
-                  "id": "airbyte_agents_client",
-                  "mechanics": {
-                    "source": "cli",
-                    "command": "airbyte-agent login",
-                    "env": [
-                      "AIRBYTE_CLIENT_ID",
-                      "AIRBYTE_CLIENT_SECRET"
-                    ]
-                  }
-                },
-                {
-                  "id": "airbyte_agents_account",
+                  "id": "airbyte_cli_saved_login",
                   "mechanics": {
                     "source": "cli",
                     "command": "airbyte-agent login"
@@ -248,15 +168,15 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.airbyte.com/ai-agents/interfaces/cli",
-                  "https://docs.airbyte.com/ai-agents/interfaces/cli/authenticate"
+                  "https://docs.airbyte.com/ai-agents/interfaces/cli/authenticate",
+                  "https://docs.airbyte.com/ai-agents/interfaces/cli/"
                 ]
               }
             },
             {
               "use": [
                 {
-                  "id": "airbyte_agents_client",
+                  "id": "airbyte_cli_saved_login",
                   "mechanics": {
                     "source": "cli",
                     "env": [
@@ -283,34 +203,193 @@
           }
         ],
         "command": "airbyte-agent"
+      },
+      {
+        "slug": "airbyte-agent-mcp",
+        "name": "Airbyte Agent MCP",
+        "type": "mcp",
+        "docs": "https://docs.airbyte.com/ai-agents/interfaces/mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.airbyte.com/ai-agents/interfaces/mcp/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "airbyte_agent_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.airbyte.com/ai-agents/interfaces/mcp/",
+                  "https://cloud.airbyte.com/signup"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.airbyte.ai/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "airbyte-knowledge-mcp",
+        "name": "Airbyte Knowledge MCP",
+        "type": "mcp",
+        "docs": "https://docs.airbyte.com/community/mcp-servers/airbyte-knowledge-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.airbyte.com/community/mcp-servers/airbyte-knowledge-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "airbyte_knowledge_mcp_google_login",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.airbyte.com/community/mcp-servers/airbyte-knowledge-mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://airbyte.mcp.kapa.ai",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "airbyte-replication-mcp-server",
+        "name": "Airbyte Replication MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.airbyte.com/community/mcp-servers/replication-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.airbyte.com/community/mcp-servers/replication-mcp",
+            "https://airbytehq.github.io/PyAirbyte/airbyte/mcp.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "airbyte_cloud_access_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.airbyte.com/community/mcp-servers/replication-mcp",
+                  "https://airbytehq.github.io/PyAirbyte/airbyte/mcp.html"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "stdio"
+        ]
+      },
+      {
+        "slug": "airbyte-api",
+        "name": "Airbyte API",
+        "type": "http",
+        "docs": "https://docs.airbyte.com/developers/api-documentation",
+        "basis": {
+          "via": "detected",
+          "signal": "openapi:schema",
+          "verifiedAt": "2026-07-02T19:38:35.346Z"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "airbyte_cloud_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.airbyte.com/developers/api-documentation"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://airbyte.com/openapi.json",
+        "url": "https://api.airbyte.com/v1/",
+        "notes": "Docs also describe self-managed base URLs `http://localhost:8000/api/public/v1/` and `<YOUR_AIRBYTE_URL>/api/public/v1/` using the same bearer token pattern."
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:34:00.008Z",
+  "discoveredAt": "2026-07-02T19:38:35.347Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 229167,
-    "completion_tokens": 1757,
-    "total_tokens": 230924
+    "prompt_tokens": 105115,
+    "completion_tokens": 2481,
+    "total_tokens": 107596
   },
   "visited": [
-    "https://airbyte.com/llms.txt",
     "https://airbyte.com/openapi.json",
     "https://airbytehq.github.io/PyAirbyte/airbyte/mcp.html",
+    "https://docs.airbyte.com/ai-agents/connectors/airtable/AUTH",
+    "https://docs.airbyte.com/ai-agents/connectors/gitlab/AUTH",
     "https://docs.airbyte.com/ai-agents/get-started/choose-how-to-use",
     "https://docs.airbyte.com/ai-agents/interfaces/api",
-    "https://docs.airbyte.com/ai-agents/interfaces/api/authentication",
-    "https://docs.airbyte.com/ai-agents/interfaces/cli",
+    "https://docs.airbyte.com/ai-agents/interfaces/api/add-connector",
+    "https://docs.airbyte.com/ai-agents/interfaces/api/authentication/",
+    "https://docs.airbyte.com/ai-agents/interfaces/cli/",
     "https://docs.airbyte.com/ai-agents/interfaces/cli/authenticate",
-    "https://docs.airbyte.com/ai-agents/interfaces/mcp",
-    "https://docs.airbyte.com/ai-agents/reference/api",
+    "https://docs.airbyte.com/ai-agents/interfaces/cli/using-with-ai-agents",
+    "https://docs.airbyte.com/ai-agents/interfaces/mcp/",
+    "https://docs.airbyte.com/community/mcp-servers/airbyte-knowledge-mcp",
+    "https://docs.airbyte.com/community/mcp-servers/replication-mcp",
     "https://docs.airbyte.com/developers/api-documentation",
-    "https://docs.airbyte.com/developers/pyairbyte/reference/airbyte/mcp/airbyte-mcp-registry",
-    "https://docs.airbyte.com/platform/using-airbyte/configuring-api-access",
-    "https://github.com/airbytehq/airbyte/blob/master/docs/developers/api-documentation.md"
+    "https://docs.airbyte.com/platform/connector-development/cdk-python/schemas",
+    "https://docs.airbyte.com/platform/deploying-airbyte/integrations/authentication",
+    "https://github.com/eryajf/awesome-stars-eryajf/blob/main/README.md",
+    "https://github.com/felixlu/awesome-stars",
+    "https://github.com/koxudaxi/datamodel-code-generator",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
   ],
   "grounding": [
-    "http://localhost:8000",
     "http://localhost:8000/api/public/v1/",
     "http://localhost:8000/api/public/v1/sources",
     "https://a",
@@ -347,7 +426,6 @@
     "https://airbyte.com/connectors/stripe",
     "https://airbyte.com/data-replication",
     "https://airbyte.com/llms-full.txt",
-    "https://airbyte.com/llms.txt",
     "https://airbyte.com/openapi.json",
     "https://airbyte.com/pricing",
     "https://airbyte.com/product/connector-development-kit",
@@ -358,7 +436,96 @@
     "https://airbyte.com/success-stories/cart",
     "https://airbyte.com/success-stories/drivepoint",
     "https://airbyte.com/success-stories/peloton",
+    "https://airbyte.mcp.kapa.ai",
+    "https://airbytehq.github.io/#L-1",
+    "https://airbytehq.github.io/#L-10",
+    "https://airbytehq.github.io/#L-11",
+    "https://airbytehq.github.io/#L-12",
+    "https://airbytehq.github.io/#L-13",
+    "https://airbytehq.github.io/#L-14",
+    "https://airbytehq.github.io/#L-15",
+    "https://airbytehq.github.io/#L-16",
+    "https://airbytehq.github.io/#L-17",
+    "https://airbytehq.github.io/#L-18",
+    "https://airbytehq.github.io/#L-19",
+    "https://airbytehq.github.io/#L-2",
+    "https://airbytehq.github.io/#L-20",
+    "https://airbytehq.github.io/#L-21",
+    "https://airbytehq.github.io/#L-22",
+    "https://airbytehq.github.io/#L-23",
+    "https://airbytehq.github.io/#L-24",
+    "https://airbytehq.github.io/#L-25",
+    "https://airbytehq.github.io/#L-26",
+    "https://airbytehq.github.io/#L-27",
+    "https://airbytehq.github.io/#L-28",
+    "https://airbytehq.github.io/#L-29",
+    "https://airbytehq.github.io/#L-3",
+    "https://airbytehq.github.io/#L-30",
+    "https://airbytehq.github.io/#L-31",
+    "https://airbytehq.github.io/#L-32",
+    "https://airbytehq.github.io/#L-33",
+    "https://airbytehq.github.io/#L-34",
+    "https://airbytehq.github.io/#L-35",
+    "https://airbytehq.github.io/#L-36",
+    "https://airbytehq.github.io/#L-37",
+    "https://airbytehq.github.io/#L-38",
+    "https://airbytehq.github.io/#L-39",
+    "https://airbytehq.github.io/#L-4",
+    "https://airbytehq.github.io/#L-40",
+    "https://airbytehq.github.io/#L-41",
+    "https://airbytehq.github.io/#L-42",
+    "https://airbytehq.github.io/#L-43",
+    "https://airbytehq.github.io/#L-44",
+    "https://airbytehq.github.io/#L-45",
+    "https://airbytehq.github.io/#L-46",
+    "https://airbytehq.github.io/#L-47",
+    "https://airbytehq.github.io/#L-48",
+    "https://airbytehq.github.io/#L-49",
+    "https://airbytehq.github.io/#L-5",
+    "https://airbytehq.github.io/#L-50",
+    "https://airbytehq.github.io/#L-51",
+    "https://airbytehq.github.io/#L-52",
+    "https://airbytehq.github.io/#L-53",
+    "https://airbytehq.github.io/#L-54",
+    "https://airbytehq.github.io/#L-55",
+    "https://airbytehq.github.io/#L-56",
+    "https://airbytehq.github.io/#L-57",
+    "https://airbytehq.github.io/#L-58",
+    "https://airbytehq.github.io/#L-59",
+    "https://airbytehq.github.io/#L-6",
+    "https://airbytehq.github.io/#L-60",
+    "https://airbytehq.github.io/#L-61",
+    "https://airbytehq.github.io/#L-62",
+    "https://airbytehq.github.io/#L-63",
+    "https://airbytehq.github.io/#L-64",
+    "https://airbytehq.github.io/#L-65",
+    "https://airbytehq.github.io/#L-66",
+    "https://airbytehq.github.io/#L-67",
+    "https://airbytehq.github.io/#L-68",
+    "https://airbytehq.github.io/#L-69",
+    "https://airbytehq.github.io/#L-7",
+    "https://airbytehq.github.io/#L-8",
+    "https://airbytehq.github.io/#L-9",
+    "https://airbytehq.github.io/#additional-resources",
+    "https://airbytehq.github.io/#airbyte-cloud-mcp-server-safety",
+    "https://airbytehq.github.io/#airbyte-cloud-read-only-mode",
+    "https://airbytehq.github.io/#airbyte-cloud-safe-mode",
+    "https://airbytehq.github.io/#contributing-to-the-airbyte-mcp-server",
+    "https://airbytehq.github.io/#getting-started-with-airbyte-replication-mcp",
+    "https://airbytehq.github.io/#securing-your-secrets",
+    "https://airbytehq.github.io/#step-1-generate-a-dotenv-secrets-file",
+    "https://airbytehq.github.io/#step-2-registering-the-mcp-server",
+    "https://airbytehq.github.io/#step-3-testing-the-mcp-server-connection",
+    "https://airbytehq.github.io/#troubleshooting",
+    "https://airbytehq.github.io/#troubleshooting-local-connector-installation-issues",
+    "https://airbytehq.github.io/#using-abolute-paths",
+    "https://airbytehq.github.io/../airbyte.html",
+    "https://airbytehq.github.io/./../airbyte.html",
     "https://airbytehq.github.io/PyAirbyte/airbyte/mcp.html",
+    "https://airbytehq.github.io/mcp/cloud.html",
+    "https://airbytehq.github.io/mcp/local.html",
+    "https://airbytehq.github.io/mcp/registry.html",
+    "https://airbytehq.github.io/mcp/server.html",
     "https://api.airbyte.ai",
     "https://api.airbyte.ai/api/v1/account/applications/scoped-token",
     "https://api.airbyte.ai/api/v1/account/applications/token",
@@ -368,7 +535,6 @@
     "https://api.airbyte.ai/api/v1/integrations/definitions/sources?name=github",
     "https://api.airbyte.com",
     "https://api.airbyte.com/v1/",
-    "https://api.airbyte.com/v1/applications/token",
     "https://api.airbyte.com/v1/sources?workspaceIds=",
     "https://app.airbyte.ai",
     "https://app.airbyte.ai?utm_source=docs&utm_medium=banner&utm_campaign=airbyte_agents_docs_banner",
@@ -376,23 +542,34 @@
     "https://cloud.airbyte.com/signup",
     "https://connectors.airbyte.com/files/metadata/airbyte/source-github/latest/icon.svg",
     "https://connectors.airbyte.com/files/metadata/airbyte/source-salesforce/latest/icon.svg",
+    "https://docs.airbyte.com",
     "https://docs.airbyte.com/",
     "https://docs.airbyte.com/#__docusaurus_skipToContent_fallback",
     "https://docs.airbyte.com/#add-a-connector",
     "https://docs.airbyte.com/#add-the-agent-mcp-to-your-agent",
+    "https://docs.airbyte.com/#additional-resources",
     "https://docs.airbyte.com/#agent-api",
+    "https://docs.airbyte.com/#agent-workflow",
     "https://docs.airbyte.com/#all-paths-lead-to-the-same-data",
     "https://docs.airbyte.com/#application-token",
     "https://docs.airbyte.com/#authenticate",
+    "https://docs.airbyte.com/#authentication",
     "https://docs.airbyte.com/#authentication-flow",
     "https://docs.airbyte.com/#base-url",
     "https://docs.airbyte.com/#browser-login",
     "https://docs.airbyte.com/#build-from-source",
+    "https://docs.airbyte.com/#canonical-agent-sequence",
     "https://docs.airbyte.com/#check-saved-settings",
     "https://docs.airbyte.com/#choose-your-interface",
+    "https://docs.airbyte.com/#claude",
     "https://docs.airbyte.com/#cli",
     "https://docs.airbyte.com/#command-model",
     "https://docs.airbyte.com/#configuration-api",
+    "https://docs.airbyte.com/#connecting-to-the-mcp-server",
+    "https://docs.airbyte.com/#contributing-to-the-airbyte-mcp-server",
+    "https://docs.airbyte.com/#cursor-and-vs-code",
+    "https://docs.airbyte.com/#describe-before-execute",
+    "https://docs.airbyte.com/#documentation",
     "https://docs.airbyte.com/#end-to-end-example",
     "https://docs.airbyte.com/#environment-variables",
     "https://docs.airbyte.com/#example-usage",
@@ -400,17 +577,22 @@
     "https://docs.airbyte.com/#get-an-access-token",
     "https://docs.airbyte.com/#handle-access-token-expiry-in-your-requests",
     "https://docs.airbyte.com/#headless-machines-manual-login",
+    "https://docs.airbyte.com/#helpful-prompts",
     "https://docs.airbyte.com/#homebrew",
     "https://docs.airbyte.com/#how-authentication-works",
     "https://docs.airbyte.com/#how-the-pieces-fit-together",
     "https://docs.airbyte.com/#install",
     "https://docs.airbyte.com/#install-script",
+    "https://docs.airbyte.com/#install-the-bundled-skill",
     "https://docs.airbyte.com/#json-input-and-output",
+    "https://docs.airbyte.com/#keep-connector-credentials-in-the-browser-widget",
+    "https://docs.airbyte.com/#keep-responses-small",
     "https://docs.airbyte.com/#layer-1-authenticating-with-the-mcp-server",
     "https://docs.airbyte.com/#learn-more",
     "https://docs.airbyte.com/#make-your-first-api-request",
     "https://docs.airbyte.com/#make-your-first-request",
     "https://docs.airbyte.com/#manual-binary-download",
+    "https://docs.airbyte.com/#manually-triggering-authentication",
     "https://docs.airbyte.com/#mcp-server",
     "https://docs.airbyte.com/#option-1-one-click-install-from-airbyte-agents-recommended",
     "https://docs.airbyte.com/#option-1-one-click-install-from-airbyte-agents-recommended-1",
@@ -418,27 +600,32 @@
     "https://docs.airbyte.com/#option-2-add-the-server-from-the-command-palette-1",
     "https://docs.airbyte.com/#option-3-edit-mcpjson-directly",
     "https://docs.airbyte.com/#option-3-edit-mcpjson-directly-1",
-    "https://docs.airbyte.com/#prerequisites",
+    "https://docs.airbyte.com/#other-ai-tools",
+    "https://docs.airbyte.com/#parse-stderr-json-on-failures",
     "https://docs.airbyte.com/#python-sdk",
     "https://docs.airbyte.com/#query-data",
+    "https://docs.airbyte.com/#quick-start",
+    "https://docs.airbyte.com/#rate-limits",
+    "https://docs.airbyte.com/#read-the-command-schema-first",
     "https://docs.airbyte.com/#remove-a-connector",
     "https://docs.airbyte.com/#requirements",
     "https://docs.airbyte.com/#resolution-order",
+    "https://docs.airbyte.com/#rules-for-agents",
     "https://docs.airbyte.com/#run-your-first-command",
     "https://docs.airbyte.com/#schema-discovery",
     "https://docs.airbyte.com/#scoped-token",
     "https://docs.airbyte.com/#security-considerations",
     "https://docs.airbyte.com/#settings-file",
-    "https://docs.airbyte.com/#step-1-create-an-application",
-    "https://docs.airbyte.com/#step-2-get-an-access-token",
-    "https://docs.airbyte.com/#step-3-use-your-access-token",
+    "https://docs.airbyte.com/#start-with-read-only-smoke-tests",
     "https://docs.airbyte.com/#switch-defaults",
     "https://docs.airbyte.com/#token-types",
     "https://docs.airbyte.com/#use-external-secret-references",
+    "https://docs.airbyte.com/#use-json-input",
     "https://docs.airbyte.com/#use-the-api",
     "https://docs.airbyte.com/#use-the-right-base-url",
     "https://docs.airbyte.com/#verify-the-install",
     "https://docs.airbyte.com/#web-app",
+    "https://docs.airbyte.com/#when-to-use-it",
     "https://docs.airbyte.com/ai-agents/",
     "https://docs.airbyte.com/ai-agents/admin/",
     "https://docs.airbyte.com/ai-agents/concepts/",
@@ -450,6 +637,7 @@
     "https://docs.airbyte.com/ai-agents/connectors",
     "https://docs.airbyte.com/ai-agents/connectors/",
     "https://docs.airbyte.com/ai-agents/connectors/airtable/",
+    "https://docs.airbyte.com/ai-agents/connectors/airtable/AUTH",
     "https://docs.airbyte.com/ai-agents/connectors/amazon-ads/",
     "https://docs.airbyte.com/ai-agents/connectors/amazon-seller-partner/",
     "https://docs.airbyte.com/ai-agents/connectors/amplitude/",
@@ -463,6 +651,7 @@
     "https://docs.airbyte.com/ai-agents/connectors/freshdesk/",
     "https://docs.airbyte.com/ai-agents/connectors/github/",
     "https://docs.airbyte.com/ai-agents/connectors/gitlab/",
+    "https://docs.airbyte.com/ai-agents/connectors/gitlab/AUTH",
     "https://docs.airbyte.com/ai-agents/connectors/gmail/",
     "https://docs.airbyte.com/ai-agents/connectors/gong/",
     "https://docs.airbyte.com/ai-agents/connectors/google-ads/",
@@ -538,44 +727,33 @@
     "https://docs.airbyte.com/ai-agents/interfaces/ui/chats",
     "https://docs.airbyte.com/ai-agents/reference/",
     "https://docs.airbyte.com/ai-agents/reference/api",
-    "https://docs.airbyte.com/ai-agents/reference/api/",
-    "https://docs.airbyte.com/ai-agents/reference/api/api-reference/airbyte-agent-api",
     "https://docs.airbyte.com/ai-agents/reference/sdk",
-    "https://docs.airbyte.com/ai-agents/reference/sdk/",
     "https://docs.airbyte.com/community/",
-    "https://docs.airbyte.com/developers",
+    "https://docs.airbyte.com/community/code-of-conduct",
+    "https://docs.airbyte.com/community/contributing-to-airbyte/",
+    "https://docs.airbyte.com/community/getting-support",
+    "https://docs.airbyte.com/community/licenses/",
+    "https://docs.airbyte.com/community/mcp-servers/",
+    "https://docs.airbyte.com/community/mcp-servers/airbyte-knowledge-mcp",
+    "https://docs.airbyte.com/community/mcp-servers/replication-mcp",
     "https://docs.airbyte.com/developers/",
     "https://docs.airbyte.com/developers/api-documentation",
     "https://docs.airbyte.com/developers/pyairbyte/",
-    "https://docs.airbyte.com/developers/pyairbyte/reference/airbyte/mcp/airbyte-mcp-registry",
     "https://docs.airbyte.com/developers/terraform-documentation",
     "https://docs.airbyte.com/integrations/",
     "https://docs.airbyte.com/platform/",
-    "https://docs.airbyte.com/platform/connector-development/",
+    "https://docs.airbyte.com/platform/connector-development/cdk-python/schemas",
     "https://docs.airbyte.com/platform/connector-development/connector-builder-ui/overview",
-    "https://docs.airbyte.com/platform/deploying-airbyte/",
-    "https://docs.airbyte.com/platform/deploying-airbyte/abctl/#view-and-change-credentials",
-    "https://docs.airbyte.com/platform/enterprise-flex/",
-    "https://docs.airbyte.com/platform/enterprise-setup/",
-    "https://docs.airbyte.com/platform/move-data/",
+    "https://docs.airbyte.com/platform/deploying-airbyte/integrations/authentication",
     "https://docs.airbyte.com/platform/operating-airbyte/external-secrets#external-secret-references",
-    "https://docs.airbyte.com/platform/operating-airbyte/security",
-    "https://docs.airbyte.com/platform/operator-guides/collecting-metrics",
-    "https://docs.airbyte.com/platform/operator-guides/configuring-airbyte",
-    "https://docs.airbyte.com/platform/operator-guides/upgrading-airbyte",
-    "https://docs.airbyte.com/platform/operator-guides/using-orchestra-task",
-    "https://docs.airbyte.com/platform/operator-guides/using-the-airflow-airbyte-operator",
-    "https://docs.airbyte.com/platform/organizations-workspaces/",
-    "https://docs.airbyte.com/platform/understanding-airbyte/high-level-view",
     "https://docs.airbyte.com/platform/using-airbyte/configuring-api-access",
-    "https://docs.airbyte.com/platform/using-airbyte/core-concepts/",
-    "https://docs.airbyte.com/platform/using-airbyte/getting-started/academy",
-    "https://docs.airbyte.com/platform/using-airbyte/getting-started/oss-quickstart",
     "https://docs.airbyte.com/release_notes/",
+    "https://github.com/airbytehq/PyAirbyte/blob/main/docs/CONTRIBUTING.md",
     "https://github.com/airbytehq/airbyte",
     "https://github.com/airbytehq/airbyte-agent-cli",
     "https://github.com/airbytehq/airbyte-agent-cli.gitcd",
     "https://github.com/airbytehq/airbyte-agent-cli/releases/latest",
+    "https://github.com/airbytehq/airbyte-agent-cli/tree/main/skills/airbyte-agent",
     "https://github.com/airbytehq/airbyte-agent-sdk",
     "https://github.com/airbytehq/airbyte-api-java-sdk",
     "https://github.com/airbytehq/airbyte-api-python-sdk",
@@ -584,18 +762,27 @@
     "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/ai-agents/interfaces/api/readme.md",
     "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/ai-agents/interfaces/cli/authenticate.md",
     "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/ai-agents/interfaces/cli/readme.md",
-    "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/ai-agents/reference/api/readme.md",
+    "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/ai-agents/interfaces/cli/using-with-ai-agents.md",
+    "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/community/mcp-servers/airbyte-knowledge-mcp.md",
+    "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/community/mcp-servers/replication-mcp.md",
     "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/developers/api-documentation.md",
-    "https://github.com/airbytehq/airbyte/blob/master/docs/../docs/platform/using-airbyte/configuring-api-access.md",
-    "https://github.com/airbytehq/airbyte/blob/master/docs/developers/api-documentation.md",
+    "https://github.com/airbytehq/pyairbyte/discussions",
+    "https://github.com/airbytehq/pyairbyte/issues",
+    "https://github.com/eryajf/awesome-stars-eryajf/blob/main/README.md",
+    "https://github.com/felixlu/awesome-stars",
+    "https://github.com/koxudaxi/datamodel-code-generator",
+    "https://github.com/modelcontextprotocol/python-sdk",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
     "https://llmstxt.org/",
     "https://mcp.airbyte.ai/mcp",
     "https://modelcontextprotocol.io/",
     "https://oauth.net/2/",
-    "https://reference.airbyte.com/reference/createaccesstoken#/",
+    "https://pdoc.dev",
     "https://reference.airbyte.com/reference/getting-started",
     "https://slack.airbyte.com",
     "https://status.airbyte.com",
-    "https://trust.airbyte.com/"
+    "https://trust.airbyte.com/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
   ]
 }

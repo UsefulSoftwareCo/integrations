@@ -12,62 +12,36 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:34:13.170Z",
-    "summary": "Mapped Ably’s public developer integration surface: Control API, REST API, SSE API, and Ably CLI; confirmed access-token auth for Control API/CLI and API-key auth paths for SSE, while raw REST API auth mechanics were not fully pinned from the scraped docs.",
+    "discoveredAt": "2026-07-02T19:38:04.085Z",
+    "summary": "Mapped Ably’s public developer integration surface: REST API, SSE/raw HTTP streaming API, Control API with OpenAPI spec, and the Ably CLI; identified API key, auth token/JWT, access token, and CLI OAuth session auth paths.",
     "credentials": {
-      "ably_control_access_token": {
+      "ably_api_key": {
+        "type": "api_key",
+        "label": "Ably API key",
+        "setup": "Create or manage app API keys from your Ably dashboard app settings or via the Control API/CLI. The docs describe API keys as the credential used for Ably basic auth and show key management through [Access tokens](https://ably.com/docs/platform/account/access-tokens) capability mappings and [Control API key endpoints](https://ably.com/docs/api/control-api). For the easiest UI path, open your Ably dashboard app and create an API key for that app; use the resulting `appId.keyId:keySecret` value only on trusted servers.",
+        "acquisition": "manual"
+      },
+      "ably_access_token": {
         "type": "bearer",
         "label": "Ably access token",
         "generateUrl": "https://ably.com/users/access_tokens",
-        "setup": "In the Ably dashboard, open [Access tokens](https://ably.com/users/access_tokens). Click **Create new token**, choose the account, expiry, and capabilities, then copy the token value immediately — Ably shows the full token only once. These access tokens authenticate the [Control API](https://ably.com/docs/platform/account/control-api) and the [Ably CLI](https://ably.com/docs/platform/tools/cli)."
+        "setup": "In the Ably dashboard, go to [Access tokens](https://ably.com/users/access_tokens), click **Create new token**, choose the account, expiry, and capabilities, then copy the token immediately; Ably only shows the full token once. These tokens authenticate the Control API and can also be used by the Ably CLI for account-management commands, as documented in [Access tokens](https://ably.com/docs/platform/account/access-tokens).",
+        "acquisition": "manual"
       },
-      "ably_api_key": {
-        "type": "basic",
-        "label": "Ably API key",
-        "setup": "Create or manage API keys for an app from the Ably dashboard or via the [Control API key endpoints](https://ably.com/docs/api/control-api) / [CLI auth key commands](https://ably.com/docs/platform/account/access-tokens). Ably documents API keys as the credential used for [Basic auth](https://ably.com/docs/auth/basic); the key is used as the username-like secret pair value Ably SDKs and raw HTTP clients send to Ably. Treat it as server-side only and never expose it to untrusted clients."
+      "ably_cli_oauth": {
+        "type": "oauth2",
+        "label": "Ably CLI login session",
+        "setup": "Install the CLI and run [`ably init`](https://ably.com/docs/cli/init) or [`ably login`](https://ably.com/docs/cli/login). The CLI uses an OAuth Device Authorization flow in the browser, then stores and refreshes the resulting local session automatically, as described in [Ably CLI](https://ably.com/docs/platform/tools/cli).",
+        "acquisition": "manual"
+      },
+      "ably_token_jwt": {
+        "type": "jwt",
+        "label": "Ably auth token or JWT",
+        "setup": "Have your own trusted server mint a client token for Ably. The recommended format is a JWT signed with your Ably API key secret, per [JWTs](https://ably.com/docs/auth/token/jwt). Alternatively your server can issue an Ably token as described in [Token auth](https://ably.com/docs/auth/token). This is not created in the Ably dashboard directly; it is minted by your server for clients using your Ably app credentials.",
+        "acquisition": "manual"
       }
     },
     "surfaces": [
-      {
-        "slug": "ably-control-api",
-        "name": "Ably Control API",
-        "type": "http",
-        "docs": "https://ably.com/docs/api/control-api",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://ably.com/docs/api/control-api",
-            "https://ably.com/docs/platform/account/control-api",
-            "https://ably.com/docs/platform/account/access-tokens"
-          ]
-        },
-        "auth": {
-          "status": "required",
-          "entries": [
-            {
-              "use": [
-                {
-                  "id": "ably_control_access_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "Bearer"
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://ably.com/docs/platform/account/control-api",
-                  "https://ably.com/docs/platform/account/access-tokens"
-                ]
-              }
-            }
-          ]
-        },
-        "url": "https://control.ably.net/v1"
-      },
       {
         "slug": "ably-rest-api",
         "name": "Ably REST API",
@@ -76,7 +50,6 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://ably.com/docs/api",
             "https://ably.com/docs/api/rest-api",
             "https://ably.com/docs/auth/basic",
             "https://ably.com/docs/auth/token"
@@ -84,18 +57,19 @@
         },
         "auth": {
           "status": "unknown"
-        }
+        },
+        "url": "https://rest.ably.io"
       },
       {
-        "slug": "ably-sse-api",
-        "name": "Ably SSE API",
+        "slug": "ably-sse-and-raw-http-streaming-api",
+        "name": "Ably SSE and raw HTTP streaming API",
         "type": "http",
         "docs": "https://ably.com/docs/api/sse",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://ably.com/docs/api",
             "https://ably.com/docs/api/sse",
+            "https://ably.com/docs/protocols/sse",
             "https://ably.com/docs/auth/basic",
             "https://ably.com/docs/auth/token"
           ]
@@ -112,17 +86,7 @@
                     "in": "query",
                     "paramName": "key"
                   }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
-                  "https://ably.com/docs/api/sse"
-                ]
-              }
-            },
-            {
-              "use": [
+                },
                 {
                   "id": "ably_api_key",
                   "mechanics": {
@@ -137,7 +101,35 @@
                 "via": "discovered",
                 "evidence": [
                   "https://ably.com/docs/api/sse",
-                  "https://ably.com/docs/auth/basic"
+                  "https://ably.com/docs/protocols/sse"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "ably_token_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "accessToken"
+                  }
+                },
+                {
+                  "id": "ably_token_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://ably.com/docs/api/sse",
+                  "https://ably.com/docs/protocols/sse"
                 ]
               }
             }
@@ -154,6 +146,7 @@
           "via": "discovered",
           "evidence": [
             "https://ably.com/docs/platform/tools/cli",
+            "https://ably.com/docs/cli/env",
             "https://ably.com/docs/platform/account/access-tokens"
           ]
         },
@@ -163,7 +156,7 @@
             {
               "use": [
                 {
-                  "id": "ably_control_access_token",
+                  "id": "ably_cli_oauth",
                   "mechanics": {
                     "source": "cli",
                     "command": "ably login"
@@ -174,6 +167,64 @@
                 "via": "discovered",
                 "evidence": [
                   "https://ably.com/docs/platform/tools/cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "ably_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "ABLY_ACCESS_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://ably.com/docs/cli/env",
+                  "https://ably.com/docs/platform/account/access-tokens"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "ably_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "ABLY_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://ably.com/docs/cli/env"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "ably_token_jwt",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "ABLY_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://ably.com/docs/cli/env"
                 ]
               }
             }
@@ -187,22 +238,61 @@
           }
         ],
         "command": "ably"
+      },
+      {
+        "slug": "ably-control-api",
+        "name": "Ably Control API",
+        "type": "http",
+        "docs": "https://ably.com/docs/api/control-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://ably.com/docs/api/control-api",
+            "https://ably.com/docs/platform/account/control-api",
+            "https://raw.githubusercontent.com/ably/docs/main/static/open-specs/control-v1.yaml"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ably_access_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearer_auth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://ably.com/docs/api/control-api",
+                  "https://ably.com/docs/platform/account/control-api",
+                  "https://raw.githubusercontent.com/ably/docs/main/static/open-specs/control-v1.yaml"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://raw.githubusercontent.com/ably/docs/main/static/open-specs/control-v1.yaml",
+        "url": "https://control.ably.net/v1"
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:34:13.171Z",
+  "discoveredAt": "2026-07-02T19:38:04.086Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 270822,
-    "completion_tokens": 1567,
-    "total_tokens": 272389
+    "prompt_tokens": 141021,
+    "completion_tokens": 1802,
+    "total_tokens": 142823
   },
   "visited": [
     "https://ably.com/docs/api",
     "https://ably.com/docs/api/control-api",
     "https://ably.com/docs/api/rest-api",
     "https://ably.com/docs/api/sse",
-    "https://ably.com/docs/auth",
     "https://ably.com/docs/auth/basic",
     "https://ably.com/docs/auth/token",
     "https://ably.com/docs/auth/token/jwt",
@@ -210,14 +300,12 @@
     "https://ably.com/docs/platform/account/access-tokens",
     "https://ably.com/docs/platform/account/control-api",
     "https://ably.com/docs/platform/tools/cli",
+    "https://ably.com/docs/protocols/sse",
     "https://ably.com/llms.txt",
-    "https://github.com/ably/open-specs",
-    "https://github.com/ably/open-specs/activity",
-    "https://github.com/ably/open-specs/activity?sort=ASC",
-    "https://github.com/ably/open-specs/issues/2",
-    "https://github.com/knowsuchagency/mcp2cli",
-    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
-    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+    "https://raw.githubusercontent.com/ably/docs/main/static/open-specs/control-v1.yaml",
+    "https://tyk.io/docs/ai-management/mcps/api-to-mcp",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
   ],
   "grounding": [
     "https://ably.com/",
@@ -225,32 +313,46 @@
     "https://ably.com/#account-id",
     "https://ably.com/#api-key-restrictions",
     "https://ably.com/#app-id",
+    "https://ably.com/#arguments",
+    "https://ably.com/#auth-callback",
+    "https://ably.com/#auth-options",
+    "https://ably.com/#auth-url",
     "https://ably.com/#authentication",
     "https://ably.com/#auto-completion",
     "https://ably.com/#auto-generated",
     "https://ably.com/#capabilities",
+    "https://ably.com/#channel-claims",
     "https://ably.com/#chat",
     "https://ably.com/#choosing",
     "https://ably.com/#cli-reference",
+    "https://ably.com/#client-setup",
     "https://ably.com/#control-api",
     "https://ably.com/#create",
+    "https://ably.com/#creating-jwts",
     "https://ably.com/#diagram",
     "https://ably.com/#dynamic-access",
     "https://ably.com/#embedded",
+    "https://ably.com/#env-var-name",
     "https://ably.com/#envelope-format",
     "https://ably.com/#event-stream",
+    "https://ably.com/#examples",
     "https://ably.com/#expiration",
     "https://ably.com/#feature-set",
     "https://ably.com/#further-information",
     "https://ably.com/#global-options",
     "https://ably.com/#installation",
     "https://ably.com/#interactive-mode",
+    "https://ably.com/#json",
+    "https://ably.com/#jwt-claims",
+    "https://ably.com/#jwt-features",
     "https://ably.com/#jwt-format-recommended",
     "https://ably.com/#message-history",
     "https://ably.com/#native-ably-token-formats",
     "https://ably.com/#next-steps",
+    "https://ably.com/#options",
     "https://ably.com/#postman",
     "https://ably.com/#presence",
+    "https://ably.com/#pretty-json",
     "https://ably.com/#publish",
     "https://ably.com/#rate-limits",
     "https://ably.com/#refresh",
@@ -259,18 +361,23 @@
     "https://ably.com/#restrictions",
     "https://ably.com/#revoke",
     "https://ably.com/#rotate",
+    "https://ably.com/#scenario-standard",
     "https://ably.com/#sdks",
+    "https://ably.com/#see-also",
     "https://ably.com/#server-clock-requirements",
     "https://ably.com/#server-examples",
     "https://ably.com/#spaces",
     "https://ably.com/#sse",
     "https://ably.com/#sse-api",
     "https://ably.com/#stats",
+    "https://ably.com/#synopsis",
     "https://ably.com/#token-based-client-validation",
+    "https://ably.com/#token-lifecycle",
     "https://ably.com/#token-ttl-limits",
     "https://ably.com/#triggers",
     "https://ably.com/#usage",
     "https://ably.com/#use-cases",
+    "https://ably.com/#verbose",
     "https://ably.com/#when",
     "https://ably.com/#when-to-use",
     "https://ably.com/#workflow",
@@ -373,7 +480,9 @@
     "https://ably.com/docs/api/realtime-sdk",
     "https://ably.com/docs/api/realtime-sdk#realtime-vs-rest",
     "https://ably.com/docs/api/realtime-sdk.md?source=llms.txt",
+    "https://ably.com/docs/api/realtime-sdk/authentication#auth-options",
     "https://ably.com/docs/api/realtime-sdk/authentication#authorize",
+    "https://ably.com/docs/api/realtime-sdk/authentication#token-params",
     "https://ably.com/docs/api/realtime-sdk/authentication.md?source=llms.txt",
     "https://ably.com/docs/api/realtime-sdk/channel-metadata.md?source=llms.txt",
     "https://ably.com/docs/api/realtime-sdk/channels.md?source=llms.txt",
@@ -407,6 +516,7 @@
     "https://ably.com/docs/api/rest-sdk/types#auth-options",
     "https://ably.com/docs/api/rest-sdk/types.md?source=llms.txt",
     "https://ably.com/docs/api/sse",
+    "https://ably.com/docs/api/sse#sse",
     "https://ably.com/docs/api/sse.md?source=llms.txt",
     "https://ably.com/docs/api/sse?lang=javascript",
     "https://ably.com/docs/api/sse?lang=nodejs",
@@ -435,6 +545,9 @@
     "https://ably.com/docs/auth/revocation",
     "https://ably.com/docs/auth/revocation.md?source=llms.txt",
     "https://ably.com/docs/auth/token",
+    "https://ably.com/docs/auth/token#choosing",
+    "https://ably.com/docs/auth/token#embedded",
+    "https://ably.com/docs/auth/token#refresh",
     "https://ably.com/docs/auth/token.md?source=llms.txt",
     "https://ably.com/docs/auth/token/ably-tokens",
     "https://ably.com/docs/auth/token/ably-tokens.md?source=llms.txt",
@@ -442,6 +555,17 @@
     "https://ably.com/docs/auth/token/jwt#channel-claims",
     "https://ably.com/docs/auth/token/jwt#rate-limits",
     "https://ably.com/docs/auth/token/jwt.md?source=llms.txt",
+    "https://ably.com/docs/auth/token/jwt?lang=csharp",
+    "https://ably.com/docs/auth/token/jwt?lang=flutter",
+    "https://ably.com/docs/auth/token/jwt?lang=go",
+    "https://ably.com/docs/auth/token/jwt?lang=java",
+    "https://ably.com/docs/auth/token/jwt?lang=javascript",
+    "https://ably.com/docs/auth/token/jwt?lang=kotlin",
+    "https://ably.com/docs/auth/token/jwt?lang=objc",
+    "https://ably.com/docs/auth/token/jwt?lang=php",
+    "https://ably.com/docs/auth/token/jwt?lang=python",
+    "https://ably.com/docs/auth/token/jwt?lang=ruby",
+    "https://ably.com/docs/auth/token/jwt?lang=swift",
     "https://ably.com/docs/auth/token?lang=csharp",
     "https://ably.com/docs/auth/token?lang=flutter",
     "https://ably.com/docs/auth/token?lang=java",
@@ -453,10 +577,14 @@
     "https://ably.com/docs/channels",
     "https://ably.com/docs/channels#namespaces",
     "https://ably.com/docs/channels.md?source=llms.txt",
+    "https://ably.com/docs/channels/options",
     "https://ably.com/docs/channels/options.md?source=llms.txt",
+    "https://ably.com/docs/channels/options/deltas",
     "https://ably.com/docs/channels/options/deltas.md?source=llms.txt",
     "https://ably.com/docs/channels/options/echo.md?source=llms.txt",
+    "https://ably.com/docs/channels/options/encryption",
     "https://ably.com/docs/channels/options/encryption.md?source=llms.txt",
+    "https://ably.com/docs/channels/options/rewind",
     "https://ably.com/docs/channels/options/rewind.md?source=llms.txt",
     "https://ably.com/docs/channels/states",
     "https://ably.com/docs/channels/states.md?source=llms.txt",
@@ -614,6 +742,7 @@
     "https://ably.com/docs/cli/connections/test.md?source=llms.txt",
     "https://ably.com/docs/cli/env",
     "https://ably.com/docs/cli/env.md?source=llms.txt",
+    "https://ably.com/docs/cli/help",
     "https://ably.com/docs/cli/help.md?source=llms.txt",
     "https://ably.com/docs/cli/init",
     "https://ably.com/docs/cli/init.md?source=llms.txt",
@@ -707,10 +836,12 @@
     "https://ably.com/docs/cli/stats/account.md?source=llms.txt",
     "https://ably.com/docs/cli/stats/app",
     "https://ably.com/docs/cli/stats/app.md?source=llms.txt",
+    "https://ably.com/docs/cli/status",
     "https://ably.com/docs/cli/status.md?source=llms.txt",
     "https://ably.com/docs/cli/support.md?source=llms.txt",
     "https://ably.com/docs/cli/support/ask.md?source=llms.txt",
     "https://ably.com/docs/cli/support/contact.md?source=llms.txt",
+    "https://ably.com/docs/cli/version",
     "https://ably.com/docs/cli/version.md?source=llms.txt",
     "https://ably.com/docs/connect",
     "https://ably.com/docs/connect.md?source=llms.txt",
@@ -720,6 +851,7 @@
     "https://ably.com/docs/faq.md?source=llms.txt",
     "https://ably.com/docs/faq/push-faqs",
     "https://ably.com/docs/faq/push-faqs.md?source=llms.txt",
+    "https://ably.com/docs/getting-started",
     "https://ably.com/docs/getting-started.md?source=llms.txt",
     "https://ably.com/docs/getting-started/dotnet.md?source=llms.txt",
     "https://ably.com/docs/getting-started/flutter.md?source=llms.txt",
@@ -778,6 +910,7 @@
     "https://ably.com/docs/metadata-stats/metadata/rest.md?source=llms.txt",
     "https://ably.com/docs/metadata-stats/metadata/subscribe.md?source=llms.txt",
     "https://ably.com/docs/metadata-stats/stats",
+    "https://ably.com/docs/metadata-stats/stats#app",
     "https://ably.com/docs/metadata-stats/stats.md?source=llms.txt",
     "https://ably.com/docs/platform",
     "https://ably.com/docs/platform.md?source=llms.txt",
@@ -806,6 +939,7 @@
     "https://ably.com/docs/platform/architecture/connection-recovery",
     "https://ably.com/docs/platform/architecture/connection-recovery.md?source=llms.txt",
     "https://ably.com/docs/platform/architecture/edge-network",
+    "https://ably.com/docs/platform/architecture/edge-network#dns-organization-and-latency-based-routing",
     "https://ably.com/docs/platform/architecture/edge-network.md?source=llms.txt",
     "https://ably.com/docs/platform/architecture/fault-tolerance",
     "https://ably.com/docs/platform/architecture/fault-tolerance.md?source=llms.txt",
@@ -896,6 +1030,7 @@
     "https://ably.com/docs/protocols/sse",
     "https://ably.com/docs/protocols/sse.md?source=llms.txt",
     "https://ably.com/docs/pub-sub",
+    "https://ably.com/docs/pub-sub#publish",
     "https://ably.com/docs/pub-sub.md?source=llms.txt",
     "https://ably.com/docs/pub-sub/advanced",
     "https://ably.com/docs/pub-sub/advanced.md?source=llms.txt",
@@ -951,7 +1086,9 @@
     "https://ably.com/sign-up",
     "https://ably.com/support",
     "https://ably.com/users/access_tokens",
+    "https://cdn.ably.com/lib/delta-codec.min-1.js",
     "https://changelog.ably.com/",
+    "https://control.ably.net/v1",
     "https://control.ably.net/v1/accounts/${ACCOUNT_ID}/apps",
     "https://control.ably.net/v1/accounts/${ACCOUNT_ID}/stats?unit=minute&limit=2",
     "https://control.ably.net/v1/accounts/{account",
@@ -965,6 +1102,8 @@
     "https://datatracker.ietf.org/doc/html/rfc8628",
     "https://developer.apple.com/documentation/usernotifications/sending-notification-requests-to-apns",
     "https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/APNSOverview.html",
+    "https://developer.mozilla.org/en-US/docs/Web/API/EventSource",
+    "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events",
     "https://en.wikipedia.org/wiki/HATEOAS",
     "https://en.wikipedia.org/wiki/List_of_HTTP_status_codes",
     "https://en.wikipedia.org/wiki/Ntpd",
@@ -977,20 +1116,21 @@
     "https://github.com/ably/docs/blob/main/src/pages/docs/api/sse.mdx",
     "https://github.com/ably/docs/blob/main/src/pages/docs/auth/basic.mdx",
     "https://github.com/ably/docs/blob/main/src/pages/docs/auth/token/index.mdx",
+    "https://github.com/ably/docs/blob/main/src/pages/docs/auth/token/jwt.mdx",
+    "https://github.com/ably/docs/blob/main/src/pages/docs/cli/env.mdx",
     "https://github.com/ably/docs/blob/main/src/pages/docs/platform/account/access-tokens.mdx",
     "https://github.com/ably/docs/blob/main/src/pages/docs/platform/tools/cli.mdx",
     "https://github.com/ably/docs/blob/main/static/open-specs/control-v1.yaml",
     "https://github.com/ably/open-specs",
-    "https://github.com/ably/open-specs/activity",
-    "https://github.com/ably/open-specs/activity?sort=ASC",
-    "https://github.com/ably/open-specs/issues/2",
-    "https://github.com/knowsuchagency/mcp2cli",
+    "https://github.com/auth0/node-jsonwebtoken",
     "https://github.com/realm/jazzy",
     "https://help.ably.io/error/40142",
     "https://jwt.io/",
+    "https://main.realtime.ably.net/event-stream",
     "https://main.realtime.ably.net/event-stream?channel=example&v=1.2",
     "https://main.realtime.ably.net/event-stream?channels=myChannel&v=1.2&key=",
     "https://main.realtime.ably.net/sse?channel=example&v=1.2",
+    "https://main.realtime.ably.net/sse?v=1.1&accessToken=${token}&channels=${channel}${lastEventParam}",
     "https://main.realtime.ably.net/stats?fields=channels.peak",
     "https://main.realtime.ably.net/stats?flatten=true&fields=channels.peak",
     "https://main.realtime.ably.net/stats?select=*.channels.*",
@@ -998,6 +1138,7 @@
     "https://main.realtime.ably.net/time?v=1.2",
     "https://msgpack.org/",
     "https://paw.cloud/",
+    "https://raw.githubusercontent.com/ably/docs/main/static/open-specs/control-v1.yaml",
     "https://redocly.com/redoc/",
     "https://schemas.ably.com/json/account-stats-0.0.3.json",
     "https://schemas.ably.com/json/app-stats-0.0.5.json",
@@ -1008,11 +1149,12 @@
     "https://swagger.io/specification/",
     "https://tools.ietf.org/html/rfc5988",
     "https://tools.ietf.org/html/rfc7519",
+    "https://tyk.io/docs/ai-management/mcps/api-to-mcp",
     "https://typedoc.org/",
     "https://www.postman.com/",
-    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
     "https://www.w3.org/TR/eventsource/",
     "https://www.youtube.com/watch?v=tMTsNn09GNo",
-    "https://yardoc.org/"
+    "https://yardoc.org/",
+    "https://zuplo.com/docs/mcp-server/graphql"
   ]
 }

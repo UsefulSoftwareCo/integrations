@@ -12,21 +12,35 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:34:45.398Z",
-    "summary": "Found 3 developer integration surfaces for akeyless.io: 1 HTTP API, 1 CLI, and 1 MCP server; documented API key and account-login credentials, while MCP connection details/auth remain undocumented from public pages scraped.",
+    "discoveredAt": "2026-07-02T19:39:12.251Z",
+    "summary": "Akeyless exposes a documented HTTP API and the `akeyless` CLI, plus local stdio MCP servers launched via the CLI (`akeyless mcp` and `akeyless mcp-runtime-authority`), and recorded authentication options include Akeyless-issued Access ID/Access Key pairs, Universal Identity tokens, email/password auth methods, certificate auth, Kubernetes auth, AWS IAM-bound auth methods, and SAML/OIDC auth-method Access IDs.",
     "credentials": {
-      "akeyless_api_key": {
-        "type": "api_key",
-        "label": "Akeyless API key (access ID and access key pair)",
-        "generateUrl": "https://docs.akeyless.io/docs/api-key-creation-quickstart",
-        "setup": "Create an API-key authentication method in the Akeyless console following the [Creating an API Key Quickstart](https://docs.akeyless.io/docs/api-key-creation-quickstart) / [API Key](https://docs.akeyless.io/docs/auth-with-api-key) docs. This yields an access identifier and secret key used to authenticate to Akeyless APIs and CLI.",
+      "api_key_pair": {
+        "type": "compound",
+        "label": "Akeyless Access ID + Access Key",
+        "generateUrl": "https://console.akeyless.io",
+        "setup": "In the Akeyless Console, go to **Administration → Users & Auth Methods → + New → API Key** and finish creation, then download the CSV containing the `Access ID` and `Access Key` from [Akeyless API Key docs](https://docs.akeyless.io/docs/auth-with-api-key.md). You can also create one with the CLI: `akeyless auth-method create api-key --name <name>`. Store the `Access Key` securely because it is shown only once.",
         "acquisition": "manual"
       },
-      "akeyless_account_login": {
-        "type": "basic",
-        "label": "Akeyless account email/password",
+      "uid_token": {
+        "type": "bearer",
+        "label": "Akeyless Universal Identity token",
         "generateUrl": "https://console.akeyless.io",
-        "setup": "Create an account or use an existing tenant via the [Akeyless console](https://console.akeyless.io). The CLI tutorial shows initial profile configuration using your registered email address and password.",
+        "setup": "Create a Universal Identity auth method in **Users & Auth Methods** or with `akeyless auth-method create universal-identity --name <name>`, then mint a token with `akeyless uid-generate-token --auth-method-name <UID Name>` as documented in [Universal Identity](https://docs.akeyless.io/docs/auth-with-universal-identity.md). Associate the auth method with a role before use.",
+        "acquisition": "manual"
+      },
+      "email_password": {
+        "type": "basic",
+        "label": "Akeyless email auth method credentials",
+        "generateUrl": "https://console.akeyless.io",
+        "setup": "Create an Email auth method in **Administration → Users & Auth Methods → + New → Email** or with `akeyless auth-method create email --name <name> --email <address>`. Akeyless emails the user to set a password and activate the auth method, per [Email auth docs](https://docs.akeyless.io/docs/auth-with-email.md). Use that email address and password for CLI auth.",
+        "acquisition": "manual"
+      },
+      "aws_iam_auth": {
+        "type": "aws_sigv4",
+        "label": "Akeyless AWS IAM auth method Access ID bound to AWS IAM workload identity",
+        "generateUrl": "https://console.akeyless.io",
+        "setup": "Create an AWS IAM auth method in Akeyless with `akeyless auth-method create aws-iam --name <name> --bound-aws-account-id <account>` or in the Console as described in [AWS IAM auth docs](https://docs.akeyless.io/docs/auth-with-aws.md). Then run the CLI from an AWS workload that has the intended IAM role or principal attached, using the auth method `Access ID` and `--access-type aws_iam`.",
         "acquisition": "manual"
       }
     },
@@ -40,8 +54,14 @@
           "via": "discovered",
           "evidence": [
             "https://docs.akeyless.io/reference",
-            "https://docs.akeyless.io/reference/auth",
-            "https://docs.akeyless.io/llms.txt"
+            "https://docs.akeyless.io/docs/auth-with-api-key.md",
+            "https://docs.akeyless.io/docs/auth-with-universal-identity.md",
+            "https://docs.akeyless.io/docs/auth-with-email.md",
+            "https://docs.akeyless.io/docs/auth-with-certificate.md",
+            "https://docs.akeyless.io/docs/auth-with-kubernetes.md",
+            "https://docs.akeyless.io/docs/auth-with-aws.md",
+            "https://docs.akeyless.io/docs/auth-with-oidc.md",
+            "https://docs.akeyless.io/docs/auth-with-saml.md"
           ]
         },
         "auth": {
@@ -50,17 +70,17 @@
             {
               "use": [
                 {
-                  "id": "akeyless_api_key",
+                  "id": "api_key_pair",
                   "mechanics": {
-                    "source": "unknown"
+                    "source": "http",
+                    "in": "body"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.akeyless.io/docs/auth-with-api-key",
-                  "https://docs.akeyless.io/docs/api-key-creation-quickstart",
+                  "https://docs.akeyless.io/docs/auth-with-api-key.md",
                   "https://docs.akeyless.io/reference/auth"
                 ]
               }
@@ -68,16 +88,125 @@
             {
               "use": [
                 {
-                  "id": "akeyless_account_login",
+                  "id": "uid_token",
                   "mechanics": {
-                    "source": "unknown"
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "uid-token"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://tutorials.akeyless.io/docs/installing-and-configuring-akeyless-cli",
+                  "https://docs.akeyless.io/docs/auth-with-universal-identity.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "email_password",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-email.md",
+                  "https://docs.akeyless.io/reference/auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_pair",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-certificate.md",
+                  "https://docs.akeyless.io/reference/auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_pair",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-kubernetes.md",
+                  "https://docs.akeyless.io/reference/auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "aws_iam_auth",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-aws.md",
+                  "https://docs.akeyless.io/reference/auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_pair",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-saml.md",
+                  "https://docs.akeyless.io/reference/auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_pair",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-oidc.md",
                   "https://docs.akeyless.io/reference/auth"
                 ]
               }
@@ -90,13 +219,19 @@
         "slug": "akeyless-cli",
         "name": "Akeyless CLI",
         "type": "cli",
-        "docs": "https://docs.akeyless.io/docs/cli",
+        "docs": "https://docs.akeyless.io/docs/cli.md",
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.akeyless.io/docs/cli",
-            "https://tutorials.akeyless.io/docs/installing-and-configuring-akeyless-cli",
-            "https://github.com/akeylesslabs/homebrew-tap"
+            "https://docs.akeyless.io/docs/cli.md",
+            "https://docs.akeyless.io/docs/auth-with-api-key.md",
+            "https://docs.akeyless.io/docs/auth-with-universal-identity.md",
+            "https://docs.akeyless.io/docs/auth-with-email.md",
+            "https://docs.akeyless.io/docs/auth-with-certificate.md",
+            "https://docs.akeyless.io/docs/auth-with-kubernetes.md",
+            "https://docs.akeyless.io/docs/auth-with-aws.md",
+            "https://docs.akeyless.io/docs/auth-with-oidc.md",
+            "https://docs.akeyless.io/docs/auth-with-saml.md"
           ]
         },
         "auth": {
@@ -105,35 +240,136 @@
             {
               "use": [
                 {
-                  "id": "akeyless_account_login",
+                  "id": "api_key_pair",
                   "mechanics": {
                     "source": "cli",
-                    "command": "akeyless"
+                    "command": "akeyless auth --access-type access_key --access-id <Access ID> --access-key <Access Key>"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://tutorials.akeyless.io/docs/installing-and-configuring-akeyless-cli"
+                  "https://docs.akeyless.io/docs/auth-with-api-key.md"
                 ]
               }
             },
             {
               "use": [
                 {
-                  "id": "akeyless_api_key",
+                  "id": "uid_token",
                   "mechanics": {
                     "source": "cli",
-                    "command": "akeyless"
+                    "command": "akeyless <command> --uid-token <u-...>"
                   }
                 }
               ],
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.akeyless.io/docs/auth-with-api-key",
-                  "https://docs.akeyless.io/docs/cli"
+                  "https://docs.akeyless.io/docs/auth-with-universal-identity.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "email_password",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "akeyless auth --admin-email <email> --admin-password <password>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-email.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_pair",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "akeyless auth --access-id <Access ID> --access-type cert --cert-file-name cert.pem --key-file-name key.pem"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-certificate.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_pair",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "akeyless auth --access-id <Access ID> --access-type k8s --gateway-url https://<gw>:8000 --k8s-auth-config-name <config>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-kubernetes.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "aws_iam_auth",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "akeyless auth --access-id <Access ID> --access-type aws_iam"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-aws.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_pair",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "akeyless auth --access-type saml --access-id <SAML Access ID>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-saml.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_pair",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "akeyless auth --access-type oidc --access-id <OIDC Access ID>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.akeyless.io/docs/auth-with-oidc.md"
                 ]
               }
             }
@@ -145,200 +381,336 @@
             "identifier": "akeylesslabs/tap/akeyless"
           },
           {
-            "registryType": "binary",
-            "identifier": "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-linux-amd64",
-            "runtimeHint": "linux amd64"
+            "registryType": "deb",
+            "identifier": "https://akeyless.jfrog.io/artifactory/akeyless-cli-debian",
+            "runtimeHint": "apt"
           },
           {
-            "registryType": "binary",
-            "identifier": "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-darwin-amd64",
-            "runtimeHint": "macOS Intel"
-          },
-          {
-            "registryType": "binary",
-            "identifier": "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-darwin-arm64",
-            "runtimeHint": "macOS Apple Silicon"
-          },
-          {
-            "registryType": "binary",
-            "identifier": "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-windows-amd64.exe",
-            "runtimeHint": "windows amd64"
+            "registryType": "rpm",
+            "identifier": "https://akeyless.jfrog.io/artifactory/akeyless-cli-rpm",
+            "runtimeHint": "yum/dnf"
           }
         ],
         "command": "akeyless"
-      },
-      {
-        "slug": "akeyless-mcp-server",
-        "name": "Akeyless MCP Server",
-        "type": "mcp",
-        "docs": "https://docs.akeyless.io/docs/mcp",
-        "basis": {
-          "via": "discovered",
-          "evidence": [
-            "https://docs.akeyless.io/docs/mcp"
-          ]
-        },
-        "auth": {
-          "status": "unknown"
-        }
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:34:45.398Z",
+  "discoveredAt": "2026-07-02T19:39:12.252Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 276160,
-    "completion_tokens": 1432,
-    "total_tokens": 277592
+    "prompt_tokens": 574203,
+    "completion_tokens": 3354,
+    "total_tokens": 577557
   },
   "visited": [
     "https://akeyless.io/llms.txt",
-    "https://docs.akeyless.io/docs/access-and-authentication-methods",
-    "https://docs.akeyless.io/docs/api-key-creation-quickstart",
+    "https://docs.akeyless.io/docs/access-and-authentication-methods.md",
+    "https://docs.akeyless.io/docs/agentic-runtime-authority.md",
     "https://docs.akeyless.io/docs/auth-with-api-key",
+    "https://docs.akeyless.io/docs/auth-with-api-key.md",
+    "https://docs.akeyless.io/docs/auth-with-aws.md",
+    "https://docs.akeyless.io/docs/auth-with-certificate.md",
+    "https://docs.akeyless.io/docs/auth-with-email.md",
+    "https://docs.akeyless.io/docs/auth-with-kubernetes.md",
+    "https://docs.akeyless.io/docs/auth-with-oauth-jwt.md",
+    "https://docs.akeyless.io/docs/auth-with-oidc.md",
+    "https://docs.akeyless.io/docs/auth-with-saml.md",
+    "https://docs.akeyless.io/docs/auth-with-universal-identity.md",
+    "https://docs.akeyless.io/docs/cdktf-for-python",
     "https://docs.akeyless.io/docs/cli",
+    "https://docs.akeyless.io/docs/cli-ref-auth",
+    "https://docs.akeyless.io/docs/cli-ref-targets",
     "https://docs.akeyless.io/docs/cli-reference",
-    "https://docs.akeyless.io/docs/mcp",
+    "https://docs.akeyless.io/docs/cli.md",
+    "https://docs.akeyless.io/docs/mcp-claude-desktop.md",
+    "https://docs.akeyless.io/docs/mcp-github-copilot",
+    "https://docs.akeyless.io/docs/mcp.md",
+    "https://docs.akeyless.io/llms.txt",
+    "https://docs.akeyless.io/openapi.json",
     "https://docs.akeyless.io/reference",
     "https://docs.akeyless.io/reference/auth",
-    "https://gist.github.com/devorbitus/57034eabc576a63398d9575d21991ef6",
-    "https://github.com/NixOS/nixpkgs/issues/218588",
-    "https://github.com/akeyless-community/akeyless-openapi-spec-extractor",
-    "https://github.com/akeylesslabs/homebrew-tap",
-    "https://tutorials.akeyless.io/docs/installing-and-configuring-akeyless-cli",
-    "https://wilsonmar.github.io/akeyless/",
-    "https://www.speakeasy.com/docs/cli-generation"
+    "https://tekanaid.com/lab/akeyless-cli-api"
   ],
   "grounding": [
+    "https://Idp-issuer-url",
+    "https://Your-Akeyless-GW-URL:8000",
+    "https://Your_GW_URL:8000/api/v1",
+    "https://akeyless-cli.s3.*",
     "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-darwin-amd64",
     "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-darwin-arm64",
     "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-linux-amd64",
+    "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-linux-arm64",
     "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/cli-windows-amd64.exe",
+    "https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/production/cli-linux-amd64",
     "https://akeyless.io/llms.txt",
-    "https://akeylesssupport.slack.com/join/shared_invite/zt-dgjcbscx-rXlZIXsmI1sS5Yc~XrFvGw#/shared-invite/email",
-    "https://archiveprogram.github.com",
-    "https://brew.sh",
+    "https://akeyless.jfrog.io/artifactory/akeyless-cli-debian",
+    "https://akeyless.jfrog.io/artifactory/akeyless-cli-rpm",
+    "https://akeyless.jfrog.io/artifactory/api/security/keypair/akeyless_cli_repo/public",
+    "https://auth.example.com/oauth/token",
+    "https://aws.amazon.com/iam/",
     "https://console.akeyless.io",
-    "https://doc",
     "https://docs.akeyles",
-    "https://docs.akeyless.i",
-    "https://docs.akeyless.io",
+    "https://docs.akeyless",
     "https://docs.akeyless.io/",
     "https://docs.akeyless.io/#content",
     "https://docs.akeyless.io/d",
     "https://docs.akeyless.io/docs",
     "https://docs.akeyless.io/docs/",
     "https://docs.akeyless.io/docs/access-and-authentication-methods",
+    "https://docs.akeyless.io/docs/access-and-authentication-methods#common-optional-features",
+    "https://docs.akeyless.io/docs/access-and-authentication-methods.md",
+    "https://docs.akeyless.io/docs/access-requests-with-sn.md",
     "https://docs.akeyless.io/docs/account-quickstart",
+    "https://docs.akeyless.io/docs/account-settings.md",
     "https://docs.akeyless.io/docs/acme-server",
+    "https://docs.akeyless.io/docs/acme-server.md",
     "https://docs.akeyless.io/docs/add-a-static-secret-to-an-access-role",
+    "https://docs.akeyless.io/docs/agentic-runtime-authority",
+    "https://docs.akeyless.io/docs/agentic-runtime-authority#configure-agentic-runtime-authority-in-the-console",
+    "https://docs.akeyless.io/docs/agentic-runtime-authority.md",
+    "https://docs.akeyless.io/docs/ai-security.md",
+    "https://docs.akeyless.io/docs/akeyless-agent.md",
+    "https://docs.akeyless.io/docs/akeyless-ai-insight",
+    "https://docs.akeyless.io/docs/akeyless-ai-insight#high-level-setup-steps",
+    "https://docs.akeyless.io/docs/akeyless-ai-insight.md",
+    "https://docs.akeyless.io/docs/akeyless-mcp-model-context-protocol-command",
     "https://docs.akeyless.io/docs/akeyless-saas-core-services-eu",
+    "https://docs.akeyless.io/docs/akeyless-saas-core-services-eu.md",
     "https://docs.akeyless.io/docs/akeyless-saas-core-services-us",
+    "https://docs.akeyless.io/docs/akeyless-saas-core-services-us.md",
+    "https://docs.akeyless.io/docs/analytics.md",
     "https://docs.akeyless.io/docs/api-key-creation-quickstart",
     "https://docs.akeyless.io/docs/artifactory-dynamic-secret-producer",
     "https://docs.akeyless.io/docs/artifactory-targets",
+    "https://docs.akeyless.io/docs/audit-logs.md",
     "https://docs.akeyless.io/docs/auth-overview",
     "https://docs.akeyless.io/docs/auth-with-api-key",
+    "https://docs.akeyless.io/docs/auth-with-api-key.md",
     "https://docs.akeyless.io/docs/auth-with-aws",
+    "https://docs.akeyless.io/docs/auth-with-aws.md",
     "https://docs.akeyless.io/docs/auth-with-azure",
+    "https://docs.akeyless.io/docs/auth-with-azure.md",
     "https://docs.akeyless.io/docs/auth-with-certificate",
+    "https://docs.akeyless.io/docs/auth-with-certificate.md",
     "https://docs.akeyless.io/docs/auth-with-email",
+    "https://docs.akeyless.io/docs/auth-with-email.md",
     "https://docs.akeyless.io/docs/auth-with-gcp",
+    "https://docs.akeyless.io/docs/auth-with-gcp.md",
     "https://docs.akeyless.io/docs/auth-with-kerberos",
+    "https://docs.akeyless.io/docs/auth-with-kerberos.md",
     "https://docs.akeyless.io/docs/auth-with-kubernetes",
+    "https://docs.akeyless.io/docs/auth-with-kubernetes.md",
     "https://docs.akeyless.io/docs/auth-with-ldap",
+    "https://docs.akeyless.io/docs/auth-with-ldap.md",
     "https://docs.akeyless.io/docs/auth-with-oauth-jwt",
+    "https://docs.akeyless.io/docs/auth-with-oauth-jwt#create-an-oauth20jwt-authentication-method-in-the-akeyless-console",
+    "https://docs.akeyless.io/docs/auth-with-oauth-jwt.md",
     "https://docs.akeyless.io/docs/auth-with-oci",
+    "https://docs.akeyless.io/docs/auth-with-oci.md",
     "https://docs.akeyless.io/docs/auth-with-oidc",
+    "https://docs.akeyless.io/docs/auth-with-oidc#create-an-oidc-authentication-method-in-the-console",
+    "https://docs.akeyless.io/docs/auth-with-oidc.md",
     "https://docs.akeyless.io/docs/auth-with-saml",
+    "https://docs.akeyless.io/docs/auth-with-saml.md",
     "https://docs.akeyless.io/docs/auth-with-universal-identity",
+    "https://docs.akeyless.io/docs/auth-with-universal-identity#create-a-universal-identity-authentication-method-in-the-console",
+    "https://docs.akeyless.io/docs/auth-with-universal-identity.md",
     "https://docs.akeyless.io/docs/auth0-oidc",
+    "https://docs.akeyless.io/docs/auth0-oidc.md",
+    "https://docs.akeyless.io/docs/automatic-migration.md",
+    "https://docs.akeyless.io/docs/aws-best-practices.md",
+    "https://docs.akeyless.io/docs/aws-kms.md",
+    "https://docs.akeyless.io/docs/aws-partition-and-deployment-support#aws-deployment-pattern-support",
+    "https://docs.akeyless.io/docs/aws-partition-and-deployment-support#aws-partition-support",
+    "https://docs.akeyless.io/docs/aws-partition-and-deployment-support.md",
     "https://docs.akeyless.io/docs/aws-producer",
     "https://docs.akeyless.io/docs/aws-targets",
     "https://docs.akeyless.io/docs/azure-active-directory-oidc",
+    "https://docs.akeyless.io/docs/azure-active-directory-oidc.md",
     "https://docs.akeyless.io/docs/azure-ad-dynamic-secrets",
+    "https://docs.akeyless.io/docs/azure-kms.md",
     "https://docs.akeyless.io/docs/azure-targets",
+    "https://docs.akeyless.io/docs/batch-encryption.md",
+    "https://docs.akeyless.io/docs/best-practices.md",
+    "https://docs.akeyless.io/docs/beyond-env-building-a-dynamic-only-secretless-ai-agent-with-google-adk.md",
+    "https://docs.akeyless.io/docs/break-glass-access-best-practices.md",
     "https://docs.akeyless.io/docs/build-your-chain-of-trust",
+    "https://docs.akeyless.io/docs/build-your-chain-of-trust.md",
+    "https://docs.akeyless.io/docs/bulk-operations.md",
+    "https://docs.akeyless.io/docs/cdktf-for-python",
     "https://docs.akeyless.io/docs/certificate-discovery",
+    "https://docs.akeyless.io/docs/certificate-discovery.md",
     "https://docs.akeyless.io/docs/certificate-lifecycle-management",
+    "https://docs.akeyless.io/docs/certificate-lifecycle-management.md",
     "https://docs.akeyless.io/docs/certificate-provisioning",
+    "https://docs.akeyless.io/docs/certificate-provisioning.md",
     "https://docs.akeyless.io/docs/certificate-renewal",
+    "https://docs.akeyless.io/docs/certificate-renewal.md",
     "https://docs.akeyless.io/docs/certificate-revocation-list",
+    "https://docs.akeyless.io/docs/certificate-revocation-list.md",
     "https://docs.akeyless.io/docs/certificate-storage",
+    "https://docs.akeyless.io/docs/certificate-storage.md",
     "https://docs.akeyless.io/docs/chef-infra-producer",
     "https://docs.akeyless.io/docs/chef-infra-targets",
+    "https://docs.akeyless.io/docs/classic-keys.md",
     "https://docs.akeyless.io/docs/claude-target",
     "https://docs.akeyless.io/docs/cli",
+    "https://docs.akeyless.io/docs/cli-profiles",
+    "https://docs.akeyless.io/docs/cli-ref-auth",
+    "https://docs.akeyless.io/docs/cli-ref-auth#auth",
+    "https://docs.akeyless.io/docs/cli-ref-auth#create",
+    "https://docs.akeyless.io/docs/cli-ref-auth#email",
+    "https://docs.akeyless.io/docs/cli-ref-auth#get-cloud-identity",
+    "https://docs.akeyless.io/docs/cli-ref-auth#reset-access-key",
+    "https://docs.akeyless.io/docs/cli-ref-auth#saml-1",
+    "https://docs.akeyless.io/docs/cli-ref-auth#update",
+    "https://docs.akeyless.io/docs/cli-ref-targets",
     "https://docs.akeyless.io/docs/cli-reference",
+    "https://docs.akeyless.io/docs/cli-reference#configure",
+    "https://docs.akeyless.io/docs/cli-reference#mcp",
+    "https://docs.akeyless.io/docs/cli-reference#mcp-runtime-authority",
+    "https://docs.akeyless.io/docs/cli-reference#runtime-authority",
+    "https://docs.akeyless.io/docs/cli-reference-access-roles",
+    "https://docs.akeyless.io/docs/cli-reference-dynamic-secrets#create",
+    "https://docs.akeyless.io/docs/cli-reference-dynamic-secrets#update",
+    "https://docs.akeyless.io/docs/cli-reference-universal-identity#create",
+    "https://docs.akeyless.io/docs/cli-reference-universal-identity#uid-auto-rotate",
+    "https://docs.akeyless.io/docs/cli-reference-universal-identity#uid-create-child-token",
+    "https://docs.akeyless.io/docs/cli-reference-universal-identity#uid-revoke-token",
+    "https://docs.akeyless.io/docs/cli.md",
     "https://docs.akeyless.io/docs/cloud-providers-graceful-rotation",
     "https://docs.akeyless.io/docs/cloudflare-target",
     "https://docs.akeyless.io/docs/cluster-cache-ha",
+    "https://docs.akeyless.io/docs/cluster-cache-ha.md",
     "https://docs.akeyless.io/docs/cluster-cache-standalone",
+    "https://docs.akeyless.io/docs/cluster-cache-standalone.md",
     "https://docs.akeyless.io/docs/components",
     "https://docs.akeyless.io/docs/configure-gateway",
+    "https://docs.akeyless.io/docs/configure-gateway.md",
     "https://docs.akeyless.io/docs/create-a-custom-rotated-secret",
     "https://docs.akeyless.io/docs/create-a-database-rotated-secret",
     "https://docs.akeyless.io/docs/create-a-docker-hub-rotated-secret",
+    "https://docs.akeyless.io/docs/create-a-gateway-in-akeyless-system-1.md",
+    "https://docs.akeyless.io/docs/create-a-gateway-in-akeyless-system.md",
     "https://docs.akeyless.io/docs/create-a-hashicorp-vault-rotated-secret",
+    "https://docs.akeyless.io/docs/create-a-script-for-approvaldecline-actions.md",
+    "https://docs.akeyless.io/docs/create-a-table-form-for-new-record-entries.md",
+    "https://docs.akeyless.io/docs/create-a-table-in-servicenow.md",
     "https://docs.akeyless.io/docs/create-an-aws-rotated-secret",
     "https://docs.akeyless.io/docs/create-an-azure-rotated-secret",
+    "https://docs.akeyless.io/docs/create-an-event-received-endpoint-in-servicenow.md",
     "https://docs.akeyless.io/docs/create-an-ldap-rotated-secret",
     "https://docs.akeyless.io/docs/create-an-ssh-rotated-secret",
     "https://docs.akeyless.io/docs/create-dynamic-secret-to-sql-db",
     "https://docs.akeyless.io/docs/create-secret",
+    "https://docs.akeyless.io/docs/create-workflow.md",
+    "https://docs.akeyless.io/docs/custom-action-in-servicenow-for-saml-auth-copy.md",
+    "https://docs.akeyless.io/docs/custom-action-in-servicenow.md",
     "https://docs.akeyless.io/docs/custom-dns-target",
+    "https://docs.akeyless.io/docs/custom-fields.md",
     "https://docs.akeyless.io/docs/custom-producer",
+    "https://docs.akeyless.io/docs/customer-journeys.md",
+    "https://docs.akeyless.io/docs/customer-use-case-automating-employee-onboarding-and-role-based-access-control-in-servicenow.md",
     "https://docs.akeyless.io/docs/database-targets",
     "https://docs.akeyless.io/docs/dedicated-k8s-auth-service-accounts",
+    "https://docs.akeyless.io/docs/dedicated-k8s-auth-service-accounts.md",
     "https://docs.akeyless.io/docs/deploy-gateway",
+    "https://docs.akeyless.io/docs/deploy-gateway.md",
+    "https://docs.akeyless.io/docs/develop-a-script-to-parse-the-json-body.md",
     "https://docs.akeyless.io/docs/dfc-deep-dive",
     "https://docs.akeyless.io/docs/dfc-overview",
     "https://docs.akeyless.io/docs/digicert-target",
     "https://docs.akeyless.io/docs/docker-hub-dynamic-secrets",
     "https://docs.akeyless.io/docs/docker-hub-target",
+    "https://docs.akeyless.io/docs/dynamic-secrets-user-templating.md",
     "https://docs.akeyless.io/docs/eks-dynamic-secret-producer",
+    "https://docs.akeyless.io/docs/email-event-forwarder.md",
+    "https://docs.akeyless.io/docs/email-templating.md",
     "https://docs.akeyless.io/docs/encryption-key-management-overview",
+    "https://docs.akeyless.io/docs/encryption-key-management-overview.md",
+    "https://docs.akeyless.io/docs/encryption-key-policy.md",
+    "https://docs.akeyless.io/docs/encryption-keys.md",
+    "https://docs.akeyless.io/docs/establish-a-new-employee-table-in-servicenows-global-scope.md",
+    "https://docs.akeyless.io/docs/event-center.md",
+    "https://docs.akeyless.io/docs/external-kms.md",
+    "https://docs.akeyless.io/docs/fips-mode.md",
+    "https://docs.akeyless.io/docs/folder-management.md",
+    "https://docs.akeyless.io/docs/freeze-or-delete-an-account.md",
     "https://docs.akeyless.io/docs/gateway-access-permissions-reference",
+    "https://docs.akeyless.io/docs/gateway-access-permissions-reference.md",
     "https://docs.akeyless.io/docs/gateway-authentication-and-access",
+    "https://docs.akeyless.io/docs/gateway-authentication-and-access.md",
     "https://docs.akeyless.io/docs/gateway-automatic-migration",
+    "https://docs.akeyless.io/docs/gateway-automatic-migration.md",
     "https://docs.akeyless.io/docs/gateway-best-practices",
+    "https://docs.akeyless.io/docs/gateway-best-practices.md",
     "https://docs.akeyless.io/docs/gateway-caching",
+    "https://docs.akeyless.io/docs/gateway-caching.md",
     "https://docs.akeyless.io/docs/gateway-certificate-store",
+    "https://docs.akeyless.io/docs/gateway-certificate-store.md",
     "https://docs.akeyless.io/docs/gateway-cloud-platform-deployments",
+    "https://docs.akeyless.io/docs/gateway-cloud-platform-deployments.md",
     "https://docs.akeyless.io/docs/gateway-cloud-serverless-deployments",
+    "https://docs.akeyless.io/docs/gateway-cloud-serverless-deployments.md",
     "https://docs.akeyless.io/docs/gateway-deploy-amazon-eks",
+    "https://docs.akeyless.io/docs/gateway-deploy-amazon-eks.md",
     "https://docs.akeyless.io/docs/gateway-deploy-azure-container-app",
+    "https://docs.akeyless.io/docs/gateway-deploy-azure-container-app.md",
     "https://docs.akeyless.io/docs/gateway-deploy-azure-kubernetes-service",
+    "https://docs.akeyless.io/docs/gateway-deploy-azure-kubernetes-service.md",
     "https://docs.akeyless.io/docs/gateway-deploy-docker-compose",
+    "https://docs.akeyless.io/docs/gateway-deploy-docker-compose.md",
     "https://docs.akeyless.io/docs/gateway-deploy-google-kubernetes-engine",
+    "https://docs.akeyless.io/docs/gateway-deploy-google-kubernetes-engine.md",
     "https://docs.akeyless.io/docs/gateway-deploy-kubernetes-helm",
+    "https://docs.akeyless.io/docs/gateway-deploy-kubernetes-helm.md",
     "https://docs.akeyless.io/docs/gateway-deploy-serverless-aws",
+    "https://docs.akeyless.io/docs/gateway-deploy-serverless-aws.md",
     "https://docs.akeyless.io/docs/gateway-deploy-serverless-azure",
+    "https://docs.akeyless.io/docs/gateway-deploy-serverless-azure.md",
     "https://docs.akeyless.io/docs/gateway-deploy-standalone-docker",
+    "https://docs.akeyless.io/docs/gateway-deploy-standalone-docker.md",
     "https://docs.akeyless.io/docs/gateway-docker-advanced-configuration",
+    "https://docs.akeyless.io/docs/gateway-docker-advanced-configuration.md",
     "https://docs.akeyless.io/docs/gateway-hsm-integration",
+    "https://docs.akeyless.io/docs/gateway-hsm-integration.md",
     "https://docs.akeyless.io/docs/gateway-k8s-quickstart",
     "https://docs.akeyless.io/docs/gateway-kubernetes-helm-values-reference",
+    "https://docs.akeyless.io/docs/gateway-kubernetes-helm-values-reference.md",
     "https://docs.akeyless.io/docs/gateway-kubernetes-legacy-deployment",
+    "https://docs.akeyless.io/docs/gateway-kubernetes-legacy-deployment.md",
     "https://docs.akeyless.io/docs/gateway-legacy",
+    "https://docs.akeyless.io/docs/gateway-legacy.md",
     "https://docs.akeyless.io/docs/gateway-log-forwarding",
+    "https://docs.akeyless.io/docs/gateway-log-forwarding.md",
     "https://docs.akeyless.io/docs/gateway-network-connectivity",
+    "https://docs.akeyless.io/docs/gateway-network-connectivity.md",
     "https://docs.akeyless.io/docs/gateway-overview",
+    "https://docs.akeyless.io/docs/gateway-overview.md",
     "https://docs.akeyless.io/docs/gateway-pqc-support-reference",
+    "https://docs.akeyless.io/docs/gateway-pqc-support-reference.md",
     "https://docs.akeyless.io/docs/gateway-telemetry-and-metrics",
+    "https://docs.akeyless.io/docs/gateway-telemetry-and-metrics.md",
     "https://docs.akeyless.io/docs/gateway-tls-settings",
+    "https://docs.akeyless.io/docs/gateway-tls-settings.md",
     "https://docs.akeyless.io/docs/gateway-troubleshooting-the-gateway",
+    "https://docs.akeyless.io/docs/gateway-troubleshooting-the-gateway.md",
+    "https://docs.akeyless.io/docs/gateway-v500.md",
     "https://docs.akeyless.io/docs/gateway-zero-knowledge",
+    "https://docs.akeyless.io/docs/gateway-zero-knowledge.md",
     "https://docs.akeyless.io/docs/gcp-dynamic-secrets",
+    "https://docs.akeyless.io/docs/gcp-kms.md",
     "https://docs.akeyless.io/docs/gcp-rotated-secret",
     "https://docs.akeyless.io/docs/gcp-targets",
     "https://docs.akeyless.io/docs/gemini-target",
     "https://docs.akeyless.io/docs/getting-started-quickstarts",
     "https://docs.akeyless.io/docs/github-dynamic-secret",
     "https://docs.akeyless.io/docs/github-oidc",
+    "https://docs.akeyless.io/docs/github-oidc.md",
     "https://docs.akeyless.io/docs/github-target",
     "https://docs.akeyless.io/docs/gitlab-dynamic-secret",
     "https://docs.akeyless.io/docs/gitlab-oidc",
+    "https://docs.akeyless.io/docs/gitlab-oidc.md",
     "https://docs.akeyless.io/docs/gitlab-target",
     "https://docs.akeyless.io/docs/gke-dynamic-secret-producer",
     "https://docs.akeyless.io/docs/globalsign-atlas",
@@ -346,79 +718,136 @@
     "https://docs.akeyless.io/docs/godaddy-target",
     "https://docs.akeyless.io/docs/google-ca-target",
     "https://docs.akeyless.io/docs/google-oidc",
+    "https://docs.akeyless.io/docs/google-oidc.md",
     "https://docs.akeyless.io/docs/google-workspace-secret",
     "https://docs.akeyless.io/docs/grok-target",
     "https://docs.akeyless.io/docs/groups",
+    "https://docs.akeyless.io/docs/groups.md",
     "https://docs.akeyless.io/docs/hashicorp-vault-target",
     "https://docs.akeyless.io/docs/how-to-create-dynamic-secret",
+    "https://docs.akeyless.io/docs/identity-and-secrets-intelligence.md",
+    "https://docs.akeyless.io/docs/install-and-activate-event-management-plugin-in-servicenow.md",
     "https://docs.akeyless.io/docs/issuers",
+    "https://docs.akeyless.io/docs/issuers.md",
+    "https://docs.akeyless.io/docs/item-deletion.md",
     "https://docs.akeyless.io/docs/java-jar-signing-wpkcs11",
+    "https://docs.akeyless.io/docs/java-jar-signing-wpkcs11.md",
     "https://docs.akeyless.io/docs/k8s-auth-client-certificate",
+    "https://docs.akeyless.io/docs/k8s-auth-client-certificate.md",
     "https://docs.akeyless.io/docs/k8s-generic-dynamic-secrets",
     "https://docs.akeyless.io/docs/keycloak-target",
     "https://docs.akeyless.io/docs/kubectl-access",
+    "https://docs.akeyless.io/docs/kubectl-access.md",
     "https://docs.akeyless.io/docs/kubernetes-setup-quickstart",
     "https://docs.akeyless.io/docs/kubernetes-targets",
     "https://docs.akeyless.io/docs/ldap-dynamic-secret",
     "https://docs.akeyless.io/docs/ldap-target",
     "https://docs.akeyless.io/docs/legacy-telemetry-and-metrics",
+    "https://docs.akeyless.io/docs/legacy-telemetry-and-metrics.md",
     "https://docs.akeyless.io/docs/lets-encrypt",
     "https://docs.akeyless.io/docs/linked-target",
     "https://docs.akeyless.io/docs/linked-target-rotated-secret",
+    "https://docs.akeyless.io/docs/log-actions.md",
     "https://docs.akeyless.io/docs/manage-your-secrets-overview",
     "https://docs.akeyless.io/docs/mcp",
+    "https://docs.akeyless.io/docs/mcp-claude-desktop",
+    "https://docs.akeyless.io/docs/mcp-claude-desktop.md",
+    "https://docs.akeyless.io/docs/mcp-cursor",
+    "https://docs.akeyless.io/docs/mcp-cursor.md",
+    "https://docs.akeyless.io/docs/mcp-github-copilot",
+    "https://docs.akeyless.io/docs/mcp-github-copilot.md",
+    "https://docs.akeyless.io/docs/mcp-jetbrains-ides",
+    "https://docs.akeyless.io/docs/mcp-jetbrains-ides.md",
+    "https://docs.akeyless.io/docs/mcp.md",
+    "https://docs.akeyless.io/docs/monitor-akeyless.md",
+    "https://docs.akeyless.io/docs/multiple-accounts.md",
+    "https://docs.akeyless.io/docs/oidc-app-provider.md",
     "https://docs.akeyless.io/docs/okta-oidc",
+    "https://docs.akeyless.io/docs/okta-oidc.md",
     "https://docs.akeyless.io/docs/okta-target",
     "https://docs.akeyless.io/docs/openai-dynamic-secrets",
     "https://docs.akeyless.io/docs/openai-rotated-secret",
     "https://docs.akeyless.io/docs/openai-target",
     "https://docs.akeyless.io/docs/operate-gateway",
+    "https://docs.akeyless.io/docs/operate-gateway.md",
     "https://docs.akeyless.io/docs/passwords",
     "https://docs.akeyless.io/docs/personal-corporate-areas-navigation",
+    "https://docs.akeyless.io/docs/personal-corporate-areas-navigation.md",
     "https://docs.akeyless.io/docs/ping-dynamic-secrets",
     "https://docs.akeyless.io/docs/ping-target",
     "https://docs.akeyless.io/docs/proactive-caching",
+    "https://docs.akeyless.io/docs/proactive-caching.md",
+    "https://docs.akeyless.io/docs/prompt-injection-protection-for-ai-agents.md",
     "https://docs.akeyless.io/docs/public-ca",
+    "https://docs.akeyless.io/docs/public-ca.md",
     "https://docs.akeyless.io/docs/rabbitmq-producer",
     "https://docs.akeyless.io/docs/rabbitmq-targets",
     "https://docs.akeyless.io/docs/rbac",
+    "https://docs.akeyless.io/docs/rbac.md",
     "https://docs.akeyless.io/docs/rdp-dynamic-secrets",
+    "https://docs.akeyless.io/docs/request-access.md",
+    "https://docs.akeyless.io/docs/resource-discovery.md",
     "https://docs.akeyless.io/docs/retrieve-secret",
     "https://docs.akeyless.io/docs/rotated-secrets",
     "https://docs.akeyless.io/docs/runtime-caching",
+    "https://docs.akeyless.io/docs/runtime-caching.md",
     "https://docs.akeyless.io/docs/salesforce-target",
     "https://docs.akeyless.io/docs/saml-auth-azure-ad",
+    "https://docs.akeyless.io/docs/saml-auth-azure-ad.md",
     "https://docs.akeyless.io/docs/saml-auth-okta",
+    "https://docs.akeyless.io/docs/saml-auth-okta.md",
     "https://docs.akeyless.io/docs/saml-auth-ping-identity",
+    "https://docs.akeyless.io/docs/saml-auth-ping-identity.md",
     "https://docs.akeyless.io/docs/secret-and-target-locking",
     "https://docs.akeyless.io/docs/secret-retrieval-k8s-quickstart",
     "https://docs.akeyless.io/docs/secret-versions",
     "https://docs.akeyless.io/docs/secrets-password-policy",
     "https://docs.akeyless.io/docs/sectigo-target",
+    "https://docs.akeyless.io/docs/server-inventory.md",
+    "https://docs.akeyless.io/docs/servicenow-event-forwarder.md",
+    "https://docs.akeyless.io/docs/set-up-a-flow-in-servicenow.md",
+    "https://docs.akeyless.io/docs/set-up-event-forwarder-on-akeyless-system.md",
     "https://docs.akeyless.io/docs/setting-up-universal-identity-for-windows-machines",
+    "https://docs.akeyless.io/docs/setting-up-universal-identity-for-windows-machines.md",
     "https://docs.akeyless.io/docs/sharing-static-secrets",
     "https://docs.akeyless.io/docs/signing-image",
+    "https://docs.akeyless.io/docs/signing-image.md",
     "https://docs.akeyless.io/docs/signing-tools",
+    "https://docs.akeyless.io/docs/signing-tools.md",
+    "https://docs.akeyless.io/docs/slack-event-forwarder.md",
     "https://docs.akeyless.io/docs/snowflake-dynamic-secrets",
     "https://docs.akeyless.io/docs/splunk-rotated-secret",
     "https://docs.akeyless.io/docs/splunk-target",
+    "https://docs.akeyless.io/docs/sra-bastion-best-practices.md",
     "https://docs.akeyless.io/docs/ssh-and-pkitls-certificates",
+    "https://docs.akeyless.io/docs/ssh-and-pkitls-certificates.md",
     "https://docs.akeyless.io/docs/ssh-target",
     "https://docs.akeyless.io/docs/static-secret-creation-quickstart",
     "https://docs.akeyless.io/docs/static-secrets",
     "https://docs.akeyless.io/docs/staticversions",
     "https://docs.akeyless.io/docs/sub-admins",
+    "https://docs.akeyless.io/docs/sub-admins.md",
     "https://docs.akeyless.io/docs/sub-claims",
+    "https://docs.akeyless.io/docs/sub-claims.md",
     "https://docs.akeyless.io/docs/targets",
+    "https://docs.akeyless.io/docs/teams-event-forwarder.md",
+    "https://docs.akeyless.io/docs/terraform-centralized-deployment.md",
+    "https://docs.akeyless.io/docs/terraform-distributed-deployment.md",
+    "https://docs.akeyless.io/docs/usage-reports.md",
     "https://docs.akeyless.io/docs/venafi-target",
+    "https://docs.akeyless.io/docs/web-access-bastion-best-practices.md",
     "https://docs.akeyless.io/docs/web-targets",
+    "https://docs.akeyless.io/docs/webhook-event-forwarder.md",
     "https://docs.akeyless.io/docs/what-is-akeyless",
     "https://docs.akeyless.io/docs/windows-code-signing-with-akeyless-v2",
+    "https://docs.akeyless.io/docs/windows-code-signing-with-akeyless-v2.md",
     "https://docs.akeyless.io/docs/windows-rotated-secret",
     "https://docs.akeyless.io/docs/windows-target",
+    "https://docs.akeyless.io/docs/zero-knowledge",
     "https://docs.akeyless.io/docs/zero-knowledge-architecture",
     "https://docs.akeyless.io/docs/zerossl-target",
     "https://docs.akeyless.io/llms.txt",
+    "https://docs.akeyless.io/openapi.json",
     "https://docs.akeyless.io/reference",
     "https://docs.akeyless.io/reference/aliasdetails",
     "https://docs.akeyless.io/reference/assoc-role-am",
@@ -590,202 +1019,43 @@
     "https://docs.akeyless.io/reference/dynamicsecretupdategitlab",
     "https://docs.akeyless.io/reference/dynamicsecretupdategke",
     "https://docs.akeyless.io/reference/dynamicsecretupdategoogleworkspace",
-    "https://docs.brew.sh/Taps",
-    "https://docs.github.com",
-    "https://docs.github.com/",
-    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
-    "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
-    "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
-    "https://gist.github.com/devorbitus/57034eabc576a63398d9575d21991ef6",
-    "https://github.blog",
-    "https://github.blog/changelog",
-    "https://github.com/#",
-    "https://github.com/#MIT-1-ov-file",
-    "https://github.com/#readme-ov-file",
-    "https://github.com/#start-of-content",
-    "https://github.com/NixOS/nixpkgs/issues/218588",
-    "https://github.com/accelerator",
-    "https://github.com/akeyless-community/akeyless-openapi-spec-extractor",
-    "https://github.com/akeylesslabs",
-    "https://github.com/akeylesslabs/homebrew-tap",
-    "https://github.com/akeylesslabs/homebrew-tap/actions",
-    "https://github.com/akeylesslabs/homebrew-tap/activity",
-    "https://github.com/akeylesslabs/homebrew-tap/blob/main/LICENSE",
-    "https://github.com/akeylesslabs/homebrew-tap/blob/main/README.md",
-    "https://github.com/akeylesslabs/homebrew-tap/branches",
-    "https://github.com/akeylesslabs/homebrew-tap/commit/0bae57361be7304bb69828f0b4fa30fb9df1e341",
-    "https://github.com/akeylesslabs/homebrew-tap/commit/213e71fa7ac60bd6343a5724e155eaefd2fc6992",
-    "https://github.com/akeylesslabs/homebrew-tap/commit/574bc867dda563c149947b0847795435b0767bcf",
-    "https://github.com/akeylesslabs/homebrew-tap/commits/main/",
-    "https://github.com/akeylesslabs/homebrew-tap/commits?author=actions-user",
-    "https://github.com/akeylesslabs/homebrew-tap/custom-properties",
-    "https://github.com/akeylesslabs/homebrew-tap/forks",
-    "https://github.com/akeylesslabs/homebrew-tap/graphs/contributors",
-    "https://github.com/akeylesslabs/homebrew-tap/issues",
-    "https://github.com/akeylesslabs/homebrew-tap/projects",
-    "https://github.com/akeylesslabs/homebrew-tap/pull/4",
-    "https://github.com/akeylesslabs/homebrew-tap/pulls",
-    "https://github.com/akeylesslabs/homebrew-tap/pulse",
-    "https://github.com/akeylesslabs/homebrew-tap/releases",
-    "https://github.com/akeylesslabs/homebrew-tap/search?l=ruby",
-    "https://github.com/akeylesslabs/homebrew-tap/security",
-    "https://github.com/akeylesslabs/homebrew-tap/stargazers",
-    "https://github.com/akeylesslabs/homebrew-tap/tags",
-    "https://github.com/akeylesslabs/homebrew-tap/tree/main/.github/workflows",
-    "https://github.com/akeylesslabs/homebrew-tap/tree/main/Formula",
-    "https://github.com/akeylesslabs/homebrew-tap/watchers",
-    "https://github.com/collections",
-    "https://github.com/contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fakeylesslabs%2Fhomebrew-tap&report=akeylesslabs+%28user%29",
-    "https://github.com/customer-stories",
-    "https://github.com/enterprise",
-    "https://github.com/enterprise/startups",
-    "https://github.com/features",
-    "https://github.com/features/actions",
-    "https://github.com/features/ai/github-app",
-    "https://github.com/features/code-review",
-    "https://github.com/features/codespaces",
-    "https://github.com/features/copilot",
-    "https://github.com/features/copilot/copilot-business",
-    "https://github.com/features/issues",
-    "https://github.com/login?return_to=%2Fakeylesslabs%2Fhomebrew-tap",
-    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fakeylesslabs%2Fhomebrew-tap",
-    "https://github.com/marketplace",
-    "https://github.com/mcp",
-    "https://github.com/orgs/akeylesslabs/packages?repo_name=homebrew-tap",
-    "https://github.com/orgs/community/discussions",
-    "https://github.com/partners",
-    "https://github.com/premium-support",
-    "https://github.com/pricing",
-    "https://github.com/resources",
-    "https://github.com/resources/articles",
-    "https://github.com/resources/articles?topic=ai",
-    "https://github.com/resources/articles?topic=devops",
-    "https://github.com/resources/articles?topic=security",
-    "https://github.com/resources/articles?topic=software-development",
-    "https://github.com/resources/events",
-    "https://github.com/resources/whitepapers",
-    "https://github.com/security",
-    "https://github.com/security/advanced-security",
-    "https://github.com/security/advanced-security/code-security",
-    "https://github.com/security/advanced-security/secret-protection",
-    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=akeylesslabs%2Fhomebrew-tap",
-    "https://github.com/solutions",
-    "https://github.com/solutions/executive-insights",
-    "https://github.com/solutions/industry",
-    "https://github.com/solutions/industry/financial-services",
-    "https://github.com/solutions/industry/government",
-    "https://github.com/solutions/industry/healthcare",
-    "https://github.com/solutions/industry/manufacturing",
-    "https://github.com/solutions/industry/nonprofits",
-    "https://github.com/solutions/use-case",
-    "https://github.com/solutions/use-case/app-modernization",
-    "https://github.com/solutions/use-case/ci-cd",
-    "https://github.com/solutions/use-case/devops",
-    "https://github.com/solutions/use-case/devsecops",
-    "https://github.com/sponsors",
-    "https://github.com/team",
-    "https://github.com/topics",
-    "https://github.com/trending",
-    "https://github.com/trust-center",
-    "https://github.com/why-github",
-    "https://github.community/",
-    "https://maintainers.github.com",
-    "https://securitylab.github.com",
-    "https://skills.github.com",
-    "https://stars.github.com",
-    "https://support.github.com",
-    "https://support.github.com?tags=dotcom-footer",
-    "https://tutorials.akeyless.io/#about-akeyless-cli",
-    "https://tutorials.akeyless.io/#content",
-    "https://tutorials.akeyless.io/#installing-the-cli",
-    "https://tutorials.akeyless.io/docs",
-    "https://tutorials.akeyless.io/docs/accessing-a-database-from-the-portal-with-a-dynamic-secret-copy",
-    "https://tutorials.akeyless.io/docs/accessing-a-database-from-the-secure-remote-access-portal",
-    "https://tutorials.akeyless.io/docs/akeyless-oidc-identity-provider",
-    "https://tutorials.akeyless.io/docs/akeyless-password-manager",
-    "https://tutorials.akeyless.io/docs/akeyless-password-manager-admins",
-    "https://tutorials.akeyless.io/docs/akeyless-password-manager-mobile-app-for-users",
-    "https://tutorials.akeyless.io/docs/akeyless-password-manager-web-extension",
-    "https://tutorials.akeyless.io/docs/attribute-based-access-control-with-sub-claims-copy",
-    "https://tutorials.akeyless.io/docs/audit-logs-analytics-and-usage-reports",
+    "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html",
+    "https://files.readme.io/574347a-API_key_auth.png",
+    "https://files.readme.io/8191f2c-Cert_key_auth.png",
+    "https://files.readme.io/c1f9c5b-Role_new_design.png",
+    "https://files.readme.io/e362078-image_1.png",
+    "https://files.readme.io/ecfb4eb-Akeyless_Rebranded_Infographics.png",
+    "https://gw.wz-aws.cs.akeyless.fans",
+    "https://jwks-uri",
+    "https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#serviceaccount-token-volume-projection",
+    "https://mcp.example.com/sse",
+    "https://mcp.linear.app/sse",
+    "https://mcp.postman.com/minimal",
+    "https://modelcontextprotocol.io/",
+    "https://openid.net/connect/",
+    "https://sts.amazonaws.com",
+    "https://tekanaid.com/lab/akeyless-cli-api",
     "https://tutorials.akeyless.io/docs/authentication-methods-and-api-key-authentication",
-    "https://tutorials.akeyless.io/docs/automated-secret-migration",
-    "https://tutorials.akeyless.io/docs/aws-and-hashicorp-vault-secrets-migration-into-akeyless",
-    "https://tutorials.akeyless.io/docs/ceating-an-aws-iam-authentication-method",
-    "https://tutorials.akeyless.io/docs/certificate-issuance-provisioning-and-storage",
-    "https://tutorials.akeyless.io/docs/certificates",
-    "https://tutorials.akeyless.io/docs/creating-a-static-secret",
-    "https://tutorials.akeyless.io/docs/creating-and-configuring-targets-copy",
-    "https://tutorials.akeyless.io/docs/creating-and-fetching-dynamic-secrets",
-    "https://tutorials.akeyless.io/docs/creating-and-rotating-encryption-keys",
-    "https://tutorials.akeyless.io/docs/creating-and-using-rotated-secrets",
-    "https://tutorials.akeyless.io/docs/creating-targets",
-    "https://tutorials.akeyless.io/docs/external-kms-with-classic-keys",
-    "https://tutorials.akeyless.io/docs/injecting-secrets-into-a-kubernetes-cluster",
-    "https://tutorials.akeyless.io/docs/install-and-configure-remote-access-bastion",
+    "https://tutorials.akeyless.io/docs/aws-iam-authentication-and-access",
     "https://tutorials.akeyless.io/docs/installing-and-configuring-akeyless-cli",
-    "https://tutorials.akeyless.io/docs/installing-and-configuring-akeyless-gateway",
-    "https://tutorials.akeyless.io/docs/introduction-to-akeyless-vaultless-platform",
     "https://tutorials.akeyless.io/docs/kubernetes-authentication",
-    "https://tutorials.akeyless.io/docs/kubernetes-plugin",
-    "https://tutorials.akeyless.io/docs/kubernetes-secrets-migration-to-akeyless",
-    "https://tutorials.akeyless.io/docs/managing-secrets-in-circleci-pipelines",
-    "https://tutorials.akeyless.io/docs/managing-secrets-in-github-pipelines",
-    "https://tutorials.akeyless.io/docs/managing-secrets-in-gitlab-pipelines",
-    "https://tutorials.akeyless.io/docs/managing-secrets-stored-in-aws-azure-gcp-k8s",
-    "https://tutorials.akeyless.io/docs/role-based-access-control-with-api-key-authentication",
-    "https://tutorials.akeyless.io/docs/sharing-a-static-secret",
-    "https://tutorials.akeyless.io/docs/sync-secrets-to-k8s-with-external-secrets-operator",
-    "https://tutorials.akeyless.io/docs/technical-overview-and-concepts-in-akeyless",
-    "https://tutorials.akeyless.io/docs/tokenization",
-    "https://tutorials.akeyless.io/docs/using-ssh-certificates-to-access-remote-machines",
-    "https://tutorials.akeyless.io/docs/what-is-akeyless",
-    "https://tutorials.akeyless.io/llms.txt",
     "https://updates.akeyless.io/",
     "https://updates.akeyless.io/en",
-    "https://wilsonmar.github.io/akeyless/",
     "https://www",
     "https://www.akeyless.io/about/",
-    "https://www.akeyless.io/accessibility-statement/",
     "https://www.akeyless.io/ai_terms/",
-    "https://www.akeyless.io/akeyless-code-of-business-conduct-and-ethical-policy/",
-    "https://www.akeyless.io/blog/",
     "https://www.akeyless.io/blog/api-keys-ai-agents-iam-failure-gartner/",
     "https://www.akeyless.io/blog/how-to-achieve-cyber-resilience-act-compliance/",
-    "https://www.akeyless.io/careers/",
     "https://www.akeyless.io/ccpa-privacy-notice/",
-    "https://www.akeyless.io/certificate-lifecycle-management/",
-    "https://www.akeyless.io/contact/",
-    "https://www.akeyless.io/cookie-declaration/",
-    "https://www.akeyless.io/data-processing-agreement/",
-    "https://www.akeyless.io/data-protection-measures/",
-    "https://www.akeyless.io/devsec-for-scale-podcast/",
     "https://www.akeyless.io/ebooks/gartner-innovation-insights/",
-    "https://www.akeyless.io/encryption-kms/",
     "https://www.akeyless.io/end-user-license-agreement/",
     "https://www.akeyless.io/human-identity-security/",
-    "https://www.akeyless.io/integrations/",
-    "https://www.akeyless.io/integrations/#browser-extension",
-    "https://www.akeyless.io/integrations/#ci-cd",
-    "https://www.akeyless.io/integrations/#code-management",
-    "https://www.akeyless.io/integrations/#configuration-management",
-    "https://www.akeyless.io/integrations/#identity-providers",
-    "https://www.akeyless.io/integrations/#infra-automation",
-    "https://www.akeyless.io/integrations/#kubernetes",
-    "https://www.akeyless.io/integrations/#notifications",
-    "https://www.akeyless.io/integrations/#sdk",
-    "https://www.akeyless.io/keyconf/",
-    "https://www.akeyless.io/landing/become-a-partner/",
-    "https://www.akeyless.io/landing/partner-register-a-deal/",
     "https://www.akeyless.io/machine-identity-security/",
-    "https://www.akeyless.io/news/",
     "https://www.akeyless.io/news/category/in-the-news/",
     "https://www.akeyless.io/news/category/press-release/",
-    "https://www.akeyless.io/partners/",
     "https://www.akeyless.io/pricing/",
     "https://www.akeyless.io/privacy-policy/",
     "https://www.akeyless.io/resellerdataact/",
-    "https://www.akeyless.io/resources/",
     "https://www.akeyless.io/resources/category/blog/",
     "https://www.akeyless.io/resources/category/ebooks/",
     "https://www.akeyless.io/resources/category/keyconf/",
@@ -796,27 +1066,19 @@
     "https://www.akeyless.io/resources/topics/infosec/",
     "https://www.akeyless.io/resources/topics/machine-iam/",
     "https://www.akeyless.io/resources/topics/security/",
-    "https://www.akeyless.io/secrets-management-glossary/",
     "https://www.akeyless.io/secrets-management-glossary/certificate-lifecycle-management/",
     "https://www.akeyless.io/secrets-management-glossary/keyconf/",
     "https://www.akeyless.io/secrets-management-glossary/kubernetes-secrets/",
     "https://www.akeyless.io/secrets-management-glossary/non-human-identity-management/",
     "https://www.akeyless.io/secrets-management-glossary/zero-knowledge-encryption/",
     "https://www.akeyless.io/secrets-management/",
-    "https://www.akeyless.io/secrets-management/universal-secrets-connector-usc/",
     "https://www.akeyless.io/secure-ai-agents/",
-    "https://www.akeyless.io/secure-remote-access/",
     "https://www.akeyless.io/service-level-agreement/",
     "https://www.akeyless.io/sitemap_index.xml",
     "https://www.akeyless.io/sla-support-tiers-and-plans-limits/",
     "https://www.akeyless.io/submit-a-ticket/",
-    "https://www.akeyless.io/terms-of-service/",
-    "https://www.akeyless.io/transfer-impact-assessment/",
-    "https://www.akeyless.io/trust-center/",
-    "https://www.akeyless.io/webinars/",
     "https://www.akeyless.io/webinars/preparing-for-the-47-day-certificate-era/",
     "https://www.akeyless.io/webinars/what-the-data-reveals-about-ai-agent-identity-risk/",
-    "https://www.githubstatus.com/",
-    "https://www.speakeasy.com/docs/cli-generation"
+    "https://your-tenant.akeyless.io/oauth/callback"
   ]
 }

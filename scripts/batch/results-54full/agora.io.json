@@ -12,21 +12,21 @@
       "errors": []
     },
     "usedLlm": true,
-    "discoveredAt": "2026-07-02T19:34:04.151Z",
-    "summary": "Agora exposes a documented REST API surface at api.agora.io, a public documentation MCP server at https://mcp.agora.io, and an `agora` CLI authenticated via `agora login`; REST APIs use Agora-issued Basic auth credentials, with Conversational AI also supporting Agora token auth generated from App ID + App Certificate.",
+    "discoveredAt": "2026-07-02T19:37:56.206Z",
+    "summary": "Agora exposes a documented REST API surface at api.agora.io, a public documentation MCP server at mcp.agora.io, and an `agora` CLI; REST auth supports either server-generated Agora tokens or REST customer ID/secret Basic auth.",
     "credentials": {
       "agora_rest_basic": {
         "type": "basic",
-        "label": "Agora REST API customer ID + customer secret",
+        "label": "Agora RESTful API customer ID and customer secret",
         "generateUrl": "https://console.agora.io/v2",
-        "setup": "In [Agora Console](https://console.agora.io/v2), go to **Developer Toolkit** → **RESTful API**, click **Add a secret**, then **Download** the generated secret file. Use the downloaded customer ID and customer secret to build `Authorization: Basic <base64(customer_id:customer_secret)>`. The secret can only be downloaded once, so store it securely.",
+        "setup": "In [Agora Console](https://console.agora.io/v2), go to **Developer Toolkit** → **RESTful API**, click **Add a secret**, and copy the generated **Customer ID** and **Customer Secret**. Use them together as HTTP Basic auth by Base64-encoding `customer_id:customer_secret` and sending `Authorization: Basic <base64_credentials>`.",
         "acquisition": "manual"
       },
-      "agora_app_token": {
+      "agora_app_credentials": {
         "type": "compound",
-        "label": "Agora App ID + App Certificate for RTC token generation",
+        "label": "Agora App ID and App Certificate for server-generated tokens",
         "generateUrl": "https://console.agora.io/v2",
-        "setup": "In [Agora Console](https://console.agora.io/v2), open your project to get its **App ID** and **App Certificate**. Generate an RTC token on your server using these values, then send it as `Authorization: agora token=<your_token>` for Conversational AI REST API requests that use token auth. Keep the App Certificate server-side only.",
+        "setup": "In [Agora Console](https://console.agora.io/v2), open your project and copy its **App ID** and **App Certificate**. Keep the App Certificate server-side only, then generate an Agora token on your server (for example with [agora-agent-server-sdk](https://www.npmjs.com/package/agora-agent-server-sdk) or the [AgoraDynamicKey token builder](https://github.com/AgoraIO/Tools/tree/master/DynamicKey/AgoraDynamicKey)). Use the resulting token in requests as `Authorization: agora token=<your_token>`.",
         "acquisition": "manual"
       }
     },
@@ -39,17 +39,33 @@
         "basis": {
           "via": "discovered",
           "evidence": [
-            "https://docs.agora.io/en/api-reference",
+            "https://docs.agora.io/en/",
             "https://docs.agora.io/en/api-reference/api-ref",
-            "https://docs.agora.io/en/api-reference/api-ref/rtc",
-            "https://docs.agora.io/en/api-reference/api-ref/signaling",
-            "https://docs.agora.io/en/api-reference/api-ref/speech-to-text",
-            "https://docs.agora.io/en/api-reference/api-ref/conversational-ai"
+            "https://docs.agora.io/en/api-reference/api-ref/conversational-ai/authentication"
           ]
         },
         "auth": {
           "status": "required",
           "entries": [
+            {
+              "use": [
+                {
+                  "id": "agora_app_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "agora"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.agora.io/en/api-reference/api-ref/conversational-ai/authentication"
+                ]
+              }
+            },
             {
               "use": [
                 {
@@ -65,46 +81,17 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.agora.io/en/api-reference/api-ref/rtc/authentication",
-                  "https://docs.agora.io/en/api-reference/api-ref/signaling/authentication",
-                  "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/authentication",
-                  "https://docs.agora.io/en/api-reference/api-ref/conversational-ai/authentication"
-                ]
-              }
-            },
-            {
-              "use": [
-                {
-                  "id": "agora_app_token",
-                  "mechanics": {
-                    "source": "http",
-                    "in": "header",
-                    "headerName": "Authorization",
-                    "scheme": "agora token="
-                  }
-                }
-              ],
-              "basis": {
-                "via": "discovered",
-                "evidence": [
                   "https://docs.agora.io/en/api-reference/api-ref/conversational-ai/authentication"
                 ]
               }
             }
           ]
         },
-        "url": "https://api.agora.io",
-        "variables": [
-          {
-            "name": "appid",
-            "resolveFrom": "Agora project App ID",
-            "description": "Required in many product-specific REST API base URLs, for example `/dev/v2/project/<appid>` or `/api/.../projects/<appid>` as documented per product."
-          }
-        ]
+        "url": "https://api.agora.io"
       },
       {
-        "slug": "agora-mcp-server",
-        "name": "Agora MCP server",
+        "slug": "agora-mcp",
+        "name": "Agora MCP",
         "type": "mcp",
         "docs": "https://docs.agora.io/en/introduction/agora-mcp",
         "basis": {
@@ -138,7 +125,7 @@
           "via": "discovered",
           "evidence": [
             "https://docs.agora.io/en/introduction/agora-cli",
-            "https://github.com/AgoraIO/cli"
+            "https://docs.agora.io/en/introduction/start-with-ai"
           ]
         },
         "auth": {
@@ -147,7 +134,7 @@
             {
               "use": [
                 {
-                  "id": "agora_app_token",
+                  "id": "agora_app_credentials",
                   "mechanics": {
                     "source": "cli",
                     "command": "agora login"
@@ -157,7 +144,8 @@
               "basis": {
                 "via": "discovered",
                 "evidence": [
-                  "https://docs.agora.io/en/introduction/agora-cli"
+                  "https://docs.agora.io/en/introduction/agora-cli",
+                  "https://docs.agora.io/en/introduction/start-with-ai"
                 ]
               }
             }
@@ -179,33 +167,26 @@
       }
     ]
   },
-  "discoveredAt": "2026-07-02T19:34:04.151Z",
+  "discoveredAt": "2026-07-02T19:37:56.207Z",
   "model": "loop-gpt-5.4",
   "usage": {
-    "prompt_tokens": 291287,
-    "completion_tokens": 1595,
-    "total_tokens": 292882
+    "prompt_tokens": 64445,
+    "completion_tokens": 1232,
+    "total_tokens": 65677
   },
   "visited": [
     "https://agora.io/llms.txt",
     "https://docs.agora.io/en/",
-    "https://docs.agora.io/en/api-reference",
     "https://docs.agora.io/en/api-reference/api-ref",
-    "https://docs.agora.io/en/api-reference/api-ref/conversational-ai",
     "https://docs.agora.io/en/api-reference/api-ref/conversational-ai/authentication",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/authentication",
-    "https://docs.agora.io/en/api-reference/api-ref/signaling",
-    "https://docs.agora.io/en/api-reference/api-ref/signaling/authentication",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/authentication",
     "https://docs.agora.io/en/build-with-ai",
     "https://docs.agora.io/en/cloud-recording/get-started/mcp",
-    "https://docs.agora.io/en/conversational-ai/studio/build/integrations",
     "https://docs.agora.io/en/introduction/agora-cli",
     "https://docs.agora.io/en/introduction/agora-mcp",
+    "https://docs.agora.io/en/introduction/start-with-ai",
     "https://docs.agora.io/en/server-gateway/get-started/skills",
-    "https://github.com/AgoraIO/cli"
+    "https://github.com/AgoraIO/cli",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ],
   "grounding": [
     "https://agents.md",
@@ -293,14 +274,8 @@
     "https://api-ref.agora.io/en/voice-sdk/unreal-engine/4.x/API/rtc_api_overview.html",
     "https://api-ref.agora.io/en/voice-sdk/web/4.x/index.html",
     "https://api-ref.agora.io/en/voice-sdk/windows-csharp/3.x/API/rtc_api_overview.html",
-    "https://api.agora.io",
-    "https://api.agora.io/api/conversational-ai-agent/v2/projects/",
-    "https://api.agora.io/api/speech-to-text/v1/projects/",
-    "https://api.agora.io/dev/v1/projects",
-    "https://api.agora.io/dev/v2/project/",
     "https://archiveprogram.github.com",
     "https://claude.com/product/claude-code",
-    "https://console.agora.io",
     "https://console.agora.io/",
     "https://console.agora.io/v2",
     "https://discord.gg/QfgBCvuX4d",
@@ -308,50 +283,39 @@
     "https://docs-legacy.agora.io/en",
     "https://docs-md.agora.io/",
     "https://docs.agora.io/#",
+    "https://docs.agora.io/#1-install-cli",
+    "https://docs.agora.io/#2-add-skill",
+    "https://docs.agora.io/#3-prompt",
     "https://docs.agora.io/#agentsmd",
-    "https://docs.agora.io/#api-basics",
-    "https://docs.agora.io/#authorization-header",
-    "https://docs.agora.io/#basic-authentication-examples",
-    "https://docs.agora.io/#basic-authentication-sample-code",
     "https://docs.agora.io/#basic-http-authentication",
     "https://docs.agora.io/#build-an-agent",
     "https://docs.agora.io/#build-from-scratch-instead",
     "https://docs.agora.io/#build-real-time-applications",
-    "https://docs.agora.io/#client-toolkit",
-    "https://docs.agora.io/#domain-name-table",
-    "https://docs.agora.io/#ensure-service-reliability",
-    "https://docs.agora.io/#generate-a-customer-id-and-customer-secret",
     "https://docs.agora.io/#generate-an-authorization-header-using-a-third-party-tool",
     "https://docs.agora.io/#generate-customer-id-and-customer-secret",
     "https://docs.agora.io/#get-help",
     "https://docs.agora.io/#getting-started",
     "https://docs.agora.io/#if-something-fails",
-    "https://docs.agora.io/#implement-basic-http-authentication",
     "https://docs.agora.io/#install-the-agora-cli",
     "https://docs.agora.io/#install-the-mcp-server",
     "https://docs.agora.io/#installation",
-    "https://docs.agora.io/#key-features-and-use-cases",
     "https://docs.agora.io/#login-or-starter-setup-fails",
     "https://docs.agora.io/#make-docs-lookup-part-of-the-workflow",
-    "https://docs.agora.io/#precautions",
     "https://docs.agora.io/#prerequisites",
     "https://docs.agora.io/#project-settings-or-credentials-look-wrong",
     "https://docs.agora.io/#quick-start",
-    "https://docs.agora.io/#recommended-pattern",
     "https://docs.agora.io/#related-pages",
-    "https://docs.agora.io/#rest-apis",
     "https://docs.agora.io/#sdks-and-apis",
     "https://docs.agora.io/#solutions",
     "https://docs.agora.io/#start-with-a-prompt",
     "https://docs.agora.io/#start-with-ai-tools",
-    "https://docs.agora.io/#supporting-topics",
-    "https://docs.agora.io/#switch-the-domain-name",
     "https://docs.agora.io/#the-agora-command-is-not-available",
     "https://docs.agora.io/#the-starter-runs-incorrectly",
     "https://docs.agora.io/#token-authentication",
     "https://docs.agora.io/#using-the-conversational-ai-sdk",
     "https://docs.agora.io/#using-the-token-builder-library",
     "https://docs.agora.io/#what-happens-in-this-flow",
+    "https://docs.agora.io/#what-success-looks-like",
     "https://docs.agora.io/en/",
     "https://docs.agora.io/en/agora-chat/get-started/get-started-sdk",
     "https://docs.agora.io/en/agora-chat/overview/product-overview",
@@ -362,7 +326,6 @@
     "https://docs.agora.io/en/api-reference/",
     "https://docs.agora.io/en/api-reference/api-ref",
     "https://docs.agora.io/en/api-reference/api-ref/agora-analytics/analytics-rest-api",
-    "https://docs.agora.io/en/api-reference/api-ref/broadcast-streaming",
     "https://docs.agora.io/en/api-reference/api-ref/cloud-recording",
     "https://docs.agora.io/en/api-reference/api-ref/cloud-transcoding",
     "https://docs.agora.io/en/api-reference/api-ref/console/solutions-agora-console-rest-api",
@@ -390,66 +353,26 @@
     "https://docs.agora.io/en/api-reference/api-ref/media-push",
     "https://docs.agora.io/en/api-reference/api-ref/on-premise-recording",
     "https://docs.agora.io/en/api-reference/api-ref/rtc",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/api-sunset",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/authentication",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/ban-user-privileges-best-practices",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/channel-event-types",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/create-ban-rule",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/delete-ban-rule",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/ensure-service-reliability",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/get-ban-rule-list",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/how-to-call-api",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/query-channel-list",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/query-host-list",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/query-ip-address",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/query-user-list",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/query-user-status",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/response-status-codes",
-    "https://docs.agora.io/en/api-reference/api-ref/rtc/update-ban-expiration",
     "https://docs.agora.io/en/api-reference/api-ref/rtmp-gateway",
     "https://docs.agora.io/en/api-reference/api-ref/server-sdk/go",
     "https://docs.agora.io/en/api-reference/api-ref/server-sdk/python",
     "https://docs.agora.io/en/api-reference/api-ref/server-sdk/typescript",
     "https://docs.agora.io/en/api-reference/api-ref/signaling",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/android",
-    "https://docs.agora.io/en/api-reference/api-ref/signaling/authentication",
-    "https://docs.agora.io/en/api-reference/api-ref/signaling/channel-events",
-    "https://docs.agora.io/en/api-reference/api-ref/signaling/channel-message",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/flutter",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/ios",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/linux-cpp",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/linux-java",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/macos",
-    "https://docs.agora.io/en/api-reference/api-ref/signaling/message-history",
-    "https://docs.agora.io/en/api-reference/api-ref/signaling/peer-to-peer-message",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/react-native",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/unity",
-    "https://docs.agora.io/en/api-reference/api-ref/signaling/user-events",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/web",
     "https://docs.agora.io/en/api-reference/api-ref/signaling/windows-cpp",
     "https://docs.agora.io/en/api-reference/api-ref/speech-to-text",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/api-callback-service",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/authentication",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/join",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/leave",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/list",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/query",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v5/acquire",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v5/query",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v5/start",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v5/stop",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v5/update",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v6/acquire",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v6/query",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v6/start",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v6/stop",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/rest-api-v6/update",
-    "https://docs.agora.io/en/api-reference/api-ref/speech-to-text/update",
     "https://docs.agora.io/en/api-reference/api-ref/uikit-sdk/android",
     "https://docs.agora.io/en/api-reference/api-ref/uikit-sdk/ios",
     "https://docs.agora.io/en/api-reference/api-ref/uikit-sdk/web",
     "https://docs.agora.io/en/api-reference/api-ref/whiteboard",
-    "https://docs.agora.io/en/api-reference/faq",
     "https://docs.agora.io/en/api-reference/faq/account",
     "https://docs.agora.io/en/api-reference/faq/account/billing_free",
     "https://docs.agora.io/en/api-reference/faq/integration",
@@ -470,7 +393,6 @@
     "https://docs.agora.io/en/cloud-recording/get-started/mcp",
     "https://docs.agora.io/en/conversational-ai/get-started/get-started-sdk",
     "https://docs.agora.io/en/conversational-ai/overview/product-overview",
-    "https://docs.agora.io/en/conversational-ai/studio/build/integrations",
     "https://docs.agora.io/en/downloads/",
     "https://docs.agora.io/en/help",
     "https://docs.agora.io/en/interactive-live-streaming/get-started/get-started-sdk",
@@ -564,11 +486,14 @@
     "https://github.com/AgoraIO/docs-portal/blob/main/content/docs/en/introduction/agora-cli.mdx",
     "https://github.com/AgoraIO/docs-portal/blob/main/content/docs/en/introduction/agora-mcp.mdx",
     "https://github.com/AgoraIO/docs-portal/blob/main/content/docs/en/introduction/index.mdx",
+    "https://github.com/AgoraIO/docs-portal/blob/main/content/docs/en/introduction/start-with-ai.mdx",
     "https://github.com/AgoraIO/docs-portal/blob/main/content/docs/en/realtime-media/cloud-recording/mcp.mdx",
     "https://github.com/AgoraIO/docs-portal/edit/main/content/docs/en/introduction/agora-cli.mdx",
     "https://github.com/AgoraIO/docs-portal/edit/main/content/docs/en/introduction/agora-mcp.mdx",
     "https://github.com/AgoraIO/docs-portal/edit/main/content/docs/en/introduction/index.mdx",
+    "https://github.com/AgoraIO/docs-portal/edit/main/content/docs/en/introduction/start-with-ai.mdx",
     "https://github.com/AgoraIO/docs-portal/edit/main/content/docs/en/realtime-media/cloud-recording/mcp.mdx",
+    "https://github.com/AgoraIO/skills.git",
     "https://github.com/accelerator",
     "https://github.com/collections",
     "https://github.com/customer-stories",
@@ -685,6 +610,7 @@
     "https://www.agora.io/en/the-agora-platform-advantage/",
     "https://www.agora.io/en/trust-safety-with-agora/",
     "https://www.cursor.com/",
-    "https://www.debugbear.com/basic-auth-header-generator"
+    "https://www.debugbear.com/basic-auth-header-generator",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
   ]
 }

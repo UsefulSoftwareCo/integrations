@@ -31,6 +31,23 @@ async function retrying(run: () => Promise<Response>): Promise<Response> {
   return res;
 }
 
+// Global politeness cap on concurrent context.dev requests, shared across all
+// discovery loops in the process — bulk runs multiply per-domain parallelism,
+// and their API shouldn't absorb the product of both.
+const CTX_MAX_CONCURRENT = 8;
+let ctxInFlight = 0;
+const ctxWaiters: Array<() => void> = [];
+async function ctxSlot<T>(run: () => Promise<T>): Promise<T> {
+  if (ctxInFlight >= CTX_MAX_CONCURRENT) await new Promise<void>((resolve) => ctxWaiters.push(resolve));
+  ctxInFlight++;
+  try {
+    return await run();
+  } finally {
+    ctxInFlight--;
+    ctxWaiters.shift()?.();
+  }
+}
+
 export function contextWeb(apiKey: string, fetchImpl: FetchLike = fetch): WebBackend {
   const auth = { authorization: `Bearer ${apiKey}` };
   const withTimeout = async (fn: (signal: AbortSignal) => Promise<Response>) => {
@@ -47,7 +64,7 @@ export function contextWeb(apiKey: string, fetchImpl: FetchLike = fetch): WebBac
     canSearch: true,
     async search(query: string): Promise<SearchHit[]> {
       try {
-        const res = await retrying(() =>
+        const res = await ctxSlot(() => retrying(() =>
           withTimeout((signal) =>
             fetchImpl(`${CTX_BASE}/web/search`, {
               method: "POST",
@@ -56,7 +73,7 @@ export function contextWeb(apiKey: string, fetchImpl: FetchLike = fetch): WebBac
               signal,
             }),
           ),
-        );
+        ));
         if (!res.ok) return [];
         const j = (await res.json()) as { results?: Array<{ url?: string; title?: string; description?: string; relevance?: string }> };
         return (j.results ?? [])
@@ -70,7 +87,7 @@ export function contextWeb(apiKey: string, fetchImpl: FetchLike = fetch): WebBac
     async scrape(url: string): Promise<string> {
       try {
         const u = `${CTX_BASE}/web/scrape/markdown?url=${encodeURIComponent(url)}&includeLinks=true`;
-        const res = await retrying(() => withTimeout((signal) => fetchImpl(u, { headers: auth, signal })));
+        const res = await ctxSlot(() => retrying(() => withTimeout((signal) => fetchImpl(u, { headers: auth, signal }))));
         if (!res.ok) return `Scrape failed (HTTP ${res.status}) for ${url}`;
         const j = (await res.json()) as { markdown?: string };
         const md = typeof j.markdown === "string" ? j.markdown.trim() : "";
@@ -85,7 +102,7 @@ export function contextWeb(apiKey: string, fetchImpl: FetchLike = fetch): WebBac
         u.searchParams.set("domain", domain);
         u.searchParams.set("maxLinks", "300");
         if (urlRegex) u.searchParams.set("urlRegex", urlRegex);
-        const res = await retrying(() => withTimeout((signal) => fetchImpl(u.toString(), { headers: auth, signal })));
+        const res = await ctxSlot(() => retrying(() => withTimeout((signal) => fetchImpl(u.toString(), { headers: auth, signal }))));
         if (!res.ok) return [];
         const j = (await res.json()) as { urls?: string[] };
         return Array.isArray(j.urls) ? j.urls.slice(0, 300) : [];

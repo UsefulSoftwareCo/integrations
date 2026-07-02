@@ -1,0 +1,1010 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "auth0.com",
+    "detect": {
+      "domain": "auth0.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T19:42:42.691Z",
+    "summary": "Mapped Auth0’s public developer integration surface: 4 HTTP APIs (Authentication, Management, My Account, My Organization), 1 CLI (auth0), and 1 MCP server package; all require Auth0-issued credentials via user tokens, M2M app credentials, CLI login, or MCP device-flow login.",
+    "credentials": {
+      "auth0_m2m_app": {
+        "type": "oauth2_cc",
+        "label": "Auth0 machine-to-machine application credentials",
+        "generateUrl": "https://manage.auth0.com/#/applications",
+        "setup": "In the [Auth0 Dashboard Applications page](https://manage.auth0.com/#/applications), create a Machine to Machine application (or use an existing confidential application), authorize it for the target API, and copy its `client_id` and `client_secret`. For the Management API, request a token with audience `https://{yourDomain}/api/v2/` as described in [Management API Access Tokens](https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens). For the My Organization API, first [activate the API](https://auth0.com/docs/api/myorganization) and then grant the application the needed scopes.",
+        "acquisition": "manual"
+      },
+      "auth0_user_access_token": {
+        "type": "bearer",
+        "label": "Auth0 user access token",
+        "generateUrl": "https://manage.auth0.com/#/applications",
+        "setup": "Create or configure an Auth0 application in the [Auth0 Dashboard Applications page](https://manage.auth0.com/#/applications), then obtain a user access token through an Auth0-supported user flow such as Authorization Code or PKCE against your tenant domain. Set the API audience to the target API, for example `https://{yourDomain}/me/` for My Account API, as documented in [My Account API](https://auth0.com/docs/api/myaccount) and [Get Token](https://auth0.com/docs/api/authentication/authorization-code-flow/get-token).",
+        "acquisition": "manual"
+      },
+      "auth0_client_id_secret": {
+        "type": "compound",
+        "label": "Auth0 application client ID and client secret",
+        "generateUrl": "https://manage.auth0.com/#/applications",
+        "setup": "Create or open a confidential application in the [Auth0 Dashboard Applications page](https://manage.auth0.com/#/applications) and copy its `client_id` and `client_secret`. The Authentication API accepts these either in the request body or via HTTP `Basic` auth depending on the application's token endpoint authentication method, as documented in [Authentication API](https://auth0.com/docs/api/authentication).",
+        "acquisition": "manual"
+      },
+      "auth0_private_key_jwt": {
+        "type": "jwt",
+        "label": "Auth0 application client ID with private-key JWT assertion",
+        "generateUrl": "https://manage.auth0.com/#/applications",
+        "setup": "Create or open a confidential application in the [Auth0 Dashboard Applications page](https://manage.auth0.com/#/applications), configure token endpoint authentication for private key JWT, and use its `client_id` plus your private signing key to generate a `client_assertion` JWT as described in [Authentication API](https://auth0.com/docs/api/authentication).",
+        "acquisition": "manual"
+      },
+      "auth0_public_client_id": {
+        "type": "app",
+        "label": "Auth0 public application client ID",
+        "generateUrl": "https://manage.auth0.com/#/applications",
+        "setup": "Create or open a public application (for example SPA or native app) in the [Auth0 Dashboard Applications page](https://manage.auth0.com/#/applications) and copy its `client_id`. Some Authentication API endpoints accept only the `client_id` for public apps, as documented in [Authentication API](https://auth0.com/docs/api/authentication).",
+        "acquisition": "manual"
+      },
+      "auth0_cli_login": {
+        "type": "oauth2",
+        "label": "Auth0 CLI login",
+        "generateUrl": "https://manage.auth0.com/login",
+        "setup": "Install the [Auth0 CLI](https://auth0.com/docs/deploy-monitor/auth0-cli) and run `auth0 login` for browser-based login, or `auth0 login --domain <your-domain> --client-id <client-id> --client-secret <client-secret>` to authenticate with a machine-to-machine application. The CLI stores credentials locally after login.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "auth0-authentication-api",
+        "name": "Auth0 Authentication API",
+        "type": "http",
+        "docs": "https://auth0.com/docs/api/authentication",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://auth0.com/docs/api/authentication",
+            "https://auth0.com/docs/api/authentication/authorization-code-flow/get-token"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "auth0_user_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "auth0_client_id_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/authentication",
+                  "https://auth0.com/docs/api/authentication/authorization-code-flow/get-token"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "auth0_client_id_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "auth0_private_key_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "auth0_public_client_id",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "client_id"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{yourDomain}",
+        "variables": [
+          {
+            "name": "yourDomain",
+            "resolveFrom": "your Auth0 tenant domain",
+            "description": "Auth0 tenant domain shown in docs as `{yourDomain}`."
+          }
+        ]
+      },
+      {
+        "slug": "auth0-my-account-api",
+        "name": "Auth0 My Account API",
+        "type": "http",
+        "docs": "https://auth0.com/docs/api/myaccount",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://auth0.com/docs/api/myaccount"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "auth0_user_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/myaccount"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{yourDomain}/me",
+        "variables": [
+          {
+            "name": "yourDomain",
+            "resolveFrom": "your Auth0 tenant domain or custom domain",
+            "description": "Use the same Auth0 or custom domain consistently for token issuance, audience, and API calls."
+          }
+        ]
+      },
+      {
+        "slug": "auth0-cli",
+        "name": "Auth0 CLI",
+        "type": "cli",
+        "docs": "https://auth0.com/docs/deploy-monitor/auth0-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://auth0.com/docs/deploy-monitor/auth0-cli",
+            "https://auth0.github.io/auth0-cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "auth0_cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "auth0 login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/deploy-monitor/auth0-cli",
+                  "https://auth0.github.io/auth0-cli/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "auth0/auth0-cli/auth0"
+          },
+          {
+            "registryType": "github",
+            "identifier": "auth0/auth0-cli"
+          }
+        ],
+        "command": "auth0"
+      },
+      {
+        "slug": "auth0-mcp-server",
+        "name": "Auth0 MCP Server",
+        "type": "mcp",
+        "docs": "https://auth0.com/docs/get-started/auth0-mcp-server/getting-started-with-auth0-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://auth0.com/docs/get-started/auth0-mcp-server",
+            "https://auth0.com/docs/get-started/auth0-mcp-server/getting-started-with-auth0-mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "auth0_cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx @auth0/auth0-mcp-server init"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/get-started/auth0-mcp-server",
+                  "https://auth0.com/docs/get-started/auth0-mcp-server/getting-started-with-auth0-mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "stdio"
+        ]
+      },
+      {
+        "slug": "auth0-management-api",
+        "name": "Auth0 Management API",
+        "type": "http",
+        "docs": "https://auth0.com/docs/api/management/v2",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://auth0.com/docs/api/management/v2",
+            "https://auth0.com/docs/oas/management/v2/management-api-oas.json",
+            "https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "auth0_m2m_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/management/v2",
+                  "https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{tenantDomain}/api/v2",
+        "variables": [
+          {
+            "name": "tenantDomain",
+            "resolveFrom": "your Auth0 tenant domain",
+            "description": "Auth0 tenant domain, for example `{TENANT}.auth0.com` or a configured custom domain where supported."
+          }
+        ]
+      },
+      {
+        "slug": "auth0-my-organization-api",
+        "name": "Auth0 My Organization API",
+        "type": "http",
+        "docs": "https://auth0.com/docs/api/myorganization",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://auth0.com/docs/api/myorganization",
+            "https://auth0.com/docs/oas/myorganization/myorganization-api-oas.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "auth0_m2m_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/myorganization",
+                  "https://auth0.com/docs/oas/myorganization/myorganization-api-oas.json"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "auth0_user_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://auth0.com/docs/api/myorganization",
+                  "https://auth0.com/docs/oas/myorganization/myorganization-api-oas.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{tenantDomain}/my-org/v1",
+        "variables": [
+          {
+            "name": "tenantDomain",
+            "resolveFrom": "your Auth0 tenant domain or custom domain",
+            "description": "Use the same Auth0 or custom domain consistently for token issuance, audience, and My Organization API calls."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T19:42:42.691Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 281405,
+    "completion_tokens": 3740,
+    "total_tokens": 285145
+  },
+  "visited": [
+    "https://auth0.com/ai/docs/mcp/get-started/call-your-apis-on-users-behalf",
+    "https://auth0.com/docs/api",
+    "https://auth0.com/docs/api/authentication",
+    "https://auth0.com/docs/api/authentication/authorization-code-flow/get-token",
+    "https://auth0.com/docs/api/management/v2",
+    "https://auth0.com/docs/api/management/v2/actions/post-action",
+    "https://auth0.com/docs/api/management/v2/organizations/get-name-by-name",
+    "https://auth0.com/docs/api/management/v2/organizations/get-organizations",
+    "https://auth0.com/docs/api/management/v2/users/get-authentication-methods",
+    "https://auth0.com/docs/api/myaccount",
+    "https://auth0.com/docs/api/myaccount/factors/get-factors",
+    "https://auth0.com/docs/api/myorganization",
+    "https://auth0.com/docs/deploy-monitor/auth0-cli",
+    "https://auth0.com/docs/get-started/auth0-mcp-server",
+    "https://auth0.com/docs/get-started/auth0-mcp-server/getting-started-with-auth0-mcp-server",
+    "https://auth0.com/docs/oas/management/v2/management-api-oas.json",
+    "https://auth0.com/docs/oas/myorganization/myorganization-api-oas.json",
+    "https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens",
+    "https://auth0.com/llms.txt",
+    "https://auth0.github.io/auth0-cli/",
+    "https://auth0.github.io/auth0-cli/auth0_api.html",
+    "https://auth0.github.io/auth0-cli/auth0_login.html",
+    "https://auth0.github.io/auth0-cli/auth0_universal-login.html",
+    "https://auth0.github.io/auth0-cli/auth0_universal-login_customize.html",
+    "https://auth0.github.io/auth0-cli/auth0_users_create.html",
+    "https://github.com/auth0/auth0-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://localhost:3000/callback",
+    "http://localhost:3001/",
+    "http://localhost:8787/",
+    "https://@@TENANT@@/api/v2/clients?per_page=10&page=2",
+    "https://@@TENANT@@/api/v2/clients?take=10&from=Cg1HRUY3NEszUERFME40GgAiAQgCEj",
+    "https://@@TENANT@@/api/v2/users",
+    "https://YOUR_DOMAIN/my-org/",
+    "https://YOUR_DOMAIN/oauth/token",
+    "https://auth0.com",
+    "https://auth0.com/",
+    "https://auth0.com/#1-wrapper-function-bearerforupstream",
+    "https://auth0.com/#2-exchange-function-exchangetokenonbehalfof",
+    "https://auth0.com/#activate-the-my-account-api",
+    "https://auth0.com/#activate-the-my-organization-api-in-auth0-dashboard",
+    "https://auth0.com/#advanced-debugging-using-mcp-inspector",
+    "https://auth0.com/#api-errors",
+    "https://auth0.com/#audience",
+    "https://auth0.com/#auth0-cli-vs-deploy-cli",
+    "https://auth0.com/#auth0-cli-vs-terraform-provider",
+    "https://auth0.com/#authenticate",
+    "https://auth0.com/#authenticate-with-auth0",
+    "https://auth0.com/#authentication",
+    "https://auth0.com/#authentication-and-credential-security",
+    "https://auth0.com/#authentication-api-debugger",
+    "https://auth0.com/#authentication-issues",
+    "https://auth0.com/#authentication-methods",
+    "https://auth0.com/#authentications-flows",
+    "https://auth0.com/#authorization-code-flow-example",
+    "https://auth0.com/#authorization-code-flow-with-pkce-example",
+    "https://auth0.com/#authorization-code-grant",
+    "https://auth0.com/#base-url",
+    "https://auth0.com/#best-practices-for-handling-pagination",
+    "https://auth0.com/#body-parameters",
+    "https://auth0.com/#checkpoint-based-pagination",
+    "https://auth0.com/#checkpoint-id-expiry",
+    "https://auth0.com/#choosing-between-offset-and-checkpoint-pagination",
+    "https://auth0.com/#claude-can%E2%80%99t-connect-to-the-server-error",
+    "https://auth0.com/#claude-can’t-connect-to-the-server-error",
+    "https://auth0.com/#claude-desktop",
+    "https://auth0.com/#client-application-attributes",
+    "https://auth0.com/#client-id",
+    "https://auth0.com/#client-id-and-client-assertion",
+    "https://auth0.com/#client-id-and-client-secret",
+    "https://auth0.com/#common-commands",
+    "https://auth0.com/#common-troubleshooting-steps",
+    "https://auth0.com/#comparison-with-other-tools",
+    "https://auth0.com/#configure-connections",
+    "https://auth0.com/#configure-tenant-settings",
+    "https://auth0.com/#connection-failures",
+    "https://auth0.com/#connection-profile-cp",
+    "https://auth0.com/#content-area",
+    "https://auth0.com/#create-a-downstream-api",
+    "https://auth0.com/#create-an-api-to-represent-your-mcp-server",
+    "https://auth0.com/#create-an-application-for-your-mcp-server",
+    "https://auth0.com/#create-your-environment-file",
+    "https://auth0.com/#cursor",
+    "https://auth0.com/#debug-client-logs",
+    "https://auth0.com/#debug-configuration-issues",
+    "https://auth0.com/#documentation-and-support",
+    "https://auth0.com/#embedded-login-with-native-passkeys",
+    "https://auth0.com/#enable-debug-mode",
+    "https://auth0.com/#endpoint",
+    "https://auth0.com/#endpoint-options",
+    "https://auth0.com/#errors",
+    "https://auth0.com/#examples",
+    "https://auth0.com/#exchange-your-access-token",
+    "https://auth0.com/#for-claude-desktop-default",
+    "https://auth0.com/#for-cursor",
+    "https://auth0.com/#for-windsurf",
+    "https://auth0.com/#forward-only-constraints",
+    "https://auth0.com/#get-an-access-token",
+    "https://auth0.com/#get-command-line-help",
+    "https://auth0.com/#headers",
+    "https://auth0.com/#idp-initiated-sso-flow",
+    "https://auth0.com/#install-auth0-cli",
+    "https://auth0.com/#install-packages",
+    "https://auth0.com/#installation-and-configuration",
+    "https://auth0.com/#key-features",
+    "https://auth0.com/#learn-more",
+    "https://auth0.com/#lifetime",
+    "https://auth0.com/#linux",
+    "https://auth0.com/#macos",
+    "https://auth0.com/#manage-apis",
+    "https://auth0.com/#manage-applications",
+    "https://auth0.com/#manage-tenant-settings",
+    "https://auth0.com/#manage-users",
+    "https://auth0.com/#mtls-authentication",
+    "https://auth0.com/#next-steps",
+    "https://auth0.com/#oauth2-access-token",
+    "https://auth0.com/#offset-based-pagination",
+    "https://auth0.com/#other-mcp-clients",
+    "https://auth0.com/#pagination",
+    "https://auth0.com/#param-client-id",
+    "https://auth0.com/#param-client-secret",
+    "https://auth0.com/#param-code",
+    "https://auth0.com/#param-d-po-p",
+    "https://auth0.com/#param-grant-type",
+    "https://auth0.com/#param-redirect-uri",
+    "https://auth0.com/#parameters",
+    "https://auth0.com/#per-organization-rate-limits",
+    "https://auth0.com/#prerequisites",
+    "https://auth0.com/#profiles",
+    "https://auth0.com/#quota",
+    "https://auth0.com/#rate-limiting",
+    "https://auth0.com/#rate-limits",
+    "https://auth0.com/#request-correlation",
+    "https://auth0.com/#response-messages",
+    "https://auth0.com/#response-schema",
+    "https://auth0.com/#run-the-mcp-server-and-the-api",
+    "https://auth0.com/#sample-app",
+    "https://auth0.com/#scopes",
+    "https://auth0.com/#security",
+    "https://auth0.com/#set-up-the-auth0-applications-and-apis",
+    "https://auth0.com/#support",
+    "https://auth0.com/#supported-tools-and-integrations",
+    "https://auth0.com/#test-with-an-access-token",
+    "https://auth0.com/#testing",
+    "https://auth0.com/#testing-your-mcp-server",
+    "https://auth0.com/#token-exchange-implementation",
+    "https://auth0.com/#universal-login-with-authorization-code-flow",
+    "https://auth0.com/#use-cases",
+    "https://auth0.com/#user-attribute-profile-uap",
+    "https://auth0.com/#using-in-scripts",
+    "https://auth0.com/#verify-your-integration",
+    "https://auth0.com/#windows",
+    "https://auth0.com/#windsurf",
+    "https://auth0.com/about",
+    "https://auth0.com/agent-experience",
+    "https://auth0.com/agent-experience.md",
+    "https://auth0.com/ai",
+    "https://auth0.com/ai.md",
+    "https://auth0.com/ai/docs/how-tos/overview",
+    "https://auth0.com/ai/docs/integrations/overview",
+    "https://auth0.com/ai/docs/intro/overview",
+    "https://auth0.com/ai/docs/llms.txt",
+    "https://auth0.com/ai/docs/mcp/get-started/authorization-for-your-mcp-server",
+    "https://auth0.com/ai/docs/mcp/get-started/call-your-apis-on-users-behalf",
+    "https://auth0.com/ai/docs/mcp/get-started/overview",
+    "https://auth0.com/ai/docs/mcp/get-started/secure-mcp-server-with-auth0-fga",
+    "https://auth0.com/ai/docs/mcp/guides/cloudflare-mcp",
+    "https://auth0.com/ai/docs/mcp/guides/resource-param-compatibility-profile",
+    "https://auth0.com/ai/docs/mcp/guides/test-your-mcp-server-with-mcp-inspector",
+    "https://auth0.com/ai/docs/mcp/intro/overview",
+    "https://auth0.com/ai/docs/mcp/intro/why-auth-for-mcp",
+    "https://auth0.com/ai/docs/mcp/sample-apps",
+    "https://auth0.com/ai/docs/sdks/overview",
+    "https://auth0.com/b2b-saas.md",
+    "https://auth0.com/b2c-customer-identity-management.md",
+    "https://auth0.com/blog",
+    "https://auth0.com/blog/llms.txt",
+    "https://auth0.com/blog/newsletter",
+    "https://auth0.com/case-studies/llms-full.txt",
+    "https://auth0.com/case-studies/llms.txt",
+    "https://auth0.com/changelog",
+    "https://auth0.com/changelog/llms-full.txt",
+    "https://auth0.com/changelog/llms.txt",
+    "https://auth0.com/contact-us",
+    "https://auth0.com/customers",
+    "https://auth0.com/docs",
+    "https://auth0.com/docs/",
+    "https://auth0.com/docs/ai",
+    "https://auth0.com/docs/api",
+    "https://auth0.com/docs/api/authentication",
+    "https://auth0.com/docs/api/authentication/authorization-code-flow-with-pkce/authorize-with-pkce",
+    "https://auth0.com/docs/api/authentication/authorization-code-flow/authorize-application",
+    "https://auth0.com/docs/api/authentication/authorization-code-flow/get-token",
+    "https://auth0.com/docs/api/authentication/login",
+    "https://auth0.com/docs/api/management/v2",
+    "https://auth0.com/docs/api/management/v2/",
+    "https://auth0.com/docs/api/management/v2/actions/get-actions",
+    "https://auth0.com/docs/api/management/v2/actions/post-action",
+    "https://auth0.com/docs/api/management/v2/organizations/get-name-by-name",
+    "https://auth0.com/docs/api/management/v2/organizations/get-organizations",
+    "https://auth0.com/docs/api/management/v2/users/get-authentication-methods",
+    "https://auth0.com/docs/api/management/v2/verifiable-credentials/patch-vc-templates-by-id",
+    "https://auth0.com/docs/api/myaccount",
+    "https://auth0.com/docs/api/myaccount/connected-accounts/delete-connected-account",
+    "https://auth0.com/docs/api/myaccount/factors/get-factors",
+    "https://auth0.com/docs/api/myorganization",
+    "https://auth0.com/docs/api/myorganization/config/get-org-configuration",
+    "https://auth0.com/docs/api/myorganization/roles/list-roles",
+    "https://auth0.com/docs/authenticate",
+    "https://auth0.com/docs/authenticate/enterprise-connections/connection-profile",
+    "https://auth0.com/docs/authenticate/enterprise-connections/user-attribute-profile",
+    "https://auth0.com/docs/authenticate/protocols/oauth",
+    "https://auth0.com/docs/authenticate/protocols/openid-connect-protocol",
+    "https://auth0.com/docs/connections",
+    "https://auth0.com/docs/customize",
+    "https://auth0.com/docs/customize/custom-domains",
+    "https://auth0.com/docs/customize/extensions/authentication-api-debugger-extension",
+    "https://auth0.com/docs/customize/integrations/ai-tools/auth0-mcp-server",
+    "https://auth0.com/docs/deploy-monitor",
+    "https://auth0.com/docs/deploy-monitor/auth0-cli",
+    "https://auth0.com/docs/deploy-monitor/auth0-terraform-provider",
+    "https://auth0.com/docs/deploy-monitor/deploy-checklist",
+    "https://auth0.com/docs/deploy-monitor/deploy-cli-tool",
+    "https://auth0.com/docs/deploy-monitor/deploy-cli-tool/available-resource-configuration-formats",
+    "https://auth0.com/docs/deploy-monitor/deployment-best-practices",
+    "https://auth0.com/docs/deploy-monitor/deployment-options",
+    "https://auth0.com/docs/deploy-monitor/logs",
+    "https://auth0.com/docs/deploy-monitor/metric-streams",
+    "https://auth0.com/docs/get-started",
+    "https://auth0.com/docs/get-started/apis",
+    "https://auth0.com/docs/get-started/apis/enable-role-based-access-control-for-apis#token-dialect-options",
+    "https://auth0.com/docs/get-started/applications/application-access-to-apis-client-grants",
+    "https://auth0.com/docs/get-started/applications/confidential-and-public-applications/view-application-type",
+    "https://auth0.com/docs/get-started/applications/configure-mtls/configure-mtls-for-a-client#certificate-authority-signed-certificates",
+    "https://auth0.com/docs/get-started/applications/configure-mtls/configure-mtls-for-a-client#self-signed-certificates",
+    "https://auth0.com/docs/get-started/applications/configure-mtls/set-up-the-customer-edge",
+    "https://auth0.com/docs/get-started/applications/configure-mtls/set-up-the-customer-edge#forward-the-request-",
+    "https://auth0.com/docs/get-started/applications/rotate-client-secret",
+    "https://auth0.com/docs/get-started/applications/rotate-credentials",
+    "https://auth0.com/docs/get-started/applications/third-party-applications/configure-third-party-applications",
+    "https://auth0.com/docs/get-started/auth0-agent-experience",
+    "https://auth0.com/docs/get-started/auth0-for-ai-agents",
+    "https://auth0.com/docs/get-started/auth0-guide",
+    "https://auth0.com/docs/get-started/auth0-mcp-server",
+    "https://auth0.com/docs/get-started/auth0-mcp-server/auth0-mcp-server-guides",
+    "https://auth0.com/docs/get-started/auth0-mcp-server/auth0-mcp-tools-reference",
+    "https://auth0.com/docs/get-started/auth0-mcp-server/getting-started-with-auth0-mcp-server",
+    "https://auth0.com/docs/get-started/auth0-overview/create-applications",
+    "https://auth0.com/docs/get-started/auth0-overview/create-tenants#region-locality-and-sub-locality",
+    "https://auth0.com/docs/get-started/auth0-overview/set-up-apis",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/authenticate-with-mtls",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/authenticate-with-private-key-jwt",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow-with-pkce",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow-with-pkce/call-your-api-using-the-authorization-code-flow-with-pkce",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow/call-your-api-using-the-authorization-code-flow",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/device-authorization-flow",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/resource-owner-password-flow",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/resource-owner-password-flow/call-your-api-using-resource-owner-password-flow",
+    "https://auth0.com/docs/get-started/build-with-ai-tools",
+    "https://auth0.com/docs/libraries",
+    "https://auth0.com/docs/libraries/auth0js",
+    "https://auth0.com/docs/libraries/lock",
+    "https://auth0.com/docs/llms-full.txt",
+    "https://auth0.com/docs/llms.txt",
+    "https://auth0.com/docs/manage-users",
+    "https://auth0.com/docs/manage-users/access-control/configure-core-rbac/enable-role-based-access-control-for-apis",
+    "https://auth0.com/docs/manage-users/my-organization-api",
+    "https://auth0.com/docs/manage-users/organizations",
+    "https://auth0.com/docs/manage-users/user-accounts/user-account-linking/link-user-accounts",
+    "https://auth0.com/docs/native-passkeys-api#login-flow",
+    "https://auth0.com/docs/oas/management/v2/management-api-oas.json",
+    "https://auth0.com/docs/oas/myorganization/myorganization-api-oas.json",
+    "https://auth0.com/docs/protocols/saml",
+    "https://auth0.com/docs/quickstarts",
+    "https://auth0.com/docs/quickstarts#backend%2Fapi",
+    "https://auth0.com/docs/secure",
+    "https://auth0.com/docs/secure/application-credentials",
+    "https://auth0.com/docs/secure/call-apis-on-users-behalf/on-behalf-of-token-exchange",
+    "https://auth0.com/docs/secure/continuous-session-protection",
+    "https://auth0.com/docs/secure/highly-regulated-identity#advanced-security-with-openid-connect-fapi-",
+    "https://auth0.com/docs/secure/multi-factor-authentication",
+    "https://auth0.com/docs/secure/multi-factor-authentication/step-up-authentication",
+    "https://auth0.com/docs/secure/tokens",
+    "https://auth0.com/docs/secure/tokens/access-tokens",
+    "https://auth0.com/docs/secure/tokens/access-tokens/access-token-profiles",
+    "https://auth0.com/docs/secure/tokens/access-tokens/get-access-tokens",
+    "https://auth0.com/docs/secure/tokens/access-tokens/get-access-tokens#control-access-token-audience",
+    "https://auth0.com/docs/secure/tokens/access-tokens/identity-provider-access-tokens",
+    "https://auth0.com/docs/secure/tokens/access-tokens/json-web-encryption",
+    "https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens",
+    "https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens/changes-in-auth0-management-apiv2-tokens",
+    "https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens/get-management-api-access-tokens-for-production",
+    "https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens/get-management-api-access-tokens-for-testing",
+    "https://auth0.com/docs/secure/tokens/access-tokens/management-api-access-tokens/get-management-api-tokens-for-single-page-applications",
+    "https://auth0.com/docs/secure/tokens/access-tokens/update-access-token-lifetime",
+    "https://auth0.com/docs/secure/tokens/access-tokens/use-access-tokens",
+    "https://auth0.com/docs/secure/tokens/access-tokens/validate-access-tokens",
+    "https://auth0.com/docs/secure/tokens/delegation-tokens",
+    "https://auth0.com/docs/secure/tokens/id-tokens",
+    "https://auth0.com/docs/secure/tokens/refresh-tokens",
+    "https://auth0.com/docs/secure/tokens/refresh-tokens/revoke-refresh-tokens",
+    "https://auth0.com/docs/secure/tokens/token-best-practices",
+    "https://auth0.com/docs/troubleshoot",
+    "https://auth0.com/docs/troubleshoot/customer-support",
+    "https://auth0.com/docs/troubleshoot/customer-support/operational-policies/rate-limit-policy",
+    "https://auth0.com/docs/troubleshoot/customer-support/operational-policies/rate-limit-policy/management-api-endpoint-rate-limits",
+    "https://auth0.com/docs/troubleshoot/product-lifecycle/past-migrations/migrate-to-calling-api-with-access-tokens",
+    "https://auth0.com/docs/troubleshoot/product-lifecycle/past-migrations/migrate-to-paginated-queries",
+    "https://auth0.com/docs/troubleshoot/product-lifecycle/product-release-stages",
+    "https://auth0.com/features/actions.md",
+    "https://auth0.com/features/breached-passwords.md",
+    "https://auth0.com/features/forms.md",
+    "https://auth0.com/features/highly-regulated-identity.md",
+    "https://auth0.com/features/machine-to-machine.md",
+    "https://auth0.com/features/multifactor-authentication.md",
+    "https://auth0.com/features/passwordless.md",
+    "https://auth0.com/features/single-sign-on.md",
+    "https://auth0.com/features/token-vault.md",
+    "https://auth0.com/features/universal-login.md",
+    "https://auth0.com/fine-grained-authorization.md",
+    "https://auth0.com/healthcare.md",
+    "https://auth0.com/implicit-flow/authorize",
+    "https://auth0.com/intro-to-iam",
+    "https://auth0.com/learn",
+    "https://auth0.com/llms-full.txt",
+    "https://auth0.com/llms.txt",
+    "https://auth0.com/partners",
+    "https://auth0.com/platform/access-management.md",
+    "https://auth0.com/platform/authentication.md",
+    "https://auth0.com/platform/cloud-deployment.md",
+    "https://auth0.com/platform/cloud-deployment/aws.md",
+    "https://auth0.com/platform/cloud-deployment/azure.md",
+    "https://auth0.com/platform/extensibility.md",
+    "https://auth0.com/platform/extensibility/movetoactions.md",
+    "https://auth0.com/platform/login-security.md",
+    "https://auth0.com/platform/user-management.md",
+    "https://auth0.com/pricing",
+    "https://auth0.com/pricing.md",
+    "https://auth0.com/resources/webinars",
+    "https://auth0.com/resources/whitepapers",
+    "https://auth0.com/security",
+    "https://auth0.com/signup",
+    "https://auth0.com/signup?onboard_app=auth_for_aa&ocid=701KZ000000cXXxYAM-aPA4z0000008OZeGAM",
+    "https://auth0.com/solutions/ship-ai-agents.md",
+    "https://auth0.com/user-profile/get-user-info",
+    "https://auth0.com/web-terms/",
+    "https://auth0.com/why-auth0.md",
+    "https://auth0.github.io/#main-content",
+    "https://auth0.github.io/au",
+    "https://auth0.github.io/auth0-cli/",
+    "https://auth0.github.io/auth0-cli/auth0_actions.html",
+    "https://auth0.github.io/auth0-cli/auth0_actions_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_actions_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_actions_deploy.html",
+    "https://auth0.github.io/auth0-cli/auth0_actions_diff.html",
+    "https://auth0.github.io/auth0-cli/auth0_actions_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_actions_open.html",
+    "https://auth0.github.io/auth0-cli/auth0_actions_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_actions_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_config.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_config_docs.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_config_generate.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_config_get.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_config_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_config_set.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_dev.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_init.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_screen.html",
+    "https://auth0.github.io/auth0-cli/auth0_acul_screen_add.html",
+    "https://auth0.github.io/auth0-cli/auth0_api.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis_open.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis_scopes.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis_scopes_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_apis_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_open.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_session-transfer.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_session-transfer_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_session-transfer_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_apps_use.html",
+    "https://auth0.github.io/auth0-cli/auth0_completion.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_default.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_default_set.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_default_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_domains_verify.html",
+    "https://auth0.github.io/auth0-cli/auth0_email.html",
+    "https://auth0.github.io/auth0-cli/auth0_email_provider.html",
+    "https://auth0.github.io/auth0-cli/auth0_email_provider_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_email_provider_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_email_provider_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_email_provider_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_email_templates.html",
+    "https://auth0.github.io/auth0-cli/auth0_email_templates_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_email_templates_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_deliveries.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_deliveries_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_deliveries_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_redeliver-many.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_redeliver.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_stats.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_subscribe.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_trigger.html",
+    "https://auth0.github.io/auth0-cli/auth0_event-streams_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_login.html",
+    "https://auth0.github.io/auth0-cli/auth0_logout.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_create_datadog.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_create_eventbridge.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_create_eventgrid.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_create_http.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_create_splunk.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_create_sumo.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_open.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_update_datadog.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_update_eventbridge.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_update_eventgrid.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_update_http.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_update_splunk.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_streams_update_sumo.html",
+    "https://auth0.github.io/auth0-cli/auth0_logs_tail.html",
+    "https://auth0.github.io/auth0-cli/auth0_network-acl.html",
+    "https://auth0.github.io/auth0-cli/auth0_network-acl_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_network-acl_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_network-acl_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_network-acl_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_network-acl_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_invitations.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_invitations_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_invitations_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_invitations_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_invitations_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_members.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_members_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_open.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_roles.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_roles_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_roles_members.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_roles_members_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_orgs_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_phone.html",
+    "https://auth0.github.io/auth0-cli/auth0_phone_provider.html",
+    "https://auth0.github.io/auth0-cli/auth0_phone_provider_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_phone_provider_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_phone_provider_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_phone_provider_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_phone_provider_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_bot-detection.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_bot-detection_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_bot-detection_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_breached-password-detection.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_breached-password-detection_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_breached-password-detection_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_brute-force-protection.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_brute-force-protection_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_brute-force-protection_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_suspicious-ip-throttling.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_suspicious-ip-throttling_ips.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_suspicious-ip-throttling_ips_check.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_suspicious-ip-throttling_ips_unblock.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_suspicious-ip-throttling_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_protection_suspicious-ip-throttling_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_quickstarts.html",
+    "https://auth0.github.io/auth0-cli/auth0_quickstarts_download.html",
+    "https://auth0.github.io/auth0-cli/auth0_quickstarts_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_quickstarts_setup.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_permissions.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_permissions_add.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_permissions_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_permissions_remove.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_roles_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_rules.html",
+    "https://auth0.github.io/auth0-cli/auth0_rules_create.html",
+    "https://auth0.github.io/auth0-cli/auth0_rules_delete.html",
+    "https://auth0.github.io/auth0-cli/auth0_rules_disable.html",
+    "https://auth0.github.io/auth0-cli/auth0_rules_enable.html",
+    "https://auth0.github.io/auth0-cli/auth0_rules_list.html",
+    "https://auth0.github.io/auth0-cli/auth0_rules_show.html",
+    "https://auth0.github.io/auth0-cli/auth0_rules_update.html",
+    "https://auth0.github.io/auth0-cli/auth0_tenant-settings.html",
+    "https://auth0.github.io/auth0-cli/auth0_universal-login.html",
+    "https://auth0.github.io/auth0-cli/auth0_universal-login_customize.html",
+    "https://auth0.github.io/auth0-cli/auth0_users_create.html",
+    "https://claude.ai/download",
+    "https://community.auth0.com",
+    "https://community.auth0.com/",
+    "https://developer.auth0.com",
+    "https://developer.auth0.com/resources",
+    "https://docs.npmjs.com/downloading-and-installing-node-js-and-npm",
+    "https://fastify.dev/",
+    "https://github.com/auth0",
+    "https://github.com/auth0-samples/auth0-ai-samples.git",
+    "https://github.com/auth0/agent-skills",
+    "https://github.com/auth0/auth0-cli",
+    "https://github.com/auth0/auth0-cli/releases",
+    "https://github.com/auth0/auth0-mcp-server",
+    "https://github.com/auth0/scoop-auth0-cli.git",
+    "https://jqlang.org/download/",
+    "https://manage.auth0.com/",
+    "https://manage.auth0.com/#/apis",
+    "https://manage.auth0.com/dashboard/",
+    "https://manage.auth0.com/dashboard/#/tenant/advanced",
+    "https://manage.auth0.com/login?onboard_app=auth_for_aa",
+    "https://modelcontextprotocol.io/clients",
+    "https://modelcontextprotocol.io/introduction",
+    "https://my-api.example.com",
+    "https://nodejs.org/en/download",
+    "https://raw.githubusercontent.com/auth0/auth0-cli/main/install.sh",
+    "https://status.auth0.com/",
+    "https://support.auth0.com",
+    "https://support.auth0.com/",
+    "https://support.auth0.com/reports/quota",
+    "https://tools.ietf.org/html/draft-ietf-oauth-v2-bearer-20#section-2.1",
+    "https://twitter.com/auth0status",
+    "https://www.cursor.com/downloads",
+    "https://www.linkedin.com/company/auth0",
+    "https://www.okta.com/company/careers",
+    "https://www.okta.com/legal/",
+    "https://www.okta.com/okta-and-auth0",
+    "https://www.rfc-editor.org/rfc/rfc8693.html",
+    "https://www.windsurf.com/editor",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://x.com/auth0",
+    "https://yourapp/callback",
+    "https://{tenantDomain}/api/v2",
+    "https://{tenantDomain}/my-org",
+    "https://{tenantDomain}/my-org/v1",
+    "https://{yourDomain}",
+    "https://{yourDomain}/api/v2/",
+    "https://{yourDomain}/authorize?response_type=code&client_id={yourClientId}&redirect_uri=%7ByourRedirectUri%7D&scope=create%3Ame%3Aauthentication_methods&offline_access=&audience=https%3A%2F%2F{yourDomain}%2Fme%2F",
+    "https://{yourDomain}/me/",
+    "https://{yourDomain}/oauth/token",
+    "https://{yourDomain}/passkey/challenge",
+    "https://{yourDomain}/some-endpoint",
+    "https://{yourDomain}/some-endpoint?param=value&param=value"
+  ]
+}

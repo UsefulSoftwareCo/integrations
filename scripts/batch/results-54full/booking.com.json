@@ -1,0 +1,604 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "booking.com",
+    "detect": {
+      "domain": "booking.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T19:43:53.523Z",
+    "summary": "Found 4 developer integration surfaces for booking.com: 3 HTTP APIs (Demand API, Connectivity APIs, Metasearch Connect API, plus Data Portability API) and 1 public MCP server; no GraphQL APIs or CLIs found.",
+    "credentials": {
+      "demand_api_key": {
+        "type": "bearer",
+        "label": "Demand API key token",
+        "generateUrl": "https://spadmin.booking.com/partner/login-v3.html",
+        "setup": "Sign in to the [Affiliate Partner Centre](https://spadmin.booking.com/partner/login-v3.html) with your partner credentials, then generate an API key token for your API user as described in the [Demand API authentication guide](https://developers.booking.com/demand/docs/development-guide/authentication). Copy the token when shown; Booking.com says this is the only time it is displayed in full. Managed Affiliate Partner access is required per the [prerequisites](https://developers.booking.com/demand/docs/getting-started/prerequisites)."
+      },
+      "demand_affiliate_id": {
+        "type": "api_key",
+        "label": "Demand API affiliate ID",
+        "generateUrl": "https://spadmin.booking.com/partner/login-v3.html",
+        "setup": "Sign in to the [Partner Centre](https://spadmin.booking.com/partner/login-v3.html). Your `X-Affiliate-Id` is provided there for your API user, alongside the Demand API setup described in the [prerequisites](https://developers.booking.com/demand/docs/getting-started/prerequisites) and [authentication guide](https://developers.booking.com/demand/docs/development-guide/authentication)."
+      },
+      "connectivity_client_app": {
+        "type": "compound",
+        "label": "Connectivity machine account Client ID and Client Secret",
+        "generateUrl": "https://connect.booking.com/machine-account",
+        "setup": "Create a machine account with `API token` authentication in the [Connectivity Portal machine account page](https://connect.booking.com/machine-account), then copy the generated `Client ID` and `Client Secret` as described in the [token-based authentication guide](https://developers.booking.com/connectivity/docs/token-based-authentication). Use them to exchange for short-lived access tokens."
+      },
+      "connectivity_basic_machine": {
+        "type": "basic",
+        "label": "Connectivity machine account username and password",
+        "generateUrl": "https://connect.booking.com/machine-account",
+        "setup": "Create or manage a machine account in the [Connectivity Portal](https://connect.booking.com/machine-account). Booking.com provides the machine account username and password, which you send via HTTP Basic auth as documented in the [credential-based authentication guide](https://developers.booking.com/connectivity/docs/basic-authentication). Note this auth scheme is scheduled for sunset on 31 Dec 2025."
+      },
+      "metasearch_api_key": {
+        "type": "api_key",
+        "label": "Metasearch Connect API key",
+        "setup": "Booking.com says metasearch products need a registered active account and associated API key; if you do not have one, contact your Booking.com account manager, per the [Metasearch authentication guide](https://developers.booking.com/metasearch/connect-api/development-guide/authentication). Use the API key only to obtain an access token from `/auth`."
+      },
+      "dataport_oauth_client": {
+        "type": "oauth2",
+        "label": "Data Portability API OAuth client (`client_id` and `client_secret`)",
+        "generateUrl": "https://developers.booking.com/datasecurity/registration",
+        "setup": "Register your application through the [Data Portability API registration form](https://developers.booking.com/datasecurity/registration). After approval, Booking.com provides the `client_id` and `client_secret` referenced in the [authentication guide](https://developers.booking.com/datasecurity/docs/development-guide/authentication). This API is only available to registered business entities."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "booking-com-mcp",
+        "name": "Booking.com MCP",
+        "type": "mcp",
+        "docs": "https://developers.booking.com/demand/docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.booking.com/demand/docs"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "catalog fact: Known MCP server from claude/openai registries at https://demandapi-mcp.booking.com/v1/mcp/8132308 with authTypes NONE"
+            ]
+          }
+        },
+        "url": "https://demandapi-mcp.booking.com/v1/mcp/8132308",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "connectivity-apis",
+        "name": "Connectivity APIs",
+        "type": "http",
+        "docs": "https://developers.booking.com/connectivity/docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.booking.com/connectivity/docs",
+            "https://developers.booking.com/connectivity/docs/token-based-authentication",
+            "https://developers.booking.com/connectivity/docs/basic-authentication",
+            "https://developers.booking.com/connectivity/docs/curl_request"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "connectivity_client_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.booking.com/connectivity/docs/token-based-authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "connectivity_basic_machine",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.booking.com/connectivity/docs/basic-authentication",
+                  "https://developers.booking.com/connectivity/docs/curl_request"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://(secure)-supply-xml.booking.com/hotels/{ota or xml}/{API name}"
+      },
+      {
+        "slug": "data-portability-api",
+        "name": "Data Portability API",
+        "type": "http",
+        "docs": "https://developers.booking.com/datasecurity/docs/development-guide/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.booking.com/datasecurity/docs/development-guide/api",
+            "https://developers.booking.com/datasecurity/docs/development-guide/authentication",
+            "https://developers.booking.com/datasecurity/registration"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dataport_oauth_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.booking.com/datasecurity/docs/development-guide/authentication",
+                  "https://developers.booking.com/datasecurity/registration"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://dma-data-portability-service.prod.booking.com/dma/port_report/{report_id}"
+      },
+      {
+        "slug": "demand-api",
+        "name": "Demand API",
+        "type": "http",
+        "docs": "https://developers.booking.com/demand/docs/open-api/3.2/demand-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.booking.com/demand/docs/open-api/3.2/demand-api",
+            "https://developers.booking.com/demand/docs/development-guide/authentication",
+            "https://developers.booking.com/demand/docs/getting-started/prerequisites"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "demand_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "demand_affiliate_id",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Affiliate-Id"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.booking.com/demand/docs/development-guide/authentication",
+                  "https://developers.booking.com/demand/docs/getting-started/prerequisites"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://demandapi.booking.com/3.2"
+      },
+      {
+        "slug": "metasearch-connect-api",
+        "name": "Metasearch Connect API",
+        "type": "http",
+        "docs": "https://developers.booking.com/metasearch/connect-api/open-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.booking.com/metasearch/connect-api/open-api",
+            "https://developers.booking.com/metasearch/connect-api/development-guide/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "metasearch_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.booking.com/metasearch/connect-api/development-guide/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://metasearch-connect-api.booking.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T19:43:53.523Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 226167,
+    "completion_tokens": 3242,
+    "total_tokens": 229409
+  },
+  "visited": [
+    "https://developers.booking.com/",
+    "https://developers.booking.com/connectivity/docs",
+    "https://developers.booking.com/connectivity/docs/basic-authentication",
+    "https://developers.booking.com/connectivity/docs/curl_request",
+    "https://developers.booking.com/connectivity/docs/token-based-authentication",
+    "https://developers.booking.com/datasecurity/docs/development-guide/api",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication",
+    "https://developers.booking.com/datasecurity/docs/development-guide/integration-types",
+    "https://developers.booking.com/datasecurity/registration",
+    "https://developers.booking.com/demand",
+    "https://developers.booking.com/demand/docs",
+    "https://developers.booking.com/demand/docs/development-guide/authentication",
+    "https://developers.booking.com/demand/docs/getting-started/prerequisites",
+    "https://developers.booking.com/demand/docs/getting-started/try-out-the-api",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api",
+    "https://developers.booking.com/demand/docs/open-api/about-api-references",
+    "https://developers.booking.com/metasearch/connect-api",
+    "https://developers.booking.com/metasearch/connect-api/development-guide/authentication",
+    "https://developers.booking.com/metasearch/connect-api/open-api",
+    "https://legacy.developers.booking.com/api/commercial/index.html?page_url=how-to-book",
+    "https://legacy.developers.booking.com/api/index.html",
+    "https://partnerships.booking.com/api-v3",
+    "https://www.reddit.com/r/Bookingcom/comments/1r37bef/has_anyone_ever_managed_to_get_bookings_demand_api/",
+    "https://www.trawex.com/booking-com-api-integration.php",
+    "https://www.youtube.com/watch?v=VtxWxrpE5PY"
+  ],
+  "grounding": [
+    "http://opentravel.org/",
+    "http://opentravelmodel.net/pubs/specifications/Specifications.html",
+    "http://www.opentravel.org/OTA/2003/05",
+    "http://www.w3.org/2001/XMLSchema-instance",
+    "https://(secure",
+    "https://account.booking.com/oauth2/authorize",
+    "https://account.booking.com/oauth2/token/v2",
+    "https://account.booking.com/scope/dma",
+    "https://account.booking.com/scope/dma’**",
+    "https://admin.booking.com",
+    "https://admin.booking.com/hotel/hoteladmin/privacy.html",
+    "https://affiliates.support.booking.com/kb/s/?utm_source=pdm&utm_medium=referal&utm_campaign=acquisition&utm_content=footer",
+    "https://affiliates.support.booking.com/kb/s/?utm_source=pdm&utm_medium=referal&utm_campaign=acquisition&utm_content=navigation",
+    "https://affiliates.support.booking.com/kb/s/article/Account-Access",
+    "https://affiliates.support.booking.com/kb/s/article/Affiliate-ID",
+    "https://affiliates.support.booking.com/kb/s/article/FAQ-for-Registration",
+    "https://affiliates.support.booking.com/kb/s/data-portability-dev-support",
+    "https://affiliates.support.booking.com/kb/s/topic/0TO67000000MnHMGA0/our-products",
+    "https://careers.booking.com/",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fconnectivity%2Fdocs%2Fbasic-authentication.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fconnectivity%2Fdocs%2Fcurl_request.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fconnectivity%2Fdocs%2Ftoken-based-authentication.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fconnectivity%2Fdocs.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdatasecurity%2Fdocs%2Fdevelopment-guide%2Fapi.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdatasecurity%2Fdocs%2Fdevelopment-guide%2Fauthentication.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdatasecurity%2Fdocs%2Fdevelopment-guide%2Fintegration-types.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fdevelopment-guide%2Fauthentication.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fgetting-started%2Fprerequisites.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fgetting-started%2Ftry-out-the-api.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Faccommodations.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Fcars.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Fcommonlanguages.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Fcommonlocations.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Fcommonpayments.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Forders.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2Fabout-api-references.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fdevelopment-guide%2Fauthentication.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fopen-api%2Fdemand-api-v2-compatible.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fopen-api%2Fdemand-api-v3-compatible.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fopen-api%2Freports.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fopen-api.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fconnectivity%2Fdocs%2Fbasic-authentication.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fconnectivity%2Fdocs%2Fcurl_request.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fconnectivity%2Fdocs%2Ftoken-based-authentication.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fconnectivity%2Fdocs.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdatasecurity%2Fdocs%2Fdevelopment-guide%2Fapi.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdatasecurity%2Fdocs%2Fdevelopment-guide%2Fauthentication.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdatasecurity%2Fdocs%2Fdevelopment-guide%2Fintegration-types.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fdevelopment-guide%2Fauthentication.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fgetting-started%2Fprerequisites.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fgetting-started%2Ftry-out-the-api.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Faccommodations.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Fcars.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Fcommonlanguages.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Fcommonlocations.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Fcommonpayments.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api%2Forders.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2F3.2%2Fdemand-api.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs%2Fopen-api%2Fabout-api-references.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fdemand%2Fdocs.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fdevelopment-guide%2Fauthentication.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fopen-api%2Fdemand-api-v2-compatible.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fopen-api%2Fdemand-api-v3-compatible.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fopen-api%2Freports.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api%2Fopen-api.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.booking.com%2Fmetasearch%2Fconnect-api.md+and+answer+questions+based+on+the+content",
+    "https://cloud.email.partnerships.booking.com/API_V3_TYPE2_COMM.html",
+    "https://connect.booking.com",
+    "https://connect.booking.com/",
+    "https://connect.booking.com/connection_settings",
+    "https://connect.booking.com/machine-account",
+    "https://connect.booking.com/status#/",
+    "https://connect.booking.com/user_guide/site/en-US/content/#support-feedback",
+    "https://connectivity-authentication.booking.com/token-based-authentication/.well-known/jwks.json",
+    "https://connectivity-authentication.booking.com/token-based-authentication/exchange",
+    "https://connectivity.booking.com/s/?language=en_US",
+    "https://curl.haxx.se/",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-1.5",
+    "https://demandapi-sandbox.booking.com/3.1/accommodations/search",
+    "https://demandapi-sandbox.booking.com/3.2",
+    "https://demandapi.booking.com/3.2",
+    "https://developers.booking.com/",
+    "https://developers.booking.com/#access-the-affiliate-partner-centre",
+    "https://developers.booking.com/#affiliate-id-management",
+    "https://developers.booking.com/#api-key-management",
+    "https://developers.booking.com/#authentication",
+    "https://developers.booking.com/#authentication-credentials",
+    "https://developers.booking.com/#authentication-failure",
+    "https://developers.booking.com/#authentication-in-header-requests",
+    "https://developers.booking.com/#authentication-in-this-portal-try-out",
+    "https://developers.booking.com/#available-versions",
+    "https://developers.booking.com/#before-you-start",
+    "https://developers.booking.com/#bxml-example",
+    "https://developers.booking.com/#checklist",
+    "https://developers.booking.com/#content",
+    "https://developers.booking.com/#continuous-access",
+    "https://developers.booking.com/#data-portability-api",
+    "https://developers.booking.com/#data-porting-for-bookingcom-users",
+    "https://developers.booking.com/#enhanced-authentication-rules",
+    "https://developers.booking.com/#generate-an-api-key",
+    "https://developers.booking.com/#give-it-a-try",
+    "https://developers.booking.com/#hello-world---accommodation-apis",
+    "https://developers.booking.com/#hello-world---car-rental-apis",
+    "https://developers.booking.com/#identify-the-api-user-in-a-request",
+    "https://developers.booking.com/#integration-requirements",
+    "https://developers.booking.com/#keep-your-api-key-secure",
+    "https://developers.booking.com/#make-an-authorized-request",
+    "https://developers.booking.com/#next-steps",
+    "https://developers.booking.com/#next-steps---quick-guides",
+    "https://developers.booking.com/#obtaining-an-access-token",
+    "https://developers.booking.com/#ota-example",
+    "https://developers.booking.com/#overview",
+    "https://developers.booking.com/#possible-errors",
+    "https://developers.booking.com/#registration-process",
+    "https://developers.booking.com/#related-links",
+    "https://developers.booking.com/#replace-an-api-key",
+    "https://developers.booking.com/#revoke-an-active-api-key",
+    "https://developers.booking.com/#sample-request",
+    "https://developers.booking.com/#single-access",
+    "https://developers.booking.com/#troubleshooting",
+    "https://developers.booking.com/#try-out-console",
+    "https://developers.booking.com/#version-31-previous",
+    "https://developers.booking.com/#version-32--beta",
+    "https://developers.booking.com/#version-32-latest",
+    "https://developers.booking.com/Bookingcom_Portability_API_Terms_of_Use_v3.pdf",
+    "https://developers.booking.com/_bundle/demand/docs/open-api/3.2/demand-api.json?download",
+    "https://developers.booking.com/_bundle/demand/docs/open-api/3.2/demand-api.yaml?download",
+    "https://developers.booking.com/_bundle/metasearch/connect-api/open-api.json?download",
+    "https://developers.booking.com/_bundle/metasearch/connect-api/open-api.yaml?download",
+    "https://developers.booking.com/connectivity/docs",
+    "https://developers.booking.com/connectivity/docs#incorrect-accept-encoding",
+    "https://developers.booking.com/connectivity/docs#incorrect-content-type",
+    "https://developers.booking.com/connectivity/docs#incorrect-host-name",
+    "https://developers.booking.com/connectivity/docs.md",
+    "https://developers.booking.com/connectivity/docs/ari",
+    "https://developers.booking.com/connectivity/docs/authentication",
+    "https://developers.booking.com/connectivity/docs/authentication-best-practices",
+    "https://developers.booking.com/connectivity/docs/b_xml-reservationssummary",
+    "https://developers.booking.com/connectivity/docs/basic-authentication",
+    "https://developers.booking.com/connectivity/docs/basic-authentication.md",
+    "https://developers.booking.com/connectivity/docs/curl_request",
+    "https://developers.booking.com/connectivity/docs/curl_request.md",
+    "https://developers.booking.com/connectivity/docs/deprecation-policy/deprecation-and-sunsetting",
+    "https://developers.booking.com/connectivity/docs/glossary_of_terms",
+    "https://developers.booking.com/connectivity/docs/glossary_of_terms#machine-account",
+    "https://developers.booking.com/connectivity/docs/glossary_of_terms#pci",
+    "https://developers.booking.com/connectivity/docs/going_live",
+    "https://developers.booking.com/connectivity/docs/ota-hoteldescriptivecontentnotif",
+    "https://developers.booking.com/connectivity/docs/ota-hoteldescriptiveinfo",
+    "https://developers.booking.com/connectivity/docs/ota-hotelinvnotif",
+    "https://developers.booking.com/connectivity/docs/ota-hotelproductnotif",
+    "https://developers.booking.com/connectivity/docs/ota-hotelsummarynotif",
+    "https://developers.booking.com/connectivity/docs/ota-rateamountnotif",
+    "https://developers.booking.com/connectivity/docs/photo-api/understanding-the-photo-api",
+    "https://developers.booking.com/connectivity/docs/property-profile-api",
+    "https://developers.booking.com/connectivity/docs/request-to-book/overview",
+    "https://developers.booking.com/connectivity/docs/reservations-api/reservations-overview",
+    "https://developers.booking.com/connectivity/docs/solutions/all-solutions/all-solutions",
+    "https://developers.booking.com/connectivity/docs/solutions/foundational/foundational",
+    "https://developers.booking.com/connectivity/docs/solutions/guest-experience/guest-experience",
+    "https://developers.booking.com/connectivity/docs/solutions/performance/performance",
+    "https://developers.booking.com/connectivity/docs/token-based-authentication",
+    "https://developers.booking.com/connectivity/docs/token-based-authentication-postman-collection-tryout",
+    "https://developers.booking.com/connectivity/docs/token-based-authentication.md",
+    "https://developers.booking.com/connectivity/docs/tut-ready-to-check",
+    "https://developers.booking.com/connectivity/home",
+    "https://developers.booking.com/connectivity/roadmap",
+    "https://developers.booking.com/datasecurity/docs/development-guide/api",
+    "https://developers.booking.com/datasecurity/docs/development-guide/api.md",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication#authorization-endpoint",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication#authorization-response-endpoint",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication#client-id-and-client-secret",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication#redirect-uri",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication#refresh-tokens",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication#scope",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication#state",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication#token-endpoint",
+    "https://developers.booking.com/datasecurity/docs/development-guide/authentication.md",
+    "https://developers.booking.com/datasecurity/docs/development-guide/data-schema",
+    "https://developers.booking.com/datasecurity/docs/development-guide/error-handling",
+    "https://developers.booking.com/datasecurity/docs/development-guide/integration-types",
+    "https://developers.booking.com/datasecurity/docs/development-guide/integration-types#continuous-access",
+    "https://developers.booking.com/datasecurity/docs/development-guide/integration-types#integration-requirements",
+    "https://developers.booking.com/datasecurity/docs/development-guide/integration-types.md",
+    "https://developers.booking.com/datasecurity/faq/faqs",
+    "https://developers.booking.com/datasecurity/registration",
+    "https://developers.booking.com/demand",
+    "https://developers.booking.com/demand/docs",
+    "https://developers.booking.com/demand/docs.md",
+    "https://developers.booking.com/demand/docs/accommodations/about-accommodation",
+    "https://developers.booking.com/demand/docs/accommodations/accommodation-quick-guide",
+    "https://developers.booking.com/demand/docs/attractions/about-attractions",
+    "https://developers.booking.com/demand/docs/cars/cars-quick-guide",
+    "https://developers.booking.com/demand/docs/cars/overview",
+    "https://developers.booking.com/demand/docs/compliance/fraud-prevention-compliance",
+    "https://developers.booking.com/demand/docs/development-guide/application-flows",
+    "https://developers.booking.com/demand/docs/development-guide/authentication",
+    "https://developers.booking.com/demand/docs/development-guide/authentication#authentication-in-this-portal-try-out",
+    "https://developers.booking.com/demand/docs/development-guide/authentication#generate-an-api-key",
+    "https://developers.booking.com/demand/docs/development-guide/authentication#keep-your-api-keys-secure",
+    "https://developers.booking.com/demand/docs/development-guide/authentication#replace-an-api-key",
+    "https://developers.booking.com/demand/docs/development-guide/authentication#revoke-an-active-api-key",
+    "https://developers.booking.com/demand/docs/development-guide/authentication.md",
+    "https://developers.booking.com/demand/docs/development-guide/authentication/#api-key-management",
+    "https://developers.booking.com/demand/docs/development-guide/code-conventions",
+    "https://developers.booking.com/demand/docs/development-guide/common-autocomplete",
+    "https://developers.booking.com/demand/docs/development-guide/pagination",
+    "https://developers.booking.com/demand/docs/development-guide/production-readiness",
+    "https://developers.booking.com/demand/docs/development-guide/rate-limiting",
+    "https://developers.booking.com/demand/docs/getting-started/overview",
+    "https://developers.booking.com/demand/docs/getting-started/prerequisites",
+    "https://developers.booking.com/demand/docs/getting-started/prerequisites.md",
+    "https://developers.booking.com/demand/docs/getting-started/sandbox",
+    "https://developers.booking.com/demand/docs/getting-started/try-out-the-api",
+    "https://developers.booking.com/demand/docs/getting-started/try-out-the-api.md",
+    "https://developers.booking.com/demand/docs/messaging/about-messaging",
+    "https://developers.booking.com/demand/docs/migration-guide/overview",
+    "https://developers.booking.com/demand/docs/migration-guide/v3.2/changes",
+    "https://developers.booking.com/demand/docs/open-api/3.2-beta/demand-api",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api.md",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/accommodations",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/accommodations.md",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/cars",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/cars.md",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/commonlanguages",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/commonlanguages.md",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/commonlocations",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/commonlocations.md",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/commonpayments",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/commonpayments.md",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/orders",
+    "https://developers.booking.com/demand/docs/open-api/3.2/demand-api/orders.md",
+    "https://developers.booking.com/demand/docs/open-api/about-api-references",
+    "https://developers.booking.com/demand/docs/open-api/about-api-references.md",
+    "https://developers.booking.com/demand/docs/open-api/demand-api",
+    "https://developers.booking.com/demand/docs/open-api/demand-api/accommodations/accommodations/availability",
+    "https://developers.booking.com/demand/docs/open-api/demand-api/accommodations/accommodations/search",
+    "https://developers.booking.com/demand/docs/open-api/demand-api/cars/details",
+    "https://developers.booking.com/demand/docs/open-api/demand-api/cars/search",
+    "https://developers.booking.com/demand/docs/open-api/demand-api/cars/suppliers",
+    "https://developers.booking.com/demand/docs/orders-api/overview",
+    "https://developers.booking.com/demand/docs/payments/overview",
+    "https://developers.booking.com/demand/docs/support/error-handling/about-errors",
+    "https://developers.booking.com/demand/docs/whats-new/changelog",
+    "https://developers.booking.com/demand/docs/whats-new/versioning-strategy",
+    "https://developers.booking.com/metasearch/connect-api",
+    "https://developers.booking.com/metasearch/connect-api.md",
+    "https://developers.booking.com/metasearch/connect-api/development-guide/authentication",
+    "https://developers.booking.com/metasearch/connect-api/development-guide/authentication.md",
+    "https://developers.booking.com/metasearch/connect-api/development-guide/error-handling",
+    "https://developers.booking.com/metasearch/connect-api/development-guide/error-handling#400---bad-request",
+    "https://developers.booking.com/metasearch/connect-api/development-guide/error-handling#401---unauthorized",
+    "https://developers.booking.com/metasearch/connect-api/development-guide/error-handling#403---forbidden",
+    "https://developers.booking.com/metasearch/connect-api/introduction",
+    "https://developers.booking.com/metasearch/connect-api/migration-guide/migration-from-demand-api-v2",
+    "https://developers.booking.com/metasearch/connect-api/open-api",
+    "https://developers.booking.com/metasearch/connect-api/open-api.md",
+    "https://developers.booking.com/metasearch/connect-api/open-api/demand-api-v2-compatible",
+    "https://developers.booking.com/metasearch/connect-api/open-api/demand-api-v2-compatible.md",
+    "https://developers.booking.com/metasearch/connect-api/open-api/demand-api-v3-compatible",
+    "https://developers.booking.com/metasearch/connect-api/open-api/demand-api-v3-compatible.md",
+    "https://developers.booking.com/metasearch/connect-api/open-api/reports",
+    "https://developers.booking.com/metasearch/connect-api/open-api/reports.md",
+    "https://dma-data-portability-service.prod.booking.com/dma/port",
+    "https://dma-data-portability-service.prod.booking.com/dma/port_report/ab12345c-abcd-1a23-b22c-f99b97a44a80",
+    "https://httpstatuses.com/429",
+    "https://join.booking.com/?lang=en-gb&aid=2375854&utm_source=partnerships&utm_medium=website&utm_campaign=frontend&utm_term=footer",
+    "https://legacy.developers.booking.com/api/commercial/index.html?page_url=getting-started",
+    "https://legacy.developers.booking.com/api/commercial/index.html?page_url=how-to-book",
+    "https://legacy.developers.booking.com/api/index.html",
+    "https://metasearch-connect-api.booking.com",
+    "https://metasearch-connect-api.booking.com/accommodations/details",
+    "https://metasearch-connect-api.booking.com/auth",
+    "https://news.booking.com/",
+    "https://partnerships.booking.com/",
+    "https://partnerships.booking.com/#main-content",
+    "https://partnerships.booking.com/api-v3",
+    "https://partnerships.booking.com/connected-trip-experiences",
+    "https://partnerships.booking.com/empowering-your-strategic-growth-partner-centre",
+    "https://partnerships.booking.com/news-and-insights#tab-tab-1581",
+    "https://partnerships.booking.com/news-and-insights#tab-tab-1585",
+    "https://partnerships.booking.com/news-and-insights#tab-tab-1587",
+    "https://partnerships.booking.com/news-and-insights#tab-tab-1589",
+    "https://partnerships.booking.com/partner-stories",
+    "https://partnerships.booking.com/partner-stories#tab-tab-1578",
+    "https://partnerships.booking.com/unlock-your-full-potential-our-affiliate-programme",
+    "https://portal.connectivity.booking.com/s/topiccatalog?language=en_US",
+    "https://secure-supply-xml.booking.com",
+    "https://spadmin.booking.com/partner/login-v3.html",
+    "https://spadmin.booking.com/partner/login-v3.html?utm_campaign=log-in&utm_content=navigation-link&utm_medium=referral&utm_source=partnerships.booking.com",
+    "https://spadmin.booking.com/pc/sign-up.html?lang=en&utm_campaign=acquisition&utm_content=navigation-link&utm_medium=referral&utm_source=partnerships.booking.com",
+    "https://supply-xml.booking.com",
+    "https://supply-xml.booking.com/hotels/xml/roomrates",
+    "https://supply-xml.booking.com/hotels/xml/rooms",
+    "https://tools.ietf.org/html/rfc6749#section-2.3",
+    "https://www.booking.com/content/about.en-gb.html?label=gen173nr-1FCAEoggI46AdIM1gEaKkBiAEBmAEJuAEYyAEM2AEB6AEB-AELiAIBqAIEuALU_6ixBsACAdICJGEwMDI0NWRmLTczNTEtNDIzZi04ZTE2LWM2MTE3ODFhMThkMtgCBuACAQ&sid=9b9e649d84465adcfdfaaf997c811c97",
+    "https://www.booking.com/content/about.en-gb.html?utm_campaign=acquisition&utm_content=footer-link&utm_medium=referral&utm_source=partnerships.booking.com",
+    "https://www.booking.com/content/about.html",
+    "https://www.ietf.org/rfc/rfc2045.txt",
+    "https://www.pilotfishtechnology.com/modelviewers/OTA/",
+    "https://www.reddit.com/r/Bookingcom/comments/1r37bef/has_anyone_ever_managed_to_get_bookings_demand_api/",
+    "https://www.rfc-editor.org/info/rfc6750",
+    "https://www.trawex.com/booking-com-api-integration.php",
+    "https://www.w3.org/Protocols/HTTP/1.0/spec.html#BasicAA",
+    "https://www.youtube.com/watch?v=VtxWxrpE5PY",
+    "https://your-application.com/oauth_callback"
+  ]
+}

@@ -44,6 +44,12 @@ export function surfaceDedupKey(surface: SurfaceLike): string {
         : type === "mcp"
           ? surface.url
           : undefined;
+  // Distinct APIs can share one base url (hanko's Public + Flow APIs on the
+  // tenant host). A url-only key merges them wrongly — qualify with the name;
+  // spec-keyed and name-keyed surfaces keep exact-collision semantics.
+  if ((type === "http" || type === "graphql") && !surface.spec && surface.url) {
+    return `${type}|${normalizeLocator(surface.url)}|${normalizeLocator(surface.name)}`;
+  }
   return `${type}|${normalizeLocator(locator) || normalizeLocator(surface.name)}`;
 }
 

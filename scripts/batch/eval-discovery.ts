@@ -66,7 +66,10 @@ async function chat(apiKey: string, model: string, messages: Array<{ role: "syst
 
 function collectUrls(value: unknown, out = new Set<string>()): Set<string> {
   if (typeof value === "string") {
-    for (const match of value.match(/https?:\/\/[^\s"'<>),\]`]+/g) ?? []) out.add(match.replace(/[.]+$/, ""));
+    for (const match of value.match(/https?:\/\/[^\s"'<>),\]`]+/g) ?? []) {
+      if (/^https?:\/\/\.{2,}/.test(match)) continue; // literal "http://..." ellipses in prose
+      out.add(match.replace(/[.]+$/, ""));
+    }
   } else if (Array.isArray(value)) {
     for (const item of value) collectUrls(item, out);
   } else if (value && typeof value === "object") {

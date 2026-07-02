@@ -128,8 +128,9 @@ export function checklist(
 ): Checklist {
   const credentials = credentialsOf(result);
   const credentialEntries = Object.entries(credentials);
-  // "application-default" is Google ADC — a legitimate user-minted flow, not a factory login.
-  const defaultCredentialRegex = /(?<!application-)default (login|password|credentials)|admin\s*\/\s*(admin|edit)/i;
+  // "application-default" is Google ADC, and setup text WARNING against shared/
+  // default credentials is a virtue, not an offense.
+  const defaultCredentialRegex = /(?<!application-)(?<!not use shared\/)default (login|password|credentials)|admin\s*\/\s*(admin|edit)/i;
   const defaultCredentialOffenders = credentialEntries
     .filter(([, credential]) => {
       const setup = credential && typeof credential === "object" ? (credential as { setup?: unknown }).setup : undefined;

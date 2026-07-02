@@ -1,0 +1,538 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "coder.com",
+    "detect": {
+      "domain": "coder.com",
+      "found": [
+        "api-catalog",
+        "agent-skills",
+        "llms.txt"
+      ],
+      "apiCatalog": {
+        "rest": [
+          "https://coder.com/docs/reference/api"
+        ],
+        "openapi": [
+          "https://raw.githubusercontent.com/coder/coder/main/coderd/apidoc/swagger.json"
+        ],
+        "docs": [
+          "https://coder.com/docs/reference/api"
+        ],
+        "status": [],
+        "mcp": []
+      },
+      "mcp": [],
+      "agentSkills": {
+        "count": 3,
+        "names": [
+          "modules",
+          "setup",
+          "templates"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T11:37:14.046Z",
+    "summary": "Coder exposes a protected REST API, a CLI authenticated via `coder login`, and a local/remote MCP server; REST uses `Coder-Session-Token`, local MCP reuses CLI login, and remote MCP also supports OAuth2 apps.",
+    "credentials": {
+      "coder_session_token": {
+        "type": "bearer",
+        "label": "Coder session token",
+        "generateUrl": "https://coder.example.com/settings/tokens",
+        "setup": "Go to your Coder deployment's [token settings](https://coder.example.com/settings/tokens) and create a long-lived token for your user account with `coder tokens create`. Use it as the `Coder-Session-Token` header when calling the REST API.",
+        "acquisition": "manual"
+      },
+      "coder_cli_login": {
+        "type": "oauth2",
+        "label": "Coder CLI login session",
+        "generateUrl": "https://coder.example.com",
+        "setup": "Run `coder login <https://coder.example.com>` to sign in. The Coder CLI stores your authenticated session and reuses it for the CLI and local MCP server.",
+        "acquisition": "manual"
+      },
+      "coder_oauth2_app": {
+        "type": "oauth2",
+        "label": "Coder OAuth2 application credentials",
+        "generateUrl": "https://coder.com/docs/admin/integrations/oauth2-provider",
+        "setup": "Enable the `oauth2` experiment on your Coder server and register an application for OAuth2 access using the Coder OAuth2 provider docs. This is the credential used by remote MCP clients to authenticate to Coder.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "coder-rest-api",
+        "name": "Coder REST API",
+        "type": "http",
+        "docs": "https://coder.com/docs/reference/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://coder.com/docs/reference/api",
+            "https://coder.com/docs/reference/api/authentication",
+            "https://coder.com/docs/reference/api/general"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "coder_session_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Coder-Session-Token",
+                    "scheme": "Coder-Session-Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://coder.com/docs/reference/api/authentication",
+                  "https://coder.com/docs/reference/api/general"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "coder-mcp-server",
+        "name": "Coder MCP server",
+        "type": "mcp",
+        "docs": "https://coder.com/docs/ai-coder/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://coder.com/docs/ai-coder/mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "coder_cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "coder login <https://coder.example.com>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://coder.com/docs/ai-coder/mcp-server"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "coder_oauth2_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://coder.com/docs/ai-coder/mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://coder.example.com/api/experimental/mcp/http",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "coder-cli",
+        "name": "Coder CLI",
+        "type": "cli",
+        "docs": "https://coder.com/docs/reference/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://coder.com/docs/reference/cli",
+            "https://coder.com/docs/reference/cli/login",
+            "https://coder.com/docs/reference/api/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "coder_cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "coder login <https://coder.example.com>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://coder.com/docs/reference/cli/login"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "coder"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T11:37:14.046Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 231215,
+    "completion_tokens": 1315,
+    "total_tokens": 232530
+  },
+  "visited": [
+    "https://coder.com/docs/ai-coder/mcp-server",
+    "https://coder.com/docs/reference/agent-api",
+    "https://coder.com/docs/reference/agent-api/debug",
+    "https://coder.com/docs/reference/agent-api/schemas",
+    "https://coder.com/docs/reference/api",
+    "https://coder.com/docs/reference/api/authentication",
+    "https://coder.com/docs/reference/api/general",
+    "https://coder.com/docs/reference/api/schemas",
+    "https://coder.com/docs/reference/cli",
+    "https://coder.com/docs/reference/cli/login",
+    "https://coder.com/llms.txt",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://www.augmentcode.com/mcp/mcp-graphql",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://coder-server:8080/api/v2/",
+    "http://coder-server:8080/api/v2/buildinfo",
+    "http://coder-server:8080/api/v2/csp/reports",
+    "http://coder-server:8080/api/v2/deployment/config",
+    "http://coder-server:8080/api/v2/workspaces",
+    "http://example.com",
+    "https://claude.ai",
+    "https://claude.ai/",
+    "https://coder.com/#agentsdklog",
+    "https://coder.com/#agentsdkmanifest",
+    "https://coder.com/#agentsdkreinitializationreason",
+    "https://coder.com/#codersdkaibridgeanthropicconfig",
+    "https://coder.com/#codersdkaibridgemodelthought",
+    "https://coder.com/#codersdkaibridgesessionthreadstokenusage",
+    "https://coder.com/#codersdkaibridgetoolcall",
+    "https://coder.com/#codersdkgroup",
+    "https://coder.com/#codersdkloglevel",
+    "https://coder.com/#codersdkreduceduser",
+    "https://coder.com/#codersdkworkspaceagentmetadatadescription",
+    "https://coder.com/#codersdkworkspaceappstatusstate",
+    "https://coder.com/#get-debug-info-for-magicsock",
+    "https://coder.com/#get-debug-logs",
+    "https://coder.com/#get-debug-manifest",
+    "https://coder.com/#local-mcp-server",
+    "https://coder.com/#main-content",
+    "https://coder.com/#quickstart",
+    "https://coder.com/#remote-mcp-server",
+    "https://coder.com/#sections",
+    "https://coder.com/#toggle-debug-logging-for-magicsock",
+    "https://coder.com/#use-cases",
+    "https://coder.com/about",
+    "https://coder.com/blog",
+    "https://coder.com/blog/introducing-coder-agents",
+    "https://coder.com/brand",
+    "https://coder.com/careers",
+    "https://coder.com/changelog",
+    "https://coder.com/chat",
+    "https://coder.com/community",
+    "https://coder.com/contact",
+    "https://coder.com/contact/sales",
+    "https://coder.com/demo",
+    "https://coder.com/docs",
+    "https://coder.com/docs/admin",
+    "https://coder.com/docs/admin/integrations/oauth2-provider",
+    "https://coder.com/docs/ai-coder",
+    "https://coder.com/docs/ai-coder/agents",
+    "https://coder.com/docs/ai-coder/ai-governance",
+    "https://coder.com/docs/ai-coder/best-practices",
+    "https://coder.com/docs/ai-coder/ide-agents",
+    "https://coder.com/docs/ai-coder/mcp-server",
+    "https://coder.com/docs/ai-coder/tasks",
+    "https://coder.com/docs/code-server/llms-full.txt",
+    "https://coder.com/docs/code-server/llms.txt",
+    "https://coder.com/docs/install",
+    "https://coder.com/docs/install/releases/feature-stages",
+    "https://coder.com/docs/llms-full.txt",
+    "https://coder.com/docs/llms.txt",
+    "https://coder.com/docs/reference",
+    "https://coder.com/docs/reference#use-cases",
+    "https://coder.com/docs/reference/agent-api",
+    "https://coder.com/docs/reference/agent-api/debug",
+    "https://coder.com/docs/reference/agent-api/schemas",
+    "https://coder.com/docs/reference/agent-api/schemas#agentsdkmanifest",
+    "https://coder.com/docs/reference/api",
+    "https://coder.com/docs/reference/api/agents",
+    "https://coder.com/docs/reference/api/aibridge",
+    "https://coder.com/docs/reference/api/aiproviders",
+    "https://coder.com/docs/reference/api/applications",
+    "https://coder.com/docs/reference/api/audit",
+    "https://coder.com/docs/reference/api/authentication",
+    "https://coder.com/docs/reference/api/authorization",
+    "https://coder.com/docs/reference/api/builds",
+    "https://coder.com/docs/reference/api/chats",
+    "https://coder.com/docs/reference/api/debug",
+    "https://coder.com/docs/reference/api/enterprise",
+    "https://coder.com/docs/reference/api/files",
+    "https://coder.com/docs/reference/api/general",
+    "https://coder.com/docs/reference/api/git",
+    "https://coder.com/docs/reference/api/initscript",
+    "https://coder.com/docs/reference/api/insights",
+    "https://coder.com/docs/reference/api/members",
+    "https://coder.com/docs/reference/api/notifications",
+    "https://coder.com/docs/reference/api/organizations",
+    "https://coder.com/docs/reference/api/portsharing",
+    "https://coder.com/docs/reference/api/prebuilds",
+    "https://coder.com/docs/reference/api/provisioning",
+    "https://coder.com/docs/reference/api/schemas",
+    "https://coder.com/docs/reference/api/schemas#coderdcspviolation",
+    "https://coder.com/docs/reference/api/schemas#codersdkbuildinforesponse",
+    "https://coder.com/docs/reference/api/schemas#codersdkresponse",
+    "https://coder.com/docs/reference/api/schemas#codersdkworkspaceagentscript",
+    "https://coder.com/docs/reference/api/schemas#codersdkworkspaceapp",
+    "https://coder.com/docs/reference/api/schemas#tailcfgderpmap",
+    "https://coder.com/docs/reference/api/secrets",
+    "https://coder.com/docs/reference/api/tasks",
+    "https://coder.com/docs/reference/api/templates",
+    "https://coder.com/docs/reference/api/users",
+    "https://coder.com/docs/reference/api/workspaceproxies",
+    "https://coder.com/docs/reference/api/workspaces",
+    "https://coder.com/docs/reference/cli",
+    "https://coder.com/docs/reference/cli/aibridge",
+    "https://coder.com/docs/reference/cli/aibridge_interceptions",
+    "https://coder.com/docs/reference/cli/aibridge_interceptions_list",
+    "https://coder.com/docs/reference/cli/autoupdate",
+    "https://coder.com/docs/reference/cli/boundary",
+    "https://coder.com/docs/reference/cli/completion",
+    "https://coder.com/docs/reference/cli/config-ssh",
+    "https://coder.com/docs/reference/cli/create",
+    "https://coder.com/docs/reference/cli/delete",
+    "https://coder.com/docs/reference/cli/dotfiles",
+    "https://coder.com/docs/reference/cli/external-auth",
+    "https://coder.com/docs/reference/cli/external-auth_access-token",
+    "https://coder.com/docs/reference/cli/external-workspaces",
+    "https://coder.com/docs/reference/cli/external-workspaces_agent-instructions",
+    "https://coder.com/docs/reference/cli/external-workspaces_create",
+    "https://coder.com/docs/reference/cli/external-workspaces_list",
+    "https://coder.com/docs/reference/cli/favorite",
+    "https://coder.com/docs/reference/cli/features",
+    "https://coder.com/docs/reference/cli/features_list",
+    "https://coder.com/docs/reference/cli/groups",
+    "https://coder.com/docs/reference/cli/groups_create",
+    "https://coder.com/docs/reference/cli/groups_delete",
+    "https://coder.com/docs/reference/cli/groups_edit",
+    "https://coder.com/docs/reference/cli/groups_list",
+    "https://coder.com/docs/reference/cli/licenses",
+    "https://coder.com/docs/reference/cli/licenses_add",
+    "https://coder.com/docs/reference/cli/licenses_delete",
+    "https://coder.com/docs/reference/cli/licenses_list",
+    "https://coder.com/docs/reference/cli/list",
+    "https://coder.com/docs/reference/cli/login",
+    "https://coder.com/docs/reference/cli/login_token",
+    "https://coder.com/docs/reference/cli/logout",
+    "https://coder.com/docs/reference/cli/logs",
+    "https://coder.com/docs/reference/cli/netcheck",
+    "https://coder.com/docs/reference/cli/notifications",
+    "https://coder.com/docs/reference/cli/notifications_custom",
+    "https://coder.com/docs/reference/cli/notifications_pause",
+    "https://coder.com/docs/reference/cli/notifications_resume",
+    "https://coder.com/docs/reference/cli/notifications_test",
+    "https://coder.com/docs/reference/cli/open",
+    "https://coder.com/docs/reference/cli/open_app",
+    "https://coder.com/docs/reference/cli/open_vscode",
+    "https://coder.com/docs/reference/cli/organizations",
+    "https://coder.com/docs/reference/cli/organizations_create",
+    "https://coder.com/docs/reference/cli/organizations_delete",
+    "https://coder.com/docs/reference/cli/organizations_list",
+    "https://coder.com/docs/reference/cli/organizations_members",
+    "https://coder.com/docs/reference/cli/organizations_members_add",
+    "https://coder.com/docs/reference/cli/organizations_members_edit-roles",
+    "https://coder.com/docs/reference/cli/organizations_members_list",
+    "https://coder.com/docs/reference/cli/organizations_members_remove",
+    "https://coder.com/docs/reference/cli/organizations_roles",
+    "https://coder.com/docs/reference/cli/organizations_roles_create",
+    "https://coder.com/docs/reference/cli/organizations_roles_show",
+    "https://coder.com/docs/reference/cli/organizations_roles_update",
+    "https://coder.com/docs/reference/cli/organizations_settings",
+    "https://coder.com/docs/reference/cli/organizations_settings_set",
+    "https://coder.com/docs/reference/cli/organizations_settings_set_group-sync",
+    "https://coder.com/docs/reference/cli/organizations_settings_set_organization-sync",
+    "https://coder.com/docs/reference/cli/organizations_settings_set_role-sync",
+    "https://coder.com/docs/reference/cli/organizations_settings_set_workspace-sharing",
+    "https://coder.com/docs/reference/cli/organizations_settings_show",
+    "https://coder.com/docs/reference/cli/organizations_settings_show_group-sync",
+    "https://coder.com/docs/reference/cli/organizations_settings_show_organization-sync",
+    "https://coder.com/docs/reference/cli/organizations_settings_show_role-sync",
+    "https://coder.com/docs/reference/cli/organizations_settings_show_workspace-sharing",
+    "https://coder.com/docs/reference/cli/organizations_show",
+    "https://coder.com/docs/reference/cli/ping",
+    "https://coder.com/docs/reference/cli/port-forward",
+    "https://coder.com/docs/reference/cli/prebuilds",
+    "https://coder.com/docs/reference/cli/prebuilds_pause",
+    "https://coder.com/docs/reference/cli/prebuilds_resume",
+    "https://coder.com/docs/reference/cli/provisioner",
+    "https://coder.com/docs/reference/cli/provisioner_jobs",
+    "https://coder.com/docs/reference/cli/provisioner_jobs_cancel",
+    "https://coder.com/docs/reference/cli/provisioner_jobs_list",
+    "https://coder.com/docs/reference/cli/provisioner_keys",
+    "https://coder.com/docs/reference/cli/provisioner_keys_create",
+    "https://coder.com/docs/reference/cli/provisioner_keys_delete",
+    "https://coder.com/docs/reference/cli/provisioner_keys_list",
+    "https://coder.com/docs/reference/cli/provisioner_list",
+    "https://coder.com/docs/reference/cli/provisioner_start",
+    "https://coder.com/docs/reference/cli/publickey",
+    "https://coder.com/docs/reference/cli/rename",
+    "https://coder.com/docs/reference/cli/reset-password",
+    "https://coder.com/docs/reference/cli/restart",
+    "https://coder.com/docs/reference/cli/schedule",
+    "https://coder.com/docs/reference/cli/schedule_extend",
+    "https://coder.com/docs/reference/cli/schedule_show",
+    "https://coder.com/docs/reference/cli/schedule_start",
+    "https://coder.com/docs/reference/cli/schedule_stop",
+    "https://coder.com/docs/reference/cli/secret",
+    "https://coder.com/docs/reference/cli/secret_create",
+    "https://coder.com/docs/reference/cli/secret_delete",
+    "https://coder.com/docs/reference/cli/secret_list",
+    "https://coder.com/docs/reference/cli/secret_update",
+    "https://coder.com/docs/reference/cli/server",
+    "https://coder.com/docs/reference/cli/server_create-admin-user",
+    "https://coder.com/docs/reference/cli/server_dbcrypt",
+    "https://coder.com/docs/reference/cli/server_dbcrypt_decrypt",
+    "https://coder.com/docs/reference/cli/server_dbcrypt_delete",
+    "https://coder.com/docs/reference/cli/server_dbcrypt_rotate",
+    "https://coder.com/docs/reference/cli/server_postgres-builtin-serve",
+    "https://coder.com/docs/reference/cli/server_postgres-builtin-url",
+    "https://coder.com/docs/reference/cli/show",
+    "https://coder.com/docs/reference/cli/speedtest",
+    "https://coder.com/docs/reference/cli/ssh",
+    "https://coder.com/docs/reference/cli/start",
+    "https://coder.com/docs/reference/cli/stat",
+    "https://coder.com/docs/reference/cli/stat_cpu",
+    "https://coder.com/docs/reference/cli/stat_disk",
+    "https://coder.com/docs/reference/cli/stat_mem",
+    "https://coder.com/docs/reference/cli/state",
+    "https://coder.com/docs/reference/cli/state_pull",
+    "https://coder.com/docs/reference/cli/state_push",
+    "https://coder.com/docs/reference/cli/stop",
+    "https://coder.com/docs/reference/cli/support",
+    "https://coder.com/docs/reference/cli/support_bundle",
+    "https://coder.com/docs/reference/cli/task",
+    "https://coder.com/docs/reference/cli/task_create",
+    "https://coder.com/docs/reference/cli/task_delete",
+    "https://coder.com/docs/reference/cli/task_list",
+    "https://coder.com/docs/reference/cli/task_logs",
+    "https://coder.com/docs/reference/cli/task_pause",
+    "https://coder.com/docs/reference/cli/task_resume",
+    "https://coder.com/docs/reference/cli/task_send",
+    "https://coder.com/docs/reference/cli/task_status",
+    "https://coder.com/docs/reference/cli/templates",
+    "https://coder.com/docs/reference/cli/templates_archive",
+    "https://coder.com/docs/reference/cli/templates_create",
+    "https://coder.com/docs/reference/cli/templates_delete",
+    "https://coder.com/docs/reference/cli/templates_edit",
+    "https://coder.com/docs/reference/cli/templates_init",
+    "https://coder.com/docs/reference/cli/templates_list",
+    "https://coder.com/docs/reference/cli/templates_presets",
+    "https://coder.com/docs/reference/cli/templates_presets_list",
+    "https://coder.com/docs/reference/cli/templates_pull",
+    "https://coder.com/docs/reference/cli/templates_push",
+    "https://coder.com/docs/reference/cli/templates_versions",
+    "https://coder.com/docs/reference/cli/templates_versions_archive",
+    "https://coder.com/docs/reference/cli/templates_versions_list",
+    "https://coder.com/docs/reference/cli/templates_versions_promote",
+    "https://coder.com/docs/reference/cli/templates_versions_unarchive",
+    "https://coder.com/docs/reference/cli/tokens",
+    "https://coder.com/docs/reference/cli/tokens_create",
+    "https://coder.com/docs/reference/cli/tokens_list",
+    "https://coder.com/docs/reference/cli/tokens_remove",
+    "https://coder.com/docs/reference/cli/tokens_view",
+    "https://coder.com/docs/reference/cli/unfavorite",
+    "https://coder.com/docs/reference/cli/update",
+    "https://coder.com/docs/reference/cli/users",
+    "https://coder.com/docs/reference/cli/users_activate",
+    "https://coder.com/docs/reference/cli/users_create",
+    "https://coder.com/docs/reference/cli/users_delete",
+    "https://coder.com/docs/reference/cli/users_edit-roles",
+    "https://coder.com/docs/reference/cli/users_list",
+    "https://coder.com/docs/reference/cli/users_oidc-claims",
+    "https://coder.com/docs/reference/cli/users_show",
+    "https://coder.com/docs/reference/cli/users_suspend",
+    "https://coder.com/docs/reference/cli/version",
+    "https://coder.com/docs/reference/cli/whoami",
+    "https://coder.com/docs/tutorials",
+    "https://coder.com/docs/user-guides",
+    "https://coder.com/docs/user-guides/devcontainers",
+    "https://coder.com/docs/user-guides/workspace-access/cursor",
+    "https://coder.com/docs/user-guides/workspace-access/jetbrains",
+    "https://coder.com/docs/user-guides/workspace-access/vscode",
+    "https://coder.com/docs/user-guides/workspace-access/windsurf",
+    "https://coder.com/events-webinars",
+    "https://coder.com/explore",
+    "https://coder.com/legal/open-source-licenses",
+    "https://coder.com/legal/privacy-policy",
+    "https://coder.com/legal/terms-of-service",
+    "https://coder.com/llms-full.txt",
+    "https://coder.com/llms.txt",
+    "https://coder.com/newsletter",
+    "https://coder.com/partners",
+    "https://coder.com/pricing",
+    "https://coder.com/resources",
+    "https://coder.com/security/policy",
+    "https://coder.com/solutions/agents",
+    "https://coder.com/solutions/ai-governance",
+    "https://coder.com/solutions/workspaces",
+    "https://coder.com/solutions/workspaces/compare",
+    "https://coder.com/solutions/workspaces/premium",
+    "https://coder.com/success-stories",
+    "https://coder.com/success-stories/u-s-defense-intelligence-organization",
+    "https://coder.com/trial",
+    "https://coder.com/use-cases",
+    "https://coder.com/use-cases/financial-services",
+    "https://coder.com/use-cases/government",
+    "https://coder.com/use-cases/tech-innovators",
+    "https://coder.example.com",
+    "https://coder.example.com/api/experimental/mcp/http",
+    "https://coder.example.com/api/v2/workspaces?q=owner:me",
+    "https://coder.example.com/settings/tokens",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/coder/backstage-plugins",
+    "https://github.com/coder/coder/edit/main/docs/./ai-coder/mcp-server.md",
+    "https://github.com/coder/coder/edit/main/docs/./reference/agent-api/debug.md",
+    "https://github.com/coder/coder/edit/main/docs/./reference/agent-api/index.md",
+    "https://github.com/coder/coder/edit/main/docs/./reference/agent-api/schemas.md",
+    "https://github.com/coder/coder/edit/main/docs/./reference/api/authentication.md",
+    "https://github.com/coder/coder/edit/main/docs/./reference/api/index.md",
+    "https://github.com/orgs/coder/repositories?q=sort%3Astars",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://pkg.go.dev/github.com/coder/coder/v2/codersdk/toolsdk#pkg-variables",
+    "https://pkg.go.dev/tailscale.com/wgengine/magicsock#Conn.ServeHTTPDebug",
+    "https://pkg.go.dev/tailscale.com/wgengine/magicsock#Conn.SetDebugLoggingEnabled",
+    "https://registry.coder.com/",
+    "https://registry.coder.com/modules",
+    "https://resources.coder.com",
+    "https://swag-coder.myshopify.com/",
+    "https://tools.ietf.org/html/rfc7231#section-6.3.1",
+    "https://www.augmentcode.com/mcp/mcp-graphql",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

@@ -75,8 +75,6 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
   // Progressive enhancement over the server-rendered first page: live search,
   // kind filter, and infinite scroll — all over /api/domains.json (the same
   // query layer the page rendered from).
-  // The IANA TLD list (scripts/fetch-tlds.ts refreshes it), for the typeahead fan-out.
-  import allTlds from "~/data/tlds.json";
   interface DomainRow {
     domain: string;
     icon: string | null;
@@ -137,34 +135,24 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
   // The "go to what you typed" rows — shown whenever the term isn't already a
   // known domain. Clicking opens /{domain}/ (the 404/discover page if new).
   // A full domain gets one row; a bare name ("mintlify") fans out across
-  // EVERY IANA TLD — popular ones first, the rest alphabetically. Lives in
-  // tfoot, so it stays pinned below the paginated tbody, and is windowed
-  // through the same scroll sentinel as the tbody (never all 1,400+ at once).
-  const TA_HEAD = ["com", "io", "dev", "ai", "co", "sh", "org", "net", "app"];
-  const TA_TLDS = TA_HEAD.concat(allTlds.filter((t: string) => !TA_HEAD.includes(t)));
-  let taCandidates: string[] = [];
-  let taShown = 0;
+  // common TLDs. Lives in tfoot, so it stays pinned below the paginated tbody
+  // — always the bottom of the list, no matter how many rows are rendered.
+  const TA_TLDS = ["com", "io", "dev", "ai", "co", "sh", "org", "net", "app"];
   const taRow = (d: string) => {
     const L = esc((d[0] || "?").toUpperCase());
     return `<tr class="ta-row"><td class="c-icon"><span class="ph">${L}</span></td>` +
       `<td class="c-name"><a href="${dpath(d)}">${esc(d)}</a></td>` +
       `<td class="c-chips"><span class="ta-go">discover →</span></td></tr>`;
   };
-  const renderTypeahead = (reset: boolean) => {
-    if (reset) { typeahead.innerHTML = ""; taShown = 0; }
-    const next = taCandidates.slice(taShown, taShown + PAGE);
-    typeahead.insertAdjacentHTML("beforeend", next.map(taRow).join(""));
-    taShown += next.length;
-    typeahead.hidden = taCandidates.length === 0;
-  };
   const updateTypeahead = () => {
     const t = term.trim().toLowerCase();
     const known = new Set(all.map((g) => g.domain.toLowerCase()));
-    if (t && isDomain(t)) taCandidates = [t];
-    else if (/^[a-z0-9-]+$/.test(t)) taCandidates = TA_TLDS.map((tld) => `${t}.${tld}`);
-    else taCandidates = [];
-    taCandidates = taCandidates.filter((d) => !known.has(d));
-    renderTypeahead(true);
+    let candidates: string[] = [];
+    if (t && isDomain(t)) candidates = [t];
+    else if (/^[a-z0-9-]+$/.test(t)) candidates = TA_TLDS.map((tld) => `${t}.${tld}`);
+    candidates = candidates.filter((d) => !known.has(d));
+    typeahead.innerHTML = candidates.map(taRow).join("");
+    typeahead.hidden = candidates.length === 0;
   };
 
   const render = (reset: boolean) => {
@@ -181,20 +169,8 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
     }
   };
 
-  // Results page in first; the TLD fan-out only extends once they're exhausted.
-  // Chains while the sentinel is still within the load margin — an
-  // IntersectionObserver alone stalls when a re-render leaves the sentinel
-  // in view (it only fires on transitions).
-  const extend = () => {
-    if (shown < filtered.length) render(false);
-    else if (taShown < taCandidates.length) renderTypeahead(false);
-    else return;
-    requestAnimationFrame(() => {
-      if (sentinel.getBoundingClientRect().top < innerHeight + 700) extend();
-    });
-  };
   const io = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting) extend();
+    if (entries[0].isIntersecting && shown < filtered.length) render(false);
   }, { rootMargin: "700px" });
   io.observe(sentinel);
 
@@ -209,11 +185,6 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
     history.replaceState(null, "", u);
     updateTypeahead(); // before render — the empty-state status reads typeahead.hidden
     render(true);
-    // A reset can leave the sentinel in view without an intersection
-    // transition — re-check so short result sets keep extending.
-    requestAnimationFrame(() => {
-      if (sentinel.getBoundingClientRect().top < innerHeight + 700) extend();
-    });
   };
 
   fetch("/api/domains.json").then((r) => r.json()).then((data: DomainRow[]) => {

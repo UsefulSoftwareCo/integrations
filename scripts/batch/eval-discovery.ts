@@ -144,6 +144,10 @@ export function checklist(
   // live on a sibling registrable domain (canva.com → canva.dev).
   const visitedDomains = new Set((visited ?? []).map((url) => registrable(url)).filter(Boolean));
   const groundingSet = new Set((grounding ?? []).map((url) => url.replace(/[.,;:]+$/, "")));
+  // A HOST the loop read (in any URL) grounds other paths on that host — the
+  // model saying management.filestackapi.com is fine when the docs showed
+  // management.filestackapi.com/apps.
+  const groundedHosts = new Set([...groundingSet].map((url) => { try { return new URL(url).host; } catch { return ""; } }).filter(Boolean));
   // The brand's own sibling TLDs count as home turf (clickhouse.com ↔
   // clickhouse.cloud); template URLs ({yourDomain}/…) are placeholders, not claims.
   const brandLabel = resultDomain ? resultDomain.split(".")[0] : null;
@@ -157,7 +161,8 @@ export function checklist(
       !(brandLabel && urlDomain && urlDomain.split(".")[0] === brandLabel) &&
       !detectedUrls.has(url) &&
       !(urlDomain && visitedDomains.has(urlDomain)) &&
-      !groundingSet.has(url.replace(/[.,;:]+$/, ""))
+      !groundingSet.has(url.replace(/[.,;:]+$/, "")) &&
+      !(() => { try { return groundedHosts.has(new URL(url).host); } catch { return false; } })()
     );
   });
   const unresolvedAuthIds = authUses(result)

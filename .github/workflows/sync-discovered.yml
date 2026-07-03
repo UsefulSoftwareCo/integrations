@@ -33,7 +33,7 @@ jobs:
       - name: Count existing discovered domains
         id: before
         run: |
-          count=$(bun -e 'const f = Bun.file("sources/discovered.json"); const j = await f.json(); console.log((j.domains ?? []).length)')
+          count=$(find domains -mindepth 2 -maxdepth 2 -type f -name integrations.json 2>/dev/null | wc -l | tr -d ' ')
           echo "count=$count" >> "$GITHUB_OUTPUT"
 
       - name: Sync from KV
@@ -45,25 +45,25 @@ jobs:
       - name: Guard against large catalog deletion
         run: |
           before="${{ steps.before.outputs.count }}"
-          after=$(bun -e 'const f = Bun.file("sources/discovered.json"); const j = await f.json(); console.log((j.domains ?? []).length)')
+          after=$(find domains -mindepth 2 -maxdepth 2 -type f -name integrations.json 2>/dev/null | wc -l | tr -d ' ')
           min=$(( before - before / 10 ))
           echo "domains before=$before after=$after min=$min"
           if [ "$after" -lt "$min" ]; then
-            echo "Refusing to commit: sources/discovered.json lost more than 10% of domains."
+            echo "Refusing to commit: domains/ lost more than 10% of domain files."
             exit 1
           fi
 
-      - name: Validate batch catalog
-        run: bun run validate:batch
+      - name: Build
+        run: bun run build
 
       - name: Commit and push changes
         run: |
-          if git diff --quiet -- sources/discovered.json; then
+          if git diff --quiet -- domains/; then
             echo "No discovered catalog changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add sources/discovered.json
+          git add domains/
           git commit -m "sync discovered catalog from KV"
           git push origin HEAD:main

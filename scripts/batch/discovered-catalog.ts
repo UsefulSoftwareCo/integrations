@@ -1,5 +1,12 @@
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { parse as parseDomain } from "tldts";
 import type { AuthStatus, StoredDiscovery, Surface } from "../../src/lib/discovery-schema.ts";
 import { canonicalDomain } from "../../src/lib/domain-aliases.ts";
+
+export const ROOT = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/, "");
+export const DEFAULT_DOMAIN_CATALOG_DIR = join(ROOT, "domains");
 
 export type CatalogPackage = {
   registryType: string;
@@ -46,6 +53,33 @@ type LooseRecord = Record<string, unknown>;
 
 function isRecord(value: unknown): value is LooseRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortJsonValue);
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, item]) => item !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, item]) => [key, sortJsonValue(item)]),
+  );
+}
+
+export function stableJson(value: unknown): string {
+  return `${JSON.stringify(sortJsonValue(value), null, 2)}\n`;
+}
+
+export function catalogDomainKey(input: string | undefined): string | null {
+  const domain = input?.trim().toLowerCase().replace(/\.$/, "");
+  if (!domain || domain.startsWith("__")) return null;
+  if (!/^[a-z0-9.-]+$/.test(domain) || !domain.includes(".")) return null;
+  const info = parseDomain(`https://${domain}`, { allowPrivateDomains: true });
+  if (info.isIp || !info.domain || !(info.isIcann || info.isPrivate)) return null;
+  const canonical = canonicalDomain(domain);
+  const canonicalInfo = parseDomain(`https://${canonical}`, { allowPrivateDomains: true });
+  if (canonicalInfo.isIp || !canonicalInfo.domain || !(canonicalInfo.isIcann || canonicalInfo.isPrivate)) return null;
+  return canonical;
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -149,14 +183,74 @@ function discoveredTime(domain: CatalogDomain): number {
   return Number.isFinite(time) ? time : 0;
 }
 
-function stableDomainJson(domain: CatalogDomain): string {
-  return JSON.stringify(domain);
+function domainFilePath(root: string, canonical: string): string {
+  return join(root, canonical, "integrations.json");
+}
+
+export function listDomainCatalogFiles(root = DEFAULT_DOMAIN_CATALOG_DIR): string[] {
+  if (!existsSync(root)) return [];
+  return readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => domainFilePath(root, entry.name))
+    .filter((path) => existsSync(path) && statSync(path).isFile())
+    .sort();
+}
+
+export function readDomainCatalogFile(path: string): CatalogDomain {
+  return JSON.parse(readFileSync(path, "utf8")) as CatalogDomain;
+}
+
+export function readDomainCatalogTree(root = DEFAULT_DOMAIN_CATALOG_DIR): Catalog {
+  const domains = listDomainCatalogFiles(root)
+    .map(readDomainCatalogFile)
+    .filter((domain) => catalogDomainKey(domain.domain) !== null)
+    .sort((a, b) => {
+      const aKey = catalogDomainKey(a.domain) ?? a.domain;
+      const bKey = catalogDomainKey(b.domain) ?? b.domain;
+      return aKey.localeCompare(bKey) || a.domain.localeCompare(b.domain);
+    });
+  return { domains };
+}
+
+export function writeDomainCatalogTree(
+  root: string,
+  domains: readonly CatalogDomain[],
+): { written: number; changed: number; skipped: Array<{ domain: string; reason: string }> } {
+  let written = 0;
+  let changed = 0;
+  const skipped: Array<{ domain: string; reason: string }> = [];
+
+  const rows = [...domains].sort((a, b) => {
+    const aKey = catalogDomainKey(a.domain) ?? a.domain;
+    const bKey = catalogDomainKey(b.domain) ?? b.domain;
+    return aKey.localeCompare(bKey) || a.domain.localeCompare(b.domain);
+  });
+
+  for (const domain of rows) {
+    const key = catalogDomainKey(domain.domain);
+    if (!key) {
+      skipped.push({ domain: domain.domain, reason: "invalid registrable domain" });
+      continue;
+    }
+    const path = domainFilePath(root, key);
+    const next = stableJson(domain);
+    const before = existsSync(path) ? readFileSync(path, "utf8") : undefined;
+    mkdirSync(join(path, ".."), { recursive: true });
+    if (before !== next) {
+      writeFileSync(path, next);
+      changed++;
+    }
+    written++;
+  }
+
+  return { written, changed, skipped };
 }
 
 export function mergeCatalogs(existing: Catalog, incomingDomains: readonly CatalogDomain[]): CatalogMergeResult {
   const byCanonical = new Map<string, CatalogDomain>();
   for (const domain of existing.domains ?? []) {
-    const key = canonicalDomain(domain.domain);
+    const key = catalogDomainKey(domain.domain);
+    if (!key) continue;
     const prior = byCanonical.get(key);
     if (!prior || discoveredTime(domain) > discoveredTime(prior)) byCanonical.set(key, domain);
   }
@@ -166,7 +260,8 @@ export function mergeCatalogs(existing: Catalog, incomingDomains: readonly Catal
   const touched = new Set<string>();
 
   for (const incoming of incomingDomains) {
-    const key = canonicalDomain(incoming.domain);
+    const key = catalogDomainKey(incoming.domain);
+    if (!key) continue;
     touched.add(key);
     const prior = byCanonical.get(key);
     if (!prior) {
@@ -178,8 +273,7 @@ export function mergeCatalogs(existing: Catalog, incomingDomains: readonly Catal
 
     const priorTime = discoveredTime(prior);
     const incomingTime = discoveredTime(incoming);
-    const incomingChanged = stableDomainJson(prior) !== stableDomainJson(incoming);
-    if (incomingTime > priorTime || (incomingTime === priorTime && incomingTime > 0 && incomingChanged)) {
+    if (incomingTime > priorTime) {
       byCanonical.set(key, incoming);
       stats.updated++;
       changes.push({
@@ -197,6 +291,8 @@ export function mergeCatalogs(existing: Catalog, incomingDomains: readonly Catal
     if (!touched.has(key)) stats.unchanged++;
   }
 
-  const domains = [...byCanonical.values()].sort((a, b) => a.domain.localeCompare(b.domain));
+  const domains = [...byCanonical.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, domain]) => domain);
   return { catalog: { domains }, stats, changes };
 }

@@ -11,27 +11,13 @@ const getDomain = (url: string) => tldGetDomain(url, { allowPrivateDomains: true
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
 import { faviconUrl, isJunkDomain } from "../src/lib/favicon.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
+import { readDomainCatalogTree } from "./batch/discovered-catalog.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCES = join(ROOT, "sources");
+const DOMAINS = join(ROOT, "domains");
 const OVERRIDES = join(ROOT, "overrides");
 const OUTPUT = join(ROOT, "output");
-
-// Curated developer-tool domains (scripts/batch/seed-domains*.txt) float to
-// the top of the registry list — they're the audience's daily drivers.
-const DEVTOOL_DOMAINS: Set<string> = (() => {
-  const out = new Set<string>();
-  const dir = join(ROOT, "scripts", "batch");
-  if (!existsSync(dir)) return out;
-  for (const name of readdirSync(dir)) {
-    if (!/^seed-domains.*\.txt$/.test(name)) continue;
-    for (const line of readFileSync(join(dir, name), "utf8").split("\n")) {
-      const d = canonicalDomain(line);
-      if (d && !d.startsWith("#")) out.add(d);
-    }
-  }
-  return out;
-})();
 
 mkdirSync(OUTPUT, { recursive: true });
 
@@ -375,7 +361,7 @@ function buildCli(): Integration[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Discovered: compact overnight batch results -> one record per domain+format
+// Discovered: per-domain catalog tree -> one record per domain+format
 // ─────────────────────────────────────────────────────────────────────────────
 
 type DiscoveredSurfaceType = "http" | "graphql" | "mcp" | "cli";
@@ -411,9 +397,7 @@ function buildDiscovered(
   knownDomainKinds: Set<string>,
   knownDomains: Set<string>,
 ): Integration[] {
-  const path = join(SOURCES, "discovered.json");
-  if (!existsSync(path)) return [];
-  const data = readJson<{ domains: DiscoveredDomain[] }>(path);
+  const data = readDomainCatalogTree(DOMAINS);
   const recs: Integration[] = [];
 
   for (const d of data.domains ?? []) {
@@ -770,7 +754,7 @@ function buildIndex(all: Integration[]) {
       categories: r.categories,
       feeds: r.feeds,
       popularity: r.popularity,
-      devtool: DEVTOOL_DOMAINS.has(domain) || undefined,
+      devtool: undefined,
     };
   });
 }

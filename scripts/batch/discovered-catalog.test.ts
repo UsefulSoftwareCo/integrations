@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { mergeCatalogs, type Catalog, type CatalogDomain } from "./discovered-catalog.ts";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mergeCatalogs, readDomainCatalogTree, writeDomainCatalogTree, type Catalog, type CatalogDomain } from "./discovered-catalog.ts";
 
 const domain = (domainName: string, discoveredAt: string, summary = `${domainName} summary`): CatalogDomain => ({
   domain: domainName,
@@ -55,5 +58,20 @@ describe("mergeCatalogs", () => {
     expect(merged.catalog.domains).toHaveLength(1);
     expect(merged.catalog.domains[0]?.domain).toBe("zoom.com");
     expect(merged.catalog.domains[0]?.summary).toBe("canonical");
+  });
+
+  test("writes and reads one integrations.json file per canonical domain", () => {
+    const dir = mkdtempSync(join(tmpdir(), "catalog-tree-"));
+    try {
+      const written = writeDomainCatalogTree(dir, [
+        domain("zoom.us", "2026-07-01T00:00:00.000Z", "alias"),
+        domain("brand-new.com", "2026-07-02T00:00:00.000Z"),
+      ]);
+
+      expect(written).toEqual({ written: 2, changed: 2, skipped: [] });
+      expect(readDomainCatalogTree(dir).domains.map((row) => row.domain)).toEqual(["brand-new.com", "zoom.us"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

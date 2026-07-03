@@ -1,15 +1,35 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
 import { DISCOVERY_STALE_MS, buildSections, discoveryFreshness, type DiscoverData } from "./surface-sections.ts";
 
-function fixture(name: string): DiscoverData {
-  const raw = readFileSync(new URL(`../../scripts/batch/results-full/${name}.json`, import.meta.url), "utf8");
-  return JSON.parse(raw).result as DiscoverData;
+function fixture(): DiscoverData {
+  return {
+    surfaces: [
+      {
+        slug: "vercel-mcp-server",
+        name: "Vercel MCP server",
+        type: "mcp",
+        url: "https://mcp.vercel.com/",
+        transports: ["streamable-http"],
+      },
+      {
+        slug: "vercel-cli",
+        name: "Vercel CLI",
+        type: "cli",
+        command: "vercel",
+      },
+      {
+        slug: "vercel-rest-api",
+        name: "Vercel REST API",
+        type: "http",
+        url: "https://api.vercel.com",
+      },
+    ],
+  } as DiscoverData;
 }
 
 describe("buildSections", () => {
   test("renders only discovery surfaces for a KV-rich domain", () => {
-    const sections = buildSections(fixture("vercel.com"), "vercel.com");
+    const sections = buildSections(fixture(), "vercel.com");
     const entries = sections.flatMap((section) => section.entries);
 
     expect(sections.map((section) => [section.kind, section.entries.length])).toEqual([

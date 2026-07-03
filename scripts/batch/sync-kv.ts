@@ -1,9 +1,17 @@
 import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { parse as parseDomain } from "tldts";
-import { catalogDomainFromLooseStored, mergeCatalogs, type Catalog, type CatalogDomain } from "./discovered-catalog.ts";
-import { getFlag, hasFlag, parseArgs, readJson, ROOT, usage, writeJson } from "./shared.ts";
+import {
+  catalogDomainFromLooseStored,
+  catalogDomainKey,
+  DEFAULT_DOMAIN_CATALOG_DIR,
+  mergeCatalogs,
+  readDomainCatalogTree,
+  type Catalog,
+  type CatalogDomain,
+  writeDomainCatalogTree,
+} from "./discovered-catalog.ts";
+import { getFlag, hasFlag, parseArgs, ROOT, usage } from "./shared.ts";
 
 const DISCOVERY_NAMESPACE_ID = "7456151d9722471ca000f6d3b03a62c7";
 const BULK_CHUNK_SIZE = 100;
@@ -11,12 +19,12 @@ const BULK_CHUNK_SIZE = 100;
 const HELP = `
 Usage: bun scripts/batch/sync-kv.ts [flags]
 
-Pulls production DISCOVERY KV rows into sources/discovered.json.
+Pulls DISCOVERY KV rows into the per-domain domains/ catalog tree.
 
 Flags:
   --local              Read local wrangler KV instead of production KV
   --dry-run            Print counts and a sample diff, write nothing
-  --out file           Catalog output path (default: sources/discovered.json)
+  --out dir            Catalog tree output directory (default: domains)
   --help               Show this help
 `;
 
@@ -33,11 +41,7 @@ export type SyncSummary = {
 
 function validDomainKey(key: string): string | null {
   const domain = key.trim().toLowerCase().replace(/\.$/, "");
-  if (!domain || domain.startsWith("__")) return null;
-  if (!/^[a-z0-9.-]+$/.test(domain) || !domain.includes(".")) return null;
-  const info = parseDomain(`https://${domain}`, { allowPrivateDomains: true });
-  if (info.isIp || !info.domain || !(info.isIcann || info.isPrivate)) return null;
-  return domain;
+  return catalogDomainKey(domain) ? domain : null;
 }
 
 function wrangler(args: string[]): { ok: boolean; stdout: string; stderr: string } {
@@ -54,7 +58,9 @@ function wrangler(args: string[]): { ok: boolean; stdout: string; stderr: string
 }
 
 function parseKeyList(stdout: string): string[] {
-  const parsed = JSON.parse(stdout) as unknown;
+  const trimmed = stdout.trim();
+  if (!trimmed) return [];
+  const parsed = JSON.parse(trimmed) as unknown;
   if (!Array.isArray(parsed)) throw new Error("wrangler key list did not return an array");
   return parsed.flatMap((item) => {
     if (typeof item === "string") return [item];
@@ -162,7 +168,7 @@ async function main(): Promise<void> {
 
   const local = hasFlag(args, "local");
   const dryRun = hasFlag(args, "dry-run");
-  const outPath = resolve(ROOT, getFlag(args, "out", "sources/discovered.json")!);
+  const outDir = resolve(ROOT, getFlag(args, "out", DEFAULT_DOMAIN_CATALOG_DIR)!);
 
   const keys = listKeys(local);
   const validKeys: string[] = [];
@@ -190,13 +196,18 @@ async function main(): Promise<void> {
         console.warn(`sync-kv: skipped ${row.key}: no usable discovery surfaces`);
         continue;
       }
+      if (!catalogDomainKey(domain.domain)) {
+        skippedInvalid++;
+        console.warn(`sync-kv: skipped ${row.key}: invalid registrable domain ${domain.domain}`);
+        continue;
+      }
       incoming.push(domain);
     } catch (err) {
       console.warn(`sync-kv: skipped ${row.key}: ${(err as Error).message}`);
     }
   }
 
-  const existing = readJson<Catalog>(outPath);
+  const existing = readDomainCatalogTree(outDir);
   const merged = mergeDiscoveredCatalog(existing, incoming);
   const summary: SyncSummary = {
     keysListed: keys.length,
@@ -212,9 +223,9 @@ async function main(): Promise<void> {
       `keys listed: ${summary.keysListed}`,
       `skipped invalid: ${summary.skippedInvalid}`,
       `parsed: ${summary.parsed}`,
-      `merged new: ${summary.mergedNew}`,
-      `updated: ${summary.updated}`,
-      `unchanged: ${summary.unchanged}`,
+      `domain files added: ${summary.mergedNew}`,
+      `domain files updated: ${summary.updated}`,
+      `domain files unchanged: ${summary.unchanged}`,
     ].join("\n"),
   );
 
@@ -223,8 +234,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  writeJson(outPath, merged.catalog);
-  console.log(`wrote ${merged.catalog.domains.length} domains to ${outPath}`);
+  const written = writeDomainCatalogTree(outDir, merged.catalog.domains);
+  for (const skip of written.skipped) {
+    console.warn(`sync-kv: skipped ${skip.domain}: ${skip.reason}`);
+  }
+  console.log(`wrote ${written.written} domain files to ${outDir} (${written.changed} changed)`);
 }
 
 if (import.meta.main) await main();

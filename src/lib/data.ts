@@ -37,7 +37,7 @@ export interface IndexRecord {
   categories: string[];
   feeds: string[];
   popularity?: number;
-  /** Curated developer-tool domain (scripts/batch/seed-domains*.txt). */
+  /** Optional ranking hint for developer-tool domains. */
   devtool?: boolean;
 }
 

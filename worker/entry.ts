@@ -22,6 +22,7 @@ import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./o
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
 import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { isJunkDomain, registrableDomain } from "../src/lib/favicon.ts";
+import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
 import type { Surface } from "../src/lib/surface-view.ts";
 import type { Credential } from "../src/lib/surface-view.ts";
@@ -261,6 +262,22 @@ function discoveryCounts(result: {
     credentials_count: result.credentials ? Object.keys(result.credentials).length : 0,
     used_llm: !!result.usedLlm,
   };
+}
+
+/** Drop SDK-as-`cli` surfaces from a stored-discovery KV envelope's JSON string,
+ * so the /api/{domain}/discovery endpoint matches the rendered pages. Serves the
+ * value unchanged if it doesn't parse into the expected shape. */
+function stripSdkFromStored(raw: string): string {
+  try {
+    const envelope = JSON.parse(raw) as { result?: { surfaces?: Surface[] } };
+    if (envelope.result?.surfaces?.length) {
+      envelope.result.surfaces = envelope.result.surfaces.filter((s) => !isSdkNotCli(s));
+      return JSON.stringify(envelope);
+    }
+  } catch {
+    /* malformed — serve as-is */
+  }
+  return raw;
 }
 
 async function healthz(env: Env): Promise<Response> {
@@ -524,7 +541,10 @@ async function handleRequest(
     if (storedMatch) {
       const domain = canonicalDomain(decodeURIComponent(storedMatch[1]));
       const raw = await discoveryKvGet(env, domain);
-      return new Response(raw ?? JSON.stringify({ stored: false }), {
+      // Strip client SDKs mis-typed as `cli` so this stored-discovery API agrees
+      // with what the pages render. Falls back to raw if the value doesn't parse.
+      const body = raw ? stripSdkFromStored(raw) : JSON.stringify({ stored: false });
+      return new Response(body, {
         status: raw ? 200 : 404,
         headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=60" },
       });

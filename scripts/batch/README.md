@@ -48,6 +48,22 @@ Check the output:
 bun scripts/batch/check-results.ts --dir scripts/batch/results/
 ```
 
+`check-results.ts` scores each domain's discovery quality (grounding, checklist).
+Before treating a run as done or loading it into KV, also run the structural
+gate — it catches problems `check-results.ts` doesn't look for: undefined/empty
+slugs that would render as `/domain/undefined/`, duplicate (domain, type, name)
+entries (within a result, across domain aliases, and across the
+static+discovered merge in `sources/discovered.json`), and surfaces missing
+fields the detail page renders unconditionally:
+
+```sh
+bun run validate:batch
+# or directly:
+bun scripts/batch/validate-results.ts --results-dir scripts/batch/results-full
+```
+
+`drive.sh` runs this automatically as its final step and exits nonzero if it fails.
+
 If a matching corpus file exists, URL grounding uses the corpus. If not, live-loop output is checked against the result evidence URLs, same registrable domain, and detected machine signals.
 
 Load KV:

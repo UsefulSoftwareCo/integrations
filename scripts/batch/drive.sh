@@ -71,3 +71,17 @@ PY
     grep -vE '^dedup:' | tail -3
 done
 echo "=== all batches complete $(date '+%H:%M') ==="
+
+# Final gate: the checklist above scores individual result quality, but it
+# can't see cross-file problems (duplicate/aliased domains, slugs that will
+# render as literal "undefined", static+discovered merge collisions). Run the
+# structural validator over the full results dir before this run is treated
+# as done — a failure here means the data is not safe to load into KV.
+echo "=== validating results $(date '+%H:%M') ==="
+bun scripts/batch/validate-results.ts --results-dir "$OUT" --no-catalog
+VALIDATE_STATUS=$?
+if [ "$VALIDATE_STATUS" -ne 0 ]; then
+  echo "GATE: validate-results failed — fix the offenders above before loading $OUT into KV"
+  exit 4
+fi
+echo "=== validation passed $(date '+%H:%M') ==="

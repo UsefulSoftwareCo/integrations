@@ -93,7 +93,7 @@ async function priorSurfaces(env: Env, origin: string, domain: string): Promise<
   return (await discoveryDoc(env, origin, domain))?.surfaces ?? [];
 }
 
-async function persistDiscovery(env: Env, result: { domain?: string; surfaces?: unknown[]; summary?: unknown }, model: string): Promise<void> {
+async function persistDiscovery(env: Env, result: { domain?: string; surfaces?: readonly unknown[]; summary?: unknown }, model: string): Promise<void> {
   if (!result.domain) return;
   const discoveredAt = new Date().toISOString();
   await Promise.all([

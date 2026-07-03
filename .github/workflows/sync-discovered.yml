@@ -58,7 +58,8 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          if git diff --quiet -- domains/; then
+          # git diff misses untracked files — new domain files are the common case.
+          if [ -z "$(git status --porcelain -- domains/)" ]; then
             echo "No discovered catalog changes."
             exit 0
           fi
@@ -66,4 +67,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add domains/
           git commit -m "sync discovered catalog from KV"
+          # A human push to main between checkout and here would make this
+          # non-fast-forward; rebase our one commit on top instead of failing.
+          git pull --rebase origin main
           git push origin HEAD:main

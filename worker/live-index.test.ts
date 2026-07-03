@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { appendLiveSearchResults, liveIndexEntryFromResult, mergeLiveDomains, normalizeLiveIndex, type LiveIndexEntry } from "./live-index.ts";
+import { appendLiveSearchResults, liveIndexEntryFromResult, mergeLiveDomains, normalizeLiveIndex, type LiveIndexEntry, type SearchResultRow } from "./live-index.ts";
 import type { SearchIndexEntry } from "../src/lib/search-index.ts";
 
 const staticIndex: SearchIndexEntry[] = [
@@ -47,7 +47,7 @@ describe("live index", () => {
   });
 
   test("appends matching live search results after static results and filters static domains", () => {
-    const staticResults = [
+    const staticResults: SearchResultRow[] = [
       {
         domain: "static.com",
         name: "static.com",

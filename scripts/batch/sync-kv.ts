@@ -187,7 +187,7 @@ async function main(): Promise<void> {
       const parsed = JSON.parse(row.value) as unknown;
       const domain = catalogDomainFromLooseStored(parsed, row.key);
       if (!domain) {
-        console.warn(`sync-kv: skipped ${row.key}: no usable discovery surfaces`);
+        console.warn(`sync-kv: skipped ${row.key}: no usable discovery result`);
         continue;
       }
       if (!catalogDomainKey(domain.domain)) {

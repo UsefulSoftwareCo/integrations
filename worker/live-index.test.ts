@@ -12,7 +12,7 @@ const live: LiveIndexEntry[] = [
 ];
 
 describe("live index", () => {
-  test("derives compact live entries from discovery surfaces and skips empty results", () => {
+  test("derives compact live entries from discovery surfaces and preserves zero-surface results", () => {
     expect(
       liveIndexEntryFromResult(
         {
@@ -32,18 +32,31 @@ describe("live index", () => {
       kinds: ["mcp", "openapi"],
       discoveredAt: "2026-07-03T00:00:00.000Z",
     });
-    expect(liveIndexEntryFromResult({ domain: "empty.com", surfaces: [] }, "2026-07-03T00:00:00.000Z")).toBeNull();
+    expect(
+      liveIndexEntryFromResult(
+        { domain: "empty.com", summary: "No public developer integration surfaces were found.", surfaces: [] },
+        "2026-07-03T00:00:00.000Z",
+      ),
+    ).toEqual({
+      domain: "empty.com",
+      summary: "No public developer integration surfaces were found.",
+      kinds: [],
+      discoveredAt: "2026-07-03T00:00:00.000Z",
+    });
   });
 
-  test("normalizes malformed live index rows and keeps newest per domain", () => {
+  test("normalizes malformed live index rows and keeps newest per domain, including zero-surface rows", () => {
     expect(
       normalizeLiveIndex([
         { domain: "fresh.com", kinds: ["graphql"], discoveredAt: "2026-07-03T01:00:00.000Z" },
         { domain: "fresh.com", kinds: ["mcp"], discoveredAt: "2026-07-03T02:00:00.000Z" },
         { domain: "__live_index__", kinds: ["mcp"], discoveredAt: "2026-07-03T02:00:00.000Z" },
-        { domain: "bad.com", kinds: [], discoveredAt: "2026-07-03T02:00:00.000Z" },
+        { domain: "empty.com", kinds: [], discoveredAt: "2026-07-03T03:00:00.000Z" },
       ]),
-    ).toEqual([{ domain: "fresh.com", kinds: ["mcp"], discoveredAt: "2026-07-03T02:00:00.000Z" }]);
+    ).toEqual([
+      { domain: "empty.com", kinds: [], discoveredAt: "2026-07-03T03:00:00.000Z" },
+      { domain: "fresh.com", kinds: ["mcp"], discoveredAt: "2026-07-03T02:00:00.000Z" },
+    ]);
   });
 
   test("appends matching live search results after static results and filters static domains", () => {
@@ -70,6 +83,28 @@ describe("live index", () => {
     expect(appendLiveSearchResults({ q: "fresh", kind: "graphql", limit: 5 }, staticIndex, [], live)).toEqual([]);
   });
 
+  test("matches zero-surface live entries by text but not by kind filter", () => {
+    const zeroSurfaceLive: LiveIndexEntry[] = [
+      {
+        domain: "rhys.dev",
+        summary: "No public developer integration surfaces were found.",
+        kinds: [],
+        discoveredAt: "2026-07-03T04:00:00.000Z",
+      },
+    ];
+
+    expect(appendLiveSearchResults({ q: "rhys", limit: 5 }, staticIndex, [], zeroSurfaceLive)).toEqual([
+      {
+        domain: "rhys.dev",
+        name: "rhys.dev",
+        description: "No public developer integration surfaces were found.",
+        kinds: [],
+        url: "https://integrations.sh/rhys.dev/",
+      },
+    ]);
+    expect(appendLiveSearchResults({ q: "rhys", kind: "mcp", limit: 5 }, staticIndex, [], zeroSurfaceLive)).toEqual([]);
+  });
+
   test("appends homepage domain rows with popularity-zero defaults", () => {
     const rows = mergeLiveDomains(
       [
@@ -83,10 +118,18 @@ describe("live index", () => {
           description: "Static API",
         },
       ],
-      live,
+      [
+        ...live,
+        {
+          domain: "rhys.dev",
+          summary: "No public developer integration surfaces were found.",
+          kinds: [],
+          discoveredAt: "2026-07-03T04:00:00.000Z",
+        },
+      ],
     );
 
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(rows[1]).toMatchObject({
       domain: "fresh.com",
       total: 2,
@@ -94,6 +137,14 @@ describe("live index", () => {
       popularity: 0,
       devtool: false,
       description: "Fresh MCP and REST",
+    });
+    expect(rows[2]).toMatchObject({
+      domain: "rhys.dev",
+      total: 0,
+      formats: {},
+      popularity: 0,
+      devtool: false,
+      description: "No public developer integration surfaces were found.",
     });
   });
 });

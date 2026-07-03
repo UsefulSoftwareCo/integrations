@@ -70,8 +70,8 @@ function normalizeLiveEntry(value: unknown): LiveIndexEntry | null {
   const discoveredAt = stringValue(value.discoveredAt);
   if (!domain || !discoveredAt) return null;
   if (domain.startsWith("__") || !domain.includes(".")) return null;
+  if (!Array.isArray(value.kinds)) return null;
   const kinds = normalizeKinds(value.kinds);
-  if (kinds.length === 0) return null;
   const summary = stringValue(value.summary);
   return { domain: canonicalDomain(domain), ...(summary ? { summary } : {}), kinds, discoveredAt };
 }
@@ -100,7 +100,7 @@ export async function readLiveIndex(env: Env): Promise<LiveIndexEntry[]> {
 
 export function liveIndexEntryFromResult(result: LiveDiscoveryResult, discoveredAt: string): LiveIndexEntry | null {
   const domain = stringValue(result.domain);
-  if (!domain || !Array.isArray(result.surfaces) || result.surfaces.length === 0) return null;
+  if (!domain || !Array.isArray(result.surfaces)) return null;
   const kinds = new Set<Kind>();
   for (const surface of result.surfaces) {
     if (!isRecord(surface)) continue;
@@ -109,7 +109,6 @@ export function liveIndexEntryFromResult(result: LiveDiscoveryResult, discovered
     if (kind) kinds.add(kind);
   }
   const orderedKinds = KIND_ORDER.filter((kind) => kinds.has(kind));
-  if (orderedKinds.length === 0) return null;
   const summary = stringValue(result.summary);
   return { domain: canonicalDomain(domain), ...(summary ? { summary } : {}), kinds: orderedKinds, discoveredAt };
 }

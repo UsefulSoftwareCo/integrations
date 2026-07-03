@@ -146,7 +146,6 @@ function compactLooseSurface(value: unknown): CatalogSurface | null {
 export function catalogDomainFromStored(stored: StoredDiscovery): CatalogDomain | null {
   const result = stored.result;
   const surfaces = (result.surfaces ?? []).map(compactSurface);
-  if (surfaces.length === 0) return null;
   return {
     domain: result.domain.toLowerCase(),
     description: result.description,
@@ -165,7 +164,6 @@ export function catalogDomainFromLooseStored(value: unknown, fallbackDomain?: st
     const compact = compactLooseSurface(surface);
     return compact ? [compact] : [];
   });
-  if (surfaces.length === 0) return null;
   const summary = stringValue(result.summary) ?? stringValue(result.description) ?? `${domain.toLowerCase()} integration surfaces`;
   const discoveredAt = stringValue(value.discoveredAt) ?? stringValue(result.discoveredAt);
   return {

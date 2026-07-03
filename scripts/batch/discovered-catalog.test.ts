@@ -2,7 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mergeCatalogs, readDomainCatalogTree, writeDomainCatalogTree, type Catalog, type CatalogDomain } from "./discovered-catalog.ts";
+import {
+  catalogDomainFromLooseStored,
+  catalogDomainFromStored,
+  mergeCatalogs,
+  readDomainCatalogTree,
+  writeDomainCatalogTree,
+  type Catalog,
+  type CatalogDomain,
+} from "./discovered-catalog.ts";
 
 const domain = (domainName: string, discoveredAt: string, summary = `${domainName} summary`): CatalogDomain => ({
   domain: domainName,
@@ -70,6 +78,49 @@ describe("mergeCatalogs", () => {
 
       expect(written).toEqual({ written: 2, changed: 2, skipped: [] });
       expect(readDomainCatalogTree(dir).domains.map((row) => row.domain)).toEqual(["brand-new.com", "zoom.us"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("converts, merges, writes, and reads a zero-surface discovery row", () => {
+    const stored = {
+      result: {
+        version: 3 as const,
+        domain: "rhys.dev",
+        summary: "No public developer integration surfaces were found.",
+        description: "Personal site for Rhys Sullivan.",
+        credentials: {},
+        surfaces: [],
+      },
+      discoveredAt: "2026-07-03T00:00:00.000Z",
+      model: "test",
+    };
+    const strict = catalogDomainFromStored(stored);
+    const loose = catalogDomainFromLooseStored({ result: { domain: "rhys.dev", description: "Personal site for Rhys Sullivan.", surfaces: [] } });
+
+    expect(strict).toEqual({
+      domain: "rhys.dev",
+      description: "Personal site for Rhys Sullivan.",
+      summary: "No public developer integration surfaces were found.",
+      discoveredAt: "2026-07-03T00:00:00.000Z",
+      surfaces: [],
+    });
+    expect(loose).toEqual({
+      domain: "rhys.dev",
+      description: "Personal site for Rhys Sullivan.",
+      summary: "Personal site for Rhys Sullivan.",
+      surfaces: [],
+    });
+    if (!strict) throw new Error("expected strict zero-surface conversion");
+
+    const merged = mergeCatalogs({ domains: [] }, [strict]);
+    expect(merged.stats).toEqual({ new: 1, updated: 0, unchanged: 0 });
+
+    const dir = mkdtempSync(join(tmpdir(), "catalog-tree-zero-"));
+    try {
+      expect(writeDomainCatalogTree(dir, merged.catalog.domains)).toEqual({ written: 1, changed: 1, skipped: [] });
+      expect(readDomainCatalogTree(dir).domains).toEqual([strict]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

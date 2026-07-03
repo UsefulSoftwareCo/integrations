@@ -7,6 +7,7 @@
  */
 import { index } from "./data.ts";
 import { faviconUrl, isJunkDomain } from "./favicon.ts";
+import { searchIndex } from "./search-index.ts";
 import type { Kind } from "./types.ts";
 
 export interface DomainSummary {
@@ -37,6 +38,22 @@ const DOMAINS: DomainSummary[] = (() => {
     g.popularity = Math.max(g.popularity, r.popularity ?? 0);
     g.devtool ||= r.devtool === true;
     if (!g.description && r.description) g.description = r.description.replace(/\s+/g, " ").slice(0, 110);
+  }
+  for (const entry of searchIndex()) {
+    if (entry.total !== 0) continue;
+    const d = entry.domain.trim().toLowerCase();
+    if (!d) continue;
+    if (isJunkDomain(d)) continue;
+    if (map.has(d)) continue;
+    map.set(d, {
+      domain: d,
+      icon: faviconUrl(d),
+      total: 0,
+      formats: {},
+      popularity: entry.popularity,
+      devtool: entry.devtool,
+      description: entry.description,
+    });
   }
   // Dev tools first — the audience's daily drivers — then popularity.
   return [...map.values()].sort(

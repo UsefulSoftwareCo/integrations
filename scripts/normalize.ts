@@ -11,7 +11,7 @@ const getDomain = (url: string) => tldGetDomain(url, { allowPrivateDomains: true
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
 import { faviconUrl, isJunkDomain } from "../src/lib/favicon.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
-import { readDomainCatalogTree } from "./batch/discovered-catalog.ts";
+import { readDomainCatalogTree, type Catalog } from "./batch/discovered-catalog.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCES = join(ROOT, "sources");
@@ -392,13 +392,23 @@ const DISCOVERED_ALIAS_DEDUPE = new Set(aliasesOf("railway.com"));
 const discoveredKind = (type: DiscoveredSurfaceType): Kind => (type === "http" ? "openapi" : type);
 const domainKindKey = (domain: string, kind: Kind) => `${canonicalDomain(domain)}:${kind}`;
 
-function buildDiscovered(
+export interface ZeroSurfaceDomain {
+  domain: string;
+  description: string;
+}
+
+function discoveredDescription(d: DiscoveredDomain): string {
+  return (d.description || d.summary || "").replace(/\s+/g, " ").trim().slice(0, 240);
+}
+
+export function buildDiscoveredEntries(
+  data: Pick<Catalog, "domains">,
   knownRawDomains: Set<string>,
   knownDomainKinds: Set<string>,
   knownDomains: Set<string>,
-): Integration[] {
-  const data = readDomainCatalogTree(DOMAINS);
+): { records: Integration[]; zeroSurfaceDomains: ZeroSurfaceDomain[] } {
   const recs: Integration[] = [];
+  const zeroSurfaceDomains = new Map<string, ZeroSurfaceDomain>();
 
   for (const d of data.domains ?? []) {
     const domain = d.domain.trim().toLowerCase();
@@ -416,10 +426,16 @@ function buildDiscovered(
       if (!byKind.has(kind)) byKind.set(kind, surface);
     }
     const kinds = DISCOVERED_KIND_PRIORITY.filter((kind) => byKind.has(kind));
-    if (kinds.length === 0) continue;
+    const description = discoveredDescription(d);
+    if (kinds.length === 0) {
+      if (!knownDomains.has(canonical) && !zeroSurfaceDomains.has(canonical)) {
+        zeroSurfaceDomains.set(canonical, { domain, description });
+      }
+      continue;
+    }
+    zeroSurfaceDomains.delete(canonical);
 
     const domainSlug = slugify(domain);
-    const description = (d.description || d.summary || "").replace(/\s+/g, " ").trim().slice(0, 240);
     kinds.forEach((kind, i) => {
       const surface = byKind.get(kind)!;
       const slug = i === 0 ? domainSlug : `${domainSlug}-${kind}`;
@@ -461,7 +477,15 @@ function buildDiscovered(
     });
   }
 
-  return dedupeSlugs(recs);
+  return { records: dedupeSlugs(recs), zeroSurfaceDomains: [...zeroSurfaceDomains.values()] };
+}
+
+function buildDiscovered(
+  knownRawDomains: Set<string>,
+  knownDomainKinds: Set<string>,
+  knownDomains: Set<string>,
+): { records: Integration[]; zeroSurfaceDomains: ZeroSurfaceDomain[] } {
+  return buildDiscoveredEntries(readDomainCatalogTree(DOMAINS), knownRawDomains, knownDomainKinds, knownDomains);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -770,7 +794,7 @@ interface SearchIndexEntry {
   total: number;
 }
 
-function buildSearchIndex(index: IndexEntry[]): SearchIndexEntry[] {
+export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readonly ZeroSurfaceDomain[] = []): SearchIndexEntry[] {
   const map = new Map<string, { domain: string; description: string; kinds: Set<Kind>; devtool: boolean; popularity: number; total: number }>();
   for (const r of index) {
     const domain = r.domain || r.slug;
@@ -786,6 +810,21 @@ function buildSearchIndex(index: IndexEntry[]): SearchIndexEntry[] {
     group.popularity = Math.max(group.popularity, r.popularity ?? 0);
     group.devtool ||= r.devtool === true;
     if (!group.description && r.description) group.description = r.description.replace(/\s+/g, " ").slice(0, 110);
+  }
+
+  for (const zero of zeroSurfaceDomains) {
+    const domain = zero.domain.trim().toLowerCase();
+    if (!domain) continue;
+    if (isJunkDomain(domain)) continue;
+    if (map.has(domain) || map.has(canonicalDomain(domain))) continue;
+    map.set(domain, {
+      domain,
+      description: zero.description.replace(/\s+/g, " ").trim().slice(0, 110),
+      kinds: new Set(),
+      devtool: false,
+      popularity: 0,
+      total: 0,
+    });
   }
 
   return [...map.values()]
@@ -914,7 +953,8 @@ function main() {
         return domain ? [domainKindKey(domain, r.kind)] : [];
       }),
   );
-  const discovered = buildDiscovered(knownRawDomains, knownDomainKinds, knownDomains).filter(isPublic);
+  const discoveredBuild = buildDiscovered(knownRawDomains, knownDomainKinds, knownDomains);
+  const discovered = discoveredBuild.records.filter(isPublic);
   const mcp = [...baseMcp, ...discovered.filter((r) => r.kind === "mcp")];
   const openapi = [...baseOpenapi, ...discovered.filter((r) => r.kind === "openapi")];
   const graphql = [...baseGraphql, ...discovered.filter((r) => r.kind === "graphql")];
@@ -929,7 +969,7 @@ function main() {
   const index = buildIndex(all);
   writeFileSync(join(OUTPUT, "index.json"), JSON.stringify(index));
   writeFileSync(join(OUTPUT, "catalog-seeds.json"), JSON.stringify(buildCatalogSeedData(all)));
-  writeFileSync(join(OUTPUT, "search-index.json"), JSON.stringify(buildSearchIndex(index)));
+  writeFileSync(join(OUTPUT, "search-index.json"), JSON.stringify(buildSearchIndex(index, discoveredBuild.zeroSurfaceDomains)));
 
   const mergedMcp = mcp.filter((r) => r.feeds.length > 1).length;
   const withTools = (rs: Integration[]) =>
@@ -954,4 +994,4 @@ function main() {
   printDomainMismatchWarnings(all);
 }
 
-main();
+if (import.meta.main) main();

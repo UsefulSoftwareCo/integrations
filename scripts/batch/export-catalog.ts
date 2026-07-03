@@ -11,8 +11,8 @@ if (hasFlag(args, "help")) {
 Usage: bun scripts/batch/export-catalog.ts --results-dir dir [--out domains]
 
 Exports compact catalog entries from StoredDiscovery result files.
-Only domains with at least one surface are included. Credentials, notes, and
-other discovery-only details are intentionally omitted.
+Domains with zero surfaces are included. Credentials, notes, and other
+discovery-only details are intentionally omitted.
 `);
 }
 

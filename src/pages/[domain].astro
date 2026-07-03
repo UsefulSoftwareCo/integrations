@@ -19,7 +19,16 @@ export function getStaticPaths() {
 
 const { domain } = Astro.props;
 const baseline = catalogDiscovery(domain, all.filter((r) => (domainById.get(r.id) || r.slug) === domain));
-const initialData = baseline.surfaces.length ? baseline : null;
+const domainSummary = allDomains().find((row) => row.domain === domain);
+const zeroSurfaceSummary =
+  domainSummary?.total === 0
+    ? domainSummary.description || `No public developer integration surfaces were found for ${domain}.`
+    : "";
+const initialData = baseline.surfaces.length
+  ? baseline
+  : zeroSurfaceSummary
+    ? { ...baseline, summary: zeroSurfaceSummary, description: domainSummary?.description }
+    : null;
 ---
 
 <DomainPage domain={domain} initialData={initialData} />

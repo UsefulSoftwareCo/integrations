@@ -111,3 +111,17 @@ export function mechanicsLine(m: Mechanics): string {
   }
 }
 
+/** A mechanics line earns its pixels only when it says something the
+ * credential label doesn't. Spec-sourced bindings ("OpenAPI scheme · X")
+ * restate the scheme name, and an unrecognized source says nothing. */
+export function mechanicsSubline(m: Mechanics): string | undefined {
+  switch (m.source) {
+    case "well-known":
+    case "metadata":
+    case "cli":
+    case "http":
+      return mechanicsLine(m);
+    default:
+      return undefined;
+  }
+}

@@ -14,6 +14,7 @@ import { canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { searchIndex } from "../src/lib/search-index.ts";
 import type { Env } from "./env.ts";
 import { discoveryDoc } from "./discovery-doc.ts";
+import { appendLiveSearchResults, readLiveIndex, type LiveIndexEntry } from "./live-index.ts";
 import {
   DETECT_DESCRIPTION,
   DetectionResult,
@@ -137,10 +138,11 @@ const SurfaceEndpoint = HttpApiEndpoint.get("surface", "/api/:domain/surface", {
   .annotate(OpenApi.Summary, "Get a domain's integration surface document")
   .annotate(OpenApi.Description, SURFACE_DESCRIPTION);
 
-export function searchCatalog(query: typeof SearchQuery.Type): typeof SearchResults.Type {
+export function searchCatalog(query: typeof SearchQuery.Type, liveEntries: readonly LiveIndexEntry[] = []): typeof SearchResults.Type {
   const q = query.q.trim().toLowerCase();
   const limit = Math.min(Math.max(query.limit ?? 20, 1), 100);
-  const results = searchIndex()
+  const staticIndex = searchIndex();
+  const staticResults = staticIndex
     .filter((entry) => {
       if (query.kind && !entry.kinds.includes(query.kind)) return false;
       const haystack = [entry.domain, entry.description, ...entry.kinds].join(" ").toLowerCase();
@@ -154,6 +156,7 @@ export function searchCatalog(query: typeof SearchQuery.Type): typeof SearchResu
       kinds: entry.kinds,
       url: `https://integrations.sh/${encodeURIComponent(entry.domain)}/`,
     }));
+  const results = appendLiveSearchResults(query, staticIndex, staticResults, liveEntries);
   return { results };
 }
 
@@ -169,7 +172,12 @@ export const Api = HttpApi.make("integrations.sh")
 
 const DetectGroup = HttpApiBuilder.group(Api, "detect", (handlers) =>
   handlers
-    .handle("search", (req: { readonly query: typeof SearchQuery.Type }) => Effect.succeed(searchCatalog(req.query)))
+    .handle("search", (req: { readonly query: typeof SearchQuery.Type }) =>
+      Effect.gen(function*() {
+        const { env } = yield* ApiRuntime;
+        const liveEntries = yield* Effect.promise(() => readLiveIndex(env));
+        return searchCatalog(req.query, liveEntries);
+      }))
     .handle("detect", (req: { readonly params: { readonly domain: string } }) => runDetect(canonicalDomain(req.params.domain)))
     .handle("discover", (req: { readonly params: { readonly domain: string } }) => runDiscover(canonicalDomain(req.params.domain)))
     .handle("surface", (req: { readonly params: { readonly domain: string } }) =>

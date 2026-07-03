@@ -5,6 +5,9 @@ import Breadcrumb from "~/components/Breadcrumb.astro";
 const title = "Publishing your integration surface - integrations.sh";
 const description = "Publish standard discovery files so integrations.sh can map your APIs, MCP servers, agent metadata, credentials, and caveats from your own domain.";
 
+// One file, everything inline: version + summary + a shared credentials map +
+// a surfaces list of full surface objects. There is no index/ref layout —
+// /.well-known/integrations.json holds the whole declaration.
 const example = `{
   "version": 3,
   "summary": "Resend exposes an HTTP API, MCP server, and CLI for sending and managing email.",
@@ -88,6 +91,98 @@ const example = `{
   ]
 }`;
 
+// Prompt A — the main one. Paste into a coding agent from the product's repo.
+// It embeds a compact schema summary so it works offline, and quotes the exact
+// paths this site probes (see src/lib/conventions.ts + src/lib/detect.ts).
+const promptMain = `You are working inside my product's repository. Goal: make my product discoverable on integrations.sh by publishing standard discovery files on my own domain. Derive every value from THIS repo and its docs. Never invent endpoints, specs, or auth. Leave out any surface my product does not actually have.
+
+# 1. Inventory the integration surfaces
+
+Read the codebase, README, and docs to find each way an agent could integrate with my product, and how each authenticates:
+- HTTP/REST API — base URL, and whether an OpenAPI/Swagger spec exists in the repo or is served somewhere.
+- MCP server — the connect URL and transport (streamable-http or sse), if one ships.
+- GraphQL API — the endpoint URL, and SDL/introspection availability.
+- CLI — the command name and how it installs (npm/pypi/oci/brew).
+For each surface, determine the auth: none (public), or the credential(s) needed and exactly how they ride the request (header name + scheme, or query/body param, or a CLI login/env var).
+
+# 2. Author /.well-known/integrations.json
+
+Write ONE file at /.well-known/integrations.json on my production domain with EVERYTHING inline — there is no index/reference layout. The file holds version + summary + a shared credentials map + a "surfaces" list of full surface objects. Credentials are defined once in the top-level "credentials" map and referenced from each surface's auth by id.
+
+Serve it as application/json, publicly cacheable (e.g. Cache-Control: public, max-age=3600).
+
+File shape (v3):
+  { "version": 3, "summary"?: string, "credentials"?: { [id]: Credential },
+    "surfaces"?: Surface[] }
+
+Credential (defined once in "credentials", keyed by id, referenced from a surface's auth):
+  { "type": "api_key"|"bearer"|"basic"|"oauth2"|"oauth2_cc"|"jwt"|"custom"|...,
+    "label": string,                 // human name, e.g. "Acme API key"
+    "generateUrl"?: string,          // where the user mints it
+    "setup": string,                 // markdown: how to get it, gotchas
+    "fields"?: { [name]: { "secret"?: boolean, "description"?: string } } }  // only for multi-part secrets
+
+Surface (discriminated on "type"). Common fields on every surface:
+  "slug": string,                    // stable url segment, e.g. "acme-api"
+  "name": string,                    // display name
+  "docs"?: string,                   // human docs URL
+  "basis": { "via": "declared", "source": "https://MY_DOMAIN/.well-known/integrations.json" },
+  "auth": AuthStatus
+Per-type extra fields:
+  http:    "spec"? (OpenAPI doc URL), "url"? (base URL)
+  graphql: "url"? (endpoint), "spec"? ("introspection" or SDL URL)
+  mcp:     "url"? (connect endpoint), "transports"?: ["streamable-http"] | ["sse"]
+  cli:     "command"?: string, "packages"?: [{ "registryType": "npm"|"pypi"|..., "identifier": string, "runtimeHint"?: "npx"|"uvx" }]
+
+AuthStatus is one of:
+  { "status": "none",    "basis": { "via": "declared", "source": "https://MY_DOMAIN/.well-known/integrations.json" } }   // confirmed public
+  { "status": "unknown" }                                                                                               // not determined
+  { "status": "required", "entries": [ AuthEntry ] }  // entries are OR alternatives; at least one works
+AuthEntry:
+  { "use": [ { "id": "<credential id>", "mechanics": Mechanics } ],   // multiple uses are AND'd (sent together)
+    "basis": { "via": "declared", "source": "https://MY_DOMAIN/.well-known/integrations.json" } }
+Mechanics (how ONE credential binds), pick the matching shape:
+  { "source": "http", "in": "header", "headerName": "Authorization", "scheme": "Bearer" }
+  { "source": "http", "in": "query",  "paramName": "api_key" }
+  { "source": "cli",  "command"?: "acme login", "env"?: ["ACME_API_TOKEN"] }
+  { "source": "spec", "scheme": "<securityScheme name from the OpenAPI doc>" }
+  { "source": "well-known" }   // MCP OAuth resolvable from the surface url via RFC 9728/8414
+  { "source": "unknown" }
+
+Rules:
+- Replace MY_DOMAIN with my real production host everywhere.
+- Every surface's basis.source and every auth basis.source must be my integrations.json URL (https://MY_DOMAIN/.well-known/integrations.json).
+- Only include surfaces that exist. Omit "credentials" / "surfaces" entirely if there are none.
+- The file must parse as strict JSON and validate against the v3 shape above, or integrations.sh silently ignores it.
+
+# 3. Also publish, if applicable
+
+- If my product has an HTTP API and an OpenAPI/Swagger spec exists (or can be generated from the code), serve it at /openapi.json (integrations.sh also probes /swagger.json, /api/openapi.json, /v1/openapi.json, /api/schema/ — /openapi.json is the canonical one). Serve as application/json, publicly cacheable. If a spec route already exists, just make sure one of those paths resolves to it.
+- If my product ships an MCP server, also serve /.well-known/mcp/server-card.json with at least { "url": "<mcp connect endpoint>" } and, if the server needs auth, "authentication": { "type": "oauth2", "authorization_server"?: "<as url>" }. application/json, publicly cacheable.
+
+# 4. Verify
+
+Print copy-paste curl commands to confirm each published file resolves on my live domain with a JSON content-type, e.g.:
+  curl -sS -D- -o/dev/null https://MY_DOMAIN/.well-known/integrations.json
+  curl -sS https://MY_DOMAIN/.well-known/integrations.json | jq .
+  curl -sS -D- -o/dev/null https://MY_DOMAIN/openapi.json                 # if you published one
+  curl -sS https://MY_DOMAIN/.well-known/mcp/server-card.json | jq .      # if you published one
+
+Then tell me: open https://integrations.sh/MY_DOMAIN/ and click "Map integration surface" to publish the listing.`;
+
+// Prompt B — smaller. You already have a spec and/or an MCP server.
+const promptExisting = `You are working inside my product's repository. I already have an OpenAPI spec and/or an MCP server. Expose them at the conventional paths integrations.sh probes. Use the real files in this repo; do not invent anything.
+
+1. If I have an OpenAPI/Swagger document, serve it at /openapi.json on my production domain, as application/json and publicly cacheable (integrations.sh also checks /swagger.json, /api/openapi.json, /v1/openapi.json, /api/schema/ — /openapi.json is canonical). If a spec route already exists, just make one of those paths resolve to it.
+
+2. If I ship an MCP server, serve /.well-known/mcp/server-card.json with at least:
+   { "url": "<my MCP connect endpoint>", "authentication"?: { "type": "oauth2", "authorization_server"?: "<as url>" } }
+   as application/json, publicly cacheable. Fill "authentication" only if the server needs it; derive the values from the repo.
+
+3. Print curl commands to verify each path resolves on my live domain with a JSON content-type. Then tell me to open https://integrations.sh/MY_DOMAIN/ and click "Map integration surface".
+
+If you also author /.well-known/integrations.json, put everything in that one file: version + summary + a shared "credentials" map + a "surfaces" list of full surface objects. There is no index/reference layout — no separate per-surface files. Credentials are defined once in "credentials" and referenced from each surface's auth by id.`;
+
 const formats = [
   { path: "/llms.txt", feeds: "Plain-language docs and product context.", adoption: "Use it when your docs have a good LLM-readable overview." },
   { path: "/.well-known/api-catalog", feeds: "REST bases, OpenAPI links, docs, status pages, and MCP endpoints.", adoption: "Use RFC 9727 when you already publish a machine-readable service catalog." },
@@ -106,24 +201,70 @@ const formats = [
       <Breadcrumb segments={[{ label: "registry", href: "/" }, { label: "own your page" }]} />
 
       <header class="own-head">
-        <h1>Publishing your integration surface</h1>
+        <h1>Get your service listed</h1>
         <p>
-          Every domain page is generated from what your site publishes plus live discovery. If your page is missing an API,
-          MCP server, credential, or agent-facing file, publish the relevant format on your own domain and re-run discovery.
+          integrations.sh isn't a closed registry — it reads open discovery files from your own domain. Publish a couple of
+          standard files, and any client that implements the same checks can find you. You're not waiting on us to merge a PR;
+          your listing is pulled from your site. If a better community standard emerges, we'll happily adopt it.
         </p>
       </header>
 
-      <section>
-        <div class="sec-header"><span class="sec-label">Formats We Read</span></div>
-        <div class="format-table">
-          {formats.map((format) => (
-            <div class="format-row">
-              <code>{format.path}</code>
-              <p>{format.feeds}</p>
-              <p>{format.adoption}</p>
+      <section class="flow">
+        <div class="sec-header"><span class="sec-label">Get Listed</span></div>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><span class="step-n">1</span><h2>Publish discovery files</h2></div>
+            <p>
+              Paste this into your coding agent (Claude Code, Cursor, Codex) from your product's repo. It inventories your
+              integration surfaces, writes <code>/.well-known/integrations.json</code>, and serves an OpenAPI spec and MCP
+              server card if you have them.
+            </p>
+
+            <div class="prompt" data-copy>
+              <div class="prompt-head">
+                <span class="prompt-label">prompt — add my product to integrations.sh</span>
+                <button class="copy-btn" type="button" data-copy-btn>copy</button>
+              </div>
+              <pre class="code-block prompt-body"><code>{promptMain}</code></pre>
             </div>
-          ))}
-        </div>
+
+            <details class="prompt-alt">
+              <summary>I already have an OpenAPI spec or MCP server</summary>
+              <div class="prompt" data-copy>
+                <div class="prompt-head">
+                  <span class="prompt-label">prompt — expose an existing spec / MCP server</span>
+                  <button class="copy-btn" type="button" data-copy-btn>copy</button>
+                </div>
+                <pre class="code-block prompt-body"><code>{promptExisting}</code></pre>
+              </div>
+            </details>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><span class="step-n">2</span><h2>Verify</h2></div>
+            <p>
+              Check the files resolve on your live domain and return JSON. The agent prints these; run them yourself to confirm
+              (swap in your host):
+            </p>
+            <pre class="code-block"><code>curl -sS https://your-domain.com/.well-known/integrations.json | jq .
+curl -sS https://your-domain.com/openapi.json | jq .                    # if published
+curl -sS https://your-domain.com/.well-known/mcp/server-card.json | jq . # if published</code></pre>
+            <p class="fine">
+              The file must parse as strict JSON and be served with an <code>application/json</code> content-type — an HTML
+              404 or a JSON <code>{`{"error":"Not Found"}`}</code> won't be trusted.
+            </p>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><span class="step-n">3</span><h2>Get discovered</h2></div>
+            <p>
+              Open <code>https://integrations.sh/{`{your-domain}`}/</code> and click <b>Map integration surface</b>. The run
+              reads your files, refreshes the conventions scorecard and discovered surfaces, and your listing is live
+              immediately.
+            </p>
+          </li>
+        </ol>
       </section>
 
       <section>
@@ -141,6 +282,23 @@ const formats = [
       </section>
 
       <section>
+        <div class="sec-header"><span class="sec-label">Formats We Read</span></div>
+        <p class="sec-intro">
+          <code>integrations.json</code> is the direct route, but you can also publish any of these and we'll pick them up. All
+          are open — nothing is proprietary to us.
+        </p>
+        <div class="format-table">
+          {formats.map((format) => (
+            <div class="format-row">
+              <code>{format.path}</code>
+              <p>{format.feeds}</p>
+              <p>{format.adoption}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
         <div class="sec-header"><span class="sec-label">What We May Add</span></div>
         <p>
           Owner declarations are respected as the owner's statement of intent. The registry may additionally record verified
@@ -148,29 +306,106 @@ const formats = [
           quirks sourced from docs, testing, and later user reports.
         </p>
       </section>
-
-      <section>
-        <div class="sec-header"><span class="sec-label">Re-Run Discovery</span></div>
-        <p>
-          After publishing any of these files, open your domain page and click <b>Map integration surface</b>. The next run
-          refreshes the conventions scorecard and the discovered surfaces.
-        </p>
-      </section>
     </article>
   </div>
 </Base>
+
+<script>
+  // Copy button for each prompt/code block. No dependency — reads the sibling
+  // <pre> text and writes it to the clipboard, with a brief "copied" state.
+  for (const wrap of document.querySelectorAll<HTMLElement>("[data-copy]")) {
+    const btn = wrap.querySelector<HTMLButtonElement>("[data-copy-btn]");
+    const pre = wrap.querySelector("pre");
+    if (!btn || !pre) continue;
+    btn.addEventListener("click", async () => {
+      const text = pre.textContent ?? "";
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // Fallback for insecure contexts / older browsers.
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); } catch { /* give up silently */ }
+        ta.remove();
+      }
+      btn.classList.add("copied");
+      btn.textContent = "copied";
+      setTimeout(() => { btn.classList.remove("copied"); btn.textContent = "copy"; }, 1400);
+    });
+  }
+</script>
 
 <style>
   .own { max-width: 780px; }
   .own-head { padding: 24px 0 8px; }
   .own-head h1 { margin: 0; font-size: 34px; line-height: 1.15; letter-spacing: -0.03em; }
   .own-head p, .own section p { color: var(--gray-700); font-size: 14.5px; line-height: 1.65; max-width: 680px; }
-  .own section { margin-top: 38px; }
-  .format-table { margin-top: 8px; }
+  .own section { margin-top: 44px; }
+  .sec-intro { margin-top: 12px; }
+
+  /* Get-listed flow */
+  .steps { list-style: none; margin: 8px 0 0; padding: 0; }
+  .step { padding: 22px 0 4px; border-bottom: 1px solid var(--gray-100); }
+  .step:last-child { border-bottom: 0; }
+  .step-head { display: flex; align-items: center; gap: 12px; }
+  .step-n {
+    flex: none; width: 22px; height: 22px; border-radius: 5px;
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: 12px; color: var(--gray-500);
+    background: var(--gray-25); border: 1px solid var(--gray-100);
+  }
+  .step-head h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .step p { margin: 10px 0 0; }
+  .step .fine { color: var(--gray-500); font-size: 13px; }
+
+  /* Prompt block: a labeled header bar with a copy button over the code. */
+  .prompt { margin-top: 14px; border: 1px solid var(--gray-100); border-radius: 6px; overflow: hidden; background: var(--gray-25); }
+  .prompt-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 8px 12px; border-bottom: 1px solid var(--gray-100);
+  }
+  .prompt-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--gray-400); overflow-wrap: anywhere; }
+  .copy-btn {
+    flex: none; cursor: pointer;
+    font-family: var(--font-mono); font-size: 11px; color: var(--gray-500);
+    background: var(--white); border: 1px solid var(--gray-200); border-radius: 5px;
+    padding: 3px 10px; transition: color 0.12s, border-color 0.12s;
+  }
+  .copy-btn:hover { color: var(--gray-1000); border-color: var(--gray-400); }
+  .copy-btn.copied { color: var(--gray-1000); border-color: var(--gray-300); }
+  /* the code inside a prompt sits flush; the wrapper draws the border/bg */
+  .prompt-body {
+    margin: 0; border: 0; border-radius: 0; background: transparent;
+    max-height: 420px; overflow: auto; white-space: pre; -webkit-overflow-scrolling: touch;
+  }
+
+  .prompt-alt { margin-top: 14px; }
+  .prompt-alt > summary {
+    cursor: pointer; list-style: none;
+    font-family: var(--font-mono); font-size: 12.5px; color: var(--gray-500);
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .prompt-alt > summary::-webkit-details-marker { display: none; }
+  .prompt-alt > summary::before { content: "+"; color: var(--gray-400); }
+  .prompt-alt[open] > summary::before { content: "–"; }
+  .prompt-alt > summary:hover { color: var(--gray-1000); }
+
+  .own code { overflow-wrap: anywhere; }
+  .step p code, .own section p code, .fine code {
+    color: var(--gray-1000); background: var(--gray-25);
+    border: 1px solid var(--gray-100); border-radius: 4px; padding: 1px 5px; font-size: 12px;
+  }
+
+  .format-table { margin-top: 12px; }
   .format-row { display: grid; grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; padding: 13px 0; border-bottom: 1px solid var(--gray-100); align-items: baseline; }
   .format-row code { color: var(--gray-1000); background: var(--gray-25); border: 1px solid var(--gray-100); border-radius: 4px; padding: 1px 5px; font-size: 12px; overflow-wrap: anywhere; }
   .format-row p { margin: 0; color: var(--gray-500); font-size: 13px; line-height: 1.55; }
   .own-code { margin: 14px 0; max-height: 560px; }
+
   @media (max-width: 720px) {
     .own-head h1 { font-size: 29px; }
     .format-row { grid-template-columns: 1fr; gap: 5px; }

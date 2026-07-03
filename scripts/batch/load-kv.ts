@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileDomain, getFlag, hasFlag, listJsonFiles, parseArgs, ROOT, run, usage } from "./shared.ts";
 
 const HELP = `
-Usage: bun scripts/batch/load-kv.ts --dir scripts/batch/results/ [flags]
+Usage: bun scripts/batch/load-kv.ts --dir dir [flags]
 
 Flags:
   --dry-run            Write bulk file and print counts, do not invoke wrangler

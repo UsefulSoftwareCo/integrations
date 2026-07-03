@@ -1,0 +1,73 @@
+# Required repository secrets:
+# - CLOUDFLARE_API_TOKEN with Workers KV Storage: Read
+# - CLOUDFLARE_ACCOUNT_ID for the Cloudflare account that owns DISCOVERY
+name: Sync discovered catalog
+
+on:
+  schedule:
+    - cron: "37 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-discovered
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Count existing discovered domains
+        id: before
+        run: |
+          count=$(find domains -mindepth 2 -maxdepth 2 -type f -name integrations.json 2>/dev/null | wc -l | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Sync from KV
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bun run sync:discovered
+
+      - name: Guard against large catalog deletion
+        run: |
+          before="${{ steps.before.outputs.count }}"
+          after=$(find domains -mindepth 2 -maxdepth 2 -type f -name integrations.json 2>/dev/null | wc -l | tr -d ' ')
+          min=$(( before - before / 10 ))
+          echo "domains before=$before after=$after min=$min"
+          if [ "$after" -lt "$min" ]; then
+            echo "Refusing to commit: domains/ lost more than 10% of domain files."
+            exit 1
+          fi
+
+      - name: Build
+        run: bun run build
+
+      - name: Commit and push changes
+        run: |
+          # git diff misses untracked files — new domain files are the common case.
+          if [ -z "$(git status --porcelain -- domains/)" ]; then
+            echo "No discovered catalog changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add domains/
+          git commit -m "sync discovered catalog from KV"
+          # A human push to main between checkout and here would make this
+          # non-fast-forward; rebase our one commit on top instead of failing.
+          git pull --rebase origin main
+          git push origin HEAD:main

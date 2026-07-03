@@ -1,25 +1,27 @@
-import { existsSync } from "node:fs";
-import { basename } from "node:path";
+import { basename, dirname } from "node:path";
 import { resolve } from "node:path";
 import { getFlag, hasFlag, listJsonFiles, parseArgs, readJson, ROOT, usage } from "./shared.ts";
 import { isSdkNotCli } from "../../src/lib/surface-classify.ts";
 import type { AuthStatus, Credential, StoredDiscovery, Surface } from "../../src/lib/discovery-schema.ts";
+import {
+  catalogDomainKey,
+  DEFAULT_DOMAIN_CATALOG_DIR,
+  listDomainCatalogFiles,
+  readDomainCatalogFile,
+} from "./discovered-catalog.ts";
 
 /**
  * Post-run validation gate for batch discovery output.
  *
- * Checks the shape that actually ships: `results-full/{domain}.json`
- * (StoredDiscovery rows loaded straight into KV by load-kv.ts and rendered by
- * `src/pages/[domain]/[surface].astro`) and, optionally, the merged catalog
- * export (`sources/discovered.json`, produced by export-catalog.ts and
- * consumed by normalize.ts -> output/*.json -> the prerendered pages).
+ * Checks the shape that actually ships: the compact per-domain catalog tree in
+ * `domains/<domain>/integrations.json`. It can also validate a local directory
+ * of StoredDiscovery rows before seeding KV with load-kv.ts.
  *
  * This exists because a bad run can produce syntactically valid JSON that
  * still breaks the live site: an empty/derived-"undefined" slug renders as
  * literal `/domain/undefined/`, two surfaces can collide on the same
- * (domain, type, name) identity, required fields the templates dereference
- * unconditionally can be missing, and merging static registry data with
- * freshly discovered data can silently duplicate or shadow entries.
+ * (domain, type, name) identity, and required fields the templates dereference
+ * unconditionally can be missing.
  *
  * Every check is additive (never mutates input) and reports ALL offenders it
  * finds, grouped by check, so a single run surfaces the full blast radius
@@ -30,16 +32,24 @@ const HELP = `
 Usage: bun scripts/batch/validate-results.ts [flags]
 
 Flags:
-  --results-dir dir     Directory of per-domain StoredDiscovery JSON files
-                         (default: scripts/batch/results-full)
-  --catalog file         Merged catalog export to also check
-                         (default: sources/discovered.json; pass --no-catalog to skip)
-  --no-catalog            Skip the merged-catalog checks
+  --results-dir dir     Optional directory of per-domain StoredDiscovery JSON files
+  --catalog-dir dir      Per-domain catalog tree to check (default: domains)
+  --no-catalog           Skip the catalog tree checks
   --max-examples n       Examples to print per check before capping (default: 20)
   --help                 Show this help
 `;
 
 type Finding = { domain: string; detail: string };
+type CatalogCheckSurface = {
+  slug?: unknown;
+  name?: unknown;
+  type?: unknown;
+  url?: unknown;
+  spec?: unknown;
+  command?: unknown;
+  packages?: unknown;
+  authStatus?: unknown;
+};
 
 class Report {
   private byCheck = new Map<string, Finding[]>();
@@ -226,121 +236,140 @@ function withinDomainDuplicates(domain: string, surfaces: readonly Surface[], re
 async function main(): Promise<void> {
   const args = parseArgs();
   if (hasFlag(args, "help")) usage(HELP);
-  const resultsDir = resolve(ROOT, getFlag(args, "results-dir", "scripts/batch/results-full")!);
+  const resultsDirFlag = getFlag(args, "results-dir");
+  const resultsDir = resultsDirFlag ? resolve(ROOT, resultsDirFlag) : undefined;
   const maxExamples = Number(getFlag(args, "max-examples", "20")) || 20;
   const checkCatalog = !hasFlag(args, "no-catalog");
-  const catalogPath = resolve(ROOT, getFlag(args, "catalog", "sources/discovered.json")!);
+  const catalogDir = resolve(ROOT, getFlag(args, "catalog-dir", DEFAULT_DOMAIN_CATALOG_DIR)!);
 
   const report = new Report();
 
-  // ── per-domain results (results-full/ or whatever --results-dir points at) ──
-  const files = listJsonFiles(resultsDir);
-  if (files.length === 0) {
-    console.error(`validate-results: no result JSON files found in ${resultsDir}`);
-    process.exit(1);
-  }
+  if (!resultsDir && !checkCatalog) usage(HELP);
 
-  // Cross-domain identity: (domain, type, name) collisions across the WHOLE
-  // results set — catches things like the same domain's discovery being
-  // written under two different filenames, or a batch re-run producing a
-  // second file for a domain that was renamed/aliased.
-  const globalSeen = new Map<string, string>(); // key -> first file that had it
-
-  for (const file of files) {
-    const domain = basename(file, ".json");
-    let row: StoredDiscovery;
-    try {
-      row = readJson<StoredDiscovery>(file);
-    } catch (err) {
-      report.add("invalidJson", domain, `${file}: ${(err as Error).message}`);
-      continue;
-    }
-    const result = row.result;
-    if (!result) {
-      report.add("missingResult", domain, `${file} has no result`);
-      continue;
-    }
-    if (isBadPathSegment(result.domain)) {
-      report.add("badDomain", domain, `result.domain=${JSON.stringify(result.domain)} (file ${basename(file)})`);
-    }
-    if (!result.summary || result.summary.trim().length === 0) {
-      report.add("missingSummary", domain, "result.summary is empty");
+  // ── optional per-domain StoredDiscovery results ─────────────────────────
+  if (resultsDir) {
+    const files = listJsonFiles(resultsDir);
+    if (files.length === 0) {
+      console.error(`validate-results: no result JSON files found in ${resultsDir}`);
+      process.exit(1);
     }
 
-    const surfaces = result.surfaces ?? [];
-    const referencedCredIds = new Set<string>();
-    for (const surface of surfaces) {
-      requiredFieldFindings(domain, surface, report);
-      collectAuthCredentialIds(surface.auth, referencedCredIds);
+    // Cross-domain identity: (domain, type, name) collisions across the WHOLE
+    // results set — catches things like the same domain's discovery being
+    // written under two different filenames, or a re-run producing a second
+    // file for a domain that was renamed/aliased.
+    const globalSeen = new Map<string, string>(); // key -> first file that had it
 
-      const globalKey = `${surface.type}|${normName(surface.name ?? "")}|${(surfaceLocator(surface) ?? "").trim().toLowerCase()}`;
-      const priorFile = globalSeen.get(globalKey);
-      if (priorFile && priorFile !== file) {
-        report.add(
-          "duplicateAcrossDomains",
-          domain,
-          `type=${surface.type} name=${JSON.stringify(surface.name)} also appears in ${basename(priorFile)}`,
-        );
-      } else if (!priorFile) {
-        globalSeen.set(globalKey, file);
+    for (const file of files) {
+      const domain = basename(file, ".json");
+      let row: StoredDiscovery;
+      try {
+        row = readJson<StoredDiscovery>(file);
+      } catch (err) {
+        report.add("invalidJson", domain, `${file}: ${(err as Error).message}`);
+        continue;
       }
+      const result = row.result;
+      if (!result) {
+        report.add("missingResult", domain, `${file} has no result`);
+        continue;
+      }
+      if (isBadPathSegment(result.domain)) {
+        report.add("badDomain", domain, `result.domain=${JSON.stringify(result.domain)} (file ${basename(file)})`);
+      }
+      if (!result.summary || result.summary.trim().length === 0) {
+        report.add("missingSummary", domain, "result.summary is empty");
+      }
+
+      const surfaces = result.surfaces ?? [];
+      const referencedCredIds = new Set<string>();
+      for (const surface of surfaces) {
+        requiredFieldFindings(domain, surface, report);
+        collectAuthCredentialIds(surface.auth, referencedCredIds);
+
+        const globalKey = `${surface.type}|${normName(surface.name ?? "")}|${(surfaceLocator(surface) ?? "").trim().toLowerCase()}`;
+        const priorFile = globalSeen.get(globalKey);
+        if (priorFile && priorFile !== file) {
+          report.add(
+            "duplicateAcrossDomains",
+            domain,
+            `type=${surface.type} name=${JSON.stringify(surface.name)} also appears in ${basename(priorFile)}`,
+          );
+        } else if (!priorFile) {
+          globalSeen.set(globalKey, file);
+        }
+      }
+      credentialFindings(domain, result.credentials ?? {}, referencedCredIds, report);
+      withinDomainDuplicates(domain, surfaces, report);
     }
-    credentialFindings(domain, result.credentials ?? {}, referencedCredIds, report);
-    withinDomainDuplicates(domain, surfaces, report);
   }
 
-  // ── merged catalog export (sources/discovered.json) ──────────────────────
-  // This is where static-source + discovered-data merge bugs live: the same
-  // domain appearing from two sources with different surface sets, or a
-  // record whose fields were flattened/renamed on the way out losing the
-  // slug/name guarantees the per-domain results had.
+  // ── per-domain compact catalog tree ─────────────────────────────────────
   if (checkCatalog) {
-    if (!existsSync(catalogPath)) {
-      console.log(`validate-results: catalog file not found at ${catalogPath}, skipping catalog checks`);
-    } else {
-      type CatalogSurface = { slug?: unknown; name?: unknown; type?: unknown; url?: unknown; spec?: unknown; command?: unknown; authStatus?: unknown };
-      type CatalogDomain = { domain?: unknown; summary?: unknown; surfaces?: CatalogSurface[] };
-      const catalog = readJson<{ domains?: CatalogDomain[] }>(catalogPath);
-      const domainCounts = new Map<string, number>();
-      for (const d of catalog.domains ?? []) {
-        const domain = typeof d.domain === "string" ? d.domain : "(missing domain)";
-        domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + 1);
+    const files = listDomainCatalogFiles(catalogDir);
+    if (files.length === 0) {
+      report.add("catalogMissing", "(catalog)", `no integrations.json files found in ${catalogDir}`);
+    }
 
-        if (isBadPathSegment(d.domain)) {
-          report.add("catalogBadDomain", domain, `domain=${JSON.stringify(d.domain)}`);
+    const canonicalCounts = new Map<string, number>();
+    for (const file of files) {
+      const folder = basename(dirname(file));
+      let d: { domain?: unknown; summary?: unknown; surfaces?: CatalogCheckSurface[] };
+      try {
+        d = readDomainCatalogFile(file);
+      } catch (err) {
+        report.add("catalogInvalidJson", folder, `${file}: ${(err as Error).message}`);
+        continue;
+      }
+
+      const domain = typeof d.domain === "string" ? d.domain : "(missing domain)";
+      const key = typeof d.domain === "string" ? catalogDomainKey(d.domain) : null;
+      if (key) {
+        canonicalCounts.set(key, (canonicalCounts.get(key) ?? 0) + 1);
+        if (folder !== key) report.add("catalogWrongFolder", domain, `file is under ${folder}; expected ${key}`);
+      } else {
+        report.add("catalogBadDomain", domain, `domain=${JSON.stringify(d.domain)}`);
+      }
+      if (typeof d.summary !== "string" || d.summary.trim().length === 0) {
+        report.add("catalogMissingSummary", domain, "summary is empty");
+      }
+
+      const seenInDomain = new Map<string, CatalogCheckSurface>();
+      for (const s of d.surfaces ?? []) {
+        if (isBadPathSegment(s.slug)) {
+          report.add("catalogBadSlug", domain, `type=${String(s.type)} name=${JSON.stringify(s.name)} slug=${JSON.stringify(s.slug)}`);
         }
-        const seenInDomain = new Map<string, CatalogSurface>();
-        for (const s of d.surfaces ?? []) {
-          if (isBadPathSegment(s.slug)) {
-            report.add("catalogBadSlug", domain, `type=${String(s.type)} name=${JSON.stringify(s.name)} slug=${JSON.stringify(s.slug)}`);
-          }
-          if (typeof s.name !== "string" || s.name.trim().length === 0) {
-            report.add("catalogMissingName", domain, `type=${String(s.type)} slug=${JSON.stringify(s.slug)}`);
-          }
-          const type = typeof s.type === "string" ? s.type : "unknown";
-          const hasUrl = typeof s.url === "string" && s.url.trim().length > 0;
-          const hasSpec = typeof s.spec === "string" && s.spec.trim().length > 0;
-          const hasCommand = typeof s.command === "string" && s.command.trim().length > 0;
-          if ((type === "http" || type === "openapi" || type === "graphql") && !hasUrl && !hasSpec) {
-            report.add("catalogMissingLocator", domain, `type=${type} name=${JSON.stringify(s.name)} (needs url or spec)`);
-          } else if (type === "mcp" && !hasUrl) {
-            report.add("catalogMissingLocator", domain, `type=mcp name=${JSON.stringify(s.name)} (needs url)`);
-          } else if (type === "cli" && !hasCommand) {
-            report.add("catalogMissingLocator", domain, `type=cli name=${JSON.stringify(s.name)} (needs command)`);
-          }
+        if (typeof s.name !== "string" || s.name.trim().length === 0) {
+          report.add("catalogMissingName", domain, `type=${String(s.type)} slug=${JSON.stringify(s.slug)}`);
+        }
+        if (s.authStatus !== "none" && s.authStatus !== "required" && s.authStatus !== "unknown") {
+          report.add("catalogMissingAuthStatus", domain, `type=${String(s.type)} name=${JSON.stringify(s.name)}`);
+        }
+        const type = typeof s.type === "string" ? s.type : "unknown";
+        const hasUrl = typeof s.url === "string" && s.url.trim().length > 0;
+        const hasSpec = typeof s.spec === "string" && s.spec.trim().length > 0;
+        const hasCommand = typeof s.command === "string" && s.command.trim().length > 0;
+        const hasPackages = Array.isArray(s.packages) && s.packages.length > 0;
+        if ((type === "http" || type === "openapi" || type === "graphql") && !hasUrl && !hasSpec) {
+          report.add("catalogMissingLocator", domain, `type=${type} name=${JSON.stringify(s.name)} (needs url or spec)`);
+        } else if (type === "mcp" && !hasUrl) {
+          report.add("catalogMissingLocator", domain, `type=mcp name=${JSON.stringify(s.name)} (needs url)`);
+        } else if (type === "cli" && !hasCommand && !hasPackages) {
+          report.add("catalogMissingLocator", domain, `type=cli name=${JSON.stringify(s.name)} (needs command or packages)`);
+        }
 
-          const key = `${type}|${normName(typeof s.name === "string" ? s.name : "")}`;
-          const prior = seenInDomain.get(key);
-          if (prior) {
-            report.add("catalogDuplicateSurface", domain, `type=${type} name=${JSON.stringify(s.name)} appears more than once (slugs: ${String(prior.slug)}, ${String(s.slug)})`);
-          } else {
-            seenInDomain.set(key, s);
-          }
+        const surfaceKey = `${type}|${normName(typeof s.name === "string" ? s.name : "")}`;
+        const prior = seenInDomain.get(surfaceKey);
+        if (prior) {
+          report.add("catalogDuplicateSurface", domain, `type=${type} name=${JSON.stringify(s.name)} appears more than once (slugs: ${String(prior.slug)}, ${String(s.slug)})`);
+        } else {
+          seenInDomain.set(surfaceKey, s);
         }
       }
-      for (const [domain, count] of domainCounts) {
-        if (count > 1) report.add("catalogDuplicateDomain", domain, `domain appears ${count} times in ${basename(catalogPath)} (static + discovered merge collision)`);
-      }
+    }
+
+    for (const [domain, count] of canonicalCounts) {
+      if (count > 1) report.add("catalogDuplicateDomain", domain, `canonical domain appears ${count} times in ${catalogDir}`);
     }
   }
 

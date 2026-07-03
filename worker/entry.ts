@@ -18,6 +18,7 @@ import { apiContext, apiHandler } from "./api.ts";
 import { canonicalRedirect } from "./canonical.ts";
 import { sitemapSurfacesResponse } from "./sitemap-surfaces.ts";
 import { discoveryDoc, discoveryKvGet } from "./discovery-doc.ts";
+import { domainsJsonWithLiveIndex, upsertLiveIndex } from "./live-index.ts";
 import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
 import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
@@ -31,7 +32,7 @@ import { McpDurableObject } from "./mcp-do.ts";
 
 // Bump when detect/discover output shape or logic changes, so the edge Cache API
 // (which survives deploys) stops serving results produced by the old code.
-const CACHE_VERSION = "18"; // 18: search + surface API operations
+const CACHE_VERSION = "19"; // 19: live search index reads from DISCOVERY
 
 // The discovery-loop model. gpt-5.4 drives the agentic tool-calling loop
 // (search/sitemap/scrape/report). (Note: gpt-5.x rejects `reasoning_effort`
@@ -90,6 +91,15 @@ function wireAi(env: Env): void {
  * page renders, whose slugs the prerendered pages already link to. */
 async function priorSurfaces(env: Env, origin: string, domain: string): Promise<Surface[]> {
   return (await discoveryDoc(env, origin, domain))?.surfaces ?? [];
+}
+
+async function persistDiscovery(env: Env, result: { domain?: string; surfaces?: readonly unknown[]; summary?: unknown }, model: string): Promise<void> {
+  if (!result.domain) return;
+  const discoveredAt = new Date().toISOString();
+  await Promise.all([
+    env.DISCOVERY.put(canonicalDomain(result.domain), JSON.stringify({ result, discoveredAt, model })),
+    upsertLiveIndex(env, result, discoveredAt),
+  ]);
 }
 
 let ogFontsPromise: Promise<OgFonts> | null = null;
@@ -592,9 +602,7 @@ async function handleRequest(
               ...discoveryCounts(result),
             });
             // Backfill KV so a cache-served result still lands in durable storage.
-            if (result.domain) {
-              ctx.waitUntil(env.DISCOVERY.put(canonicalDomain(result.domain), JSON.stringify({ result, discoveredAt: new Date().toISOString(), model: OPENAI_MODEL })));
-            }
+            ctx.waitUntil(persistDiscovery(env, result, OPENAI_MODEL));
           } else {
             const prior = await priorSurfaces(env, url.origin, domain);
             const result = await discoverWithProgress(domain, (ev) => {
@@ -615,9 +623,7 @@ async function handleRequest(
             });
             ctx.waitUntil(cache.put(cacheKey, toCache));
             // Persist durably, keyed by the normalized domain, for render-time reads.
-            if (result.domain) {
-              ctx.waitUntil(env.DISCOVERY.put(canonicalDomain(result.domain), JSON.stringify({ result, discoveredAt: new Date().toISOString(), model: OPENAI_MODEL })));
-            }
+            ctx.waitUntil(persistDiscovery(env, result, OPENAI_MODEL));
           }
         } catch (err) {
           track(env, ctx, request, "discovery_error", {
@@ -674,10 +680,11 @@ async function handleRequest(
       }
       const res = await apiHandler(request, apiContext(env, url.origin));
       track(env, ctx, request, "api_request", { ...(endpoint && { endpoint }), cache_hit: false, status: res.status });
-      const maxAge = url.pathname.includes("/discover") ? 86400 : url.pathname.includes("/surface") ? 60 : 3600;
+      const maxAge = url.pathname.includes("/discover") ? 86400 : url.pathname.includes("/surface") || url.pathname === "/api/search" ? 60 : 3600;
       if (request.method === "GET" && (res.status === 200 || (url.pathname.includes("/surface") && res.status === 404))) {
         const out = new Response(res.clone().body, res);
-        // discover runs the LLM agent — cache a day; surface matches /api/{domain}/discovery; the rest are cheap — an hour.
+        // discover runs the LLM agent — cache a day; live-indexed search and
+        // surface reads stay fresh within a minute; the rest are cheap — an hour.
         out.headers.set("cache-control", `public, max-age=${maxAge}`);
         if (res.status === 200) ctx.waitUntil(cache.put(cacheKey, out.clone()));
         return out;
@@ -698,6 +705,10 @@ async function handleRequest(
       // Browsers (the homepage fetches /api/domains.json) identify as Mozilla;
       // what's left is curl, scripts, and agents pulling the data files.
       track(env, ctx, request, "data_fetch");
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/domains.json") {
+      return domainsJsonWithLiveIndex(env, url.origin);
     }
 
     // /ssr/{domain}/ is the INTERNAL render target below — never a public URL.

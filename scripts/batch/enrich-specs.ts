@@ -1,13 +1,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { validateSpecUrl } from "../../src/lib/spec-validate.ts";
-import { getFlag, getNumberFlag, hasFlag, listJsonFiles, mapLimit, parseArgs, ROOT, usage } from "./shared.ts";
+import { getFlag, getNumberFlag, hasFlag, listJsonFiles, mapLimit, parseArgs, usage } from "./shared.ts";
 
 const HELP = `
 Usage: bun scripts/batch/enrich-specs.ts [flags]
 
 Flags:
-  --dir dir          Results dir (default: scripts/batch/results-full)
+  --dir dir          Directory of StoredDiscovery JSON files to update
   --concurrency N   Files to process concurrently (default: 16)
   --dry-run         Print changes without rewriting files
   --only a.com,b.com
@@ -230,7 +229,8 @@ async function processFile(path: string, dryRun: boolean): Promise<{ domain: str
 async function main(): Promise<void> {
   const args = parseArgs();
   if (hasFlag(args, "help")) usage(HELP);
-  const dir = getFlag(args, "dir", join(ROOT, "scripts", "batch", "results-full"))!;
+  const dir = getFlag(args, "dir");
+  if (!dir) usage(HELP);
   const concurrency = getNumberFlag(args, "concurrency", 16);
   const dryRun = hasFlag(args, "dry-run");
   const only = new Set((getFlag(args, "only") ?? "").split(",").map((item) => item.trim()).filter(Boolean));

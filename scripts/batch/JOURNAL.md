@@ -127,3 +127,9 @@ without failing the check (external uptime monitor target).
   from 500s back to healthy in ~60s — total incident window ~4 minutes.
 - Regen: ~1,300/3,124 on gpt-5.4; catalog swap after completion + checklist.
   Launch does NOT block on it (current data is live and checklist-clean).
+
+## 2026-07-03 cleanup
+- Retired the checked-in OpenAI batch pipeline artifacts and stale generated
+  result directories. The repo catalog is now `domains/<domain>/integrations.json`,
+  synced from DISCOVERY KV by `sync-kv.ts`; `load-kv.ts` remains for seeding
+  local KV, and `validate-results.ts` remains as a manual data-quality tool.

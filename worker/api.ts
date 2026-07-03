@@ -10,6 +10,7 @@ import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup } from "effect/u
 import * as HttpApiSchema from "effect/unstable/httpapi/HttpApiSchema";
 import * as OpenApi from "effect/unstable/httpapi/OpenApi";
 import { Credential, DISCOVERY_VERSION, Surface } from "../src/lib/discovery-schema.ts";
+import { canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { searchIndex } from "../src/lib/search-index.ts";
 import type { Env } from "./env.ts";
 import { discoveryDoc } from "./discovery-doc.ts";
@@ -169,12 +170,12 @@ export const Api = HttpApi.make("integrations.sh")
 const DetectGroup = HttpApiBuilder.group(Api, "detect", (handlers) =>
   handlers
     .handle("search", (req: { readonly query: typeof SearchQuery.Type }) => Effect.succeed(searchCatalog(req.query)))
-    .handle("detect", (req: { readonly params: { readonly domain: string } }) => runDetect(req.params.domain))
-    .handle("discover", (req: { readonly params: { readonly domain: string } }) => runDiscover(req.params.domain))
+    .handle("detect", (req: { readonly params: { readonly domain: string } }) => runDetect(canonicalDomain(req.params.domain)))
+    .handle("discover", (req: { readonly params: { readonly domain: string } }) => runDiscover(canonicalDomain(req.params.domain)))
     .handle("surface", (req: { readonly params: { readonly domain: string } }) =>
       Effect.gen(function*() {
         const { env, origin } = yield* ApiRuntime;
-        const domain = req.params.domain.trim().toLowerCase();
+        const domain = canonicalDomain(req.params.domain);
         const doc = yield* Effect.promise(() => discoveryDoc(env, origin, domain));
         if (!doc) return yield* Effect.fail({ error: "surface not found" } as typeof SurfaceNotFound.Type);
         return JSON.parse(JSON.stringify(doc)) as typeof SurfaceResult.Type;

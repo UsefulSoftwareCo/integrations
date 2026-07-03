@@ -17,9 +17,10 @@ import yogaWasmModule from "satori/yoga.wasm?module";
 import { apiContext, apiHandler } from "./api.ts";
 import { canonicalRedirect } from "./canonical.ts";
 import { sitemapSurfacesResponse } from "./sitemap-surfaces.ts";
-import { discoveryDoc } from "./discovery-doc.ts";
+import { discoveryDoc, discoveryKvGet } from "./discovery-doc.ts";
 import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
+import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { isJunkDomain, registrableDomain } from "../src/lib/favicon.ts";
 import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
 import type { Surface } from "../src/lib/surface-view.ts";
@@ -294,6 +295,33 @@ function trailingSlashRedirect(request: Request, url: URL): Response | null {
   return Response.redirect(target.toString(), 301);
 }
 
+function aliasDomainRedirect(request: Request, url: URL): Response | null {
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+
+  const discMatch = /^\/disc\/([^/]+)\.json$/.exec(url.pathname);
+  if (discMatch) {
+    const alias = decodeURIComponent(discMatch[1]).trim().toLowerCase();
+    const canonical = canonicalDomain(alias);
+    if (DOMAIN_ALIASES[alias] && canonical !== alias) {
+      const target = new URL(url);
+      target.pathname = `/disc/${encodeURIComponent(canonical)}.json`;
+      return Response.redirect(target.toString(), 301);
+    }
+  }
+
+  const segments = url.pathname.split("/").filter(Boolean);
+  if (segments.length === 0) return null;
+  const first = decodeURIComponent(segments[0]).trim().toLowerCase();
+  const canonical = canonicalDomain(first);
+  if (!DOMAIN_ALIASES[first] || canonical === first) return null;
+
+  const rest = segments.slice(1).join("/");
+  const trailing = url.pathname.endsWith("/") ? "/" : "";
+  const target = new URL(url);
+  target.pathname = `/${encodeURIComponent(canonical)}${rest ? `/${rest}${trailing}` : trailing}`;
+  return Response.redirect(target.toString(), 301);
+}
+
 /** Fire-and-forget server-side PostHog capture. Browser pageviews come from
  * posthog-js (src/lib/analytics.ts); this covers the callers that never run
  * JS — agents fetching data files, MCP clients, and direct API users.
@@ -354,6 +382,8 @@ async function handleRequest(
     // (except /healthz, which monitors may hit on any host).
     const canonical = canonicalRedirect(request);
     if (canonical) return canonical;
+    const aliasRedirect = aliasDomainRedirect(request, url);
+    if (aliasRedirect) return aliasRedirect;
     if (url.pathname === "/sitemap-surfaces.xml") return sitemapSurfacesResponse();
     wireAi(env);
 
@@ -492,8 +522,8 @@ async function handleRequest(
     // as the only render source. 404 when nothing has been discovered yet.
     const storedMatch = /^\/api\/([^/]+)\/discovery\/?$/.exec(url.pathname);
     if (storedMatch) {
-      const domain = decodeURIComponent(storedMatch[1]).trim().toLowerCase();
-      const raw = await env.DISCOVERY.get(domain);
+      const domain = canonicalDomain(decodeURIComponent(storedMatch[1]));
+      const raw = await discoveryKvGet(env, domain);
       return new Response(raw ?? JSON.stringify({ stored: false }), {
         status: raw ? 200 : 404,
         headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=60" },
@@ -506,7 +536,7 @@ async function handleRequest(
     // instantly; a cold run streams real progress and warms the cache.
     const streamMatch = /^\/api\/([^/]+)\/discover\/stream\/?$/.exec(url.pathname);
     if (streamMatch) {
-      const domain = decodeURIComponent(streamMatch[1]);
+      const domain = canonicalDomain(decodeURIComponent(streamMatch[1]));
       const cache = (caches as unknown as EdgeCaches).default;
       const keyUrl = new URL(url.origin + `/api/${encodeURIComponent(domain)}/discover`);
       keyUrl.searchParams.set("__cv", CACHE_VERSION);
@@ -543,10 +573,10 @@ async function handleRequest(
             });
             // Backfill KV so a cache-served result still lands in durable storage.
             if (result.domain) {
-              ctx.waitUntil(env.DISCOVERY.put(result.domain, JSON.stringify({ result, discoveredAt: new Date().toISOString(), model: OPENAI_MODEL })));
+              ctx.waitUntil(env.DISCOVERY.put(canonicalDomain(result.domain), JSON.stringify({ result, discoveredAt: new Date().toISOString(), model: OPENAI_MODEL })));
             }
           } else {
-            const prior = await priorSurfaces(env, url.origin, domain.trim().toLowerCase());
+            const prior = await priorSurfaces(env, url.origin, domain);
             const result = await discoverWithProgress(domain, (ev) => {
               if (ev.kind === "progress") void send("progress", { message: ev.message });
               else if (ev.kind === "credential") void send("credential", { id: ev.id, credential: ev.credential });
@@ -566,7 +596,7 @@ async function handleRequest(
             ctx.waitUntil(cache.put(cacheKey, toCache));
             // Persist durably, keyed by the normalized domain, for render-time reads.
             if (result.domain) {
-              ctx.waitUntil(env.DISCOVERY.put(result.domain, JSON.stringify({ result, discoveredAt: new Date().toISOString(), model: OPENAI_MODEL })));
+              ctx.waitUntil(env.DISCOVERY.put(canonicalDomain(result.domain), JSON.stringify({ result, discoveredAt: new Date().toISOString(), model: OPENAI_MODEL })));
             }
           }
         } catch (err) {
@@ -666,8 +696,8 @@ async function handleRequest(
     // fetches. One KV read per page view; a miss falls through to the asset.
     const domainMatch = /^\/([^/]+)\/?$/.exec(url.pathname);
     if (request.method === "GET" && domainMatch && domainMatch[1].includes(".")) {
-      const domain = decodeURIComponent(domainMatch[1]).trim().toLowerCase();
-      if (!isJunkDomain(domain) && await env.DISCOVERY.get(domain)) {
+      const domain = canonicalDomain(decodeURIComponent(domainMatch[1]));
+      if (!isJunkDomain(domain) && await discoveryKvGet(env, domain)) {
         const ssrUrl = new URL(`/ssr/${encodeURIComponent(domain)}/`, url.origin);
         return handle(manifest, app, new Request(ssrUrl, request) as never, env as never, ctx as never);
       }

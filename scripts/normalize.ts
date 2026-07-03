@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDomain as tldGetDomain } from "tldts";
+import { aliasesOf, canonicalDomain } from "../src/lib/domain-aliases.ts";
 
 // Registrable domain per the Public Suffix List, with the PSL's private section
 // enabled so platform-hosted services resolve to their own host
@@ -24,7 +25,7 @@ const DEVTOOL_DOMAINS: Set<string> = (() => {
   for (const name of readdirSync(dir)) {
     if (!/^seed-domains.*\.txt$/.test(name)) continue;
     for (const line of readFileSync(join(dir, name), "utf8").split("\n")) {
-      const d = line.trim().toLowerCase();
+      const d = canonicalDomain(line);
       if (d && !d.startsWith("#")) out.add(d);
     }
   }
@@ -396,6 +397,9 @@ interface DiscoveredDomain {
 }
 
 const DISCOVERED_KIND_PRIORITY: Kind[] = ["mcp", "openapi", "graphql", "cli"];
+// Railway's hand-maintained CLI source moved to railway.com. Keep the old
+// crawler row deduped against that source so normalization does not add records.
+const DISCOVERED_ALIAS_DEDUPE = new Set(aliasesOf("railway.com"));
 
 const discoveredKind = (type: DiscoveredSurfaceType): Kind => (type === "http" ? "openapi" : type);
 
@@ -408,6 +412,7 @@ function buildDiscovered(knownDomains: Set<string>): Integration[] {
   for (const d of data.domains ?? []) {
     const domain = d.domain.trim().toLowerCase();
     if (!domain || knownDomains.has(domain)) continue;
+    if (DISCOVERED_ALIAS_DEDUPE.has(domain) && knownDomains.has(canonicalDomain(domain))) continue;
     const surfaces = d.surfaces ?? [];
     const byKind = new Map<Kind, DiscoveredSurface>();
     for (const surface of surfaces) {
@@ -649,7 +654,7 @@ const DOMAIN_REMAP: Record<string, string> = {
   "googleapis.com:chat": "chat.google.com",
 };
 
-function recordDomain(r: Integration): string {
+function rawRecordDomain(r: Integration): string {
   let url: string | undefined;
   if (r.kind === "openapi") {
     const provider = (r.openapi?.provider ?? "").trim();
@@ -667,6 +672,71 @@ function recordDomain(r: Integration): string {
   const discoveredDomain = (r.raw.discovered as { domain?: string } | undefined)?.domain;
   if (discoveredDomain) return discoveredDomain;
   return (url ? getDomain(url) : null) ?? (r.url ? getDomain(r.url) ?? "" : "");
+}
+
+function recordDomain(r: Integration): string {
+  return canonicalDomain(rawRecordDomain(r));
+}
+
+function addTargetDomain(targets: Set<string>, url: unknown): void {
+  if (typeof url !== "string" || !url.trim()) return;
+  const domain = getDomain(url);
+  if (domain) targets.add(canonicalDomain(domain));
+}
+
+function addOpenapiTargetUrls(targets: Set<string>, value: unknown): void {
+  if (!isObject(value)) return;
+
+  const servers = value.servers;
+  if (Array.isArray(servers)) {
+    for (const server of servers) {
+      addTargetDomain(targets, typeof server === "string" ? server : isObject(server) ? server.url : undefined);
+    }
+  }
+
+  addTargetDomain(targets, value.baseUrl);
+  addTargetDomain(targets, value.baseURL);
+  addTargetDomain(targets, value.serverUrl);
+  addTargetDomain(targets, value.serverURL);
+}
+
+function outboundTargetDomains(r: Integration): string[] {
+  const targets = new Set<string>();
+
+  addTargetDomain(targets, r.mcp?.remoteUrl);
+  addTargetDomain(targets, r.graphql?.endpoint);
+
+  const discovered = r.raw.discovered as { surface?: { url?: unknown }; surfaces?: { url?: unknown }[] } | undefined;
+  addTargetDomain(targets, discovered?.surface?.url);
+  if (Array.isArray(discovered?.surfaces)) {
+    for (const surface of discovered.surfaces) addTargetDomain(targets, surface.url);
+  }
+
+  if (r.kind === "openapi") {
+    addOpenapiTargetUrls(targets, r.openapi);
+    for (const raw of Object.values(r.raw)) {
+      addOpenapiTargetUrls(targets, raw);
+      if (isObject(raw)) addOpenapiTargetUrls(targets, raw.raw);
+    }
+  }
+
+  return [...targets].sort();
+}
+
+function printDomainMismatchWarnings(all: Integration[]): void {
+  const warnings: string[] = [];
+  for (const r of all) {
+    const assigned = recordDomain(r);
+    if (!assigned) continue;
+    const targets = outboundTargetDomains(r).filter((target) => target !== assigned);
+    if (targets.length === 0) continue;
+    warnings.push(`domain-mismatch: ${r.id} assigned=${assigned} targets=${targets.join(",")}`);
+  }
+
+  if (warnings.length === 0) return;
+  console.warn(`domain-mismatch warnings: ${warnings.length}`);
+  for (const warning of warnings.slice(0, 50)) console.warn(warning);
+  if (warnings.length > 50) console.warn(`domain-mismatch warnings truncated: showing 50 of ${warnings.length}`);
 }
 
 function buildIndex(all: Integration[]) {
@@ -833,7 +903,7 @@ function main() {
 
   const knownDomains = new Set(
     [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
-      .map(recordDomain)
+      .flatMap((r) => [rawRecordDomain(r), recordDomain(r)])
       .filter(Boolean),
   );
   const discovered = buildDiscovered(knownDomains).filter(isPublic);
@@ -872,6 +942,8 @@ function main() {
     const fb = all.filter((r) => r.icon?.endsWith("/favicon.ico")).length;
     console.log(`favicons: ${validatedIcons} URLs validated, ${fb} records using domain fallback`);
   }
+
+  printDomainMismatchWarnings(all);
 }
 
 main();

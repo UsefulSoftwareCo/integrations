@@ -8,16 +8,27 @@
 // /disc/{domain}.json baseline is the discovery fallback. The same DomainPage
 // component renders both, so nothing can drift.
 import DomainPage from "~/components/DomainPage.astro";
+import { aliasesOf, canonicalDomain } from "~/lib/domain-aliases.ts";
 import type { DiscoverData } from "~/lib/surface-sections.ts";
 
 export const prerender = false;
 
 const runtime = Astro.locals.runtime;
-const domain = decodeURIComponent(Astro.params.domain ?? "").trim().toLowerCase();
+const domain = canonicalDomain(decodeURIComponent(Astro.params.domain ?? ""));
 
 // Normally reached through the worker's rewrite (which already checked KV),
 // but re-read defensively: a direct /ssr/* hit or a KV miss falls back cleanly.
-const raw = runtime ? await runtime.env.DISCOVERY.get(domain) : null;
+const raw = runtime
+  ? await (async () => {
+      const stored = await runtime.env.DISCOVERY.get(domain);
+      if (stored) return stored;
+      for (const alias of aliasesOf(domain)) {
+        const aliasStored = await runtime.env.DISCOVERY.get(alias);
+        if (aliasStored) return aliasStored;
+      }
+      return null;
+    })()
+  : null;
 // Parsed KV JSON — the envelope is StoredDiscovery, but old rows predate strict
 // typing, so read it as the loose render shape and let the island stay lenient.
 const stored = raw ? (JSON.parse(raw) as { result?: DiscoverData; discoveredAt?: string }) : null;

@@ -12,6 +12,7 @@ import { detect } from "../src/lib/detect.ts";
 import { discover, type ChatFn, type DiscoverEvent, type WebBackend } from "../src/lib/discover.ts";
 import { naiveWeb } from "../src/lib/contextdev.ts";
 import { Credential, CredentialType, DISCOVERY_VERSION, Surface } from "../src/lib/discovery-schema.ts";
+import { canonicalDomain } from "../src/lib/domain-aliases.ts";
 
 export const DetectParams = Schema.Struct({ domain: Schema.String });
 
@@ -40,7 +41,7 @@ export const DETECT_DESCRIPTION =
  * valid JSON value). */
 export const runDetect = (domain: string): Effect.Effect<typeof DetectionResult.Type> =>
   Effect.promise(async () => {
-    const r = await detect(domain.trim().toLowerCase());
+    const r = await detect(canonicalDomain(domain));
     return JSON.parse(JSON.stringify(r)) as typeof DetectionResult.Type;
   });
 
@@ -159,7 +160,7 @@ export const packDiscovery = (domain: string, detect: unknown, disc: Awaited<Ret
  * with authoritative signals; the model then drives its own discovery trajectory. */
 export const runDiscover = (domain: string): Effect.Effect<typeof DiscoverResult.Type> =>
   Effect.promise(async () => {
-    const d = await detect(domain.trim().toLowerCase());
+    const d = await detect(canonicalDomain(domain));
     if (!chatFn) return packDiscovery(d.domain, d, null, false);
     const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb()).catch(() => null);
     return packDiscovery(d.domain, d, disc, true);
@@ -174,7 +175,7 @@ export const discoverWithProgress = async (
   emit: (event: DiscoverEvent) => void,
 ): Promise<typeof DiscoverResult.Type> => {
   emit({ kind: "progress", message: "Checking well-known endpoints…" });
-  const d = await detect(domain.trim().toLowerCase());
+  const d = await detect(canonicalDomain(domain));
   emit({ kind: "progress", message: d.found.length ? `Detected: ${d.found.join(", ")}` : "No standard signals — searching" });
   if (!chatFn) return packDiscovery(d.domain, d, null, false);
   const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb(), emit).catch(() => null);

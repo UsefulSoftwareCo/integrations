@@ -40,47 +40,34 @@ import { REPO_URL } from "~/lib/github.ts";
   // toggle), so a direct passive handler is fine. The footer is always revealed
   // at the very top and within ~one footer-height of the page bottom, so a long
   // infinite-scroll list still ends on a visible footer.
-  let footerAbort: AbortController | undefined;
-
-  document.addEventListener("astro:page-load", () => {
-    footerAbort?.abort();
-    footerAbort = undefined;
-
-    const f = document.getElementById("sfooter");
-    const bar = f?.querySelector<HTMLElement>(".sf-bar");
-    if (!f || !bar) return;
-
-    const controller = new AbortController();
-    footerAbort = controller;
-    const { signal } = controller;
-
-    let lastY = window.scrollY;
-    let open = false;
-    const set = (v: boolean) => {
-      open = v;
-      f.classList.toggle("sf-open", v);
-      bar.setAttribute("aria-expanded", String(v));
-    };
-    bar.addEventListener("click", () => set(!open), { signal });
-    bar.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        set(!open);
-      }
-    }, { signal });
-    const update = () => {
-      const y = window.scrollY;
-      const d = document.documentElement;
-      const atEdge = y <= 8 || y + window.innerHeight >= d.scrollHeight - 96;
-      if (!atEdge && y > lastY && y > 120) {
-        f.classList.add("sf-hidden");
-        if (open) set(false);
-      } else if (atEdge || y < lastY) {
-        f.classList.remove("sf-hidden");
-      }
-      lastY = y;
-    };
-    window.addEventListener("scroll", update, { passive: true, signal });
-    update();
+  const f = document.getElementById("sfooter")!;
+  const bar = f.querySelector<HTMLElement>(".sf-bar")!;
+  let lastY = window.scrollY;
+  let open = false;
+  const set = (v: boolean) => {
+    open = v;
+    f.classList.toggle("sf-open", v);
+    bar.setAttribute("aria-expanded", String(v));
+  };
+  bar.addEventListener("click", () => set(!open));
+  bar.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      set(!open);
+    }
   });
+  const update = () => {
+    const y = window.scrollY;
+    const d = document.documentElement;
+    const atEdge = y <= 8 || y + window.innerHeight >= d.scrollHeight - 96;
+    if (!atEdge && y > lastY && y > 120) {
+      f.classList.add("sf-hidden");
+      if (open) set(false);
+    } else if (atEdge || y < lastY) {
+      f.classList.remove("sf-hidden");
+    }
+    lastY = y;
+  };
+  window.addEventListener("scroll", update, { passive: true });
+  update();
 </script>

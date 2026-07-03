@@ -14,8 +14,6 @@ const counts = {
 };
 const TLABEL: Record<string, string> = { mcp: "MCP", openapi: "API", graphql: "GraphQL", cli: "CLI" };
 const mono = (d: string) => (d[0] || "?").toUpperCase();
-const transitionName = (part: string, value: string) =>
-  `${part}-${Array.from(value.toLowerCase(), (c) => (/^[a-z0-9]$/.test(c) ? c : `-${c.charCodeAt(0).toString(16)}-`)).join("")}`;
 ---
 
 <Base title="integrations.sh — every integration, in every format agents speak" path="/">
@@ -51,10 +49,10 @@ const transitionName = (part: string, value: string) =>
           <tr>
             <td class="c-icon">
               {g.icon
-                ? <img class="c-fav" src={g.icon} alt="" loading="lazy" width="18" height="18" onerror={`this.outerHTML='<span class="ph" style="view-transition-name: ${transitionName("logo", g.domain)}">${mono(g.domain)}</span>'`} transition:name={transitionName("logo", g.domain)} />
-                : <span class="ph" transition:name={transitionName("logo", g.domain)}>{mono(g.domain)}</span>}
+                ? <img class="c-fav" src={g.icon} alt="" loading="lazy" width="18" height="18" onerror={`this.outerHTML='<span class="ph">${mono(g.domain)}</span>'`} />
+                : <span class="ph">{mono(g.domain)}</span>}
             </td>
-            <td class="c-name"><a href={`/${encodeURIComponent(g.domain)}/`} transition:name={transitionName("title", g.domain)}>{g.domain}</a></td>
+            <td class="c-name"><a href={`/${encodeURIComponent(g.domain)}/`}>{g.domain}</a></td>
             <td class="c-chips">
               {formatsOf(g).map((k) => (
                 <a class="chip" href={`/${encodeURIComponent(g.domain)}/#${k}`}>{TLABEL[k]}{(g.formats[k] ?? 0) > 1 && <span class="n">{g.formats[k]}</span>}</a>
@@ -87,154 +85,134 @@ const transitionName = (part: string, value: string) =>
   }
 
   const PAGE = 80;
+  const tbody = document.getElementById("tbody")!;
+  const q = document.getElementById("q") as HTMLInputElement;
+  const status = document.getElementById("status")!;
+  const sentinel = document.getElementById("sentinel")!;
+  const kindsNav = document.getElementById("kinds")!;
+  const typeahead = document.getElementById("typeahead")!;
+
   const TLABEL: Record<string, string> = { mcp: "MCP", openapi: "API", graphql: "GraphQL", cli: "CLI" };
   const TORDER = ["mcp", "openapi", "graphql", "cli"];
-  const transitionName = (part: string, value: string) =>
-    `${part}-${Array.from(value.toLowerCase(), (c) => (/^[a-z0-9]$/.test(c) ? c : `-${c.charCodeAt(0).toString(16)}-`)).join("")}`;
 
-  let homeAbort: AbortController | undefined;
+  let all: DomainRow[] = [];
+  let filtered: DomainRow[] = [];
+  let shown = PAGE; // first PAGE rows are server-rendered
+  let kind = "";
+  let term = "";
 
-  document.addEventListener("astro:page-load", () => {
-    homeAbort?.abort();
-    homeAbort = undefined;
+  const params = new URLSearchParams(location.search);
+  kind = params.get("kind") ?? "";
+  term = params.get("q") ?? "";
+  if (term) q.value = term;
+  for (const b of kindsNav.querySelectorAll("button"))
+    b.classList.toggle("active", (b.dataset.kind ?? "") === kind);
 
-    const tbody = document.getElementById("tbody");
-    const q = document.getElementById("q") as HTMLInputElement | null;
-    const status = document.getElementById("status");
-    const sentinel = document.getElementById("sentinel");
-    const kindsNav = document.getElementById("kinds");
-    const typeahead = document.getElementById("typeahead");
-    if (!tbody || !q || !status || !sentinel || !kindsNav || !typeahead) return;
+  const esc = (s: unknown) =>
+    String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  const dpath = (d: string) => `/${encodeURIComponent(d)}/`;
+  const isDomain = (s: string) => /^([a-z0-9-]+\.)+[a-z]{2,}$/i.test(s);
 
-    const controller = new AbortController();
-    homeAbort = controller;
-    const { signal } = controller;
+  const rowHtml = (g: DomainRow) => {
+    const L = esc((g.domain[0] || "?").toUpperCase());
+    const icon = g.icon
+      ? `<img class="c-fav" src="${esc(g.icon)}" alt="" loading="lazy" width="18" height="18" onerror="this.outerHTML='<span class=&quot;ph&quot;>${L}</span>'">`
+      : `<span class="ph">${L}</span>`;
+    const chips = TORDER.filter((t) => g.formats[t]).map((t) =>
+      `<a class="chip" href="${dpath(g.domain)}#${t}">${TLABEL[t]}${g.formats[t] > 1 ? `<span class="n">${g.formats[t]}</span>` : ""}</a>`).join("");
+    return `<tr><td class="c-icon">${icon}</td><td class="c-name"><a href="${dpath(g.domain)}">${esc(g.domain)}</a></td><td class="c-chips">${chips}</td></tr>`;
+  };
 
-    let all: DomainRow[] = [];
-    let filtered: DomainRow[] = [];
-    let shown = PAGE; // first PAGE rows are server-rendered
-    let kind = "";
-    let term = "";
-
-    const params = new URLSearchParams(location.search);
-    kind = params.get("kind") ?? "";
-    term = params.get("q") ?? "";
-    if (term) q.value = term;
-    for (const b of kindsNav.querySelectorAll("button"))
-      b.classList.toggle("active", (b.dataset.kind ?? "") === kind);
-
-    const esc = (s: unknown) =>
-      String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-    const dpath = (d: string) => `/${encodeURIComponent(d)}/`;
-    const isDomain = (s: string) => /^([a-z0-9-]+\.)+[a-z]{2,}$/i.test(s);
-    const transitionStyle = (part: string, value: string) => ` style="view-transition-name: ${transitionName(part, value)}"`;
-    const transitionStyleAttr = (part: string, value: string) => ` style=&quot;view-transition-name: ${transitionName(part, value)}&quot;`;
-
-    const rowHtml = (g: DomainRow) => {
-      const L = esc((g.domain[0] || "?").toUpperCase());
-      const icon = g.icon
-        ? `<img class="c-fav" src="${esc(g.icon)}" alt="" loading="lazy" width="18" height="18"${transitionStyle("logo", g.domain)} onerror="this.outerHTML='<span class=&quot;ph&quot;${transitionStyleAttr("logo", g.domain)}>${L}</span>'">`
-        : `<span class="ph"${transitionStyle("logo", g.domain)}>${L}</span>`;
-      const chips = TORDER.filter((t) => g.formats[t]).map((t) =>
-        `<a class="chip" href="${dpath(g.domain)}#${t}">${TLABEL[t]}${g.formats[t] > 1 ? `<span class="n">${g.formats[t]}</span>` : ""}</a>`).join("");
-      return `<tr><td class="c-icon">${icon}</td><td class="c-name"><a href="${dpath(g.domain)}"${transitionStyle("title", g.domain)}>${esc(g.domain)}</a></td><td class="c-chips">${chips}</td></tr>`;
-    };
-
-    // The "go to what you typed" row — shown whenever the term isn't already a
-    // known domain. Clicking opens /{term}/ (the 404/discover page if new).
-    const updateTypeahead = () => {
-      const t = term.trim().toLowerCase();
-      const exists = !!t && all.some((g) => g.domain.toLowerCase() === t);
-      if (t && isDomain(t) && !exists) {
-        const L = esc((t[0] || "?").toUpperCase());
-        typeahead.innerHTML =
-          `<td class="c-icon"><span class="ph"${transitionStyle("logo", t)}>${L}</span></td>` +
-          `<td class="c-name"><a href="${dpath(t)}"${transitionStyle("title", t)}>${esc(t)}</a></td>` +
-          `<td class="c-chips"><span class="ta-go">discover →</span></td>`;
-        typeahead.hidden = false;
-      } else {
-        typeahead.hidden = true;
-      }
-    };
-
-    const render = (reset: boolean) => {
-      if (reset) { tbody.innerHTML = ""; shown = 0; }
-      const next = filtered.slice(shown, shown + PAGE);
-      tbody.insertAdjacentHTML("beforeend", next.map(rowHtml).join(""));
-      shown += next.length;
-      if (filtered.length) {
-        status.textContent = `${filtered.length.toLocaleString()} domain${filtered.length === 1 ? "" : "s"}`;
-      } else {
-        const t = term.trim();
-        // Valid domain not in the registry → the discover row offers it. Otherwise
-        // nudge toward a full domain (that's the path to finding something new).
-        status.textContent = isDomain(t.toLowerCase()) ? "Not in the registry yet — discover it below." : "Enter a valid domain to search.";
-      }
-    };
-
-    const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && shown < filtered.length) render(false);
-    }, { rootMargin: "700px" });
-    io.observe(sentinel);
-
-    const apply = () => {
-      const t = term.trim().toLowerCase();
-      filtered = all.filter((g) =>
-        (!kind || g.formats[kind]) &&
-        (!t || g.domain.toLowerCase().includes(t) || (g.description || "").toLowerCase().includes(t)));
-      const u = new URL(location.href);
-      kind ? u.searchParams.set("kind", kind) : u.searchParams.delete("kind");
-      term.trim() ? u.searchParams.set("q", term.trim()) : u.searchParams.delete("q");
-      history.replaceState(null, "", u);
-      render(true);
-      updateTypeahead();
-    };
-
-    fetch("/api/domains.json", { signal }).then((r) => r.json()).then((j: DomainRow[] | { data: DomainRow[] }) => {
-      const rows = Array.isArray(j) ? j : j.data;
-      all = rows;
-      if (kind || term.trim()) apply();
-      else { filtered = all; status.textContent = `${all.length.toLocaleString()} domains`; }
-      updateTypeahead();
-    }).catch(() => {});
-
-    let to: ReturnType<typeof setTimeout> | undefined;
-    signal.addEventListener("abort", () => {
-      io.disconnect();
-      if (to) clearTimeout(to);
-    }, { once: true });
-    q.addEventListener("input", () => { term = q.value; updateTypeahead(); if (to) clearTimeout(to); to = setTimeout(apply, 90); }, { signal });
-    kindsNav.addEventListener("click", (e) => {
-      const btn = (e.target as HTMLElement).closest("button");
-      if (!btn) return;
-      kind = btn.dataset.kind ?? "";
-      for (const b of kindsNav.querySelectorAll("button")) b.classList.toggle("active", b === btn);
-      apply();
-    }, { signal });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); }
-    }, { signal });
-
-    // Full-row tap target. The name and format chips are real links; a tap
-    // anywhere else on a row delegates to that row's name link. Done in JS, not a
-    // CSS stretched-link ::after, because position:relative on a <tr> is NOT a
-    // containing block in iOS Safari — the overlay escaped its row and every tap
-    // landed on the last row (all routed to one domain). This has no layout
-    // dependency, so that failure mode can't recur.
-    const rowNav = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      if (t.closest("a, button")) return; // real links/buttons handle themselves
-      const link = t.closest("tr")?.querySelector<HTMLAnchorElement>(".c-name a");
-      const href = link?.getAttribute("href");
-      if (!href) return;
-      if (e.metaKey || e.ctrlKey || e.button === 1) window.open(href, "_blank", "noopener");
-      else link.click();
-    };
-    for (const el of [tbody, typeahead]) {
-      el.addEventListener("click", rowNav, { signal });
-      el.addEventListener("auxclick", rowNav, { signal }); // middle-click → new tab
+  // The "go to what you typed" row — shown whenever the term isn't already a
+  // known domain. Clicking opens /{term}/ (the 404/discover page if new).
+  const updateTypeahead = () => {
+    const t = term.trim().toLowerCase();
+    const exists = !!t && all.some((g) => g.domain.toLowerCase() === t);
+    if (t && isDomain(t) && !exists) {
+      const L = esc((t[0] || "?").toUpperCase());
+      typeahead.innerHTML =
+        `<td class="c-icon"><span class="ph">${L}</span></td>` +
+        `<td class="c-name"><a href="${dpath(t)}">${esc(t)}</a></td>` +
+        `<td class="c-chips"><span class="ta-go">discover →</span></td>`;
+      typeahead.hidden = false;
+    } else {
+      typeahead.hidden = true;
     }
+  };
+
+  const render = (reset: boolean) => {
+    if (reset) { tbody.innerHTML = ""; shown = 0; }
+    const next = filtered.slice(shown, shown + PAGE);
+    tbody.insertAdjacentHTML("beforeend", next.map(rowHtml).join(""));
+    shown += next.length;
+    if (filtered.length) {
+      status.textContent = `${filtered.length.toLocaleString()} domain${filtered.length === 1 ? "" : "s"}`;
+    } else {
+      const t = term.trim();
+      // Valid domain not in the registry → the discover row offers it. Otherwise
+      // nudge toward a full domain (that's the path to finding something new).
+      status.textContent = isDomain(t.toLowerCase()) ? "Not in the registry yet — discover it below." : "Enter a valid domain to search.";
+    }
+  };
+
+  const io = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && shown < filtered.length) render(false);
+  }, { rootMargin: "700px" });
+  io.observe(sentinel);
+
+  const apply = () => {
+    const t = term.trim().toLowerCase();
+    filtered = all.filter((g) =>
+      (!kind || g.formats[kind]) &&
+      (!t || g.domain.toLowerCase().includes(t) || (g.description || "").toLowerCase().includes(t)));
+    const u = new URL(location.href);
+    kind ? u.searchParams.set("kind", kind) : u.searchParams.delete("kind");
+    term.trim() ? u.searchParams.set("q", term.trim()) : u.searchParams.delete("q");
+    history.replaceState(null, "", u);
+    render(true);
+    updateTypeahead();
+  };
+
+  fetch("/api/domains.json").then((r) => r.json()).then((j: DomainRow[] | { data: DomainRow[] }) => {
+    const rows = Array.isArray(j) ? j : j.data;
+    all = rows;
+    if (kind || term.trim()) apply();
+    else { filtered = all; status.textContent = `${all.length.toLocaleString()} domains`; }
+    updateTypeahead();
   });
+
+  let to: ReturnType<typeof setTimeout> | undefined;
+  q.addEventListener("input", () => { term = q.value; updateTypeahead(); clearTimeout(to); to = setTimeout(apply, 90); });
+  kindsNav.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest("button");
+    if (!btn) return;
+    kind = btn.dataset.kind ?? "";
+    for (const b of kindsNav.querySelectorAll("button")) b.classList.toggle("active", b === btn);
+    apply();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  });
+
+  // Full-row tap target. The name and format chips are real links; a tap
+  // anywhere else on a row delegates to that row's name link. Done in JS, not a
+  // CSS stretched-link ::after, because position:relative on a <tr> is NOT a
+  // containing block in iOS Safari — the overlay escaped its row and every tap
+  // landed on the last row (all routed to one domain). This has no layout
+  // dependency, so that failure mode can't recur.
+  const rowNav = (e: MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (t.closest("a, button")) return; // real links/buttons handle themselves
+    const link = t.closest("tr")?.querySelector<HTMLAnchorElement>(".c-name a");
+    const href = link?.getAttribute("href");
+    if (!href) return;
+    if (e.metaKey || e.ctrlKey || e.button === 1) window.open(href, "_blank", "noopener");
+    else window.location.href = href;
+  };
+  for (const el of [tbody, typeahead]) {
+    el.addEventListener("click", rowNav);
+    el.addEventListener("auxclick", rowNav); // middle-click → new tab
+  }
 </script>
 
 <style>

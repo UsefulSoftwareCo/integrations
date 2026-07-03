@@ -179,7 +179,7 @@ const AUTH_ENTRY_PROPS = {
 
 const SURFACE_PROPS = {
   name: { type: "string" },
-  type: { type: "string", description: "http (REST/OpenAPI) | graphql | mcp | cli" },
+  type: { type: "string", description: "http (REST/OpenAPI) | graphql | mcp | cli. `cli` is a genuine command-line EXECUTABLE the user runs in a shell — NOT a client SDK/library you import in code." },
   docs: { type: "string" },
   spec: { type: "string", description: "OpenAPI URL, or 'introspection'/SDL URL for graphql — a POINTER, never inline a spec" },
   specAlternates: { type: "array", items: { type: "string" }, description: "Additional machine-readable spec documents for the SAME API in other formats (e.g. the YAML twin of a JSON OpenAPI doc)." },
@@ -254,6 +254,7 @@ const SYSTEM =
   "- example.com/org hosts in docs are placeholders from spec `servers` blocks, never real endpoints — use the templated form or omit the url.\n" +
   "- Tenant-templated base URLs are valid locators — record them verbatim with placeholders ({account}.api.example.com, https://<your-instance>.example.com/api). An empty `url` because the host varies per tenant is wrong.\n" +
   "- Web dashboards/consoles and CI integrations (GitHub Actions, marketplace apps) are NOT surfaces — only programmatic interfaces a developer or agent calls: HTTP/GraphQL APIs, MCP connect endpoints, CLIs. When in doubt ask: could a script call this? If not, omit it.\n" +
+  "- A client SDK or library — an npm/pip/gem/etc. package you IMPORT in code (e.g. '<Product> JavaScript/TypeScript SDK', a Python client, an Android/iOS SDK) — is NOT a `cli` surface, and by itself is NOT a surface at all. It is a wrapper over an HTTP/GraphQL API: record THAT underlying API surface instead (its base URL / spec), attributed to the host the SDK actually calls. Reserve `cli` for a genuine command-line EXECUTABLE the user runs in a shell — a real binary with a `command` like `wrangler`, `gh`, `stripe`, `supabase` (a runtime like `python`/`node`/`npx` is NOT a command). If a service ships only an SDK/library and exposes no documented HTTP/GraphQL/MCP surface or standalone CLI, conclude it has no integration surface and finish with empty surfaces — do NOT file the SDK under `cli`.\n" +
   "- An mcp surface's `url` is the CONNECT ENDPOINT an MCP client would use (e.g. https://mcp.example.com/mcp), never a docs page about the server. If only a docs page exists, put it in `docs` and leave `url` unset.\n" +
   "- Write each credential's `setup` around the EASIEST acquisition path. When a CLI login acquires it (`mint login`, `wrangler login`), setup says 'run `x login`' and the binding is mechanics 'cli' with that command — do NOT walk through raw OAuth authorize/token/register endpoints anywhere in setup.\n" +
   "- When a CLI has an interactive `login` command AND the same credential can also be supplied via env var or a `--token`/`--key` flag, the `login` command is the PRIMARY path: write `setup` around 'run `x login`' and mention the env/flag token only as a non-interactive/CI fallback. NEVER lead with 'create a token in dashboard settings' when an interactive login exists — record both bindings (login as an acquisition command, env/flag as consumption) on the one credential.\n" +

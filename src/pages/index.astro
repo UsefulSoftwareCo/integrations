@@ -193,6 +193,26 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
   document.addEventListener("keydown", (e) => {
     if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); }
   });
+
+  // Full-row tap target. The name and format chips are real links; a tap
+  // anywhere else on a row delegates to that row's name link. Done in JS, not a
+  // CSS stretched-link ::after, because position:relative on a <tr> is NOT a
+  // containing block in iOS Safari — the overlay escaped its row and every tap
+  // landed on the last row (all routed to one domain). This has no layout
+  // dependency, so that failure mode can't recur.
+  const rowNav = (e: MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (t.closest("a, button")) return; // real links/buttons handle themselves
+    const link = t.closest("tr")?.querySelector<HTMLAnchorElement>(".c-name a");
+    const href = link?.getAttribute("href");
+    if (!href) return;
+    if (e.metaKey || e.ctrlKey || e.button === 1) window.open(href, "_blank", "noopener");
+    else window.location.href = href;
+  };
+  for (const el of [tbody, typeahead]) {
+    el.addEventListener("click", rowNav);
+    el.addEventListener("auxclick", rowNav); // middle-click → new tab
+  }
 </script>
 
 <style>
@@ -242,7 +262,7 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
   .kinds button span { opacity: 0.5; margin-left: 4px; }
 
   table.rows { width: 100%; border-collapse: collapse; margin-top: 18px; }
-  :global(table.rows tbody tr) { position: relative; cursor: pointer; border-bottom: 1px solid var(--gray-100); }
+  :global(table.rows tbody tr) { cursor: pointer; border-bottom: 1px solid var(--gray-100); }
   :global(table.rows tbody tr:hover) { background: var(--gray-25); }
   :global(table.rows td) { padding: 13px 20px 13px 0; vertical-align: middle; }
   :global(.c-icon) { width: 30px; padding-right: 12px; }
@@ -256,14 +276,10 @@ const mono = (d: string) => (d[0] || "?").toUpperCase();
   }
   :global(.c-name) { white-space: nowrap; }
   :global(.c-name a) { font-weight: 500; font-size: 14.5px; text-decoration: none; }
-  /* Stretch the row's name link over the whole <tr> so the entire row is the hit target. */
-  :global(.c-name a::after) { content: ""; position: absolute; inset: 0; }
   :global(table.rows tr:hover .c-name a) { text-decoration: underline; text-underline-offset: 3px; }
 
   :global(.c-chips) { text-align: right; white-space: nowrap; padding-right: 0 !important; }
   :global(.c-chips .chip) {
-    /* Raised above the stretched name link so the format chips stay independently clickable. */
-    position: relative; z-index: 1;
     display: inline-flex; align-items: center; gap: 5px;
     font-family: var(--font-mono); font-size: 12px;
     color: var(--gray-500);

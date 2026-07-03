@@ -17,7 +17,7 @@ import {
   cliLoginFor,
   hostOf,
   credCta,
-  mechanicsLine,
+  mechanicsSubline,
   type Basis,
   type Credential,
   type DiscoveryDoc,
@@ -66,10 +66,6 @@ if (!surface) return new Response(null, { status: 404 });
 
 const typeLabel = SURFACE_TYPE_LABEL[surface.type] ?? surface.type;
 const letter = (surface.name[0] ?? "?").toUpperCase();
-const usedCredIds = surface.auth.status === "required" ? surface.auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
-const credList = usedCredIds
-  .filter((id, i) => usedCredIds.indexOf(id) === i && creds[id])
-  .map((id) => ({ cred: creds[id], cliLogin: cliLoginFor(id, [surface.auth]) }));
 
 const detailRows: { label: string; value: string; kind: "code" | "link" | "text"; linkLabel?: string }[] = [];
 const specFormatLabel = (url: string) => {
@@ -118,6 +114,114 @@ const provTitle = (basis: Basis) => {
   if (basis.via === "declared") return "Declared by the site owner via integrations.json";
   return basis.evidence?.length ? `Read from: ${basis.evidence.join(", ")}` : "Read from docs";
 };
+type RowCredential = { id: string; cred: Credential; cliLogin: string | undefined };
+type AuthPart = { id: string; label: string; cred: Credential | undefined; cliLogin: string | undefined; mech: string | undefined };
+type SingleAuthRow = {
+  kind: "single";
+  id: string;
+  label: string;
+  cred: Credential | undefined;
+  cliLogin: string | undefined;
+  mechs: (string | undefined)[];
+  basis: Basis;
+  bodyCreds: RowCredential[];
+};
+type MultiAuthRow = { kind: "multi"; parts: AuthPart[]; basis: Basis; bodyCreds: RowCredential[] };
+type AuthRow = SingleAuthRow | MultiAuthRow;
+
+const credentialRef = (id: string): RowCredential | undefined => {
+  const cred = creds[id];
+  if (!cred) return undefined;
+  return { id, cred, cliLogin: cliLoginFor(id, [surface.auth]) };
+};
+const authRows: AuthRow[] =
+  surface.auth.status === "required"
+    ? (() => {
+        // One card per distinct auth method. A single credential offered
+        // several alternative ways (e.g. `vercel login` / `env VERCEL_TOKEN`
+        // / `vercel --token <x>`) collapses into ONE card — its label shown
+        // once, mechanics listed as alternatives with `/` — instead of
+        // repeating the credential per binding. Multi-credential entries (a
+        // real conjunction like client_id + client_secret) stay their own
+        // card, uses joined with `+`. Collapsed rows carry the strongest
+        // provenance among the methods folded in.
+        const rank = (b: Basis) => (b.via === "detected" ? 3 : b.via === "declared" ? 2 : 1);
+        const rows: AuthRow[] = [];
+        const singles = new Map<string, SingleAuthRow>();
+        for (const e of surface.auth.entries) {
+          if (e.use.length === 0) continue;
+          if (e.use.length === 1) {
+            const u = e.use[0];
+            let g = singles.get(u.id);
+            if (!g) {
+              const ref = credentialRef(u.id);
+              g = {
+                kind: "single",
+                id: u.id,
+                label: ref?.cred.label ?? u.id,
+                cred: ref?.cred,
+                cliLogin: ref?.cliLogin,
+                mechs: [],
+                basis: e.basis,
+                bodyCreds: [],
+              };
+              singles.set(u.id, g);
+              rows.push(g);
+            }
+            g.mechs.push(mechanicsSubline(u.mechanics));
+            if (rank(e.basis) > rank(g.basis)) g.basis = e.basis;
+          } else {
+            rows.push({
+              kind: "multi",
+              parts: e.use.map((u) => {
+                const ref = credentialRef(u.id);
+                return {
+                  id: u.id,
+                  label: ref?.cred.label ?? u.id,
+                  cred: ref?.cred,
+                  cliLogin: ref?.cliLogin,
+                  mech: mechanicsSubline(u.mechanics),
+                };
+              }),
+              basis: e.basis,
+              bodyCreds: [],
+            });
+          }
+        }
+
+        const usedBodyIds = new Set<string>();
+        for (const row of rows) {
+          const ids = row.kind === "single" ? [row.id] : row.parts.map((p) => p.id);
+          const idsInRow = new Set<string>();
+          for (const id of ids) {
+            if (idsInRow.has(id) || usedBodyIds.has(id)) continue;
+            idsInRow.add(id);
+            const ref = credentialRef(id);
+            if (!ref) continue;
+            row.bodyCreds.push(ref);
+            usedBodyIds.add(id);
+          }
+        }
+        return rows;
+      })()
+    : [];
+const cliCtaInRow = (row: AuthRow, id: string, cliLogin: string | undefined) => {
+  if (!cliLogin) return false;
+  if (row.kind === "single") return row.id === id && Boolean(row.cred);
+  return row.bodyCreds.some((c) => c.id === id && c.cliLogin === cliLogin);
+};
+const visibleMechanics = (row: AuthRow, id: string, mech: string | undefined, cliLogin: string | undefined) => {
+  if (!mech) return undefined;
+  if (cliLogin && mech === `$ ${cliLogin}` && cliCtaInRow(row, id, cliLogin)) return undefined;
+  return mech;
+};
+const singleMechanics = (row: SingleAuthRow) =>
+  row.cred
+    ? row.mechs
+        .map((m) => visibleMechanics(row, row.id, m, row.cliLogin))
+        .filter((m): m is string => Boolean(m))
+    : [];
+const partMechanic = (row: MultiAuthRow, part: AuthPart) => visibleMechanics(row, part.id, part.mech, part.cliLogin);
 const jsonLd = [
   {
     "@context": "https://schema.org",
@@ -195,91 +299,92 @@ Astro.response.headers.set("cache-control", "public, max-age=60");
         </div>
       )}
       {surface.auth.status === "required" &&
-        (() => {
-          // One row per distinct auth method. A single credential offered
-          // several alternative ways (e.g. `vercel login` / `env VERCEL_TOKEN`
-          // / `vercel --token <x>`) collapses into ONE row — its label shown
-          // once, mechanics listed as alternatives with `/` — instead of
-          // repeating the credential per binding. Multi-credential entries (a
-          // real conjunction like client_id + client_secret) stay their own
-          // row, uses joined with `+`. Collapsed rows carry the strongest
-          // provenance among the methods folded in.
-          const rank = (b) => (b?.via === "detected" ? 3 : b?.via === "declared" ? 2 : 1);
-          const rows = [];
-          const singles = new Map();
-          for (const e of surface.auth.entries) {
-            if (e.use.length === 1) {
-              const u = e.use[0];
-              let g = singles.get(u.id);
-              if (!g) {
-                g = { kind: "single", id: u.id, label: creds[u.id]?.label ?? u.id, mechs: [], basis: e.basis };
-                singles.set(u.id, g);
-                rows.push(g);
-              }
-              g.mechs.push(mechanicsLine(u.mechanics));
-              if (rank(e.basis) > rank(g.basis)) g.basis = e.basis;
-            } else {
-              rows.push({ kind: "multi", parts: e.use.map((u) => ({ label: creds[u.id]?.label ?? u.id, mech: mechanicsLine(u.mechanics) })), basis: e.basis });
-            }
-          }
-          return rows.map((row) => (
-            <div class="auth-row">
-              <span class="auth-use">
-                {row.kind === "single" ? (
-                  <span class="use">
-                    <span class="cred">{row.label}</span>
-                    {row.mechs.map((m, j) => (
+        authRows.map((row) => {
+          const mechs = row.kind === "single" ? singleMechanics(row) : [];
+          return (
+          <div class="disc-cred">
+            {row.kind === "single" ? (
+              <>
+                <div class="disc-cred-head">
+                  <span class="disc-cred-label">{row.label}</span>
+                  {row.cred && <span class="disc-ctype">{row.cred.type}</span>}
+                  <span class={`disc-prov ${provClass(row.basis)} prov-end`} title={provTitle(row.basis)}>{provLabel(row.basis)}</span>
+                  {row.cred &&
+                    (row.cliLogin ? (
+                      <code class="disc-cred-cli">$ {row.cliLogin}</code>
+                    ) : (
+                      row.cred.generateUrl && (
+                        <a class="disc-cred-get" href={row.cred.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(row.cred.generateUrl)}>
+                          {credCta(row.cred.type)} ↗
+                        </a>
+                      )
+                    ))}
+                </div>
+                {mechs.length > 0 && (
+                  <div class="disc-cred-mech">
+                    {mechs.map((m, j) => (
                       <>
                         {j > 0 && <span class="or">/</span>}
                         <code class="mech">{m}</code>
                       </>
                     ))}
-                  </span>
-                ) : (
-                  row.parts.map((p, i) => (
-                    <>
-                      {i > 0 && <span class="and">+</span>}
-                      <span class="use">
-                        <span class="cred">{p.label}</span>
-                        <code class="mech">{p.mech}</code>
-                      </span>
-                    </>
-                  ))
+                  </div>
                 )}
-              </span>
-              <span class={`disc-prov ${provClass(row.basis)} prov-end`} title={provTitle(row.basis)}>{provLabel(row.basis)}</span>
-            </div>
-          ));
-        })()}
-    </section>
-
-    {credList.length > 0 && (
-      <section>
-        <div class="sec-header"><span class="sec-label">Credentials</span></div>
-        {credList.map(({ cred: c, cliLogin }) => (
-          <div class="disc-cred">
-            <div class="disc-cred-head">
-              <span class="disc-cred-label">{c.label}</span>
-              <span class="disc-ctype">{c.type}</span>
-              {cliLogin ? (
-                <code class="disc-cred-cli">$ {cliLogin}</code>
-              ) : (
-                c.generateUrl && (
-                  <a class="disc-cred-get" href={c.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(c.generateUrl)}>
-                    {credCta(c.type)} ↗
-                  </a>
-                )
-              )}
-            </div>
-            {cliLogin ? (
-              <p class="disc-cred-clinote">Acquired by the CLI — running <code>{cliLogin}</code> opens the auth flow and stores the credential.</p>
+                {row.bodyCreds.map(({ cred: c, cliLogin }) =>
+                  cliLogin ? (
+                    <p class="disc-cred-clinote">Acquired by the CLI — running <code>{cliLogin}</code> opens the auth flow and stores the credential.</p>
+                  ) : (
+                    c.setup && <Setup md={c.setup} />
+                  ),
+                )}
+              </>
             ) : (
-              c.setup && <Setup md={c.setup} />
+              <>
+                <div class="disc-cred-head">
+                  <span class="auth-use">
+                    {row.parts.map((p, i) => {
+                      const mech = partMechanic(row, p);
+                      return (
+                        <>
+                          {i > 0 && <span class="and">+</span>}
+                          <span class="use">
+                            <span class="disc-cred-label">{p.label}</span>
+                            {mech && <code class="mech">{mech}</code>}
+                          </span>
+                        </>
+                      );
+                    })}
+                  </span>
+                  <span class={`disc-prov ${provClass(row.basis)} prov-end`} title={provTitle(row.basis)}>{provLabel(row.basis)}</span>
+                </div>
+                {row.bodyCreds.map(({ cred: c, cliLogin }) => (
+                  <div class="disc-cred-body">
+                    <div class="disc-cred-head">
+                      <span class="disc-cred-label">{c.label}</span>
+                      <span class="disc-ctype">{c.type}</span>
+                      {cliLogin ? (
+                        <code class="disc-cred-cli">$ {cliLogin}</code>
+                      ) : (
+                        c.generateUrl && (
+                          <a class="disc-cred-get" href={c.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(c.generateUrl)}>
+                            {credCta(c.type)} ↗
+                          </a>
+                        )
+                      )}
+                    </div>
+                    {cliLogin ? (
+                      <p class="disc-cred-clinote">Acquired by the CLI — running <code>{cliLogin}</code> opens the auth flow and stores the credential.</p>
+                    ) : (
+                      c.setup && <Setup md={c.setup} />
+                    )}
+                  </div>
+                ))}
+              </>
             )}
           </div>
-        ))}
-      </section>
-    )}
+          );
+        })}
+    </section>
   </div>
 </Base>
 
@@ -290,11 +395,11 @@ Astro.response.headers.set("cache-control", "public, max-age=60");
   .use { display: inline-flex; align-items: baseline; gap: 6px; }
   .and { font-family: var(--font-mono); font-size: 12px; color: var(--gray-400); }
   .or { font-family: var(--font-mono); font-size: 11px; color: var(--gray-300); }
-  .cred { font-size: 13.5px; color: var(--gray-1000); font-weight: 500; }
   .mech { font-family: var(--font-mono); font-size: 12px; color: var(--gray-700); background: var(--gray-25); border: 1px solid var(--gray-100); border-radius: 5px; padding: 1px 6px; word-break: break-all; }
   .auth-none .auth-use { font-size: 13px; color: var(--gray-500); font-weight: 400; }
   .muted { color: var(--gray-400); font-size: 13.5px; margin: 14px 0 0; }
   .prov-end { margin-left: auto; }
+  .disc-cred-head .disc-cred-get, .disc-cred-head .disc-cred-cli { margin-left: 0; }
   .sec-note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   .sec-note a:hover { color: var(--gray-600); }
 </style>

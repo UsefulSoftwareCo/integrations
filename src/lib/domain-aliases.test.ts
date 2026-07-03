@@ -3,10 +3,13 @@ import { aliasesOf, assertValidDomainAliases, canonicalDomain } from "./domain-a
 
 describe("domain aliases", () => {
   test("canonicalizes known aliases case-insensitively", () => {
+    expect(canonicalDomain("Angular.IO")).toBe("angular.dev");
     expect(canonicalDomain(" SENTRY.DEV ")).toBe("sentry.io");
+    expect(canonicalDomain("timescale.com")).toBe("tigerdata.com");
     expect(canonicalDomain("Vercel.SH")).toBe("vercel.com");
     expect(canonicalDomain("zeit.co")).toBe("vercel.com");
     expect(canonicalDomain("railway.app")).toBe("railway.com");
+    expect(canonicalDomain(" zoom.us ")).toBe("zoom.com");
   });
 
   test("passes through unknown domains", () => {

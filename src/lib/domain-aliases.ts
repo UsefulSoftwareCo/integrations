@@ -1,6 +1,8 @@
-/** Alias domain -> canonical domain. One vendor, one canonical bucket. */
+/** Alias domain -> canonical domain. One vendor, one canonical bucket.
+ * Canonical direction follows the vendor's own apex redirect
+ * (e.g. sentry.dev 307s to sentry.io, vercel.sh 308s to vercel.com). */
 export const DOMAIN_ALIASES: Record<string, string> = {
-  "sentry.io": "sentry.dev",
+  "sentry.dev": "sentry.io",
   "vercel.sh": "vercel.com",
   "zeit.co": "vercel.com",
   "railway.app": "railway.com",

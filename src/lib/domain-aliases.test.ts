@@ -3,7 +3,7 @@ import { aliasesOf, assertValidDomainAliases, canonicalDomain } from "./domain-a
 
 describe("domain aliases", () => {
   test("canonicalizes known aliases case-insensitively", () => {
-    expect(canonicalDomain(" SENTRY.IO ")).toBe("sentry.dev");
+    expect(canonicalDomain(" SENTRY.DEV ")).toBe("sentry.io");
     expect(canonicalDomain("Vercel.SH")).toBe("vercel.com");
     expect(canonicalDomain("zeit.co")).toBe("vercel.com");
     expect(canonicalDomain("railway.app")).toBe("railway.com");
@@ -15,8 +15,8 @@ describe("domain aliases", () => {
   });
 
   test("lists aliases for a canonical domain", () => {
-    expect(aliasesOf("sentry.dev")).toEqual(["sentry.io"]);
-    expect(aliasesOf("SENTRY.IO")).toEqual(["sentry.io"]);
+    expect(aliasesOf("sentry.io")).toEqual(["sentry.dev"]);
+    expect(aliasesOf("SENTRY.DEV")).toEqual(["sentry.dev"]);
     expect(aliasesOf("example.com")).toEqual([]);
   });
 

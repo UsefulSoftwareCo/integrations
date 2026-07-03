@@ -1,0 +1,619 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "hookdeck.com",
+    "detect": {
+      "domain": "hookdeck.com",
+      "found": [
+        "api-catalog",
+        "agent-skills",
+        "llms.txt"
+      ],
+      "apiCatalog": {
+        "rest": [
+          "https://api.hookdeck.com/latest",
+          "https://api.outpost.hookdeck.com/latest"
+        ],
+        "openapi": [
+          "https://api.hookdeck.com/latest/openapi",
+          "https://raw.githubusercontent.com/hookdeck/outpost/main/docs/apis/openapi.yaml"
+        ],
+        "docs": [
+          "https://hookdeck.com/docs/api",
+          "https://hookdeck.com/docs/api.md",
+          "https://hookdeck.com/docs/outpost/api",
+          "https://hookdeck.com/docs/outpost/api.md"
+        ],
+        "status": [
+          "https://api.hookdeck.com/health",
+          "https://api.outpost.hookdeck.com/health"
+        ],
+        "mcp": []
+      },
+      "mcp": [],
+      "agentSkills": {
+        "count": 3,
+        "names": [
+          "event-gateway",
+          "hookdeck",
+          "outpost"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:28:46.174Z",
+    "summary": "Hookdeck exposes two authenticated REST APIs (Event Gateway and Outpost), a CLI (`hookdeck`), and a local stdio MCP server launched from the CLI for Event Gateway inspection workflows.",
+    "description": "Hookdeck provides webhook infrastructure products for receiving and routing inbound webhooks (Event Gateway) and for sending outbound webhooks to customers (Outpost). It offers both managed services and open-source/self-hosted components for webhook delivery, observability, and operations.",
+    "credentials": {
+      "hookdeck_api_key": {
+        "type": "api_key",
+        "label": "Hookdeck project API key",
+        "generateUrl": "https://dashboard.hookdeck.com/settings/project/secrets",
+        "setup": "Sign in to the [Hookdeck dashboard](https://dashboard.hookdeck.com/signup) and open [Project settings → Secrets](https://dashboard.hookdeck.com/settings/project/secrets) to copy your project API key. Use it in API requests as `Authorization: Bearer $API_KEY`. The docs also note deprecated Basic auth support where the API key is the username and the password is empty."
+      },
+      "outpost_admin_api_key": {
+        "type": "bearer",
+        "label": "Outpost admin API key",
+        "setup": "For managed Outpost, get the admin API key from the Hookdeck-managed Outpost dashboard as described in the [Outpost API auth docs](https://hookdeck.com/docs/outpost/api.md). For self-hosted Outpost, the operator sets the key via the `API_KEY` environment variable. Send it as `Authorization: Bearer $API_KEY`."
+      },
+      "outpost_tenant_jwt": {
+        "type": "jwt",
+        "label": "Outpost tenant JWT",
+        "generateUrl": "https://api.outpost.hookdeck.com/2025-07-01/tenants/{tenant_id}/token",
+        "setup": "First obtain admin access to Outpost, then call the tenant token endpoint documented in the [Outpost API reference](https://hookdeck.com/docs/outpost/api.md) (`Get Tenant JWT Token`) to mint a per-tenant JWT valid for 24 hours. Send it as `Authorization: Bearer $TENANT_JWT` for tenant-scoped API calls."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "hookdeck-event-gateway-rest-api",
+        "name": "Hookdeck Event Gateway REST API",
+        "type": "http",
+        "docs": "https://hookdeck.com/docs/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://hookdeck.com/docs/api.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hookdeck_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://hookdeck.com/docs/api.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "hookdeck_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://hookdeck.com/docs/api.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.hookdeck.com/2025-07-01"
+      },
+      {
+        "slug": "hookdeck-cli",
+        "name": "Hookdeck CLI",
+        "type": "cli",
+        "docs": "https://hookdeck.com/docs/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://hookdeck.com/docs/cli.md",
+            "https://raw.githubusercontent.com/hookdeck/hookdeck-cli/main/README.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hookdeck_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "hookdeck login --interactive"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/hookdeck/hookdeck-cli/main/README.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "hookdeck-cli",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "homebrew",
+            "identifier": "hookdeck"
+          },
+          {
+            "registryType": "docker",
+            "identifier": "hookdeck/hookdeck-cli"
+          }
+        ],
+        "command": "hookdeck"
+      },
+      {
+        "slug": "hookdeck-event-gateway-mcp-server",
+        "name": "Hookdeck Event Gateway MCP server",
+        "type": "mcp",
+        "docs": "https://hookdeck.com/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://hookdeck.com/docs/mcp.md",
+            "https://hookdeck.com/docs/ai-agent-resources.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hookdeck_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "hookdeck login",
+                    "env": [
+                      "HOOKDECK_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://hookdeck.com/docs/mcp.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "stdio:hookdeck gateway mcp",
+        "transports": [
+          "stdio"
+        ],
+        "command": "hookdeck"
+      },
+      {
+        "slug": "outpost-rest-api",
+        "name": "Outpost REST API",
+        "type": "http",
+        "docs": "https://hookdeck.com/docs/outpost/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://hookdeck.com/docs/outpost/api.md",
+            "https://raw.githubusercontent.com/hookdeck/outpost/main/docs/apis/openapi.yaml"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "outpost_admin_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "AdminApiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://hookdeck.com/docs/outpost/api.md",
+                  "https://raw.githubusercontent.com/hookdeck/outpost/main/docs/apis/openapi.yaml"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "outpost_tenant_jwt",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "TenantJwt"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://hookdeck.com/docs/outpost/api.md",
+                  "https://raw.githubusercontent.com/hookdeck/outpost/main/docs/apis/openapi.yaml"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://raw.githubusercontent.com/hookdeck/outpost/main/docs/apis/openapi.yaml",
+        "url": "https://api.outpost.hookdeck.com/2025-07-01",
+        "variables": [
+          {
+            "name": "self_hosted_base_url",
+            "in": "url",
+            "resolveFrom": "deployment",
+            "description": "For OSS/self-hosted Outpost deployments, the docs show the base URL pattern `https://outpost.your-domain.com/api/v1` instead of the managed base URL."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:28:46.174Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 78406,
+    "completion_tokens": 1647,
+    "total_tokens": 80053
+  },
+  "visited": [
+    "https://github.com/hookdeck/hookdeck-cli",
+    "https://hookdeck.com/docs",
+    "https://hookdeck.com/docs/agent-skills",
+    "https://hookdeck.com/docs/ai-agent-resources.md",
+    "https://hookdeck.com/docs/api",
+    "https://hookdeck.com/docs/api.md",
+    "https://hookdeck.com/docs/cli",
+    "https://hookdeck.com/docs/cli.md",
+    "https://hookdeck.com/docs/guides/manage-connections-with-cli",
+    "https://hookdeck.com/docs/mcp",
+    "https://hookdeck.com/docs/mcp.md",
+    "https://hookdeck.com/docs/outpost/api",
+    "https://hookdeck.com/docs/outpost/api.md",
+    "https://hookdeck.com/llms.txt",
+    "https://raw.githubusercontent.com/hookdeck/hookdeck-cli/main/README.md",
+    "https://raw.githubusercontent.com/hookdeck/outpost/main/docs/apis/openapi.yaml"
+  ],
+  "grounding": [
+    "http://host.docker.internal:1234",
+    "http://localhost:$PORT/$DESTINATION_PATH",
+    "http://localhost:3000",
+    "http://localhost:3000/events/shopify/orders",
+    "http://localhost:3000/webhooks/shopify",
+    "http://localhost:3000/webhooks/shopify/inventory",
+    "http://localhost:3000/webhooks/shopify/orders",
+    "http://localhost:3000/webhooks/stripe",
+    "http://localhost:3000/webhooks/twilio",
+    "http://localhost:3333/api/v1",
+    "http://localhost:8787/qa5626p6y5o79b",
+    "https://",
+    "https://api.hookdeck.com/2025-07-01/connections?next=web_2urj7h9puxk6obro3x",
+    "https://api.hookdeck.com/2025-07-01/connections?order_by=updated_at&dir=asc&next=web_2urj7h9puxk6obro3x",
+    "https://api.hookdeck.com/2025-07-01/connections?prev=web_2urj7h9puxk6obuf6i",
+    "https://api.hookdeck.com/2025-07-01/events",
+    "https://api.hookdeck.com/2025-07-01/openapi",
+    "https://api.hookdeck.com/2025-07-01/sources",
+    "https://api.outpost.hookdeck.com/2025-07-01",
+    "https://api.outpost.hookdeck.com/2025-07-01/tenants",
+    "https://api.outpost.hookdeck.com/2025-07-01/tenants/",
+    "https://api.outpost.hookdeck.com/2025-07-01/tenants/t1/destinations",
+    "https://brew.sh/",
+    "https://chatgpt.com/?q=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Fcli.md&hints=search",
+    "https://chatgpt.com/?q=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Fmcp.md&hints=search",
+    "https://chatgpt.com/?q=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Foutpost%2Fapi.md&hints=search",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Fcli.md",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Fmcp.md",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Foutpost%2Fapi.md",
+    "https://console.hookdeck.com",
+    "https://console.hookdeck.com/",
+    "https://cursor.com/link/prompt?text=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Fcli.md",
+    "https://cursor.com/link/prompt?text=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Fmcp.md",
+    "https://cursor.com/link/prompt?text=Read+https%3A%2F%2Fhookdeck.com%2Fdocs%2Foutpost%2Fapi.md",
+    "https://dashboard.hookdeck.com/events",
+    "https://dashboard.hookdeck.com/events/cli",
+    "https://dashboard.hookdeck.com/events/cli?team_id=",
+    "https://dashboard.hookdeck.com/events/evt_",
+    "https://dashboard.hookdeck.com/settings/project/secrets",
+    "https://dashboard.hookdeck.com/signup",
+    "https://docs.brew.sh/Taps",
+    "https://events.hookdeck.com/e/src_DAjaFWyyZXsFdZrTOKpuHn01",
+    "https://events.hookdeck.com/e/src_DAjaFWyyZXsFdZrTOKpuHn02",
+    "https://events.hookdeck.com/e/src_DAjaFWyyZXsFdZrTOKpuHn03",
+    "https://events.hookdeck.com/e/src_DAjaFWyyZXsFdZrTOKpuHnOH",
+    "https://example.com/webhooks/user",
+    "https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/h/hookdeck.rb",
+    "https://github.com/hookdeck",
+    "https://github.com/hookdeck/agent-skills",
+    "https://github.com/hookdeck/hookdeck-cli",
+    "https://github.com/hookdeck/hookdeck-cli/releases",
+    "https://github.com/hookdeck/hookdeck-cli/releases/latest",
+    "https://github.com/hookdeck/outpost/blob/main/docs/apis/openapi.yaml",
+    "https://github.com/hookdeck/outpost/tree/main/sdks/outpost-go",
+    "https://github.com/hookdeck/outpost/tree/main/sdks/outpost-python",
+    "https://github.com/hookdeck/outpost/tree/main/sdks/outpost-typescript",
+    "https://github.com/hookdeck/scoop-hookdeck-cli.git",
+    "https://github.com/hookdeck/webhook-skills",
+    "https://github.com/user-attachments/assets/7a333c5b-e4cb-45bb-8570-29fafd137bd2",
+    "https://hkdk.events/src_123",
+    "https://hkdk.events/src_DAjaFWyyZXsFdZrTOKpuHnOH",
+    "https://hkdk.events/v1/publish",
+    "https://hkdk.events/xxxxxxxxxxxxxxx",
+    "https://hookdeck.com/",
+    "https://hookdeck.com/#ai-agent-resources",
+    "https://hookdeck.com/#attempt",
+    "https://hookdeck.com/#attempts",
+    "https://hookdeck.com/#authentication",
+    "https://hookdeck.com/#available-tools",
+    "https://hookdeck.com/#ci",
+    "https://hookdeck.com/#color",
+    "https://hookdeck.com/#commonly-used-tools",
+    "https://hookdeck.com/#completion",
+    "https://hookdeck.com/#config",
+    "https://hookdeck.com/#configuration",
+    "https://hookdeck.com/#configuring-the-mcp",
+    "https://hookdeck.com/#connection",
+    "https://hookdeck.com/#createtenantdestination",
+    "https://hookdeck.com/#debugging-and-logging",
+    "https://hookdeck.com/#deletetenant",
+    "https://hookdeck.com/#deletetenantdestination",
+    "https://hookdeck.com/#destination",
+    "https://hookdeck.com/#destinations",
+    "https://hookdeck.com/#device-name",
+    "https://hookdeck.com/#disabletenantdestination",
+    "https://hookdeck.com/#docker",
+    "https://hookdeck.com/#enabletenantdestination",
+    "https://hookdeck.com/#errors",
+    "https://hookdeck.com/#event",
+    "https://hookdeck.com/#events",
+    "https://hookdeck.com/#example-prompts",
+    "https://hookdeck.com/#faq--what-you-can-and-cant-do-with-the-hookdeck-mcp",
+    "https://hookdeck.com/#getattempt",
+    "https://hookdeck.com/#getattemptmetrics",
+    "https://hookdeck.com/#getdestinationtypeschema",
+    "https://hookdeck.com/#getevent",
+    "https://hookdeck.com/#geteventmetrics",
+    "https://hookdeck.com/#getmanagedconfig",
+    "https://hookdeck.com/#gettenant",
+    "https://hookdeck.com/#gettenantdestination",
+    "https://hookdeck.com/#gettenantdestinationattempt",
+    "https://hookdeck.com/#gettenantportalurl",
+    "https://hookdeck.com/#gettenanttoken",
+    "https://hookdeck.com/#getting-started-with-the-cli",
+    "https://hookdeck.com/#global-flags",
+    "https://hookdeck.com/#health",
+    "https://hookdeck.com/#healthcheck",
+    "https://hookdeck.com/#help",
+    "https://hookdeck.com/#hookdeck-gateway-attempt-get",
+    "https://hookdeck.com/#hookdeck-gateway-attempt-list",
+    "https://hookdeck.com/#hookdeck-gateway-connection-create",
+    "https://hookdeck.com/#hookdeck-gateway-connection-delete",
+    "https://hookdeck.com/#hookdeck-gateway-connection-disable",
+    "https://hookdeck.com/#hookdeck-gateway-connection-enable",
+    "https://hookdeck.com/#hookdeck-gateway-connection-get",
+    "https://hookdeck.com/#hookdeck-gateway-connection-list",
+    "https://hookdeck.com/#hookdeck-gateway-connection-pause",
+    "https://hookdeck.com/#hookdeck-gateway-connection-unpause",
+    "https://hookdeck.com/#hookdeck-gateway-connection-upsert",
+    "https://hookdeck.com/#hookdeck-gateway-destination-count",
+    "https://hookdeck.com/#hookdeck-gateway-destination-create",
+    "https://hookdeck.com/#hookdeck-gateway-destination-delete",
+    "https://hookdeck.com/#hookdeck-gateway-destination-disable",
+    "https://hookdeck.com/#hookdeck-gateway-destination-enable",
+    "https://hookdeck.com/#hookdeck-gateway-destination-get",
+    "https://hookdeck.com/#hookdeck-gateway-destination-list",
+    "https://hookdeck.com/#hookdeck-gateway-destination-update",
+    "https://hookdeck.com/#hookdeck-gateway-destination-upsert",
+    "https://hookdeck.com/#hookdeck-gateway-event-cancel",
+    "https://hookdeck.com/#hookdeck-gateway-event-get",
+    "https://hookdeck.com/#hookdeck-gateway-event-list",
+    "https://hookdeck.com/#hookdeck-gateway-event-mute",
+    "https://hookdeck.com/#hookdeck-gateway-event-raw-body",
+    "https://hookdeck.com/#hookdeck-gateway-event-retry",
+    "https://hookdeck.com/#hookdeck-gateway-issue-count",
+    "https://hookdeck.com/#hookdeck-gateway-issue-dismiss",
+    "https://hookdeck.com/#hookdeck-gateway-issue-get",
+    "https://hookdeck.com/#hookdeck-gateway-issue-list",
+    "https://hookdeck.com/#hookdeck-gateway-issue-update",
+    "https://hookdeck.com/#hookdeck-gateway-metrics-attempts",
+    "https://hookdeck.com/#hookdeck-gateway-metrics-events",
+    "https://hookdeck.com/#hookdeck-gateway-metrics-requests",
+    "https://hookdeck.com/#hookdeck-gateway-metrics-transformations",
+    "https://hookdeck.com/#hookdeck-gateway-request-events",
+    "https://hookdeck.com/#hookdeck-gateway-request-get",
+    "https://hookdeck.com/#hookdeck-gateway-request-ignored-events",
+    "https://hookdeck.com/#hookdeck-gateway-request-list",
+    "https://hookdeck.com/#hookdeck-gateway-request-raw-body",
+    "https://hookdeck.com/#hookdeck-gateway-request-retry",
+    "https://hookdeck.com/#hookdeck-gateway-source-count",
+    "https://hookdeck.com/#hookdeck-gateway-source-create",
+    "https://hookdeck.com/#hookdeck-gateway-source-delete",
+    "https://hookdeck.com/#hookdeck-gateway-source-disable",
+    "https://hookdeck.com/#hookdeck-gateway-source-enable",
+    "https://hookdeck.com/#hookdeck-gateway-source-get",
+    "https://hookdeck.com/#hookdeck-gateway-source-list",
+    "https://hookdeck.com/#hookdeck-gateway-source-update",
+    "https://hookdeck.com/#hookdeck-gateway-source-upsert",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-count",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-create",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-delete",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-executions-get",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-executions-list",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-get",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-list",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-run",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-update",
+    "https://hookdeck.com/#hookdeck-gateway-transformation-upsert",
+    "https://hookdeck.com/#hookdeck-mcp",
+    "https://hookdeck.com/#hookdeck-product-skills",
+    "https://hookdeck.com/#hookdeck-project-list",
+    "https://hookdeck.com/#hookdeck-project-use",
+    "https://hookdeck.com/#how-the-client-connects-to-the-server",
+    "https://hookdeck.com/#installation",
+    "https://hookdeck.com/#interactive-keyboard-shortcuts",
+    "https://hookdeck.com/#interactive-mode",
+    "https://hookdeck.com/#introduction",
+    "https://hookdeck.com/#issue",
+    "https://hookdeck.com/#linux",
+    "https://hookdeck.com/#listattempts",
+    "https://hookdeck.com/#listdestinationtypeschemas",
+    "https://hookdeck.com/#listen",
+    "https://hookdeck.com/#listen-flags",
+    "https://hookdeck.com/#listevents",
+    "https://hookdeck.com/#listtenantdestinationattempts",
+    "https://hookdeck.com/#listtenantdestinations",
+    "https://hookdeck.com/#listtenants",
+    "https://hookdeck.com/#listtopics",
+    "https://hookdeck.com/#log-level",
+    "https://hookdeck.com/#login",
+    "https://hookdeck.com/#logout",
+    "https://hookdeck.com/#macos",
+    "https://hookdeck.com/#mcp",
+    "https://hookdeck.com/#mcp-client-configuration",
+    "https://hookdeck.com/#metrics",
+    "https://hookdeck.com/#npm--yarn",
+    "https://hookdeck.com/#openapi-schema",
+    "https://hookdeck.com/#prerequisites",
+    "https://hookdeck.com/#prerequisites-install-the-cli",
+    "https://hookdeck.com/#project",
+    "https://hookdeck.com/#project-name",
+    "https://hookdeck.com/#publish",
+    "https://hookdeck.com/#publishevent",
+    "https://hookdeck.com/#rate-limits",
+    "https://hookdeck.com/#request",
+    "https://hookdeck.com/#retry",
+    "https://hookdeck.com/#retryevent",
+    "https://hookdeck.com/#schemas",
+    "https://hookdeck.com/#sdks",
+    "https://hookdeck.com/#source",
+    "https://hookdeck.com/#tenants",
+    "https://hookdeck.com/#topics",
+    "https://hookdeck.com/#transformation",
+    "https://hookdeck.com/#updatemanagedconfig",
+    "https://hookdeck.com/#updatetenantdestination",
+    "https://hookdeck.com/#upserttenant",
+    "https://hookdeck.com/#use-cases",
+    "https://hookdeck.com/#version",
+    "https://hookdeck.com/#webhook-skills",
+    "https://hookdeck.com/#what-is-mcp",
+    "https://hookdeck.com/#what-this-mcp-does",
+    "https://hookdeck.com/#when-to-use-mcp-vs-agent-skills",
+    "https://hookdeck.com/#when-to-use-mcp-vs-skills",
+    "https://hookdeck.com/#whoami",
+    "https://hookdeck.com/#why-use-the-cli",
+    "https://hookdeck.com/#windows",
+    "https://hookdeck.com/blog",
+    "https://hookdeck.com/blog/hookdeck-or-amazon-eventbridge-webhooks",
+    "https://hookdeck.com/blog/hookdeck-or-eventbridge-business-case",
+    "https://hookdeck.com/blog/hookdeck-or-rabbitmq-webhook",
+    "https://hookdeck.com/blog/hookdeck-vs-kafka-which-way-to-go-for-your-webhooks",
+    "https://hookdeck.com/careers",
+    "https://hookdeck.com/company",
+    "https://hookdeck.com/contact",
+    "https://hookdeck.com/customers",
+    "https://hookdeck.com/docs",
+    "https://hookdeck.com/docs/agent-skills",
+    "https://hookdeck.com/docs/ai-agent-resources.md",
+    "https://hookdeck.com/docs/api",
+    "https://hookdeck.com/docs/api.md",
+    "https://hookdeck.com/docs/cli",
+    "https://hookdeck.com/docs/cli#installation",
+    "https://hookdeck.com/docs/cli#listen",
+    "https://hookdeck.com/docs/cli#mcp",
+    "https://hookdeck.com/docs/cli.md",
+    "https://hookdeck.com/docs/guides",
+    "https://hookdeck.com/docs/guides/control-throughput-queue-events",
+    "https://hookdeck.com/docs/guides/how-to-filter-and-route-events",
+    "https://hookdeck.com/docs/guides/how-to-gain-full-observability-of-your-event-flows",
+    "https://hookdeck.com/docs/guides/how-to-pause-connections",
+    "https://hookdeck.com/docs/guides/manage-connections-with-cli",
+    "https://hookdeck.com/docs/llms.txt",
+    "https://hookdeck.com/docs/mcp",
+    "https://hookdeck.com/docs/mcp#hookdeck-product-skills",
+    "https://hookdeck.com/docs/mcp.md",
+    "https://hookdeck.com/docs/outpost",
+    "https://hookdeck.com/docs/outpost/api",
+    "https://hookdeck.com/docs/outpost/api.md",
+    "https://hookdeck.com/docs/outpost/overview",
+    "https://hookdeck.com/docs/platform",
+    "https://hookdeck.com/docs/use-cases/asynchronous-apis",
+    "https://hookdeck.com/docs/use-cases/receive-webhooks",
+    "https://hookdeck.com/docs/use-cases/third-party-routing",
+    "https://hookdeck.com/dpa",
+    "https://hookdeck.com/event-gateway",
+    "https://hookdeck.com/llms.txt",
+    "https://hookdeck.com/outpost",
+    "https://hookdeck.com/outpost/guides",
+    "https://hookdeck.com/outpost/pricing",
+    "https://hookdeck.com/platform",
+    "https://hookdeck.com/pricing",
+    "https://hookdeck.com/privacy",
+    "https://hookdeck.com/radar",
+    "https://hookdeck.com/solutions",
+    "https://hookdeck.com/sub-processors",
+    "https://hookdeck.com/terms",
+    "https://hookdeck.com/webhooks",
+    "https://hookdeck.com/webhooks/platforms",
+    "https://hookdeck.com/webhooks/platforms/hookdeck-event-gateway-vs-convoy-webhook-receiving-comparison",
+    "https://hookdeck.com/webhooks/platforms/hookdeck-event-gateway-vs-svix-ingest-webhook-receiving-comparison",
+    "https://hookdeck.com/webhooks/platforms/hookdeck-outpost-vs-convoy-webhook-sending-comparison",
+    "https://hookdeck.com/webhooks/platforms/hookdeck-outpost-vs-hook0-webhook-sending-comparison",
+    "https://hookdeck.com/webhooks/platforms/hookdeck-outpost-vs-svix-dispatch-webhook-sending-comparison",
+    "https://hookdeckdevelopers.slack.com/join/shared_invite/zt-yw7hlyzp-EQuO3QvdiBlH9Tz2KZg5MQ",
+    "https://hub.docker.com/r/hookdeck/hookdeck-cli",
+    "https://img.shields.io/badge/Slack-Hookdeck%20Developers-blue?logo=slack",
+    "https://join.slack.com/t/hookdeckdevelopers/shared_invite/zt-yw7hlyzp-EQuO3QvdiBlH9Tz2KZg5MQ",
+    "https://kinesis.us-east-1.amazonaws.com",
+    "https://mock.hookdeck.com/example",
+    "https://modelcontextprotocol.io/",
+    "https://outpost.your-domain.com/api/v1",
+    "https://pypi.org/project/outpost-sdk/",
+    "https://raw.githubusercontent.com/hookdeck/hookdeck-cli/main/README.md",
+    "https://raw.githubusercontent.com/hookdeck/outpost/main/docs/apis/openapi.yaml",
+    "https://registry.terraform.io/providers/hookdeck/hookdeck/latest",
+    "https://registry.terraform.io/providers/hookdeck/hookdeck/latest/docs",
+    "https://scoop.sh/",
+    "https://speakeasy.com",
+    "https://sqs.us-east-1.amazonaws.com",
+    "https://sqs.us-east-1.amazonaws.com/123456789012/my-queue",
+    "https://status.hookdeck.com/",
+    "https://trust.hookdeck.com",
+    "https://trust.hookdeck.com/",
+    "https://webhooks.acme.com/?token=JWT_TOKEN&tenant_id=tenant_123",
+    "https://www.npmjs.com/package/@hookdeck/outpost-sdk",
+    "https://www.openapis.org/",
+    "https://www.postman.com/"
+  ]
+}

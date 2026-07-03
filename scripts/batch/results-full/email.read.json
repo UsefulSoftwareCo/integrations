@@ -1,0 +1,496 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "email.read",
+    "detect": {
+      "domain": "email.read",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T15:36:28.258Z",
+    "summary": "Nitrosend exposes one REST API, one MCP server, and one CLI; REST uses Bearer API keys, while MCP and CLI support either browser OAuth login or an API key.",
+    "credentials": {
+      "nitrosend_api_key": {
+        "type": "api_key",
+        "label": "Nitrosend API key",
+        "generateUrl": "https://app.nitrosend.com/my/brand/api-keys",
+        "setup": "In the Nitrosend dashboard, go to [Brand > API Keys](https://app.nitrosend.com/my/brand/api-keys) and create or copy an API key. Use the `nskey_live_...` value as `NITROSEND_API_KEY` in CI/headless workflows, or pass it to `nitrosend login --api-key nskey_live_...`.",
+        "acquisition": "manual"
+      },
+      "nitrosend_oauth": {
+        "type": "oauth2",
+        "label": "Nitrosend OAuth sign-in",
+        "generateUrl": "https://app.nitrosend.com/login",
+        "setup": "Run `nitrosend login` and complete the browser OAuth flow. The CLI stores the resulting profile locally under your platform config directory (or `NITROSEND_CONFIG_DIR` if set).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "nitrosend-rest-api",
+        "name": "Nitrosend REST API",
+        "type": "http",
+        "docs": "https://docs.nitrosend.com/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.nitrosend.com/api",
+            "https://nitrosend.com/email-api-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "nitrosend_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://nitrosend.com/email-api-cli",
+                  "https://docs.nitrosend.com/api"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://api.nitrosend.com/openapi.yaml",
+        "url": "https://api.nitrosend.com/v1"
+      },
+      {
+        "slug": "nitrosend-mcp",
+        "name": "Nitrosend MCP",
+        "type": "mcp",
+        "docs": "https://docs.nitrosend.com/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://nitrosend.com/mcp",
+            "https://docs.nitrosend.com/mcp",
+            "https://docs.nitrosend.com/cli/install"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "nitrosend_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.nitrosend.com/cli/install",
+                  "https://nitrosend.com/mcp"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "nitrosend_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "nitrosend login --api-key nskey_live_...",
+                    "env": [
+                      "NITROSEND_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.nitrosend.com/cli/install",
+                  "https://docs.nitrosend.com/cli/overview"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.nitrosend.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "nitrosend-cli",
+        "name": "Nitrosend CLI",
+        "type": "cli",
+        "docs": "https://docs.nitrosend.com/cli/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.nitrosend.com/cli/overview",
+            "https://docs.nitrosend.com/cli/install"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "nitrosend_oauth",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "nitrosend login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.nitrosend.com/cli/install",
+                  "https://docs.nitrosend.com/cli/overview"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "nitrosend_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "nitrosend login --api-key nskey_live_...",
+                    "env": [
+                      "NITROSEND_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.nitrosend.com/cli/install",
+                  "https://docs.nitrosend.com/cli/overview"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@nitrosend/cli",
+            "runtimeHint": "node>=18"
+          }
+        ],
+        "command": "nitrosend"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T15:36:28.259Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 115641,
+    "completion_tokens": 1183,
+    "total_tokens": 116824
+  },
+  "visited": [
+    "https://docs.nitrosend.com/api",
+    "https://docs.nitrosend.com/cli/install",
+    "https://docs.nitrosend.com/cli/overview",
+    "https://docs.nitrosend.com/mcp",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://nitrosend.com/email-api-cli",
+    "https://nitrosend.com/mcp",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.reddit.com/r/mcp/comments/1knrz3g/apollo_mcp_server_connect_ai_to_your_graphql_apis/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "https://api.nitrosend.com/mcp",
+    "https://api.nitrosend.com/mcpCopy",
+    "https://api.nitrosend.com/v1/my/messages",
+    "https://api.staging.nitrosend.com/mcp",
+    "https://app.nitrosend.com",
+    "https://app.nitrosend.com/join",
+    "https://app.nitrosend.com/login",
+    "https://app.nitrosend.com/my/brand/api-keys",
+    "https://docs.nitrosend.com",
+    "https://docs.nitrosend.com/#api-key-recommended-for-ci-and-headless",
+    "https://docs.nitrosend.com/#confirm-the-connection",
+    "https://docs.nitrosend.com/#custom-api-endpoints",
+    "https://docs.nitrosend.com/#first-workflow",
+    "https://docs.nitrosend.com/#install",
+    "https://docs.nitrosend.com/#oauth-recommended-for-humans",
+    "https://docs.nitrosend.com/#sign-in",
+    "https://docs.nitrosend.com/#sign-out",
+    "https://docs.nitrosend.com/#what-the-cli-doesn-t-try-to-be",
+    "https://docs.nitrosend.com/#when-to-use-which-surface",
+    "https://docs.nitrosend.com/../api",
+    "https://docs.nitrosend.com/../cli/agent-mode",
+    "https://docs.nitrosend.com/../cli/install",
+    "https://docs.nitrosend.com/../cli/overview",
+    "https://docs.nitrosend.com/../cli/project-config",
+    "https://docs.nitrosend.com/../cli/recipes",
+    "https://docs.nitrosend.com/../cli/reference",
+    "https://docs.nitrosend.com/../integrations/rest-api",
+    "https://docs.nitrosend.com/../introduction",
+    "https://docs.nitrosend.com/../mcp",
+    "https://docs.nitrosend.com/api",
+    "https://docs.nitrosend.com/api#authentication",
+    "https://docs.nitrosend.com/api#definition-account",
+    "https://docs.nitrosend.com/api#definition-accountteam",
+    "https://docs.nitrosend.com/api#definition-error",
+    "https://docs.nitrosend.com/api#definition-impersonationexit",
+    "https://docs.nitrosend.com/api#definition-impersonationstatus",
+    "https://docs.nitrosend.com/api#definition-impersonator",
+    "https://docs.nitrosend.com/api#definition-timelineentry",
+    "https://docs.nitrosend.com/api#definition-user",
+    "https://docs.nitrosend.com/api#introduction",
+    "https://docs.nitrosend.com/api#operation-integrations-attio-callback-get",
+    "https://docs.nitrosend.com/api#operation-integrations-hubspot-callback-get",
+    "https://docs.nitrosend.com/api#operation-integrations-shopify-callback-get",
+    "https://docs.nitrosend.com/api#operation-mcp-get",
+    "https://docs.nitrosend.com/api#operation-mcp-post",
+    "https://docs.nitrosend.com/api#operation-v1-app-get",
+    "https://docs.nitrosend.com/api#operation-v1-direct-uploads-post",
+    "https://docs.nitrosend.com/api#operation-v1-login-post",
+    "https://docs.nitrosend.com/api#operation-v1-logout-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-invites-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-invites-id-accept-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-invites-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-invites-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-memberships-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-memberships-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-memberships-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-account-team-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-accounts-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-deletion-safety-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-onboarding-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-onboarding-steps-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-scrape-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-setup-center-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-brands-sid-setup-center-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-id-delivery-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-id-duplicate-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-id-render-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-id-send-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-id-send-test-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-campaigns-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-chat-sessions-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-chat-sessions-id-close-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-chat-sessions-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-fields-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-fields-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-id-enrich-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-id-timeline-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-contacts-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-domains-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-domains-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-domains-id-entri-session-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-domains-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-domains-id-verify-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-domains-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-events-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-events-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-events-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-events-names-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-events-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-exports-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-exports-id-download-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-exports-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-exports-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-flow-templates-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-flow-templates-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-flows-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-flows-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-flows-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-flows-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-flows-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-flows-spec-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-images-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-impersonation-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-impersonation-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-imports-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-imports-id-cancel-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-imports-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-imports-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-imports-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-imports-spec-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-attio-connect-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-hubspot-connect-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-id-primary-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-id-test-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-shopify-connect-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-integrations-stripe-connect-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-lists-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-lists-id-contacts-bulk-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-lists-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-lists-id-delete-warning-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-lists-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-lists-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-lists-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-messages-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-messages-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-messages-id-preview-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-messages-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-saved-views-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-saved-views-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-saved-views-id-fork-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-saved-views-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-saved-views-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-segments-count-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-segments-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-segments-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-segments-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-segments-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-segments-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-segments-preview-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-subscription-change-put",
+    "https://docs.nitrosend.com/api#operation-v1-my-subscription-coupon-preview-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-subscription-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-suppressions-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-generate-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-id-delete",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-id-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-id-patch",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-id-render-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-id-send-test-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-preview-post",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-spec-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-templates-starters-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-user-get",
+    "https://docs.nitrosend.com/api#operation-v1-my-user-patch",
+    "https://docs.nitrosend.com/api#operation-v1-oauth-launch-post",
+    "https://docs.nitrosend.com/api#operation-v1-oauth-me-get",
+    "https://docs.nitrosend.com/api#operation-v1-oauth-subscribe-post",
+    "https://docs.nitrosend.com/api#operation-v1-public-contacts-post",
+    "https://docs.nitrosend.com/api#operation-v1-public-shopify-events-post",
+    "https://docs.nitrosend.com/api#operation-v1-signup-post",
+    "https://docs.nitrosend.com/cli/install",
+    "https://docs.nitrosend.com/cli/overview",
+    "https://docs.nitrosend.com/introduction",
+    "https://docs.nitrosend.com/mcp",
+    "https://docs.nitrosend.com/mcp#introduction",
+    "https://docs.nitrosend.com/mcp#operation-audience-analysis-prompt",
+    "https://docs.nitrosend.com/mcp#operation-build-email-prompt",
+    "https://docs.nitrosend.com/mcp#operation-build-flow-prompt",
+    "https://docs.nitrosend.com/mcp#operation-diagnose-deliverability-prompt",
+    "https://docs.nitrosend.com/mcp#operation-flow-review-prompt",
+    "https://docs.nitrosend.com/mcp#operation-lifecycle-setup-prompt",
+    "https://docs.nitrosend.com/mcp#operation-nitro-account-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-brand-kit-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-compose-campaign-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-compose-flow-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-config-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-configure-account-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-configure-providers-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-control-delivery-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-define-segment-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-docs-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-email-design-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-email-marketing-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-examples-campaign-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-examples-email-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-examples-flow-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-get-insights-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-get-status-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-guide-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-history-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-import-contacts-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-ingest-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-knowledge-index-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-knowledge-slug-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-lifecycle-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-manage-audience-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-manage-billing-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-manage-domains-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-manage-template-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-memory-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-prompts-name-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-providers-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-query-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-request-support-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-review-delivery-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-schema-resource",
+    "https://docs.nitrosend.com/mcp#operation-nitro-search-contacts-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-search-docs-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-select-account-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-select-brand-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-send-message-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-send-test-message-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-set-brand-kit-tool",
+    "https://docs.nitrosend.com/mcp#operation-nitro-set-memory-tool",
+    "https://docs.nitrosend.com/mcp#operation-onboard-brand-kit-prompt",
+    "https://docs.nitrosend.com/mcp#operation-weekly-report-prompt",
+    "https://emailmarketingskill.com",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/nitrosend/docs/edit/main/cli/install.mdx",
+    "https://github.com/nitrosend/docs/edit/main/cli/overview.mdx",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://nitrosend.com/SKILL.md",
+    "https://nitrosend.com/about",
+    "https://nitrosend.com/best-email-designs",
+    "https://nitrosend.com/best-email-platforms-for-ai-agents",
+    "https://nitrosend.com/best-mcp-servers-for-developers",
+    "https://nitrosend.com/best-transactional-email-apis-2026",
+    "https://nitrosend.com/blog",
+    "https://nitrosend.com/changelog",
+    "https://nitrosend.com/compare",
+    "https://nitrosend.com/email-api-cli",
+    "https://nitrosend.com/email-for-claude",
+    "https://nitrosend.com/features",
+    "https://nitrosend.com/glossary",
+    "https://nitrosend.com/integrations",
+    "https://nitrosend.com/integrations/chatgpt",
+    "https://nitrosend.com/integrations/claude-code",
+    "https://nitrosend.com/integrations/claude-cowork",
+    "https://nitrosend.com/integrations/codex",
+    "https://nitrosend.com/integrations/cursor",
+    "https://nitrosend.com/integrations/gemini",
+    "https://nitrosend.com/mcp",
+    "https://nitrosend.com/pricing",
+    "https://nitrosend.com/privacy",
+    "https://nitrosend.com/quickstart",
+    "https://nitrosend.com/security",
+    "https://nitrosend.com/terms",
+    "https://nitrosend.com/testimonials",
+    "https://sourcey.com",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.reddit.com/r/mcp/comments/1knrz3g/apollo_mcp_server_connect_ai_to_your_graphql_apis/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

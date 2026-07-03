@@ -1,0 +1,327 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "chargebee.com",
+    "detect": {
+      "domain": "chargebee.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T16:19:32.246Z",
+    "summary": "Chargebee exposes one public REST Billing API and MCP servers; the Billing API uses HTTP Basic auth with a site API key, and the Data Lookup MCP server supports either MCP Bearer API key auth or OAuth.",
+    "credentials": {
+      "cb_api_key": {
+        "type": "api_key",
+        "label": "Chargebee API key",
+        "generateUrl": "https://app.chargebee.com/login",
+        "setup": "1. Sign in to the [Chargebee app](https://app.chargebee.com/login).\n2. Go to **Settings > Configure Chargebee > API Keys and Webhooks > API Keys**.\n3. Click **Add an API Key** and choose **Full-Access Key**.\n4. Copy the key and store it securely. Use the **test site** key for development and the **live site** key for production.",
+        "acquisition": "manual"
+      },
+      "cb_mcp_api_key": {
+        "type": "api_key",
+        "label": "Chargebee MCP server API key",
+        "generateUrl": "https://app.chargebee.com",
+        "setup": "1. Sign in to [Chargebee Billing](https://app.chargebee.com).\n2. Navigate to **Settings > Configure Chargebee > Agentic AI > MCP Servers**.\n3. Open the MCP server you want (for example, **Data Lookup MCP Server**).\n4. In **Access & Authentication**, choose **API Key** and create a key for that MCP server.\n5. Copy the generated key. Clients send it as `Authorization: Bearer YOUR-API-KEY`.",
+        "acquisition": "manual"
+      },
+      "cb_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Chargebee MCP OAuth access",
+        "generateUrl": "https://app.chargebee.com",
+        "setup": "1. Sign in to [Chargebee Billing](https://app.chargebee.com).\n2. Navigate to **Settings > Configure Chargebee > Agentic AI > MCP Servers**.\n3. Open the MCP server you want and switch **Access & Authentication** to **OAuth**.\n4. Register/use the OAuth client ID required by your MCP client.\n5. When the client opens Chargebee login, sign in and grant access; the client receives a user-scoped MCP token limited by that user's Chargebee access level.\n\nNote: OAuth is not supported when **Multi-Business Entity** is enabled; use API Key auth instead.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "chargebee-data-lookup-mcp-server",
+        "name": "Chargebee Data Lookup MCP Server",
+        "type": "mcp",
+        "docs": "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent",
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cb_mcp_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cb_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/data_lookup_agent",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "chargebee-knowledge-base-mcp-server",
+        "name": "Chargebee Knowledge Base MCP Server",
+        "type": "mcp",
+        "docs": "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/knowledge-base-agent",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "chargebee-onboarding-mcp-server",
+        "name": "Chargebee Onboarding MCP Server",
+        "type": "mcp",
+        "docs": "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "chargebee-custom-mcp-server",
+        "name": "Chargebee Custom MCP Server",
+        "type": "mcp",
+        "docs": "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T16:19:32.246Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 90425,
+    "completion_tokens": 1700,
+    "total_tokens": 92125
+  },
+  "visited": [
+    "https://apidocs.chargebee.com/docs/api/getting-started",
+    "https://apidocs.chargebee.com/docs/api/getting-started.md",
+    "https://apidocs.chargebee.com/docs/api/v1/getting-started",
+    "https://apidocs.chargebee.com/docs/api/v1/getting-started.md",
+    "https://apidocs.chargebee.com/llms.txt",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent.md",
+    "https://www.chargebee.com/docs/billing/2.0/developer-resources/developer_resources",
+    "https://www.chargebee.com/docs/billing/2.0/kb/getting-started/chargebee-apis-documentation",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://en.wikipedia.org/wiki/JSON",
+    "http://en.wikipedia.org/wiki/Query_string",
+    "http://en.wikipedia.org/wiki/Representational_state_transfer#RESTful_web_services",
+    "http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.au.chargebee.com/data_lookup_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/data_lookup_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.eu.chargebee.com/data_lookup_agent",
+    "https://api-explorer.chargebee.com",
+    "https://api-explorer.chargebee.com/",
+    "https://apidocs.chargebee.com/?lang=curl#client_library",
+    "https://apidocs.chargebee.com/docs/api",
+    "https://apidocs.chargebee.com/docs/api/",
+    "https://apidocs.chargebee.com/docs/api/#client_library",
+    "https://apidocs.chargebee.com/docs/api/events",
+    "https://apidocs.chargebee.com/docs/api/getting-started",
+    "https://apidocs.chargebee.com/docs/api/getting-started.md",
+    "https://apidocs.chargebee.com/docs/api/time_machines",
+    "https://apidocs.chargebee.com/docs/api/tls_certificate_update_g2",
+    "https://apidocs.chargebee.com/docs/api/v1/getting-started",
+    "https://apidocs.chargebee.com/docs/api/v1/getting-started.md",
+    "https://apidocs.chargebee.com/docs/sdks",
+    "https://apidocs.chargebee.com/llms.txt",
+    "https://app.chargebee.com",
+    "https://app.chargebee.com/login",
+    "https://app.chargebee.com/login?forward=https://apidocs.chargebee.com/docs/api/v1&ref=bhdocs",
+    "https://app.chargebee.com/login?forward=https://apidocs.chargebee.com/docs/api/v1?lang=curl",
+    "https://appexchange.salesforce.com/appxListingDetail?listingId=a0N3A00000FHCdzUAH",
+    "https://better-auth.com/docs/plugins/chargebee",
+    "https://chargebee.com/docs/assets/screenshots/billing/mcp-servers/agentic-ai-menu.png",
+    "https://chargebee.com/docs/assets/screenshots/billing/mcp-servers/authentication-api-key.png",
+    "https://chargebee.com/docs/assets/screenshots/billing/mcp-servers/authentication-oauth.png",
+    "https://chargebee.com/docs/assets/screenshots/billing/mcp-servers/data-lookup-access-auth.png",
+    "https://chargebee.com/docs/assets/screenshots/billing/mcp-servers/data-lookup-mcp-servers-list.png",
+    "https://chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp",
+    "https://chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server",
+    "https://chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent#api-key",
+    "https://chargebee.com/docs/billing/2.0/ai-in-chargebee/knowledge-base-agent",
+    "https://chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent",
+    "https://chargebee.com/docs/billing/2.0/entitlements/entitlements",
+    "https://chargebee.com/docs/billing/2.0/entitlements/features-overview",
+    "https://chargebee.com/docs/billing/2.0/mobile-subscriptions/omnichannel-subscription-overview",
+    "https://chargebee.com/docs/billing/2.0/multi-business-entity/mbe",
+    "https://chargebee.com/docs/billing/2.0/site-configuration/account_settings",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication#basic_authentication_scheme",
+    "https://discord.gg/nEtpvhqzG3",
+    "https://ecosystem.hubspot.com/marketplace/listing/chargebee",
+    "https://en.wikipedia.org/wiki/Basic_access_authentication",
+    "https://en.wikipedia.org/wiki/JSON",
+    "https://en.wikipedia.org/wiki/POST_(HTTP",
+    "https://github.com/chargebee/ai",
+    "https://github.com/chargebee/openapi",
+    "https://jsdocs.chargebee.com/",
+    "https://marketplace.chargebee.com/",
+    "https://modelcontextprotocol.io/docs/learn/server-concepts#tools",
+    "https://modelcontextprotocol.io/introduction",
+    "https://release-notes.chargebee.com/",
+    "https://spec.openapis.org/oas/v3.0.1",
+    "https://status.chargebee.com/",
+    "https://www.chargebee.com/",
+    "https://www.chargebee.com/?mode=agent",
+    "https://www.chargebee.com/agent/homepage.txt",
+    "https://www.chargebee.com/billing/",
+    "https://www.chargebee.com/blog/",
+    "https://www.chargebee.com/blog/gorgias-cfo-kunal-agarwal-ai-monetization-lessons/",
+    "https://www.chargebee.com/careers/",
+    "https://www.chargebee.com/champions-of-change/podcast/",
+    "https://www.chargebee.com/checkout-portal-docs/",
+    "https://www.chargebee.com/checkout-portal-docs/drop-in-tutorial.html",
+    "https://www.chargebee.com/company/",
+    "https://www.chargebee.com/contact/",
+    "https://www.chargebee.com/cpq/",
+    "https://www.chargebee.com/customers/",
+    "https://www.chargebee.com/docs",
+    "https://www.chargebee.com/docs/",
+    "https://www.chargebee.com/docs/1.0/",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-copilot",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent#api-key",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent.md",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/knowledge-base-agent",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent",
+    "https://www.chargebee.com/docs/billing/2.0/developer-resources/articles-and-faq",
+    "https://www.chargebee.com/docs/billing/2.0/developer-resources/developer_resources",
+    "https://www.chargebee.com/docs/billing/2.0/entitlements/entitlements",
+    "https://www.chargebee.com/docs/billing/2.0/entitlements/features-overview",
+    "https://www.chargebee.com/docs/billing/2.0/getting-started/accessing_chargebee",
+    "https://www.chargebee.com/docs/billing/2.0/hosted-capabilities/hosted-checkout",
+    "https://www.chargebee.com/docs/billing/2.0/kb/getting-started/chargebee-apis-documentation",
+    "https://www.chargebee.com/docs/billing/2.0/kb/getting-started/how-to-contact-chargebees-support-team?utm_source=api-doc&utm_medium=cta&utm_campaign=support",
+    "https://www.chargebee.com/docs/billing/2.0/kb/getting-started/how-to-contact-chargebees-support-team?utm_source=user-doc&utm_medium=cta&utm_campaign=support",
+    "https://www.chargebee.com/docs/billing/2.0/kb/platform/updating-the-backend-chargebeetypescript-lib-to-version-2220",
+    "https://www.chargebee.com/docs/billing/2.0/mobile-subscriptions/omnichannel-subscription-overview",
+    "https://www.chargebee.com/docs/billing/2.0/multi-business-entity/mbe",
+    "https://www.chargebee.com/docs/billing/2.0/site-configuration/account_settings",
+    "https://www.chargebee.com/docs/billing/2.0/site-configuration/api_keys#full-access-key",
+    "https://www.chargebee.com/docs/cpq/overview",
+    "https://www.chargebee.com/docs/growth/getting-started/chargebee-growth-overview",
+    "https://www.chargebee.com/docs/payments/2.0/payment-methods/payment-method-overview",
+    "https://www.chargebee.com/docs/reveal/introduction/overview",
+    "https://www.chargebee.com/docs/revrec/getting-started-with-revrec/about-revrec",
+    "https://www.chargebee.com/entitlement-management/",
+    "https://www.chargebee.com/events/beelieve/sf/2026/livestream/",
+    "https://www.chargebee.com/growth/",
+    "https://www.chargebee.com/help/api-updates/",
+    "https://www.chargebee.com/implementation/",
+    "https://www.chargebee.com/integrations/",
+    "https://www.chargebee.com/open-source/",
+    "https://www.chargebee.com/partners/",
+    "https://www.chargebee.com/payment-gateways/",
+    "https://www.chargebee.com/pricing/",
+    "https://www.chargebee.com/quote-to-cash-and-beyond/",
+    "https://www.chargebee.com/receivables/",
+    "https://www.chargebee.com/recurring-billing-invoicing/metered-usage-billing/",
+    "https://www.chargebee.com/recurring-payments/chargebee-reveal/",
+    "https://www.chargebee.com/recurring-payments/checkout-experience/",
+    "https://www.chargebee.com/recurring-payments/payment-methods/",
+    "https://www.chargebee.com/resources/",
+    "https://www.chargebee.com/resources/glossaries/",
+    "https://www.chargebee.com/resources/guides/",
+    "https://www.chargebee.com/resources/zero-to-one-million-arr-journey/",
+    "https://www.chargebee.com/retention/",
+    "https://www.chargebee.com/revenue-recognition-software/",
+    "https://www.chargebee.com/saas-billing/",
+    "https://www.chargebee.com/saas-reporting/",
+    "https://www.chargebee.com/schedule-a-demo/",
+    "https://www.chargebee.com/security/",
+    "https://www.chargebee.com/solutions/industry/business-services/",
+    "https://www.chargebee.com/solutions/industry/e-learning/",
+    "https://www.chargebee.com/solutions/industry/e-publishing/",
+    "https://www.chargebee.com/solutions/industry/gen-ai/",
+    "https://www.chargebee.com/solutions/moving-upmarket/",
+    "https://www.chargebee.com/solutions/role/ceo/",
+    "https://www.chargebee.com/solutions/role/finance/",
+    "https://www.chargebee.com/solutions/role/rev-ops/",
+    "https://www.chargebee.com/solutions/strategy/expand-globally/",
+    "https://www.chargebee.com/solutions/strategy/roll-new-pricing/",
+    "https://www.chargebee.com/solutions/strategy/self-service-subscription-business/",
+    "https://www.chargebee.com/subscription-academy/",
+    "https://www.chargebee.com/subscription-ecommerce/",
+    "https://www.chargebee.com/subscription-management/",
+    "https://www.chargebee.com/subscription-management/create-manage-plans/",
+    "https://www.chargebee.com/time-machine/",
+    "https://www.chargebee.com/trial-signup/",
+    "https://www.chargebee.com/tutorials",
+    "https://www.chargebee.com/tutorials/",
+    "https://www.chargebee.com/tutorials/chargebee-init-nextjs-integration/",
+    "https://www.chargebee.com/tutorials/quickstart/",
+    "https://www.chargebee.com/webinars/",
+    "https://www.gartner.com/reviews/market/recurring-billing-applications",
+    "https://www.gartner.com/reviews/product/chargebee?marketSeoName=recurring-billing-applications",
+    "https://www.rfc-editor.org/rfc/rfc9110#name-user-agent",
+    "https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html",
+    "https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://your-site.chargebee.com/api/v1/subscriptions",
+    "https://{site}.chargebee.com/api/v1/subscriptions",
+    "https://{site}.chargebee.com/api/v2",
+    "https://{site}.chargebee.com/api/v2/customers"
+  ]
+}

@@ -1,0 +1,746 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "snyk.io",
+    "detect": {
+      "domain": "snyk.io",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T18:52:03.551Z",
+    "summary": "Found 2 HTTP API surfaces (REST API and legacy V1 API) plus the Snyk CLI; authentication uses Snyk PATs, legacy API tokens, service-account tokens, and OAuth 2.0 access/client credentials.",
+    "credentials": {
+      "snyk_pat": {
+        "type": "bearer",
+        "label": "Snyk personal access token (PAT)",
+        "generateUrl": "https://app.snyk.io/account/personal-access-tokens",
+        "setup": "Log in to [Snyk account settings](https://app.snyk.io/account/personal-access-tokens), open the **Personal access tokens** tab, choose a name and expiry, then click **Generate new token**. Copy the token when shown; Snyk only reveals it once. PATs are documented at [Personal Access Tokens (PATs)](https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api/personal-access-tokens-pats)."
+      },
+      "snyk_api_token": {
+        "type": "api_key",
+        "label": "Snyk API token / legacy API key",
+        "generateUrl": "https://app.snyk.io/account",
+        "setup": "Log in to [Snyk account settings](https://app.snyk.io/account), find the `key` field, click **Click to show**, and copy the token. To rotate it, use **Revoke & Regenerate** as described in [Authentication for API](https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api)."
+      },
+      "snyk_service_account_token": {
+        "type": "api_key",
+        "label": "Snyk service account access token",
+        "setup": "Create a Group- or Organization-level service account in the Snyk Web UI as described in [Service accounts](https://docs.snyk.io/platform-administration/service-accounts/service-accounts). Creating the service account generates its token; use that token for automation. Snyk recommends service accounts for CI/CD and API automation."
+      },
+      "snyk_oauth_client_secret": {
+        "type": "oauth2_cc",
+        "label": "Snyk OAuth 2.0 service account client credentials",
+        "setup": "Create an OAuth 2.0 service account (Group or Organization level) via the Snyk API or Web UI as described in [Service accounts using OAuth 2.0](https://docs.snyk.io/platform-administration/service-accounts/service-accounts-using-oauth-2.0). On creation, Snyk returns a `client_id` and `client_secret`; the `client_secret` is only shown once. Exchange them at `POST https://api.snyk.io/oauth2/token` using the `client_credentials` grant to obtain an access token, then use that access token against Snyk APIs or the CLI."
+      },
+      "snyk_oauth_private_key_jwt": {
+        "type": "two_step",
+        "label": "Snyk OAuth 2.0 service account using Private Key JWT",
+        "setup": "Create a Private Key JWT OAuth 2.0 service account as documented in [Service accounts using OAuth 2.0](https://docs.snyk.io/platform-administration/service-accounts/service-accounts-using-oauth-2.0). Generate and store the private key material during setup, sign a client assertion JWT, and exchange it at `POST https://api.snyk.io/oauth2/token` to obtain a short-lived OAuth access token for Snyk APIs or the CLI."
+      },
+      "snyk_oauth_access_token": {
+        "type": "bearer",
+        "label": "Snyk OAuth 2.0 access token",
+        "setup": "Obtain this token either from the Snyk OAuth authorization-code flow for Snyk Apps described in [OAuth2 API](https://docs.snyk.io/developer-tools/snyk-api/oauth2-api), or from a Snyk OAuth 2.0 service account using `client_credentials` as described in [Service accounts using OAuth 2.0](https://docs.snyk.io/platform-administration/service-accounts/service-accounts-using-oauth-2.0). Use the returned `access_token` as a bearer token."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "snyk-cli",
+        "name": "Snyk CLI",
+        "type": "cli",
+        "docs": "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli",
+            "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli",
+            "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/auth"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "snyk_pat",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "snyk auth <YOUR_PAT>",
+                    "env": [
+                      "SNYK_TOKEN"
+                    ]
+                  }
+                },
+                {
+                  "id": "snyk_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "snyk auth <YOUR_API_TOKEN>",
+                    "env": [
+                      "SNYK_TOKEN"
+                    ]
+                  }
+                },
+                {
+                  "id": "snyk_service_account_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "snyk auth <TOKEN>",
+                    "env": [
+                      "SNYK_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_oauth_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "SNYK_OAUTH_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_oauth_client_secret",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "snyk auth --auth-type=oauth --client-id=<ID> --client-secret=<SECRET>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "snyk",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "homebrew",
+            "identifier": "snyk/tap/snyk"
+          },
+          {
+            "registryType": "docker",
+            "identifier": "snyk/snyk"
+          }
+        ],
+        "command": "snyk"
+      },
+      {
+        "slug": "snyk-rest-api",
+        "name": "Snyk REST API",
+        "type": "http",
+        "docs": "https://docs.snyk.io/developer-tools/snyk-api/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snyk.io/developer-tools/snyk-api/rest-api/about-the-rest-api",
+            "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+            "https://docs.snyk.io/developer-tools/snyk-api/reference"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "snyk_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_service_account_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+                  "https://docs.snyk.io/platform-administration/service-accounts/service-accounts"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api/personal-access-tokens-pats"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+                  "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.snyk.io/rest",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.api+json"
+            },
+            "description": "Required on requests that contain data per the REST API docs."
+          }
+        ]
+      },
+      {
+        "slug": "snyk-v1-api",
+        "name": "Snyk V1 API",
+        "type": "http",
+        "docs": "https://docs.snyk.io/developer-tools/snyk-api/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snyk.io/developer-tools/snyk-api/v1-api",
+            "https://docs.snyk.io/developer-tools/snyk-api/reference",
+            "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "snyk_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/v1-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_service_account_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+                  "https://docs.snyk.io/platform-administration/service-accounts/service-accounts"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+                  "https://docs.snyk.io/developer-tools/snyk-api/v1-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.snyk.io/v1/"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T18:52:03.551Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 245855,
+    "completion_tokens": 3714,
+    "total_tokens": 249569
+  },
+  "visited": [
+    "https://docs.snyk.io/cli-ide-and-ci-cd-integrations/snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-api/api-end-of-life-eol-process-and-migration-guides/guides-to-migration/search-audit-logs-group-and-org-v1-api-to-ga-rest-audit-logs-api-migration-guide",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api/personal-access-tokens-pats",
+    "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/issues",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/rest-spec.json",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/v1-openapi.json",
+    "https://docs.snyk.io/developer-tools/snyk-api/rest-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/rest-api/about-the-rest-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/snyk-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/using-specific-snyk-apis/issues-list-issues-for-a-package",
+    "https://docs.snyk.io/developer-tools/snyk-api/v1-api",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/getting-started-with-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/fix-vulnerabilities-using-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/snyk-cli-for-open-source",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/test-public-npm-packages-before-use",
+    "https://docs.snyk.io/getting-started-guides/getting-started-with-the-rest-api",
+    "https://docs.snyk.io/platform-administration/service-accounts/choose-a-service-account-type-to-use-with-snyk-apis",
+    "https://docs.snyk.io/platform-administration/service-accounts/service-accounts",
+    "https://docs.snyk.io/platform-administration/service-accounts/service-accounts-using-oauth-2.0",
+    "https://docs.snyk.io/scan-fix-and-prevent/scan-with-snyk/snyk-api-web/configure-targets/configure-authentication/configure-openapi-authentication",
+    "https://docs.snyk.io/snyk-api/reference",
+    "https://docs.snyk.io/snyk-cli/commands/auth",
+    "https://docs.snyk.io/supported-languages/supported-languages-list/javascript",
+    "https://github.com/snyk/user-docs/blob/main/developer-tools/snyk-api/oauth2-api.md",
+    "https://www.postman.com/api-evangelist/snyk/documentation/mppgu5u/snyk-api"
+  ],
+  "grounding": [
+    "https://558411700-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FIEEjSXQQu36y0vmFV8zf%2Fuploads%2Fgit-blob-7f123c24a33eef3753db356247a55d787132e7e5%2Frest-spec.json?alt=media",
+    "https://558411700-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FIEEjSXQQu36y0vmFV8zf%2Fuploads%2Fgit-blob-8a2db98aa2c704104a2d2b12ade020095a3fe51a%2Fv1-api-spec.yaml?alt=media",
+    "https://api.au.snyk.io/rest",
+    "https://api.au.snyk.io/v1/",
+    "https://api.eu.snyk.io/rest",
+    "https://api.eu.snyk.io/v1/",
+    "https://api.snyk.io",
+    "https://api.snyk.io/oauth2/revoke",
+    "https://api.snyk.io/oauth2/token",
+    "https://api.snyk.io/rest",
+    "https://api.snyk.io/rest/self?version=2024-06-10",
+    "https://api.snyk.io/v1/",
+    "https://api.us.snyk.io/rest",
+    "https://api.us.snyk.io/v1/",
+    "https://app.snyk.io",
+    "https://app.snyk.io/account",
+    "https://app.snyk.io/account/personal-access-tokens",
+    "https://app.snyk.io/oauth2/authorize",
+    "https://brew.sh/",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-4.4",
+    "https://datatracker.ietf.org/doc/html/rfc7517",
+    "https://datatracker.ietf.org/doc/html/rfc7519#section-4",
+    "https://docs.snyk.io/",
+    "https://docs.snyk.io/#about-the-v1-api",
+    "https://docs.snyk.io/#api-urls",
+    "https://docs.snyk.io/#assign-roles-and-permissions-to-a-service-account",
+    "https://docs.snyk.io/#auth-type-less-than-type-greater-than",
+    "https://docs.snyk.io/#authenticate-in-a-ci-cd-or-github-action",
+    "https://docs.snyk.io/#authenticate-in-docker",
+    "https://docs.snyk.io/#authenticate-locally",
+    "https://docs.snyk.io/#authenticate-with-the-snyk-cli",
+    "https://docs.snyk.io/#authenticating-for-snyk-apps",
+    "https://docs.snyk.io/#authenticating-with-a-personal-api-token",
+    "https://docs.snyk.io/#authentication-types",
+    "https://docs.snyk.io/#authorization",
+    "https://docs.snyk.io/#automating-snyk-processes",
+    "https://docs.snyk.io/#client-secret-less-than-secret-greater-than-and-client-id-less-than-id-greater-than",
+    "https://docs.snyk.io/#common-installation-steps",
+    "https://docs.snyk.io/#create-oauth-service-accounts-through-the-ui",
+    "https://docs.snyk.io/#create-the-private-key-jwt-service-account",
+    "https://docs.snyk.io/#create-the-service-account",
+    "https://docs.snyk.io/#debug",
+    "https://docs.snyk.io/#deciding-to-use-the-api-the-cli-or-an-scm-integration",
+    "https://docs.snyk.io/#delete-an-oauth-based-service-account-through-the-ui",
+    "https://docs.snyk.io/#description",
+    "https://docs.snyk.io/#direct-binary-download",
+    "https://docs.snyk.io/#docker",
+    "https://docs.snyk.io/#edit-and-delete-a-service-account",
+    "https://docs.snyk.io/#errors",
+    "https://docs.snyk.io/#generating-a-new-token-ui-only",
+    "https://docs.snyk.io/#get-oauth2-authorize",
+    "https://docs.snyk.io/#github-actions-and-ci-cd",
+    "https://docs.snyk.io/#group-level-or-organization-level",
+    "https://docs.snyk.io/#how-to-edit-or-delete-a-service-account",
+    "https://docs.snyk.io/#how-to-obtain-an-api-token-legacy",
+    "https://docs.snyk.io/#how-to-obtain-your-personal-access-token",
+    "https://docs.snyk.io/#how-to-set-up-a-group-or-organization-service-account",
+    "https://docs.snyk.io/#installation-methods",
+    "https://docs.snyk.io/#json-api-content-type-header",
+    "https://docs.snyk.io/#oauth-2.0-with-client-secret",
+    "https://docs.snyk.io/#oauth-2.0-with-private-key-jwt",
+    "https://docs.snyk.io/#options",
+    "https://docs.snyk.io/#package-managers",
+    "https://docs.snyk.io/#pagination",
+    "https://docs.snyk.io/#post-revoke",
+    "https://docs.snyk.io/#post-token",
+    "https://docs.snyk.io/#prepare-the-jwt-signed-with-a-private-key",
+    "https://docs.snyk.io/#prerequisites",
+    "https://docs.snyk.io/#prerequisites-to-set-up-a-service-account",
+    "https://docs.snyk.io/#prerequisites-to-set-up-the-private-key-jwt-service-account",
+    "https://docs.snyk.io/#rate-limiting",
+    "https://docs.snyk.io/#retrieve-a-private-key-jwt-access-token",
+    "https://docs.snyk.io/#retrieve-an-oauth-2.0-access-token",
+    "https://docs.snyk.io/#revoking-a-token",
+    "https://docs.snyk.io/#set-up-a-group-or-organization-level-service-account",
+    "https://docs.snyk.io/#supported-authentication-methods",
+    "https://docs.snyk.io/#token-value",
+    "https://docs.snyk.io/#update-the-name-for-a-service-account-token",
+    "https://docs.snyk.io/#usage",
+    "https://docs.snyk.io/#use-a-service-account-for-github-enterprise-integration",
+    "https://docs.snyk.io/#use-a-service-account-to-create-any-kind-of-automation",
+    "https://docs.snyk.io/#use-group-level-tokens-in-managing-integrations",
+    "https://docs.snyk.io/#use-your-snyk-users-token-for-local-scanning-and-testing-api-calls",
+    "https://docs.snyk.io/#using-versions-dated-on-or-after-2024-10-15",
+    "https://docs.snyk.io/#using-versions-dated-prior-to-2024-10-15",
+    "https://docs.snyk.io/#versioning",
+    "https://docs.snyk.io/#what-are-pats",
+    "https://docs.snyk.io/#what-happens-to-the-service-account-token-for-a-deleted-account",
+    "https://docs.snyk.io/#when-to-use-a-service-account",
+    "https://docs.snyk.io/cli-ide-and-ci-cd-integrations/snyk-cli",
+    "https://docs.snyk.io/developer-tools",
+    "https://docs.snyk.io/developer-tools/authentication-for-third-party-tools",
+    "https://docs.snyk.io/developer-tools/integrations/event-forwarding",
+    "https://docs.snyk.io/developer-tools/integrations/event-forwarding/crowdstrike-falcon-next-gen-siem",
+    "https://docs.snyk.io/developer-tools/integrations/integrate-with-snyk",
+    "https://docs.snyk.io/developer-tools/integrations/jira-and-slack-integrations",
+    "https://docs.snyk.io/developer-tools/integrations/partner-integrations",
+    "https://docs.snyk.io/developer-tools/integrations/scm-integrations",
+    "https://docs.snyk.io/developer-tools/integrations/scm-integrations/organization-level-integrations/github-enterprise",
+    "https://docs.snyk.io/developer-tools/integrations/snyk-ci-cd-integrations",
+    "https://docs.snyk.io/developer-tools/integrations/snyk-ide-plugins-and-extensions",
+    "https://docs.snyk.io/developer-tools/snyk-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/api-end-of-life-eol-process-and-migration-guides",
+    "https://docs.snyk.io/developer-tools/snyk-api/api-end-of-life-eol-process-and-migration-guides/candidates-for-upcoming-api-end-of-life-cadences",
+    "https://docs.snyk.io/developer-tools/snyk-api/api-end-of-life-eol-process-and-migration-guides/guides-to-migration/search-audit-logs-group-and-org-v1-api-to-ga-rest-audit-logs-api-migration-guide",
+    "https://docs.snyk.io/developer-tools/snyk-api/api-endpoints-index-and-tips",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api#how-to-obtain-your-personal-token",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api.md",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api/personal-access-tokens-pats",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api/personal-access-tokens-pats.md",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api/revoke-and-regenerate-a-snyk-api-token",
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api/snyk-api-token-permissions-users-can-control",
+    "https://docs.snyk.io/developer-tools/snyk-api/changelog",
+    "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api#token",
+    "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api.md",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference.md",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/accessrequests",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/aibom",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/apps",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/asset",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/audit-logs",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/cloud",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/collection",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/containerimage",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/containerregistryimportpolicy",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/custom-base-images",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/dependencies-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/entitlements-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/export",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/findings",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/group",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/groups",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/groups-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/iacsettings",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/ignores-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/import-projects-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/integrations-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/inventory-assets",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/invites",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/issues",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/jira-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/languagessettings",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/learn",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/licenses-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/monitor-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/opensourcesettings",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/organizations-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/orgs",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/package",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/package-version",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/personalaccesstoken",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/policies",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/projects",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/projects-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/pull-request-templates",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/reporting-api-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/rest-spec.json",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/sastsettings",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/sbom",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/serviceaccounts",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/serviceaccounts#groups-group_id-service_accounts",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/serviceaccounts#orgs-org_id-service_accounts",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/slack",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/slacksettings",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/snapshots-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/targets",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/tenantrole",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/tenants",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/test-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/tests",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/universal-broker",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/users",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/users-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/v1-openapi.json",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference/webhooks-v1",
+    "https://docs.snyk.io/developer-tools/snyk-api/rest-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/rest-api/about-the-rest-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/rest-api/about-the-rest-api#api-urls",
+    "https://docs.snyk.io/developer-tools/snyk-api/rest-api/about-the-rest-api#versioning",
+    "https://docs.snyk.io/developer-tools/snyk-api/rest-api/about-the-rest-api.md",
+    "https://docs.snyk.io/developer-tools/snyk-api/snyk-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/snyk-api.md",
+    "https://docs.snyk.io/developer-tools/snyk-api/using-specific-snyk-apis",
+    "https://docs.snyk.io/developer-tools/snyk-api/using-specific-snyk-apis/issues-list-issues-for-a-package",
+    "https://docs.snyk.io/developer-tools/snyk-api/using-specific-snyk-apis/snyk-apps-apis",
+    "https://docs.snyk.io/developer-tools/snyk-api/v1-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/v1-api.md",
+    "https://docs.snyk.io/developer-tools/snyk-apps/python-code-to-extract-issues-from-snyk-api",
+    "https://docs.snyk.io/developer-tools/snyk-apps/snyk-tools",
+    "https://docs.snyk.io/developer-tools/snyk-apps/tool-jira-tickets-for-new-vulns",
+    "https://docs.snyk.io/developer-tools/snyk-apps/tool-snyk-api-import",
+    "https://docs.snyk.io/developer-tools/snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli.md",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli#authenticate-locally",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli.md",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/cli-commands-and-options-summary",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/code-execution-warning-for-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/aibom",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/aibom-test",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/auth",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/auth.md",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/code",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/code-test",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/config",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/config-environment",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/container",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/container-monitor",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/container-sbom",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/container-test",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/iac",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/iac-describe",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/iac-test",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/iac-update-exclude-policy",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/ignore",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/log4shell",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/monitor",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/policy",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/sbom",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/sbom-test",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands/test",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/configure-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/debugging-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/getting-started-with-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli#direct-binary-download",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli#docker",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli#github-actions-and-ci-cd",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli#package-managers",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli.md",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli/install-or-upgrade-to-version-of-node.js-required-for-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli/prerequisites-for-cli-and-jenkins-plugin-on-alpine-linux-operating-system",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli/using-cli-releases-before-version-1.1230.0-on-an-apple-m1-or-m2-machine",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/install-the-snyk-cli/verifying-cli-standalone-binaries",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/releases-and-channels-for-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/fix-vulnerabilities-using-the-snyk-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/snyk-cli-for-iac",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/snyk-cli-for-open-source",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/snyk-cli-for-snyk-code",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/snyk-cli-for-snyk-container",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/scan-and-maintain-projects-using-the-cli/test-public-npm-packages-before-use",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/security-concept-of-operations-for-snyk",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/snyk-cli-analytics",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/upgrade-the-snyk-cli",
+    "https://docs.snyk.io/enterprise-setup/service-accounts",
+    "https://docs.snyk.io/enterprise-setup/service-accounts/service-accounts-using-oauth-2.0#oauth-2.0-with-client-secret",
+    "https://docs.snyk.io/evo-by-snyk",
+    "https://docs.snyk.io/getting-started-guides/getting-started#obtain-and-use-your-snyk-api-token",
+    "https://docs.snyk.io/getting-started-guides/getting-started-with-the-rest-api",
+    "https://docs.snyk.io/llms.txt",
+    "https://docs.snyk.io/platform-administration",
+    "https://docs.snyk.io/platform-administration/service-accounts",
+    "https://docs.snyk.io/platform-administration/service-accounts/choose-a-service-account-type-to-use-with-snyk-apis",
+    "https://docs.snyk.io/platform-administration/service-accounts/choose-a-service-account-type-to-use-with-snyk-apis.md",
+    "https://docs.snyk.io/platform-administration/service-accounts/manage-service-accounts-using-the-snyk-api",
+    "https://docs.snyk.io/platform-administration/service-accounts/manage-service-accounts-using-the-snyk-api#manage-a-service-account-client-secret-for-your-group",
+    "https://docs.snyk.io/platform-administration/service-accounts/service-accounts",
+    "https://docs.snyk.io/platform-administration/service-accounts/service-accounts-using-oauth-2.0",
+    "https://docs.snyk.io/platform-administration/service-accounts/service-accounts-using-oauth-2.0.md",
+    "https://docs.snyk.io/platform-administration/service-accounts/service-accounts.md",
+    "https://docs.snyk.io/platform-administration/snyk-broker/broker-inbound-and-outbound-connections-and-allowed-requests",
+    "https://docs.snyk.io/platform-administration/snyk-broker/classic-broker",
+    "https://docs.snyk.io/platform-administration/snyk-broker/common-questions-about-broker",
+    "https://docs.snyk.io/platform-administration/snyk-broker/high-availability-mode",
+    "https://docs.snyk.io/platform-administration/snyk-broker/https-for-broker-client-with-docker",
+    "https://docs.snyk.io/platform-administration/snyk-broker/preflight-checks-for-snyk-broker",
+    "https://docs.snyk.io/platform-administration/snyk-broker/snyk-broker",
+    "https://docs.snyk.io/platform-administration/snyk-broker/snyk-broker-commit-signing",
+    "https://docs.snyk.io/platform-administration/snyk-broker/snyk-broker-container-registry-agent",
+    "https://docs.snyk.io/platform-administration/snyk-broker/troubleshooting-broker",
+    "https://docs.snyk.io/platform-administration/snyk-broker/universal-broker",
+    "https://docs.snyk.io/platform-administration/snyk-broker/update-the-snyk-broker-client",
+    "https://docs.snyk.io/platform-administration/snyk-broker/using-snyk-essentials-with-snyk-broker",
+    "https://docs.snyk.io/platform-administration/snyk-broker/verifying-broker-image-signatures",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/group-and-organization-settings",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/groups",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/groups-and-organizations",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/manage-notifications",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/organizations",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/snyk-preview",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/switch-between-groups-and-organizations",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/tenant",
+    "https://docs.snyk.io/platform-administration/snyk-hierarchy/usage-settings",
+    "https://docs.snyk.io/platform-administration/user-management/custom-role-templates",
+    "https://docs.snyk.io/platform-administration/user-management/pre-defined-roles",
+    "https://docs.snyk.io/platform-administration/user-management/single-sign-on-sso-for-authentication-to-snyk",
+    "https://docs.snyk.io/platform-administration/user-management/user-management-with-the-api",
+    "https://docs.snyk.io/platform-administration/user-management/user-role-management",
+    "https://docs.snyk.io/platform-administration/user-management/user-role-management#create-a-custom-role",
+    "https://docs.snyk.io/platform-administration/user-management/user-roles",
+    "https://docs.snyk.io/scan-fix-and-prevent",
+    "https://docs.snyk.io/scan-fix-and-prevent/scan-with-snyk/snyk-api-web/configure-targets/configure-authentication/configure-openapi-authentication",
+    "https://docs.snyk.io/snyk-api/reference",
+    "https://docs.snyk.io/snyk-cli/authenticate-to-use-the-cli",
+    "https://docs.snyk.io/snyk-cli/commands/auth",
+    "https://docs.snyk.io/snyk-cli/configure-the-snyk-cli",
+    "https://docs.snyk.io/snyk-cli/getting-started-with-the-cli",
+    "https://docs.snyk.io/snyk-data-and-governance",
+    "https://docs.snyk.io/snyk-data-and-governance/regional-hosting-and-data-residency",
+    "https://docs.snyk.io/supported-languages/supported-languages-list/javascript",
+    "https://downloads.snyk.io/cli/stable/release.json",
+    "https://downloads.snyk.io/cli/stable/snyk-alpine",
+    "https://downloads.snyk.io/cli/stable/snyk-alpine-arm64",
+    "https://downloads.snyk.io/cli/stable/snyk-linux",
+    "https://downloads.snyk.io/cli/stable/snyk-linux-arm64",
+    "https://downloads.snyk.io/cli/stable/snyk-macos",
+    "https://downloads.snyk.io/cli/stable/snyk-macos-arm64",
+    "https://example.com/callback",
+    "https://github.com/snyk/homebrew-tap",
+    "https://github.com/snyk/scoop-snyk",
+    "https://github.com/snyk/snyk-images",
+    "https://github.com/snyk/sweater-comb/blob/main/docs/principles/jsonapi.md",
+    "https://github.com/snyk/user-docs/blob/main/developer-tools/snyk-api/oauth2-api.md",
+    "https://hub.docker.com/r/snyk/snyk",
+    "https://jsonapi.org/",
+    "https://learn.snyk.io/",
+    "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication",
+    "https://snyk.io/account/",
+    "https://snyk.io/login?cta=sign-up&loc=nav&page=support_docs_page",
+    "https://snyk.io/plans",
+    "https://snyk.io/plans/",
+    "https://snyk.io/policies/privacy/",
+    "https://spec.openapis.org/oas/v3.0.3.html",
+    "https://static.snyk.io/cli/latest/snyk-win.exe",
+    "https://support.snyk.io",
+    "https://updates.snyk.io/",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=IEEjSXQQu36y0vmFV8zf&utm_content=site_dIY9z",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=IgtgtomLQ2TUgSKOMSAm&utm_content=site_dIY9z",
+    "https://www.postman.com/api-evangelist/snyk/documentation/mppgu5u/snyk-api"
+  ]
+}

@@ -1,0 +1,613 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "configcat.com",
+    "detect": {
+      "domain": "configcat.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:14:20.876Z",
+    "summary": "ConfigCat exposes two authenticated HTTP APIs (the Public Management API and a SCIM User Provisioning API), plus an authenticated `configcat` CLI and a local stdio MCP server package `@configcat/mcp-server` that uses Public Management API credentials.",
+    "description": "ConfigCat is a feature flag and configuration management service for software teams. It lets organizations manage products, environments, feature flags, settings, targeting rules, and team provisioning.",
+    "credentials": {
+      "public_mgmt_basic": {
+        "type": "basic",
+        "label": "Public Management API basic-auth credentials",
+        "generateUrl": "https://app.configcat.com/my-account/public-api-credentials",
+        "setup": "In the ConfigCat app, open [Public API credentials](https://app.configcat.com/my-account/public-api-credentials) and create Public Management API credentials. ConfigCat issues a basic-auth username and password; send them in the `Authorization: Basic ...` header or supply them to supported tools as `CONFIGCAT_API_USER` and `CONFIGCAT_API_PASS`."
+      },
+      "scim_bearer": {
+        "type": "bearer",
+        "label": "SCIM bearer token",
+        "generateUrl": "https://app.configcat.com/organization/authentication",
+        "setup": "In the ConfigCat app, open the organization [Authentication & Provisioning](https://app.configcat.com/organization/authentication) page and retrieve the SCIM token. Send it as `Authorization: Bearer <token>` when calling the SCIM API."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "configcat-cli",
+        "name": "ConfigCat CLI",
+        "type": "cli",
+        "docs": "https://configcat.com/docs/advanced/cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://configcat.com/docs/advanced/cli/",
+            "https://configcat.github.io/cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "public_mgmt_basic",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "configcat setup"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://configcat.com/docs/advanced/cli/",
+                  "https://configcat.github.io/cli/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "configcat/tap/configcat"
+          },
+          {
+            "registryType": "snap",
+            "identifier": "configcat"
+          },
+          {
+            "registryType": "scoop",
+            "identifier": "configcat"
+          },
+          {
+            "registryType": "chocolatey",
+            "identifier": "configcat"
+          }
+        ],
+        "command": "configcat"
+      },
+      {
+        "slug": "configcat-mcp-server",
+        "name": "ConfigCat MCP Server",
+        "type": "mcp",
+        "docs": "https://configcat.com/docs/advanced/mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://configcat.com/docs/advanced/mcp-server/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "public_mgmt_basic",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx -y @configcat/mcp-server",
+                    "env": [
+                      "CONFIGCAT_API_USER",
+                      "CONFIGCAT_API_PASS"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://configcat.com/docs/advanced/mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "stdio"
+        ],
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@configcat/mcp-server",
+            "runtimeHint": "npx"
+          }
+        ]
+      },
+      {
+        "slug": "configcat-user-provisioning-scim-api",
+        "name": "ConfigCat User Provisioning (SCIM) API",
+        "type": "http",
+        "docs": "https://configcat.com/docs/api/scim/configcat-user-provisioning-scim-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://configcat.com/docs/api/scim/configcat-user-provisioning-scim-api/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "scim_bearer",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://configcat.com/docs/api/scim/configcat-user-provisioning-scim-api/"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://scim-api.configcat.com/openapi/v1/openapi.json",
+        "url": "https://scim-api.configcat.com"
+      },
+      {
+        "slug": "configcat-public-management-api",
+        "name": "ConfigCat Public Management API",
+        "type": "http",
+        "docs": "https://configcat.com/docs/api/reference/configcat-public-management-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://configcat.com/docs/api/reference/configcat-public-management-api/",
+            "https://api.apis.guru/v2/specs/configcat.com/v1/openapi.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "public_mgmt_basic",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://configcat.com/docs/api/reference/configcat-public-management-api/",
+                  "https://api.apis.guru/v2/specs/configcat.com/v1/openapi.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.configcat.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:14:20.876Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 98386,
+    "completion_tokens": 1662,
+    "total_tokens": 100048
+  },
+  "visited": [
+    "https://api.apis.guru/v2/specs/configcat.com/v1/openapi.json",
+    "https://community.apollographql.com/t/topic-of-week-model-context-protocol-mcp-and-graphql-the-future-of-ai-api-integration/8864",
+    "https://configcat.com/docs/",
+    "https://configcat.com/docs/advanced/cli/",
+    "https://configcat.com/docs/advanced/mcp-server/",
+    "https://configcat.com/docs/api/reference/configcat-public-management-api/",
+    "https://configcat.com/docs/api/scim/configcat-user-provisioning-scim-api/",
+    "https://configcat.github.io/cli/",
+    "https://github.com/configcat/cli",
+    "https://github.com/configcat/mcp-server"
+  ],
+  "grounding": [
+    "https://api.apis.guru/v2/cache/logo/https_api.configcat.com_resources_configcat-logo-horiz.svg",
+    "https://api.apis.guru/v2/specs/configcat.com/v1/openapi.json",
+    "https://api.configcat.com",
+    "https://api.configcat.com/docs/v1/swagger.json",
+    "https://api.configcat.com/docs/v1/swagger.v2.json",
+    "https://api.configcat.com/swagger",
+    "https://app.configcat.com/my-account/public-api-credentials",
+    "https://app.configcat.com/organization/authentication",
+    "https://app.configcat.com/sdkkey",
+    "https://archiveprogram.github.com",
+    "https://brew.sh",
+    "https://chocolatey.org/",
+    "https://claude.ai/download",
+    "https://claude.com/product/claude-code",
+    "https://code.visualstudio.com/",
+    "https://code.visualstudio.com/docs/copilot/setup",
+    "https://community.apollographql.com/t/topic-of-week-model-context-protocol-mcp-and-graphql-the-future-of-ai-api-integration/8864",
+    "https://configcat.com",
+    "https://configcat.com/",
+    "https://configcat.com/#",
+    "https://configcat.com/#__docusaurus_skipToContent_fallback",
+    "https://configcat.com/#add-percentage-options",
+    "https://configcat.com/#add-targeting-rules",
+    "https://configcat.com/#authentication",
+    "https://configcat.com/#client-configuration",
+    "https://configcat.com/#create-a-feature-flag",
+    "https://configcat.com/#environment-variables",
+    "https://configcat.com/#evaluate-feature-flags",
+    "https://configcat.com/#examples",
+    "https://configcat.com/#feature-flag-value-update",
+    "https://configcat.com/#features",
+    "https://configcat.com/#getting-started",
+    "https://configcat.com/#installation",
+    "https://configcat.com/#interaction",
+    "https://configcat.com/#interactive",
+    "https://configcat.com/#modes",
+    "https://configcat.com/#openapi-specification",
+    "https://configcat.com/#overview",
+    "https://configcat.com/#prerequisites",
+    "https://configcat.com/#reference",
+    "https://configcat.com/#scan--upload-code-references",
+    "https://configcat.com/#see-also",
+    "https://configcat.com/#setup",
+    "https://configcat.com/#throttling-and-rate-limits",
+    "https://configcat.com/#with-arguments",
+    "https://configcat.com/architecture/",
+    "https://configcat.com/blog/",
+    "https://configcat.com/blog/mcp-server-feature-flags/",
+    "https://configcat.com/blog/migrate-from-statsig/",
+    "https://configcat.com/docs/",
+    "https://configcat.com/docs/V1/advanced/cli/",
+    "https://configcat.com/docs/V1/getting-started/",
+    "https://configcat.com/docs/advanced/caching/",
+    "https://configcat.com/docs/advanced/cli",
+    "https://configcat.com/docs/advanced/cli/",
+    "https://configcat.com/docs/advanced/cliUsage",
+    "https://configcat.com/docs/advanced/code-references/overview/",
+    "https://configcat.com/docs/advanced/config-v2/",
+    "https://configcat.com/docs/advanced/data-governance/",
+    "https://configcat.com/docs/advanced/mcp-server/",
+    "https://configcat.com/docs/advanced/migration-from-launchdarkly/",
+    "https://configcat.com/docs/advanced/predefined-variations/",
+    "https://configcat.com/docs/advanced/proxy/monitoring/",
+    "https://configcat.com/docs/advanced/proxy/proxy-overview/",
+    "https://configcat.com/docs/advanced/team-collaboration",
+    "https://configcat.com/docs/advanced/team-collaboration#permissions--groups",
+    "https://configcat.com/docs/advanced/team-management/auto-assign-users/",
+    "https://configcat.com/docs/advanced/team-management/domain-verification/",
+    "https://configcat.com/docs/advanced/team-management/saml/saml-overview/",
+    "https://configcat.com/docs/advanced/team-management/scim/scim-overview/",
+    "https://configcat.com/docs/advanced/team-management/single-sign-on-sso/",
+    "https://configcat.com/docs/advanced/team-management/team-management-basics/",
+    "https://configcat.com/docs/advanced/troubleshooting/",
+    "https://configcat.com/docs/advanced/variation-id-for-analytics/",
+    "https://configcat.com/docs/api/category/scim/groups/",
+    "https://configcat.com/docs/api/category/scim/service-provider-config/",
+    "https://configcat.com/docs/api/category/scim/users/",
+    "https://configcat.com/docs/api/reference/configcat-public-management-api/",
+    "https://configcat.com/docs/api/reference/feature-flag-setting-values-using-sdk-key-v-2/",
+    "https://configcat.com/docs/api/reference/get-me/",
+    "https://configcat.com/docs/api/scim/configcat-user-provisioning-scim-api/",
+    "https://configcat.com/docs/assets/mcp/mcp-demo.mp4",
+    "https://configcat.com/docs/faq/",
+    "https://configcat.com/docs/getting-started/",
+    "https://configcat.com/docs/integrations/overview/",
+    "https://configcat.com/docs/main-concepts/",
+    "https://configcat.com/docs/main-concepts/#config",
+    "https://configcat.com/docs/main-concepts/#environment",
+    "https://configcat.com/docs/main-concepts/#product",
+    "https://configcat.com/docs/main-concepts/#setting",
+    "https://configcat.com/docs/network-traffic/",
+    "https://configcat.com/docs/news/",
+    "https://configcat.com/docs/organization/",
+    "https://configcat.com/docs/purchase/",
+    "https://configcat.com/docs/requests/",
+    "https://configcat.com/docs/sdk-reference/js/overview/#flag-overrides",
+    "https://configcat.com/docs/sdk-reference/overview",
+    "https://configcat.com/docs/sdk-reference/overview/",
+    "https://configcat.com/docs/search/",
+    "https://configcat.com/docs/service/status/",
+    "https://configcat.com/docs/subscription-plan-limits/",
+    "https://configcat.com/docs/targeting/targeting-overview/",
+    "https://configcat.com/docs/zombie-flags/",
+    "https://configcat.com/jobs/",
+    "https://configcat.com/on-premise/",
+    "https://configcat.com/policies",
+    "https://configcat.com/policies/",
+    "https://configcat.com/pricing/",
+    "https://configcat.com/referrals/",
+    "https://configcat.com/slack/",
+    "https://configcat.com/support/",
+    "https://configcat.com/team/",
+    "https://configcat.com/termsofserviceagreement",
+    "https://configcat.github.io/cli/",
+    "https://configcat.github.io/cli/configcat-config-create.html",
+    "https://configcat.github.io/cli/configcat-config-ls.html",
+    "https://configcat.github.io/cli/configcat-config-rm.html",
+    "https://configcat.github.io/cli/configcat-config-update.html",
+    "https://configcat.github.io/cli/configcat-config.html",
+    "https://configcat.github.io/cli/configcat-environment-create.html",
+    "https://configcat.github.io/cli/configcat-environment-ls.html",
+    "https://configcat.github.io/cli/configcat-environment-rm.html",
+    "https://configcat.github.io/cli/configcat-environment-update.html",
+    "https://configcat.github.io/cli/configcat-environment.html",
+    "https://configcat.github.io/cli/configcat-flag-attach.html",
+    "https://configcat.github.io/cli/configcat-flag-create.html",
+    "https://configcat.github.io/cli/configcat-flag-detach.html",
+    "https://configcat.github.io/cli/configcat-flag-ls.html",
+    "https://configcat.github.io/cli/configcat-flag-percentage-clear.html",
+    "https://configcat.github.io/cli/configcat-flag-percentage-update.html",
+    "https://configcat.github.io/cli/configcat-flag-percentage.html",
+    "https://configcat.github.io/cli/configcat-flag-rm.html",
+    "https://configcat.github.io/cli/configcat-flag-targeting-create.html",
+    "https://configcat.github.io/cli/configcat-flag-targeting-move.html",
+    "https://configcat.github.io/cli/configcat-flag-targeting-rm.html",
+    "https://configcat.github.io/cli/configcat-flag-targeting-update.html",
+    "https://configcat.github.io/cli/configcat-flag-targeting.html",
+    "https://configcat.github.io/cli/configcat-flag-update.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-attach.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-create.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-detach.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-ls.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-rm.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-condition-add-prerequisite.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-condition-add-segment.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-condition-add-user.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-condition-add.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-condition-rm.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-condition.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-percentage-attribute.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-percentage-clear.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-percentage-update.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-percentage.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-rule-create-prerequisite.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-rule-create-segment.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-rule-create-user.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-rule-create.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-rule-move.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-rule-rm.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-rule-update-served-value.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting-rule.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-targeting.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-update.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-value-show.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-value-update.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-value.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-variation-create.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-variation-ls.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-variation-rm.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-variation-update.html",
+    "https://configcat.github.io/cli/configcat-flag-v2-variation.html",
+    "https://configcat.github.io/cli/configcat-flag-v2.html",
+    "https://configcat.github.io/cli/configcat-flag-value-show.html",
+    "https://configcat.github.io/cli/configcat-flag-value-update.html",
+    "https://configcat.github.io/cli/configcat-flag-value.html",
+    "https://configcat.github.io/cli/configcat-flag.html",
+    "https://configcat.github.io/cli/configcat-ls.html",
+    "https://configcat.github.io/cli/configcat-member.html",
+    "https://configcat.github.io/cli/configcat-permission-group-create.html",
+    "https://configcat.github.io/cli/configcat-permission-group-env.html",
+    "https://configcat.github.io/cli/configcat-permission-group-ls.html",
+    "https://configcat.github.io/cli/configcat-permission-group-rm.html",
+    "https://configcat.github.io/cli/configcat-permission-group-show.html",
+    "https://configcat.github.io/cli/configcat-permission-group-update.html",
+    "https://configcat.github.io/cli/configcat-permission-group.html",
+    "https://configcat.github.io/cli/configcat-product-create.html",
+    "https://configcat.github.io/cli/configcat-product-ls.html",
+    "https://configcat.github.io/cli/configcat-product-preferences-show.html",
+    "https://configcat.github.io/cli/configcat-product-preferences-update-env.html",
+    "https://configcat.github.io/cli/configcat-product-preferences-update.html",
+    "https://configcat.github.io/cli/configcat-product-preferences.html",
+    "https://configcat.github.io/cli/configcat-product-rm.html",
+    "https://configcat.github.io/cli/configcat-product-update.html",
+    "https://configcat.github.io/cli/configcat-product.html",
+    "https://configcat.github.io/cli/configcat-segment-create.html",
+    "https://configcat.github.io/cli/configcat-segment-ls.html",
+    "https://configcat.github.io/cli/configcat-segment-rm.html",
+    "https://configcat.github.io/cli/configcat-segment-show.html",
+    "https://configcat.github.io/cli/configcat-segment-update.html",
+    "https://configcat.github.io/cli/configcat-segment.html",
+    "https://configcat.github.io/cli/configcat-setup.html",
+    "https://configcat.github.io/cli/configcat-webhook-create.html",
+    "https://configcat.github.io/cli/configcat-webhook-headers-add.html",
+    "https://configcat.github.io/cli/configcat-webhook-headers-rm.html",
+    "https://configcat.github.io/cli/configcat-webhook-headers.html",
+    "https://configcat.github.io/cli/configcat-webhook-ls.html",
+    "https://configcat.github.io/cli/configcat-webhook-rm.html",
+    "https://configcat.github.io/cli/configcat-webhook-show.html",
+    "https://configcat.github.io/cli/configcat-webhook-update.html",
+    "https://configcat.github.io/cli/configcat-webhook.html",
+    "https://cursor.com/",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://en.wikipedia.org/wiki/Basic_access_authentication",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/OpenAPITools/openapi-generator",
+    "https://github.com/accelerator",
+    "https://github.com/actions/checkout",
+    "https://github.com/actions/checkout/blob/main/CHANGELOG.md",
+    "https://github.com/actions/checkout/compare/v6...v7",
+    "https://github.com/actions/checkout/releases",
+    "https://github.com/collections",
+    "https://github.com/configcat",
+    "https://github.com/configcat/cli",
+    "https://github.com/configcat/cli/actions",
+    "https://github.com/configcat/cli/branches",
+    "https://github.com/configcat/cli/commit/2c61e50d25c46ea2f6ad1bd93cdaad6176e08172",
+    "https://github.com/configcat/cli/commit/2ebb5a142c973709f08de3fd16a25ab1c867cb48",
+    "https://github.com/configcat/cli/commit/471b5c70e57059181fcd29101b4751890834abe6",
+    "https://github.com/configcat/cli/commit/600f7ebd960ac7cab13817447afeb1fc79f85aae",
+    "https://github.com/configcat/cli/commit/9568e2fa1446673db7d1e765c87c5e294d0b94b5",
+    "https://github.com/configcat/cli/commit/bf61e16412dbaf09f5fa7d62d190b60122b74553",
+    "https://github.com/configcat/cli/commit/c4a200194238cf22c7827e3c33dbb67ba7015815",
+    "https://github.com/configcat/cli/commit/d58d6f430eedf4d6ee4c4e8ec2503880e3aab377",
+    "https://github.com/configcat/cli/commit/e5d2d32de785ec75fe33c40732543b07065521cc",
+    "https://github.com/configcat/cli/commit/f69fb9eb25269e3ee31d05c7d562c994cdcfbc5c",
+    "https://github.com/configcat/cli/commits/main/",
+    "https://github.com/configcat/cli/commits?author=dependabot%5Bbot%5D",
+    "https://github.com/configcat/cli/issues",
+    "https://github.com/configcat/cli/pull/10",
+    "https://github.com/configcat/cli/pull/12",
+    "https://github.com/configcat/cli/pull/42",
+    "https://github.com/configcat/cli/pull/48",
+    "https://github.com/configcat/cli/pull/54",
+    "https://github.com/configcat/cli/pull/60",
+    "https://github.com/configcat/cli/pull/61",
+    "https://github.com/configcat/cli/pulls",
+    "https://github.com/configcat/cli/pulse",
+    "https://github.com/configcat/cli/releases",
+    "https://github.com/configcat/cli/security",
+    "https://github.com/configcat/cli/tags",
+    "https://github.com/configcat/cli/tree/main/.github",
+    "https://github.com/configcat/cli/tree/main/assets",
+    "https://github.com/configcat/cli/tree/main/azure-devops",
+    "https://github.com/configcat/cli/tree/main/brew",
+    "https://github.com/configcat/cli/tree/main/choco",
+    "https://github.com/configcat/cli/tree/main/docs",
+    "https://github.com/configcat/cli/tree/main/media",
+    "https://github.com/configcat/cli/tree/main/scoop",
+    "https://github.com/configcat/cli/tree/main/scripts",
+    "https://github.com/configcat/cli/tree/main/snap",
+    "https://github.com/configcat/docs/tree/master/website/docs/advanced/cli.mdx",
+    "https://github.com/configcat/docs/tree/master/website/docs/advanced/mcp-server.mdx",
+    "https://github.com/configcat/homebrew-tap",
+    "https://github.com/configcat/mcp-server",
+    "https://github.com/configcat/mcp-server/actions",
+    "https://github.com/configcat/mcp-server/blob/main/.gitignore",
+    "https://github.com/configcat/mcp-server/blob/main/.npmignore",
+    "https://github.com/configcat/mcp-server/blob/main/CONTRIBUTING.md",
+    "https://github.com/configcat/mcp-server/blob/main/DEPLOY.md",
+    "https://github.com/configcat/mcp-server/blob/main/LICENSE",
+    "https://github.com/configcat/mcp-server/blob/main/README.md",
+    "https://github.com/configcat/mcp-server/blob/main/eslint.config.mjs",
+    "https://github.com/configcat/mcp-server/blob/main/glama.json",
+    "https://github.com/configcat/mcp-server/blob/main/package-lock.json",
+    "https://github.com/configcat/mcp-server/blob/main/package.json",
+    "https://github.com/configcat/mcp-server/blob/main/server.json",
+    "https://github.com/configcat/mcp-server/branches",
+    "https://github.com/configcat/mcp-server/commit/25dbaa451cd01c2eccba66884b70480a3d2ea0f0",
+    "https://github.com/configcat/mcp-server/commit/34e7f8ca66560f97f9ee52e94a15ca3af6875c5b",
+    "https://github.com/configcat/mcp-server/commit/50bb7fba76d815770502b7579789ad6db1a3",
+    "https://github.com/configcat/mcp-server/commit/50bb7fba76d815770502b7579789ad6db1a38c70",
+    "https://github.com/configcat/mcp-server/commit/8ec71201024c56c0e687151b104ccf69b2f4c8ba",
+    "https://github.com/configcat/mcp-server/commit/a8c51962ae8830efb7f5cc623b419f9ad105eb17",
+    "https://github.com/configcat/mcp-server/commit/aa8cc2cb1b0c98a052aa2c7fc5f989e24b2c6855",
+    "https://github.com/configcat/mcp-server/commit/deaaf736e82a9854d4798681c59e93669e211e03",
+    "https://github.com/configcat/mcp-server/commit/e1c1d36c4c77678cc389bd939242acdfd2c8a145",
+    "https://github.com/configcat/mcp-server/commits/main/",
+    "https://github.com/configcat/mcp-server/commits?author=kp-cat",
+    "https://github.com/configcat/mcp-server/issues",
+    "https://github.com/configcat/mcp-server/projects",
+    "https://github.com/configcat/mcp-server/pull/15",
+    "https://github.com/configcat/mcp-server/pull/19",
+    "https://github.com/configcat/mcp-server/pull/23",
+    "https://github.com/configcat/mcp-server/pull/24",
+    "https://github.com/configcat/mcp-server/pull/7",
+    "https://github.com/configcat/mcp-server/pulls",
+    "https://github.com/configcat/mcp-server/pulse",
+    "https://github.com/configcat/mcp-server/security",
+    "https://github.com/configcat/mcp-server/tags",
+    "https://github.com/configcat/mcp-server/tree/main/.github",
+    "https://github.com/configcat/mcp-server/tree/main/src",
+    "https://github.com/configcat/mcp-server/tree/main/test",
+    "https://github.com/configcat/mcp-server?tab=readme-ov-file#available-tools",
+    "https://github.com/configcat/scoop-configcat",
+    "https://github.com/configcat/scoop-configcatscoop",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fconfigcat%2Fcli",
+    "https://github.com/login?return_to=%2Fconfigcat%2Fmcp-server",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fconfigcat%2Fcli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fconfigcat%2Fmcp-server",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=configcat%2Fcli",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=configcat%2Fmcp-server",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools",
+    "https://maintainers.github.com",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://nodejs.org",
+    "https://raw.githubusercontent.com/configcat/cli/main/scripts/install.sh",
+    "https://scim-api.configcat.com",
+    "https://scim-api.configcat.com/openapi/v1/openapi.json",
+    "https://scoop.sh",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://snapcraft.io",
+    "https://stars.github.com",
+    "https://status.configcat.com",
+    "https://support.github.com",
+    "https://swagger.io/tools/swagger-codegen/",
+    "https://trello.com/b/8gYunIb6/configcat-public-roadmap",
+    "https://www.docker.com/",
+    "https://www.facebook.com/configcat",
+    "https://www.linkedin.com/company/configcat/",
+    "https://x.com/configcat"
+  ]
+}

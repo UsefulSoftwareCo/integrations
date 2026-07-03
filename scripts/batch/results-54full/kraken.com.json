@@ -1,0 +1,697 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "kraken.com",
+    "detect": {
+      "domain": "kraken.com",
+      "found": [
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://kraken.com"
+          ],
+          "authorizationEndpoint": "https://www.kraken.com/oauth/authorize",
+          "tokenEndpoint": "https://api.kraken.com/oauth/token",
+          "scopes": [
+            "mcp.base:read",
+            "mcp.portfolio:read",
+            "mcp.trades:read",
+            "mcp.trades:write",
+            "mcp.ledger:read",
+            "mcp.funds:read"
+          ],
+          "registrationEndpoint": "https://api.kraken.com/oauth/client",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:55:08.038Z",
+    "summary": "Kraken exposes Spot and Derivatives REST APIs, a public remote MCP endpoint, and the kraken-cli with a built-in local stdio MCP server; REST and live CLI usage authenticate with Kraken-issued API credentials, and Kraken also offers OAuth client registration for delegated access flows.",
+    "description": "Kraken is a cryptocurrency trading and financial services platform offering spot and derivatives trading, plus institutional and embedded financial infrastructure products. Its developer platform includes APIs and tooling for market data, trading, funding, account management, and agent-oriented workflows.",
+    "credentials": {
+      "kraken_api_keypair": {
+        "type": "compound",
+        "label": "Kraken API key pair (public API key + private secret for HMAC signing)",
+        "generateUrl": "https://www.kraken.com/u/security/api",
+        "setup": "Create a Kraken API key pair in [Settings → API](https://www.kraken.com/u/security/api) (also linked from [Kraken Developers](https://docs.kraken.com/)). Save both the public key and private secret. Grant only the permissions your workflow needs, such as `Query Funds`, trading, funding, earn, or `Access WebSocket API`. For spot REST and Kraken CLI live commands, the public key is sent as `API-Key` and the private secret is used locally to compute the HMAC signature sent as `API-Sign`; the private secret itself is never sent. You can also enable IP whitelisting and API key 2FA per Kraken guidance in [API key permissions](https://docs.kraken.com/exchange/guides/rest/api-keys) and [API Key Security](https://support.kraken.com/articles/api-key-security)."
+      },
+      "kraken_oauth_client": {
+        "type": "oauth2",
+        "label": "Kraken OAuth client (Kraken Connect app credentials)",
+        "generateUrl": "https://api.kraken.com/oauth/client",
+        "setup": "Register an OAuth client against Kraken's dynamic client registration endpoint at [client registration](https://api.kraken.com/oauth/client), then send users through the authorization flow at `https://www.kraken.com/oauth/authorize` and exchange the code at `https://api.kraken.com/oauth/token`. The available scopes detected for Kraken include `mcp.base:read`, `mcp.portfolio:read`, `mcp.trades:read`, `mcp.trades:write`, `mcp.ledger:read`, and `mcp.funds:read`. Kraken's OAuth docs page is [OAuth2 Gateway](https://docs.kraken.com/api/docs/oauth/kraken-connect)."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "kraken-mcp-server",
+        "name": "Kraken MCP server",
+        "type": "mcp",
+        "docs": "https://docs.kraken.com/home/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kraken.com/home/mcp"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.kraken.com/home/mcp"
+            ]
+          }
+        },
+        "url": "https://ai-analytics-mcp.kraken.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "kraken-cli",
+        "name": "kraken-cli",
+        "type": "cli",
+        "docs": "https://docs.kraken.com/home/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kraken.com/home/cli",
+            "https://raw.githubusercontent.com/krakenfx/kraken-cli/main/README.md",
+            "https://www.kraken.com/kraken-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kraken_api_keypair",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "KRAKEN_API_KEY",
+                      "KRAKEN_API_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kraken.com/home/cli",
+                  "https://docs.kraken.com/home/mcp",
+                  "https://raw.githubusercontent.com/krakenfx/kraken-cli/main/README.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kraken_api_keypair",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "kraken setup"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kraken.com/home/cli",
+                  "https://docs.kraken.com/home/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "krakenfx/kraken-cli"
+          }
+        ],
+        "command": "kraken",
+        "notes": "Some command groups are public and need no credential, including `market`, `paper`, `futures-paper`, `auth`, and some futures/websocket commands. Live account, trade, funding, earn, and subaccount commands require Kraken API credentials."
+      },
+      {
+        "slug": "kraken-spot-rest-api",
+        "name": "Kraken Spot REST API",
+        "type": "http",
+        "docs": "https://docs.kraken.com/exchange/guides/rest/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kraken.com/exchange/guides/rest/introduction",
+            "https://docs.kraken.com/exchange/guides/rest/authentication",
+            "https://docs.kraken.com/openapi/spot-rest.yaml",
+            "https://docs.kraken.com/exchange/guides/rest/api-keys"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kraken_api_keypair",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "API-Key"
+                  }
+                },
+                {
+                  "id": "kraken_api_keypair",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "API-Sign"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kraken.com/openapi/spot-rest.yaml",
+                  "https://docs.kraken.com/exchange/guides/rest/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://docs.kraken.com/openapi/spot-rest.yaml",
+        "url": "https://api.kraken.com/0",
+        "notes": "Public market-data endpoints exist in the same API and are marked `security: []` in the OpenAPI spec; private endpoints require `API-Key` plus `API-Sign`, with `nonce` in the payload and optional `otp` when API-key 2FA is enabled."
+      },
+      {
+        "slug": "kraken-derivatives-rest-api",
+        "name": "Kraken Derivatives REST API",
+        "type": "http",
+        "docs": "https://docs.kraken.com/exchange/guides/futures/rest",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kraken.com/openapi/futures-rest.yaml",
+            "https://docs.kraken.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kraken_api_keypair",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "general-api-key"
+                  }
+                },
+                {
+                  "id": "kraken_api_keypair",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "authent"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kraken.com/openapi/futures-rest.yaml",
+                  "https://docs.kraken.com/llms.txt"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kraken_api_keypair",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "general-api-key-read-only"
+                  }
+                },
+                {
+                  "id": "kraken_api_keypair",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "authent"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kraken.com/openapi/futures-rest.yaml",
+                  "https://docs.kraken.com/llms.txt"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://docs.kraken.com/openapi/futures-rest.yaml",
+        "url": "https://futures.kraken.com/derivatives/api/v3",
+        "notes": "The docs index states Derivatives REST uses `APIKey + Authent` headers with HMAC-SHA512 via a SHA256 intermediate hash. The OpenAPI names the security schemes `general-api-key`, `general-api-key-read-only`, and `authent`."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:55:08.039Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 184830,
+    "completion_tokens": 2123,
+    "total_tokens": 186953
+  },
+  "visited": [
+    "https://community.openai.com/t/clientid-support-for-mcp-oauth/1383157",
+    "https://docs.kraken.com/",
+    "https://docs.kraken.com/api-reference/market-data/get-ticker-information",
+    "https://docs.kraken.com/api/docs/embed-api/list-embed-assets",
+    "https://docs.kraken.com/api/docs/oauth/kraken-connect",
+    "https://docs.kraken.com/api/docs/otc-api/rest-api",
+    "https://docs.kraken.com/exchange/guides/overview",
+    "https://docs.kraken.com/exchange/guides/rest/api-keys",
+    "https://docs.kraken.com/exchange/guides/rest/authentication",
+    "https://docs.kraken.com/exchange/guides/rest/introduction",
+    "https://docs.kraken.com/home/cli",
+    "https://docs.kraken.com/home/mcp",
+    "https://docs.kraken.com/institutional/api-reference/overview",
+    "https://docs.kraken.com/institutional/guides/overview",
+    "https://docs.kraken.com/llms.txt",
+    "https://docs.kraken.com/openapi/futures-rest.yaml",
+    "https://docs.kraken.com/openapi/spot-rest.yaml",
+    "https://github.com/krakenfx",
+    "https://github.com/krakenfx/kraken-cli",
+    "https://github.com/krakenfx/kraken-cli/blob/main/AGENTS.md",
+    "https://github.com/krakenfx/kraken-cli/releases",
+    "https://github.com/lablab-ai/community-content/blob/main/technologies/kraken/kraken-cli.mdx",
+    "https://github.com/zertrin/clikraken",
+    "https://mcpservers.org/servers/xavierbeheydt/mcp-kraken",
+    "https://raw.githubusercontent.com/krakenfx/kraken-cli/main/README.md",
+    "https://support.kraken.com/articles/115004862007-business-account",
+    "https://support.kraken.com/articles/360001491786-api-error-messages",
+    "https://support.kraken.com/articles/360022326871-kraken-websocket-api-frequently-asked-questions",
+    "https://support.kraken.com/articles/360043577552-api-security-what-account-information-does-the-api-expose-",
+    "https://support.kraken.com/articles/4402845145876-setting-up-permissions-for-the-staking-api",
+    "https://support.kraken.com/articles/api-key-security",
+    "https://www.kraken.com/kraken-cli",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/"
+  ],
+  "grounding": [
+    "https://api.kraken.com",
+    "https://api.kraken.com/0",
+    "https://api.kraken.com/0/public/SystemStatus",
+    "https://app.kraken.com/JDNW",
+    "https://app.kraken.com/JDNW/zxa338rp",
+    "https://archiveprogram.github.com",
+    "https://assets.backed.fi/legal-documentation",
+    "https://blog.kraken.com",
+    "https://community.openai.com/t/clientid-support-for-mcp-oauth/1383157",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.kraken.com/",
+    "https://docs.kraken.com/#account-management",
+    "https://docs.kraken.com/#agent-resources",
+    "https://docs.kraken.com/#ai-agent-integration",
+    "https://docs.kraken.com/#api-organisation",
+    "https://docs.kraken.com/#authentication",
+    "https://docs.kraken.com/#authentication-parameters",
+    "https://docs.kraken.com/#browse-by-product",
+    "https://docs.kraken.com/#client-setup",
+    "https://docs.kraken.com/#command-groups",
+    "https://docs.kraken.com/#content-area",
+    "https://docs.kraken.com/#dangerous-tools",
+    "https://docs.kraken.com/#dead-man%E2%80%99s-switch",
+    "https://docs.kraken.com/#dead-man’s-switch",
+    "https://docs.kraken.com/#error-details",
+    "https://docs.kraken.com/#example",
+    "https://docs.kraken.com/#examples",
+    "https://docs.kraken.com/#examples-2",
+    "https://docs.kraken.com/#install",
+    "https://docs.kraken.com/#interactive-shell",
+    "https://docs.kraken.com/#kraken-cli",
+    "https://docs.kraken.com/#need-help-integrating",
+    "https://docs.kraken.com/#openapi-spec",
+    "https://docs.kraken.com/#paper-trading",
+    "https://docs.kraken.com/#permission-descriptions",
+    "https://docs.kraken.com/#permissions-by-use-case",
+    "https://docs.kraken.com/#quickstart",
+    "https://docs.kraken.com/#related-guides",
+    "https://docs.kraken.com/#requests",
+    "https://docs.kraken.com/#requests-responses-and-errors",
+    "https://docs.kraken.com/#responses",
+    "https://docs.kraken.com/#safety-notes",
+    "https://docs.kraken.com/#scripting-and-automation",
+    "https://docs.kraken.com/#security-best-practices",
+    "https://docs.kraken.com/#services",
+    "https://docs.kraken.com/#setting-the-api-key-parameter",
+    "https://docs.kraken.com/#setting-the-api-sign-parameter",
+    "https://docs.kraken.com/#setting-the-nonce-parameter",
+    "https://docs.kraken.com/#setting-the-otp-parameter",
+    "https://docs.kraken.com/#start-buildingwith-kraken",
+    "https://docs.kraken.com/#websocket-authentication",
+    "https://docs.kraken.com/#what-agents-can-do",
+    "https://docs.kraken.com/#what-it-covers",
+    "https://docs.kraken.com/api-reference/account-data/get-account-balance",
+    "https://docs.kraken.com/api-reference/earn/allocate-earn-funds",
+    "https://docs.kraken.com/api-reference/funding/get-deposit-addresses",
+    "https://docs.kraken.com/api-reference/market-data/get-order-book",
+    "https://docs.kraken.com/api-reference/market-data/get-server-time",
+    "https://docs.kraken.com/api-reference/market-data/get-ticker-information",
+    "https://docs.kraken.com/api-reference/market-data/get-tickers",
+    "https://docs.kraken.com/api-reference/subaccounts/create-subaccount",
+    "https://docs.kraken.com/api-reference/trading/add-order",
+    "https://docs.kraken.com/api-reference/trading/get-websockets-token",
+    "https://docs.kraken.com/api/",
+    "https://docs.kraken.com/api/docs/embed-api/list-embed-assets",
+    "https://docs.kraken.com/api/docs/oauth/kraken-connect",
+    "https://docs.kraken.com/api/docs/otc-api/rest-api",
+    "https://docs.kraken.com/api/docs/rest-api/get-trade-volume",
+    "https://docs.kraken.com/exchange/api-reference/futures-websocket",
+    "https://docs.kraken.com/exchange/api-reference/overview",
+    "https://docs.kraken.com/exchange/api-reference/spot-websocket",
+    "https://docs.kraken.com/exchange/api-reference/unified-fix",
+    "https://docs.kraken.com/exchange/changelog",
+    "https://docs.kraken.com/exchange/guides/fix/authentication",
+    "https://docs.kraken.com/exchange/guides/fix/checksums",
+    "https://docs.kraken.com/exchange/guides/fix/introduction",
+    "https://docs.kraken.com/exchange/guides/futures/introduction",
+    "https://docs.kraken.com/exchange/guides/futures/ratelimits",
+    "https://docs.kraken.com/exchange/guides/futures/rest",
+    "https://docs.kraken.com/exchange/guides/futures/websockets",
+    "https://docs.kraken.com/exchange/guides/general/amends",
+    "https://docs.kraken.com/exchange/guides/general/api-comparison",
+    "https://docs.kraken.com/exchange/guides/general/clordid",
+    "https://docs.kraken.com/exchange/guides/general/colocation",
+    "https://docs.kraken.com/exchange/guides/general/errors",
+    "https://docs.kraken.com/exchange/guides/general/examples",
+    "https://docs.kraken.com/exchange/guides/general/historical-data",
+    "https://docs.kraken.com/exchange/guides/general/l3-data",
+    "https://docs.kraken.com/exchange/guides/general/order-lifecycle",
+    "https://docs.kraken.com/exchange/guides/general/ratelimits",
+    "https://docs.kraken.com/exchange/guides/general/subaccounts",
+    "https://docs.kraken.com/exchange/guides/overview",
+    "https://docs.kraken.com/exchange/guides/rest/api-keys",
+    "https://docs.kraken.com/exchange/guides/rest/authentication",
+    "https://docs.kraken.com/exchange/guides/rest/earn",
+    "https://docs.kraken.com/exchange/guides/rest/introduction",
+    "https://docs.kraken.com/exchange/guides/rest/ratelimits",
+    "https://docs.kraken.com/exchange/guides/websockets/authentication",
+    "https://docs.kraken.com/exchange/guides/websockets/book-checksum-v1",
+    "https://docs.kraken.com/exchange/guides/websockets/book-checksum-v2",
+    "https://docs.kraken.com/exchange/guides/websockets/introduction",
+    "https://docs.kraken.com/exchange/guides/websockets/l3-checksum-v2",
+    "https://docs.kraken.com/exchange/guides/websockets/reconnection",
+    "https://docs.kraken.com/home/cli",
+    "https://docs.kraken.com/home/guides/quickstart",
+    "https://docs.kraken.com/home/mcp",
+    "https://docs.kraken.com/home/sdks",
+    "https://docs.kraken.com/home/support",
+    "https://docs.kraken.com/institutional/api-reference/custody-rest",
+    "https://docs.kraken.com/institutional/api-reference/otc-rest",
+    "https://docs.kraken.com/institutional/api-reference/overview",
+    "https://docs.kraken.com/institutional/api-reference/prime-fix/logon",
+    "https://docs.kraken.com/institutional/api-reference/prime-rest",
+    "https://docs.kraken.com/institutional/api-reference/prime-websocket/authentication",
+    "https://docs.kraken.com/institutional/changelog",
+    "https://docs.kraken.com/institutional/guides/overview",
+    "https://docs.kraken.com/llms.txt",
+    "https://docs.kraken.com/openapi/futures-rest.yaml",
+    "https://docs.kraken.com/openapi/spot-rest.yaml",
+    "https://futures.kraken.com/derivatives/api/v3",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/krakenfx",
+    "https://github.com/krakenfx/api-go",
+    "https://github.com/krakenfx/kraken",
+    "https://github.com/krakenfx/kraken-cli",
+    "https://github.com/krakenfx/kraken-cli.git",
+    "https://github.com/krakenfx/kraken-cli/",
+    "https://github.com/krakenfx/kraken-cli/actions",
+    "https://github.com/krakenfx/kraken-cli/blob/main/AGENTS.md",
+    "https://github.com/krakenfx/kraken-cli/blob/main/skills/INDEX.md",
+    "https://github.com/krakenfx/kraken-cli/branches",
+    "https://github.com/krakenfx/kraken-cli/commit/60458b7c0d87ee44a11313e624f04be97647103a",
+    "https://github.com/krakenfx/kraken-cli/commit/aa32814cea70913a70c9909693a7abd762963e83",
+    "https://github.com/krakenfx/kraken-cli/commits/main/",
+    "https://github.com/krakenfx/kraken-cli/commits?author=agent-smith-k",
+    "https://github.com/krakenfx/kraken-cli/issues",
+    "https://github.com/krakenfx/kraken-cli/pull/31",
+    "https://github.com/krakenfx/kraken-cli/pulls",
+    "https://github.com/krakenfx/kraken-cli/pulse",
+    "https://github.com/krakenfx/kraken-cli/releases",
+    "https://github.com/krakenfx/kraken-cli/releases/latest/download/kraken-cli-installer.sh",
+    "https://github.com/krakenfx/kraken-cli/security",
+    "https://github.com/krakenfx/kraken-cli/tags",
+    "https://github.com/krakenfx/kraken-cli/tree/main/.claude-plugin",
+    "https://github.com/krakenfx/kraken-cli/tree/main/.codex-plugin",
+    "https://github.com/krakenfx/kraken-cli/tree/main/.cursor-plugin",
+    "https://github.com/krakenfx/kraken-cli/tree/main/.github/workflows",
+    "https://github.com/krakenfx/kraken-cli/tree/main/agents",
+    "https://github.com/krakenfx/kraken-cli/tree/main/skills#readme",
+    "https://github.com/lablab-ai/community-content/blob/main/technologies/kraken/kraken-cli.mdx",
+    "https://github.com/login?return_to=%2Fkrakenfx%2Fkraken-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fkrakenfx%2Fkraken-cli",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=krakenfx%2Fkraken-cli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.com/zertrin/clikraken",
+    "https://id.kraken.com/sign-in?redirect=https%253A%252F%252Fsupport.kraken.com%252Farticles%252Fapi-key-security&rfr=support",
+    "https://id.kraken.com/sign-in?rfr=consumer-web&preferTheme=light",
+    "https://img.shields.io/badge/license-MIT-green",
+    "https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey",
+    "https://img.shields.io/github/v/release/krakenfx/kraken-cli?color=blue",
+    "https://jedisct1.github.io/minisign/",
+    "https://krak.app",
+    "https://krak.app/payments",
+    "https://krak.app/vaults",
+    "https://linkedin.com/company/kraken-exchange",
+    "https://maintainers.github.com",
+    "https://mcpservers.org/servers/xavierbeheydt/mcp-kraken",
+    "https://modelcontextprotocol.io",
+    "https://modelcontextprotocol.io/",
+    "https://pro.kraken.com",
+    "https://pro.kraken.com/app/settings/api",
+    "https://pro.kraken.com/app/trade/btc-usd",
+    "https://proapp.kraken.com/9f1e",
+    "https://proapp.kraken.com/9f1e/px1q5fli",
+    "https://raw.githubusercontent.com/krakenfx/kraken-cli/main/README.md",
+    "https://rustup.rs/",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://status.kraken.com",
+    "https://status.kraken.com/",
+    "https://support.github.com",
+    "https://support.kraken.com",
+    "https://support.kraken.com/",
+    "https://support.kraken.com/articles/115004862007-business-account",
+    "https://support.kraken.com/articles/360000714526-How-does-two-factor-authentication-2FA-for-API-keys-work-",
+    "https://support.kraken.com/articles/360000919966",
+    "https://support.kraken.com/articles/360000919966-How-to-create-an-API-key",
+    "https://support.kraken.com/articles/360000919966-How-to-create-an-API-key#2",
+    "https://support.kraken.com/articles/360000919966-how-to-create-an-api-key",
+    "https://support.kraken.com/articles/360001491786-api-error-messages",
+    "https://support.kraken.com/articles/360022326871-kraken-websocket-api-frequently-asked-questions",
+    "https://support.kraken.com/articles/360022629052-risk-disclosure-derivatives-disclaimers",
+    "https://support.kraken.com/articles/360043577552-api-security-what-account-information-does-the-api-expose-",
+    "https://support.kraken.com/articles/4402845145876-setting-up-permissions-for-the-staking-api",
+    "https://support.kraken.com/articles/api-key-security",
+    "https://support.kraken.com/articles/complaint-handling-process",
+    "https://support.kraken.com/buy",
+    "https://support.kraken.com/buy/ada",
+    "https://support.kraken.com/buy/btc",
+    "https://support.kraken.com/buy/doge",
+    "https://support.kraken.com/buy/eth",
+    "https://support.kraken.com/buy/ltc",
+    "https://support.kraken.com/buy/sol",
+    "https://support.kraken.com/buy/xrp",
+    "https://support.kraken.com/categories/360000036266-account-security-verification",
+    "https://support.kraken.com/forms/648008?&1900002254847=inq_data_privacy&40360229966996=inq_data_privacy_data_selling_sharing",
+    "https://support.kraken.com/hc/en-us",
+    "https://support.kraken.com/hc/en-us/articles/360000906023-What-is-a-nonce-",
+    "https://support.kraken.com/hc/en-us/articles/360000919966-How-to-create-an-API-key",
+    "https://support.kraken.com/hc/en-us/articles/360001491786-API-error-messages",
+    "https://support.kraken.com/hc/en-us/articles/360022839451-How-to-create-an-API-key-for-Kraken-Futures",
+    "https://support.kraken.com/hc/en-us/articles/360027545252-Kraken-Affiliate-program",
+    "https://support.kraken.com/sections/200329266-security-basics",
+    "https://support.kraken.com/sections/360013915032-account-security",
+    "https://support.kraken.com/sell",
+    "https://www.breakoutprop.com/",
+    "https://www.kraken.com",
+    "https://www.kraken.com/affiliate",
+    "https://www.kraken.com/buy",
+    "https://www.kraken.com/buy/btc",
+    "https://www.kraken.com/careers",
+    "https://www.kraken.com/categories",
+    "https://www.kraken.com/compliance",
+    "https://www.kraken.com/convert",
+    "https://www.kraken.com/convert/ada/usd",
+    "https://www.kraken.com/convert/btc/usd",
+    "https://www.kraken.com/convert/doge/usd",
+    "https://www.kraken.com/convert/eth/usd",
+    "https://www.kraken.com/convert/ltc/usd",
+    "https://www.kraken.com/convert/sol/usd",
+    "https://www.kraken.com/convert/xrp/usd",
+    "https://www.kraken.com/desktop",
+    "https://www.kraken.com/features/24-7-support",
+    "https://www.kraken.com/features/api-trading",
+    "https://www.kraken.com/features/bundles",
+    "https://www.kraken.com/features/dollar-cost-averaging",
+    "https://www.kraken.com/features/fee-schedule#fd0-kraken-pro",
+    "https://www.kraken.com/features/futures",
+    "https://www.kraken.com/features/futures/perpetual",
+    "https://www.kraken.com/features/liquidity",
+    "https://www.kraken.com/features/margin-trading",
+    "https://www.kraken.com/features/otc-exchange",
+    "https://www.kraken.com/features/rewards",
+    "https://www.kraken.com/features/security",
+    "https://www.kraken.com/features/staking",
+    "https://www.kraken.com/institutions",
+    "https://www.kraken.com/institutions/asset-managers",
+    "https://www.kraken.com/institutions/corporations",
+    "https://www.kraken.com/institutions/custody",
+    "https://www.kraken.com/institutions/etp-issuers",
+    "https://www.kraken.com/institutions/exchange",
+    "https://www.kraken.com/institutions/governments",
+    "https://www.kraken.com/institutions/hedge-funds",
+    "https://www.kraken.com/institutions/kraken-360",
+    "https://www.kraken.com/institutions/market-makers",
+    "https://www.kraken.com/institutions/otc",
+    "https://www.kraken.com/institutions/prime",
+    "https://www.kraken.com/institutions/protocol-investment",
+    "https://www.kraken.com/institutions/protocols",
+    "https://www.kraken.com/institutions/staking",
+    "https://www.kraken.com/institutions/venture-capitalists",
+    "https://www.kraken.com/institutions/wealth-managers",
+    "https://www.kraken.com/krak",
+    "https://www.kraken.com/kraken-app",
+    "https://www.kraken.com/kraken-cli",
+    "https://www.kraken.com/kraken-plus",
+    "https://www.kraken.com/learn",
+    "https://www.kraken.com/learn/best-crypto-exchanges",
+    "https://www.kraken.com/learn/best-crypto-futures-trading-platforms",
+    "https://www.kraken.com/learn/crypto-guides",
+    "https://www.kraken.com/learn/kraken-vs-binance",
+    "https://www.kraken.com/learn/kraken-vs-coinbase",
+    "https://www.kraken.com/learn/videos/crypto-security-guide",
+    "https://www.kraken.com/learn/what-is-bitcoin-btc",
+    "https://www.kraken.com/learn/what-is-cryptocurrency",
+    "https://www.kraken.com/learn/what-is-ethereum-eth",
+    "https://www.kraken.com/legal",
+    "https://www.kraken.com/legal/cookies",
+    "https://www.kraken.com/legal/disclosures",
+    "https://www.kraken.com/legal/exchangetradingrules",
+    "https://www.kraken.com/legal/privacy",
+    "https://www.kraken.com/legal/xstocks",
+    "https://www.kraken.com/listings",
+    "https://www.kraken.com/login-futures",
+    "https://www.kraken.com/press",
+    "https://www.kraken.com/price-prediction",
+    "https://www.kraken.com/prices",
+    "https://www.kraken.com/prices/bitcoin",
+    "https://www.kraken.com/prices/cardano",
+    "https://www.kraken.com/prices/dogecoin",
+    "https://www.kraken.com/prices/ethereum",
+    "https://www.kraken.com/prices/litecoin",
+    "https://www.kraken.com/prices/solana",
+    "https://www.kraken.com/prices/xrp",
+    "https://www.kraken.com/pro/flexline",
+    "https://www.kraken.com/pro/stocks",
+    "https://www.kraken.com/pro/xstocks",
+    "https://www.kraken.com/proof-of-reserves",
+    "https://www.kraken.com/prop",
+    "https://www.kraken.com/sell",
+    "https://www.kraken.com/send-money",
+    "https://www.kraken.com/sign-up",
+    "https://www.kraken.com/sign-up?rfr=pro-web",
+    "https://www.kraken.com/stocks",
+    "https://www.kraken.com/u/security/api",
+    "https://www.kraken.com/vip",
+    "https://www.kraken.com/wallet",
+    "https://www.kraken.com/wallet/bitcoin",
+    "https://www.kraken.com/wallet/ethereum",
+    "https://www.kraken.com/wallet/solana",
+    "https://www.kraken.com/wallet/tether",
+    "https://www.kraken.com/why-kraken",
+    "https://www.kraken.com/xstocks",
+    "https://www.payward.com/",
+    "https://www.payward.com/payward-services",
+    "https://www.payward.com/payward-services/crypto-trading-infrastructure",
+    "https://www.payward.com/payward-services/on-off-ramps",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/",
+    "https://www.xstocks.fi",
+    "https://x.com/krakenfx"
+  ]
+}

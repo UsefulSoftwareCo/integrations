@@ -1,0 +1,361 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "pendo.io",
+    "detect": {
+      "domain": "pendo.io",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:43:26.306Z",
+    "summary": "Pendo exposes a documented HTTP Feedback API and a remote MCP server; both require authentication, with the MCP server supporting interactive OAuth or service-account client credentials.",
+    "description": "Pendo is a product experience platform for product analytics, in-app guidance, feedback, and related AI-assisted workflows. It helps teams analyze product usage, collect customer feedback, and surface Pendo data in external AI tools.",
+    "credentials": {
+      "feedback_api_key": {
+        "type": "api_key",
+        "label": "Pendo Feedback API key",
+        "generateUrl": "https://feedback.pendo.io/app/#/vendor/settings?section=integrate",
+        "setup": "In Pendo Feedback, go to [Integration settings](https://feedback.pendo.io/app/#/vendor/settings?section=integrate) and generate an API key. Use that key as `auth-token`, preferably in a request header; the API also accepts it as a query parameter.",
+        "acquisition": "manual"
+      },
+      "pendo_service_account": {
+        "type": "oauth2_cc",
+        "label": "Pendo service account client credentials",
+        "generateUrl": "https://support.pendo.io/hc/en-us/articles/50293561169435-Authenticate-to-the-Pendo-MCP-server-with-a-service-account",
+        "setup": "A subscription admin with the Pendo API package enabled must go to [Authenticate to the Pendo MCP server with a service account](https://support.pendo.io/hc/en-us/articles/50293561169435-Authenticate-to-the-Pendo-MCP-server-with-a-service-account) and follow **Settings > Integrations > Service accounts > + Create service account**. Copy the `Client ID` and `Client secret`, then exchange them at your regional `https://.../oauth/v1/token` endpoint with `grant_type=client_credentials` and `scope=read:me` to obtain a bearer access token for the MCP server.",
+        "acquisition": "manual"
+      },
+      "pendo_user_oauth": {
+        "type": "oauth2",
+        "label": "Pendo user OAuth login",
+        "generateUrl": "https://support.pendo.io/hc/en-us/articles/41102236924955-Connect-to-the-Pendo-MCP-server",
+        "setup": "A subscription admin must first enable MCP in Pendo under **Settings > Subscription settings > AI access**. Then connect from a supported AI client using the regional MCP server URL as described in [Connect to the Pendo MCP server](https://support.pendo.io/hc/en-us/articles/41102236924955-Connect-to-the-Pendo-MCP-server). The client redirects you to sign in with your Pendo account and approve access.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "pendo-feedback-api",
+        "name": "Pendo Feedback API",
+        "type": "http",
+        "docs": "https://api.apis.guru/v2/specs/pendo.io/1.0.0/swagger.json",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.apis.guru/v2/specs/pendo.io/1.0.0/swagger.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "feedback_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "userApiKey (request header)"
+                  }
+                },
+                {
+                  "id": "feedback_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "auth-token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.apis.guru/v2/specs/pendo.io/1.0.0/swagger.json"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "feedback_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "userApiKey (query parameter)"
+                  }
+                },
+                {
+                  "id": "feedback_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "auth-token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.apis.guru/v2/specs/pendo.io/1.0.0/swagger.json"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://api.apis.guru/v2/specs/pendo.io/1.0.0/swagger.json",
+        "url": "https://api.feedback.eu.pendo.io",
+        "variables": [
+          {
+            "name": "region",
+            "resolveFrom": "Use the matching regional hostname documented in the spec description; endpoints include `https://api.feedback.eu.pendo.io` and `https://api.feedback.us.pendo.io`.",
+            "description": "Feedback API datacenter host varies by region."
+          }
+        ]
+      },
+      {
+        "slug": "pendo-mcp-server",
+        "name": "Pendo MCP server",
+        "type": "mcp",
+        "docs": "https://support.pendo.io/hc/en-us/articles/41102236924955-Connect-to-the-Pendo-MCP-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://support.pendo.io/hc/en-us/articles/41102236924955-Connect-to-the-Pendo-MCP-server",
+            "https://support.pendo.io/hc/en-us/articles/51020341547419-Overview-of-the-Pendo-MCP-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "pendo_user_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://support.pendo.io/hc/en-us/articles/41102236924955-Connect-to-the-Pendo-MCP-server",
+                  "https://support.pendo.io/hc/en-us/articles/51020341547419-Overview-of-the-Pendo-MCP-server"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "pendo_service_account",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://support.pendo.io/hc/en-us/articles/50293561169435-Authenticate-to-the-Pendo-MCP-server-with-a-service-account",
+                  "https://support.pendo.io/hc/en-us/articles/51020341547419-Overview-of-the-Pendo-MCP-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://app.pendo.io/mcp/v0/shttp",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "region",
+            "resolveFrom": "Use your Pendo region/login host.",
+            "description": "Regional MCP URLs documented as `https://app.pendo.io/mcp/v0/shttp`, `https://us1.app.pendo.io/mcp/v0/shttp`, `https://app.eu.pendo.io/mcp/v0/shttp`, `https://app.jpn.pendo.io/mcp/v0/shttp`, or `https://app.au.pendo.io/mcp/v0/shttp`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:43:26.306Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 90705,
+    "completion_tokens": 1560,
+    "total_tokens": 92265
+  },
+  "visited": [
+    "https://api.apis.guru/v2/specs/pendo.io/1.0.0/swagger.json",
+    "https://pendo.io/llms.txt",
+    "https://support.pendo.io/hc/en-us/articles/41102236924955-Connect-to-the-Pendo-MCP-server",
+    "https://support.pendo.io/hc/en-us/articles/48600833343515-Deliver-guides-through-your-AI-agent-beta",
+    "https://support.pendo.io/hc/en-us/articles/50293561169435-Authenticate-to-the-Pendo-MCP-server-with-a-service-account",
+    "https://support.pendo.io/hc/en-us/articles/51020341547419-Overview-of-the-Pendo-MCP-server",
+    "https://www.pendo.io/product/mcp/",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/"
+  ],
+  "grounding": [
+    "http://apidoc.receptive.io/receptive.swagger.json",
+    "http://editor.swagger.io/#/",
+    "https://api.apis.guru/v2/cache/logo/https_twitter.com_receptiveio_profile_image.jpeg",
+    "https://api.apis.guru/v2/specs/pendo.io/1.0.0/swagger.json",
+    "https://api.feedback.eu.pendo.io",
+    "https://api.feedback.us.pendo.io",
+    "https://app.au.pendo.io/mcp/v0/shttp",
+    "https://app.au.pendo.io/oauth/v1/token",
+    "https://app.eu.pendo.io/mcp/v0/shttp",
+    "https://app.eu.pendo.io/oauth/v1/token",
+    "https://app.jpn.pendo.io/mcp/v0/shttp",
+    "https://app.jpn.pendo.io/oauth/v1/token",
+    "https://app.pendo.io/",
+    "https://app.pendo.io/mcp/v0/shttp",
+    "https://app.pendo.io/oauth/v1/token",
+    "https://community.pendo.io",
+    "https://cursor.com/docs/context/mcp/directory",
+    "https://developer.pendo.io/",
+    "https://docs.google.com/forms/d/e/1FAIpQLSd6SvHNr75Nx_N9VszLJBSRh5df3tbU5k2a4fqHh5VE1AYzfw/viewform",
+    "https://feedback.pendo.io/app/#/vendor/settings?section=integrate",
+    "https://help.receptive.io/hc/en-us/articles/209221969-How-to-integrate-Receptive-with-your-app",
+    "https://pendo.io/llms.txt",
+    "https://status.pendo.io/",
+    "https://support.pendo.io/#h_01K58E0FDT99ET40K80GBF81M3",
+    "https://support.pendo.io/#h_01KREZ0YM814AAHQ3JTJYMYMP1",
+    "https://support.pendo.io/#h_01KREZ0YM826J0F620QAAJQTX3",
+    "https://support.pendo.io/#h_01KREZ0YM876X02AQA6PSY0MNR",
+    "https://support.pendo.io/#h_01KREZ0YM8CPAV1DQDSZZMN5FM",
+    "https://support.pendo.io/#h_01KREZ0YM8MGKDB746Z34H6B6Y",
+    "https://support.pendo.io/#h_01KREZ0YM8QYFJK0P8DZ219GEC",
+    "https://support.pendo.io/#h_01KREZ0YM8YTPH5MTE2ZEZC4DA",
+    "https://support.pendo.io/#h_01KST33V4K560S3G9ZR8NSB8GQ",
+    "https://support.pendo.io/#h_01KST33V4K63VGWDWBWD6S4DEJ",
+    "https://support.pendo.io/#h_01KST33V4KKFQH70MKK09HXJ56",
+    "https://support.pendo.io/#h_01KST33V4KKZVPA50EMJ93RRGN",
+    "https://support.pendo.io/#h_01KST33V4KVNG37AG0PE8QN404",
+    "https://support.pendo.io/#h_01KST33V4KWQHKDM2CN1SF8BTM",
+    "https://support.pendo.io/#h_01KST33V4KXZQ37S0D4799CR52",
+    "https://support.pendo.io/#main-content",
+    "https://support.pendo.io/hc/change_language/ja?return_to=%2Fhc%2Fja%2Farticles%2F41102236924955-Pendo-MCP%25E3%2582%25B5%25E3%2583%25BC%25E3%2583%2590%25E3%2583%25BC%25E3%2581%25AB%25E6%258E%25A5%25E7%25B6%259A%25E3%2581%2599%25E3%2582%258B",
+    "https://support.pendo.io/hc/change_language/ja?return_to=%2Fhc%2Fja%2Farticles%2F50293561169435-%25E3%2582%25B5%25E3%2583%25BC%25E3%2583%2593%25E3%2582%25B9%25E3%2582%25A2%25E3%2582%25AB%25E3%2582%25A6%25E3%2583%25B3%25E3%2583%2588%25E3%2581%25A7Pendo-MCP%25E3%2582%25B5%25E3%2583%25BC%25E3%2583%2590%25E3%2583%25BC%25E3%2582%2592%25E8%25AA%258D%25E8%25A8%25BC%25E3%2581%2599%25E3%2582%258B",
+    "https://support.pendo.io/hc/change_language/ja?return_to=%2Fhc%2Fja%2Farticles%2F51020341547419-Pendo-MCP%25E3%2582%25B5%25E3%2583%25BC%25E3%2583%2590%25E3%2583%25BC%25E3%2581%25AE%25E6%25A6%2582%25E8%25A6%2581",
+    "https://support.pendo.io/hc/en-us",
+    "https://support.pendo.io/hc/en-us/articles/360034163971",
+    "https://support.pendo.io/hc/en-us/articles/39748859051931",
+    "https://support.pendo.io/hc/en-us/articles/41102236924955",
+    "https://support.pendo.io/hc/en-us/articles/41102236924955-Connect-to-the-Pendo-MCP-server",
+    "https://support.pendo.io/hc/en-us/articles/42476316360731",
+    "https://support.pendo.io/hc/en-us/articles/42476316360731-Pendo-MCP-tools-for-AI-agents",
+    "https://support.pendo.io/hc/en-us/articles/48600833343515",
+    "https://support.pendo.io/hc/en-us/articles/48600833343515-Deliver-guides-through-your-AI-agent-beta",
+    "https://support.pendo.io/hc/en-us/articles/49661810672923-Power-Intercom-Fin-to-act-proactively-based-on-frustration-signals-beta",
+    "https://support.pendo.io/hc/en-us/articles/50113405002267",
+    "https://support.pendo.io/hc/en-us/articles/50113405002267-Serve-Pendo-guides-using-Intercom-Fin-beta",
+    "https://support.pendo.io/hc/en-us/articles/50288421049499",
+    "https://support.pendo.io/hc/en-us/articles/50288421049499-Improve-Fin-resolution-rate-with-session-context-beta",
+    "https://support.pendo.io/hc/en-us/articles/50293561169435",
+    "https://support.pendo.io/hc/en-us/articles/50293561169435-Authenticate-to-the-Pendo-MCP-server-with-a-service-account",
+    "https://support.pendo.io/hc/en-us/articles/51020341547419",
+    "https://support.pendo.io/hc/en-us/articles/51020341547419-Overview-of-the-Pendo-MCP-server",
+    "https://support.pendo.io/hc/en-us/articles/51020341547419/",
+    "https://support.pendo.io/hc/en-us/categories/360001404231-Integrations",
+    "https://support.pendo.io/hc/en-us/sections/15374638540443-Release-notes",
+    "https://support.pendo.io/hc/en-us/sections/51139238264987-Pendo-MCP",
+    "https://support.pendo.io/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.pendo.io%2Fhc%2Fen-us%2Farticles%2F41102236924955-Connect-to-the-Pendo-MCP-server",
+    "https://support.pendo.io/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.pendo.io%2Fhc%2Fen-us%2Farticles%2F50293561169435-Authenticate-to-the-Pendo-MCP-server-with-a-service-account",
+    "https://support.pendo.io/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.pendo.io%2Fhc%2Fen-us%2Farticles%2F51020341547419-Overview-of-the-Pendo-MCP-server",
+    "https://support.pendo.io/tel:877-320-8484",
+    "https://us1.app.pendo.io/mcp/v0/shttp",
+    "https://us1.app.pendo.io/oauth/v1/token",
+    "https://www.pendo.io/",
+    "https://www.pendo.io/ai/",
+    "https://www.pendo.io/contact-us/",
+    "https://www.pendo.io/customers/",
+    "https://www.pendo.io/data-privacy-security/",
+    "https://www.pendo.io/demo-pendo/",
+    "https://www.pendo.io/digital-adoption/",
+    "https://www.pendo.io/glossary/ai-agent-analytics/",
+    "https://www.pendo.io/glossary/customer-churn/",
+    "https://www.pendo.io/glossary/digital-adoption-platform/",
+    "https://www.pendo.io/glossary/net-promoter-score-nps/",
+    "https://www.pendo.io/glossary/product-analytics/",
+    "https://www.pendo.io/glossary/session-replay/",
+    "https://www.pendo.io/glossary/software-experience-management/",
+    "https://www.pendo.io/glossary/what-is-pendo/",
+    "https://www.pendo.io/integrations/",
+    "https://www.pendo.io/legal/cookiepolicy/",
+    "https://www.pendo.io/legal/privacy-policy/",
+    "https://www.pendo.io/legal/terms-of-service/",
+    "https://www.pendo.io/pendo-blog",
+    "https://www.pendo.io/pendo-blog/10-types-of-in-app-guides-you-can-create-with-pendo/",
+    "https://www.pendo.io/pendo-blog/agent-mode-pendo-experience/",
+    "https://www.pendo.io/pendo-blog/bad-software-experiences/",
+    "https://www.pendo.io/pendo-blog/best-churn-prediction-tools/",
+    "https://www.pendo.io/pendo-blog/feature-adoption-benchmarking/",
+    "https://www.pendo.io/pendo-blog/how-to-pick-the-right-digital-adoption-solution/",
+    "https://www.pendo.io/pendo-blog/how-to-use-pendo-guide-experiments/",
+    "https://www.pendo.io/pendo-blog/how-top-p-ms-are-using-ai-to-succeed-in-2026/",
+    "https://www.pendo.io/pendo-blog/meet-agent-analytics/",
+    "https://www.pendo.io/pendo-blog/meet-listen-feedback-agent/",
+    "https://www.pendo.io/pendo-blog/model-context-protocol-explained/",
+    "https://www.pendo.io/pendo-blog/pendo-joins-claude-connectors-directory/",
+    "https://www.pendo.io/pendo-blog/pendo-mcp-pendo-wrapped/",
+    "https://www.pendo.io/pendo-blog/pendo-named-leader-in-product-analytics-and-digital-adoption-categories/",
+    "https://www.pendo.io/pendo-blog/pendo-on-pendo-how-we-use-pendo-predict-to-scale-success-and-revenue/",
+    "https://www.pendo.io/pendo-blog/pendo-predict-customer-churn-health/",
+    "https://www.pendo.io/pendo-blog/the-top-10-user-feedback-tools/",
+    "https://www.pendo.io/pendo-blog/the-top-6-session-replay-tools/",
+    "https://www.pendo.io/pendo-blog/the-top-8-in-app-guidance-tools/",
+    "https://www.pendo.io/pendo-blog/top-10-digital-adoption-platforms/",
+    "https://www.pendo.io/pendo-blog/top-10-product-analytics-tools/",
+    "https://www.pendo.io/pendo-blog/user-retention-rate-benchmarks/",
+    "https://www.pendo.io/pendo-blog/why-every-product-manager-is-now-an-ai-product-manager/",
+    "https://www.pendo.io/pendo-for-enterprise/",
+    "https://www.pendo.io/pendo-for-startups/",
+    "https://www.pendo.io/pendo-for-your-employees/",
+    "https://www.pendo.io/pendo-vs-amplitude/",
+    "https://www.pendo.io/pendo-vs-fullstory/",
+    "https://www.pendo.io/pendo-vs-gainsight/",
+    "https://www.pendo.io/pendo-vs-heap/",
+    "https://www.pendo.io/pendo-vs-mixpanel/",
+    "https://www.pendo.io/pendo-vs-posthog/",
+    "https://www.pendo.io/pendo-vs-userpilot/",
+    "https://www.pendo.io/pendo-vs-walkme/",
+    "https://www.pendo.io/pendo-vs-whatfix/",
+    "https://www.pendo.io/product/agent-analytics/",
+    "https://www.pendo.io/product/analytics/",
+    "https://www.pendo.io/product/command-center/",
+    "https://www.pendo.io/product/data-sync/",
+    "https://www.pendo.io/product/features/nps/",
+    "https://www.pendo.io/product/feedback/",
+    "https://www.pendo.io/product/in-app-guides/",
+    "https://www.pendo.io/product/leo/",
+    "https://www.pendo.io/product/listen/",
+    "https://www.pendo.io/product/mcp/",
+    "https://www.pendo.io/product/mobile/",
+    "https://www.pendo.io/product/orchestrate/",
+    "https://www.pendo.io/product/pendo-predict/",
+    "https://www.pendo.io/product/roadmap/",
+    "https://www.pendo.io/product/session-replay/",
+    "https://www.pendo.io/product/validate/",
+    "https://www.pendo.io/solutions/pendo-for-it/",
+    "https://www.pendo.io/solutions/pendo-for-product/",
+    "https://www.pendo.io/truth-about-pendo-alternatives/",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/"
+  ]
+}

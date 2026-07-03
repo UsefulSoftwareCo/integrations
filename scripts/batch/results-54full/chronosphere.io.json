@@ -1,0 +1,645 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "chronosphere.io",
+    "detect": {
+      "domain": "chronosphere.io",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:13:30.619Z",
+    "summary": "Chronosphere exposes a tenant-scoped REST Config API, a tenant-scoped Prometheus-compatible HTTP API, two remote MCP servers (tenant data and public docs), and the chronoctl CLI; all documented developer surfaces require authentication.",
+    "description": "Chronosphere provides an observability platform for metrics, logs, traces, dashboards, monitors, and related telemetry management. It also offers tooling for API, CLI, and MCP-based access to tenant data and platform configuration.",
+    "credentials": {
+      "chrono_api_token": {
+        "type": "bearer",
+        "label": "Chronosphere API token",
+        "generateUrl": "https://docs.chronosphere.io/administer/accounts-teams/personal-access-tokens",
+        "setup": "Create either a personal access token or a service account token in Chronosphere. Easiest user path: open **My Account** in the Observability Platform and follow [Personal access tokens](https://docs.chronosphere.io/administer/accounts-teams/personal-access-tokens): click **+ Add Token**, choose an expiration, click **Generate Token**, and copy the resulting token. For long-lived automation, create a service account from [Service accounts](https://docs.chronosphere.io/administer/accounts-teams/service-accounts); Chronosphere creates a non-expiring API token for that service account.",
+        "acquisition": "manual"
+      },
+      "chrono_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Chronosphere MCP OAuth login",
+        "generateUrl": "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+        "setup": "Configure the remote MCP server `https://TENANT.chronosphere.io/api/mcp/mcp` in an MCP client that supports OAuth, and omit the `Authorization` header. Then trigger login from the client, for example via `/mcp` in Claude Code as described in [Authenticate with the Chronosphere MCP server](https://docs.chronosphere.io/integrate/mcp-server/authenticate). OAuth is specifically documented for the Chronosphere MCP server.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "chronosphere-prometheus-api",
+        "name": "Chronosphere Prometheus API",
+        "type": "http",
+        "docs": "https://docs.chronosphere.io/tooling/prometheus-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.chronosphere.io/tooling/prometheus-api",
+            "https://docs.chronosphere.io/tooling/api-info"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "chrono_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.chronosphere.io/tooling/prometheus-api",
+                  "https://docs.chronosphere.io/tooling/api-info"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{tenant}.chronosphere.io/data/metrics"
+      },
+      {
+        "slug": "chronosphere-mcp-server",
+        "name": "Chronosphere MCP server",
+        "type": "mcp",
+        "docs": "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+            "https://raw.githubusercontent.com/chronosphereio/chronosphere-mcp/main/README.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "chrono_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+                  "https://raw.githubusercontent.com/chronosphereio/chronosphere-mcp/main/README.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "chrono_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+                  "https://raw.githubusercontent.com/chronosphereio/chronosphere-mcp/main/README.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{tenant}.chronosphere.io/api/mcp/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "chronosphere-documentation-mcp-server",
+        "name": "Chronosphere Documentation MCP server",
+        "type": "mcp",
+        "docs": "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+            "https://docs.chronosphere.io/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "chrono_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.chronosphere.io/integrate/mcp-server/authenticate"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "chronoctl",
+        "name": "chronoctl",
+        "type": "cli",
+        "docs": "https://docs.chronosphere.io/tooling/chronoctl",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.chronosphere.io/tooling/chronoctl",
+            "https://docs.chronosphere.io/tooling/chronoctl/install"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "chrono_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "CHRONOSPHERE_API_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.chronosphere.io/tooling/api-info",
+                  "https://docs.chronosphere.io/tooling/chronoctl/install"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "binary",
+            "identifier": "https://storage.googleapis.com/chronosphere-release/latest/chronoctl-linux-amd64",
+            "runtimeHint": "linux amd64 binary download"
+          },
+          {
+            "registryType": "binary",
+            "identifier": "https://storage.googleapis.com/chronosphere-release/latest/chronoctl-linux-arm64",
+            "runtimeHint": "linux arm64 binary download"
+          },
+          {
+            "registryType": "binary",
+            "identifier": "https://storage.googleapis.com/chronosphere-release/latest/chronoctl-darwin-amd64",
+            "runtimeHint": "macOS amd64 binary download"
+          },
+          {
+            "registryType": "binary",
+            "identifier": "https://storage.googleapis.com/chronosphere-release/latest/chronoctl-darwin-arm64",
+            "runtimeHint": "macOS arm64 binary download"
+          }
+        ],
+        "command": "chronoctl"
+      },
+      {
+        "slug": "chronosphere-config-api",
+        "name": "Chronosphere Config API",
+        "type": "http",
+        "docs": "https://docs.chronosphere.io/tooling/api-info/definition",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.chronosphere.io/tooling/api-info",
+            "https://docs.chronosphere.io/tooling/api-info/definition"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "chrono_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "API-Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.chronosphere.io/tooling/api-info",
+                  "https://docs.chronosphere.io/tooling/api-info/definition"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{tenant}.chronosphere.io/api/v1"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:13:30.619Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 177769,
+    "completion_tokens": 2263,
+    "total_tokens": 180032
+  },
+  "visited": [
+    "https://chronosphere.io/llms.txt",
+    "https://docs.chronosphere.io/administer/accounts-teams/personal-access-tokens",
+    "https://docs.chronosphere.io/administer/accounts-teams/service-accounts",
+    "https://docs.chronosphere.io/docs/chronosphere.io/mcp",
+    "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+    "https://docs.chronosphere.io/integrate/mcp-server/resources",
+    "https://docs.chronosphere.io/mcp",
+    "https://docs.chronosphere.io/tooling/api-info",
+    "https://docs.chronosphere.io/tooling/api-info/definition",
+    "https://docs.chronosphere.io/tooling/chronoctl",
+    "https://docs.chronosphere.io/tooling/chronoctl/install",
+    "https://docs.chronosphere.io/tooling/prometheus-api",
+    "https://github.com/chronosphereio/chronosphere-mcp",
+    "https://mcpservers.org/servers/elifuzz/api-docs-mcp",
+    "https://raw.githubusercontent.com/chronosphereio/chronosphere-mcp/main/README.md",
+    "https://www.reddit.com/r/mcp/comments/1ogb1ye/api_graphql_openapi_swagger_docs_mcp_server/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://0.0.0.0:8081/mcp",
+    "http://localhost:6274/#resources",
+    "https://${CHRONOSPHERE_DOMAIN}.chronosphere.io/data/metrics",
+    "https://${CHRONOSPHERE_DOMAIN}.chronosphere.io/data/metrics/_",
+    "https://${CHRONOSPHERE_DOMAIN}.chronosphere.io/data/metrics/api/v1/prom/remote/read",
+    "https://${CHRONOSPHERE_DOMAIN}.chronosphere.io/data/metrics/api/v1/prom/remote/read?start=${START}&end=${END}&format=json&query=up",
+    "https://${CHRONOSPHERE_DOMAIN}.chronosphere.io/data/metrics/api/v1/query?query=up",
+    "https://${CHRONOSPHERE_DOMAIN}/ENDPOINT_PATH",
+    "https://${CHRONOSPHERE_DOMAIN}/api/v1/config/collections",
+    "https://${CHRONOSPHERE_DOMAIN}/api/v1/config/monitors",
+    "https://${CHRONOSPHERE_DOMAIN}/api/v1/config/monitors?page.token=abc123",
+    "https://${CHRONOSPHERE_DOMAIN}/api/v1/config/monitors?page.token=def456",
+    "https://${CHRONOSPHERE_ORG_NAME}.chronosphere.io/api/mcp/mcp",
+    "https://TENANT.chronosphere.io/api/mcp/mcp",
+    "https://acme.chronosphere.io",
+    "https://archiveprogram.github.com",
+    "https://chronosphere.io",
+    "https://chronosphere.io/",
+    "https://chronosphere.io/blog/",
+    "https://chronosphere.io/category/uncategorised/",
+    "https://chronosphere.io/chronaut-culture/company/",
+    "https://chronosphere.io/chronaut-culture/culture/",
+    "https://chronosphere.io/chronaut-culture/team/",
+    "https://chronosphere.io/chronaut-culture/women-in-tech/",
+    "https://chronosphere.io/chronosphere-open-source/",
+    "https://chronosphere.io/contact/",
+    "https://chronosphere.io/eu-applicant-policy",
+    "https://chronosphere.io/fluent-bit/",
+    "https://chronosphere.io/learn/4-strategies-for-scaling-prometheus-a-practical-framework/",
+    "https://chronosphere.io/learn/calyptia-acquisition-announcement/",
+    "https://chronosphere.io/learn/introducing-natural-language-queries/",
+    "https://chronosphere.io/learn/introducing-new-alert-features-to-accelerate-your-incident-response/",
+    "https://chronosphere.io/learn/introducing-notebooks-easily-capture-insights-without-losing-context/",
+    "https://chronosphere.io/learn/query-optimization-in-the-prometheus-world/",
+    "https://chronosphere.io/learn_cat/blog/",
+    "https://chronosphere.io/learn_cat/briefs/",
+    "https://chronosphere.io/learn_cat/events/",
+    "https://chronosphere.io/learn_cat/webinars/",
+    "https://chronosphere.io/learn_cat/whitepapers/",
+    "https://chronosphere.io/llms.txt",
+    "https://chronosphere.io/location/select-location-1/",
+    "https://chronosphere.io/news/ai-guided-troubleshooting-redefines-observability/",
+    "https://chronosphere.io/news/chronosphere-marks-a-year-of-new-capabilities/",
+    "https://chronosphere.io/news/fluent-bit-v4-2/",
+    "https://chronosphere.io/news/isv-partner-program-for-composable-observability/",
+    "https://chronosphere.io/open-source/fluent-bit/",
+    "https://chronosphere.io/open-source/how-to/",
+    "https://chronosphere.io/open-source/kubernetes/",
+    "https://chronosphere.io/open-source/logs/",
+    "https://chronosphere.io/open-source/prometheus/",
+    "https://chronosphere.io/partner/chronosphere-and-arize/",
+    "https://chronosphere.io/partner/chronosphere-and-aws/",
+    "https://chronosphere.io/partner/chronosphere-and-embrace/",
+    "https://chronosphere.io/partner/chronosphere-and-google-cloud/",
+    "https://chronosphere.io/partner/chronosphere-and-rootly/",
+    "https://chronosphere.io/platform/",
+    "https://chronosphere.io/platform/distributed-tracing/",
+    "https://chronosphere.io/privacy",
+    "https://chronosphere.io/resource/do-we-need-ai-agents-to-fix-our-ai-agents/",
+    "https://chronosphere.io/resource/meetup-cloud-native-london-2026/",
+    "https://chronosphere.io/resource/modern-observability-without-the-modern-price-tag/",
+    "https://chronosphere.io/resource/platform-engineering-on-kubernetes/",
+    "https://chronosphere.io/resource/scaling-prometheus-frameworks-for-high-volume-metrics/",
+    "https://chronosphere.io/sitemap_index.xml",
+    "https://chronosphere.io/solutions/",
+    "https://chronosphere.io/solutions/kubernetes-workload-observability-simplified/",
+    "https://chronosphere.io/solutions/scale-ai-operations/",
+    "https://chronosphere.io/telemetry-pipeline/observability/",
+    "https://chronosphere.io/telemetry-pipeline/product/",
+    "https://chronosphere.io/telemetry-pipeline/telemetry/",
+    "https://chronosphere.io/topic/cloud-native/",
+    "https://chronosphere.io/topic/developer-experience/",
+    "https://chronosphere.io/topic/observability/",
+    "https://chronosphere.io/topic/open-source/",
+    "https://chronosphere.io/topic/product/",
+    "https://chronosphere.io/typeview/destination/",
+    "https://chronosphere.io/typeview/source/",
+    "https://code.visualstudio.com/docs/copilot/customization/mcp-servers",
+    "https://curl.se",
+    "https://cursor.com",
+    "https://cursor.com/docs/context/mcp",
+    "https://cursor.com/docs/context/mcp#using-mcpjson",
+    "https://docs.chronosphere.io/",
+    "https://docs.chronosphere.io/#additional-commands",
+    "https://docs.chronosphere.io/#api-token",
+    "https://docs.chronosphere.io/#apply",
+    "https://docs.chronosphere.io/#auth",
+    "https://docs.chronosphere.io/#authenticating-using-claude-code",
+    "https://docs.chronosphere.io/#authenticating-using-cursor",
+    "https://docs.chronosphere.io/#authentication",
+    "https://docs.chronosphere.io/#change-actors",
+    "https://docs.chronosphere.io/#claude-code",
+    "https://docs.chronosphere.io/#command-autocompletion",
+    "https://docs.chronosphere.io/#command-list",
+    "https://docs.chronosphere.io/#configuration-commands",
+    "https://docs.chronosphere.io/#content-area",
+    "https://docs.chronosphere.io/#core-commands",
+    "https://docs.chronosphere.io/#create",
+    "https://docs.chronosphere.io/#create-a-personal-access-token",
+    "https://docs.chronosphere.io/#create-a-restricted-service-account",
+    "https://docs.chronosphere.io/#create-a-service-account",
+    "https://docs.chronosphere.io/#create-an-api-token",
+    "https://docs.chronosphere.io/#create-an-unrestricted-service-account",
+    "https://docs.chronosphere.io/#creating-an-api-token",
+    "https://docs.chronosphere.io/#cursor",
+    "https://docs.chronosphere.io/#customize-available-tools",
+    "https://docs.chronosphere.io/#delete",
+    "https://docs.chronosphere.io/#delete-a-service-account",
+    "https://docs.chronosphere.io/#download-and-install-a-v0-x-x-version",
+    "https://docs.chronosphere.io/#download-and-install-chronoctl",
+    "https://docs.chronosphere.io/#flags",
+    "https://docs.chronosphere.io/#get-tools",
+    "https://docs.chronosphere.io/#getting-started",
+    "https://docs.chronosphere.io/#help",
+    "https://docs.chronosphere.io/#label-restriction-example",
+    "https://docs.chronosphere.io/#list",
+    "https://docs.chronosphere.io/#list-tools",
+    "https://docs.chronosphere.io/#local-administration",
+    "https://docs.chronosphere.io/#local-development",
+    "https://docs.chronosphere.io/#m3-restrict-by-tags-json",
+    "https://docs.chronosphere.io/#organization-name",
+    "https://docs.chronosphere.io/#pagination",
+    "https://docs.chronosphere.io/#prerequisites",
+    "https://docs.chronosphere.io/#production-environments",
+    "https://docs.chronosphere.io/#prometheus-http-api",
+    "https://docs.chronosphere.io/#prometheus-remote-read-api",
+    "https://docs.chronosphere.io/#query-tools",
+    "https://docs.chronosphere.io/#read",
+    "https://docs.chronosphere.io/#revoke-personal-access-tokens",
+    "https://docs.chronosphere.io/#rule-evaluations-list",
+    "https://docs.chronosphere.io/#scaffold",
+    "https://docs.chronosphere.io/#send-requests",
+    "https://docs.chronosphere.io/#slugs",
+    "https://docs.chronosphere.io/#state-commands",
+    "https://docs.chronosphere.io/#supported-headers-for-prometheus-http-api-extensions",
+    "https://docs.chronosphere.io/#supported-resources",
+    "https://docs.chronosphere.io/#sync-commands",
+    "https://docs.chronosphere.io/#update",
+    "https://docs.chronosphere.io/#use-a-personal-access-token",
+    "https://docs.chronosphere.io/#use-an-api-token",
+    "https://docs.chronosphere.io/#using-an-api-token",
+    "https://docs.chronosphere.io/#using-chronosphere-as-a-data-source-for-your-own-grafana-deployment",
+    "https://docs.chronosphere.io/#version",
+    "https://docs.chronosphere.io/#view-service-accounts",
+    "https://docs.chronosphere.io/#viewing-raw-values-as-json",
+    "https://docs.chronosphere.io/administer",
+    "https://docs.chronosphere.io/administer/accounts-teams",
+    "https://docs.chronosphere.io/administer/accounts-teams/okta",
+    "https://docs.chronosphere.io/administer/accounts-teams/personal-access-tokens",
+    "https://docs.chronosphere.io/administer/accounts-teams/service-accounts",
+    "https://docs.chronosphere.io/administer/accounts-teams/service-accounts#create-a-restricted-service-account",
+    "https://docs.chronosphere.io/administer/accounts-teams/service-accounts#create-an-unrestricted-service-account",
+    "https://docs.chronosphere.io/administer/accounts-teams/teams",
+    "https://docs.chronosphere.io/administer/accounts-teams/teams#assign-team-roles-and-permissions",
+    "https://docs.chronosphere.io/administer/accounts-teams/user-accounts",
+    "https://docs.chronosphere.io/administer/accounts-teams/user-accounts#grant-system-administrator-sysadmin-privileges-to-users",
+    "https://docs.chronosphere.io/administer/audit-logs",
+    "https://docs.chronosphere.io/administer/design-slos",
+    "https://docs.chronosphere.io/administer/pinned-scopes",
+    "https://docs.chronosphere.io/administer/service-discovery",
+    "https://docs.chronosphere.io/compliance",
+    "https://docs.chronosphere.io/control/shaping/shape-metrics/rules/evaluation-failures",
+    "https://docs.chronosphere.io/docs/chronosphere.io/mcp",
+    "https://docs.chronosphere.io/early-access",
+    "https://docs.chronosphere.io/ingest",
+    "https://docs.chronosphere.io/integrate",
+    "https://docs.chronosphere.io/integrate/mcp-server",
+    "https://docs.chronosphere.io/integrate/mcp-server/authenticate",
+    "https://docs.chronosphere.io/integrate/mcp-server/resources",
+    "https://docs.chronosphere.io/llms.txt",
+    "https://docs.chronosphere.io/mcp",
+    "https://docs.chronosphere.io/openapi/api_v1_config_swagger.json",
+    "https://docs.chronosphere.io/overview/authenticating",
+    "https://docs.chronosphere.io/overview/get-started",
+    "https://docs.chronosphere.io/pipeline",
+    "https://docs.chronosphere.io/status",
+    "https://docs.chronosphere.io/support",
+    "https://docs.chronosphere.io/tooling",
+    "https://docs.chronosphere.io/tooling/api-info",
+    "https://docs.chronosphere.io/tooling/api-info#create-an-api-token",
+    "https://docs.chronosphere.io/tooling/api-info/dashboard_schema",
+    "https://docs.chronosphere.io/tooling/api-info/definition",
+    "https://docs.chronosphere.io/tooling/api-info/definition/index",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/CreateServiceAccount",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/DeleteServiceAccount",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListAzureMetricsIntegrations",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListClassicDashboards",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListDashboards",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListDropRules",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListMappingRules",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListMonitors",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListNotificationPolicies",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListRecordingRules",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListRollupRules",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListSLOs",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ListServiceAccounts",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadClassicDashboard",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadDashboard",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadDropRule",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadMappingRule",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadMonitor",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadNotificationPolicy",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadRecordingRule",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadRollupRule",
+    "https://docs.chronosphere.io/tooling/api-info/definition/operations/ReadSLO",
+    "https://docs.chronosphere.io/tooling/api-info/state_definition/operations/ListMetricUsagesByLabelName",
+    "https://docs.chronosphere.io/tooling/api-info/state_definition/operations/ListMetricUsagesByMetricName",
+    "https://docs.chronosphere.io/tooling/api-info/state_definition/operations/ListRuleEvaluations",
+    "https://docs.chronosphere.io/tooling/chronoctl",
+    "https://docs.chronosphere.io/tooling/chronoctl#auth",
+    "https://docs.chronosphere.io/tooling/chronoctl#sync-commands",
+    "https://docs.chronosphere.io/tooling/chronoctl/install",
+    "https://docs.chronosphere.io/tooling/chronoctl/install#authentication",
+    "https://docs.chronosphere.io/tooling/chronoctl/install#download-and-install-a-v0xx-version",
+    "https://docs.chronosphere.io/tooling/gitops",
+    "https://docs.chronosphere.io/tooling/infrastructure",
+    "https://docs.chronosphere.io/tooling/infrastructure/pulumi",
+    "https://docs.chronosphere.io/tooling/infrastructure/terraform",
+    "https://docs.chronosphere.io/tooling/infrastructure/terraform#prevent-changes-to-managed-resources",
+    "https://docs.chronosphere.io/tooling/prometheus-api",
+    "https://docs.chronosphere.io/tooling/prometheus-api#prometheus-http-api",
+    "https://docs.claude.com/en/docs/claude-code/mcp",
+    "https://docs.claude.com/en/docs/claude-code/mcp#option-3%3A-add-a-remote-http-server",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://geminicli.com/docs/tools/mcp-server/",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/chronosphereio",
+    "https://github.com/chronosphereio/chronosphere-mcp",
+    "https://github.com/chronosphereio/chronosphere-mcp/actions",
+    "https://github.com/chronosphereio/chronosphere-mcp/branches",
+    "https://github.com/chronosphereio/chronosphere-mcp/commit/3d5599454c69ab056308725867b59201ab48f32a",
+    "https://github.com/chronosphereio/chronosphere-mcp/commit/51cbaeb10c6e884619934e35fae5c192a02ef538",
+    "https://github.com/chronosphereio/chronosphere-mcp/commit/f4cfaa8c3290222f71ff60854e0f6fcd0a7e50c0",
+    "https://github.com/chronosphereio/chronosphere-mcp/commits/main/",
+    "https://github.com/chronosphereio/chronosphere-mcp/discussions",
+    "https://github.com/chronosphereio/chronosphere-mcp/issues",
+    "https://github.com/chronosphereio/chronosphere-mcp/models",
+    "https://github.com/chronosphereio/chronosphere-mcp/projects",
+    "https://github.com/chronosphereio/chronosphere-mcp/pull/138",
+    "https://github.com/chronosphereio/chronosphere-mcp/pull/141",
+    "https://github.com/chronosphereio/chronosphere-mcp/pull/148",
+    "https://github.com/chronosphereio/chronosphere-mcp/pulls",
+    "https://github.com/chronosphereio/chronosphere-mcp/pulse",
+    "https://github.com/chronosphereio/chronosphere-mcp/security",
+    "https://github.com/chronosphereio/chronosphere-mcp/tags",
+    "https://github.com/chronosphereio/chronosphere-mcp/tree/main/.github/workflows",
+    "https://github.com/chronosphereio/chronosphere-mcp/tree/main/generated",
+    "https://github.com/chronosphereio/chronosphere-mcp/tree/main/mcp-server",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fchronosphereio%2Fchronosphere-mcp",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fchronosphereio%2Fchronosphere-mcp",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/open-telemetry/opentelemetry-go",
+    "https://github.com/open-telemetry/opentelemetry-go/blob/main/CHANGELOG.md",
+    "https://github.com/openai/codex/blob/main/docs/config.md#mcp_servers",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/settings/personal-access-tokens/",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=chronosphereio%2Fchronosphere-mcp",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://goreleaser.com/",
+    "https://goreleaser.com/ci/actions/#token-permissions",
+    "https://maintainers.github.com",
+    "https://mcpservers.org/servers/elifuzz/api-docs-mcp",
+    "https://oauth.net/2/",
+    "https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_read",
+    "https://prometheus.io/docs/prometheus/latest/querying/api",
+    "https://raw.githubusercontent.com/chronosphereio/chronosphere-mcp/main/README.md",
+    "https://redirect.github.com/open-telemetry/opentelemetry-go/issues/7642",
+    "https://redirect.github.com/open-telemetry/opentelemetry-go/issues/7855",
+    "https://redirect.github.com/open-telemetry/opentelemetry-go/issues/8012",
+    "https://redirect.github.com/open-telemetry/opentelemetry-go/issues/8038",
+    "https://redirect.github.com/open-telemetry/opentelemetry-go/issues/8039",
+    "https://redirect.github.com/open-telemetry/opentelemetry-go/issues/8051",
+    "https://redirect.github.com/open-telemetry/opentelemetry-go/issues/8060",
+    "https://redirect.github.com/open-telemetry/opentelemetry-go/issues/8067",
+    "https://securitylab.github.com",
+    "https://semver.org/",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://stedolan.github.io/jq/",
+    "https://storage.googleapis.com/chronosphere-release/latest-v0/chronoctl-darwin-amd64",
+    "https://storage.googleapis.com/chronosphere-release/latest-v0/chronoctl-darwin-arm64",
+    "https://storage.googleapis.com/chronosphere-release/latest-v0/chronoctl-linux-amd64",
+    "https://storage.googleapis.com/chronosphere-release/latest-v0/chronoctl-linux-arm64",
+    "https://storage.googleapis.com/chronosphere-release/latest/chronoctl-darwin-amd64",
+    "https://storage.googleapis.com/chronosphere-release/latest/chronoctl-darwin-arm64",
+    "https://storage.googleapis.com/chronosphere-release/latest/chronoctl-linux-amd64",
+    "https://storage.googleapis.com/chronosphere-release/latest/chronoctl-linux-arm64",
+    "https://support.github.com",
+    "https://www.linkedin.com/company/chronosphereio",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=chronosphere-74b1ef6e",
+    "https://www.reddit.com/r/mcp/comments/1ogb1ye/api_graphql_openapi_swagger_docs_mcp_server/",
+    "https://www.w3.org/TR/trace-context-2/#random-trace-id-flag",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://x.com/chronosphereio"
+  ]
+}

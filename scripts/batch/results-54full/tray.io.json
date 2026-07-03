@@ -1,0 +1,708 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "tray.io",
+    "detect": {
+      "domain": "tray.io",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:02:57.379Z",
+    "summary": "Tray.ai exposes a GraphQL Embedded API, bearer-authenticated Platform APIs, two MCP server surfaces (Agent Gateway and Tray Headless), and the npm-distributed `tray-cdk` CLI.",
+    "description": "Tray.ai is an enterprise orchestration platform for integrations, automation, and AI agents. It lets organizations build workflows, connectors, packaged APIs, and MCP-based agent tools across many SaaS and enterprise systems.",
+    "credentials": {
+      "embedded_master_token": {
+        "type": "bearer",
+        "label": "Tray Embedded master token",
+        "generateUrl": "https://tray.ai/documentation/developer/getting-started/prerequisites/master-and-user-tokens",
+        "setup": "In the Tray dashboard, go to the Tokens section under Settings and generate your master token. This requires Embedded admin/owner access, per [Master and user tokens](https://tray.ai/documentation/developer/getting-started/prerequisites/master-and-user-tokens). Use it for server-side Embedded GraphQL calls that act as your app, such as creating users or minting user tokens.",
+        "acquisition": "manual"
+      },
+      "embedded_user_token": {
+        "type": "bearer",
+        "label": "Tray Embedded user token",
+        "generateUrl": "https://tray.ai/documentation/developer/embedded-apis/users",
+        "setup": "First create or identify an Embedded user, then call the `create-user-token` / `authorize` GraphQL mutation described in [Users](https://tray.ai/documentation/developer/embedded-apis/users) to mint that user's access token. The prerequisite and token roles are summarized in [Master and user tokens](https://tray.ai/documentation/developer/getting-started/prerequisites/master-and-user-tokens).",
+        "acquisition": "manual"
+      },
+      "rbac_api_token": {
+        "type": "bearer",
+        "label": "Tray RBAC API token",
+        "generateUrl": "https://tray.ai/documentation/platform/api-management/api-operations",
+        "setup": "Create an RBAC API token for an API user as described from the prerequisite link in [Deploying a CDK connector using CLI](https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/deploy-using-cli), which points to [API Operations](https://tray.ai/documentation/platform/api-management/api-operations). For CLI use, export it as `TRAY_API_TOKEN`; use the region-specific base URL in `TRAY_API_URL` such as `https://api.tray.io`, `https://api.eu1.tray.io`, or `https://api.ap1.tray.io`.",
+        "acquisition": "manual"
+      },
+      "agent_gateway_api_token": {
+        "type": "bearer",
+        "label": "Tray Agent Gateway API user token",
+        "generateUrl": "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connecting-clients",
+        "setup": "Create an API user token for Agent Gateway and configure your MCP client with that token, as described in [Connecting to Agent Gateway](https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connecting-clients) and [Authentication and Access](https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/authentication-and-access). This is the static-token option for MCP client authentication.",
+        "acquisition": "manual"
+      },
+      "tray_identity_oauth": {
+        "type": "oauth2",
+        "label": "Tray account OAuth sign-in",
+        "generateUrl": "https://tray.ai/documentation/platform/tray-headless/tray-headless-mcp",
+        "setup": "Use a compatible MCP client and connect to a Tray MCP endpoint, then complete the interactive OAuth2 sign-in with your Tray account. [Tray Headless MCP](https://tray.ai/documentation/platform/tray-headless/tray-headless-mcp) says not to add a static `Authorization` header because that bypasses the interactive sign-in. [Authentication and Access](https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/authentication-and-access) also describes OAuth2 as a standard Tray-account sign-in for MCP clients.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "tray-embedded-graphql-api",
+        "name": "Tray Embedded GraphQL API",
+        "type": "graphql",
+        "docs": "https://tray.ai/documentation/developer/embedded-apis/authentication",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tray.ai/documentation/platform/embedded/overview/embedded-api",
+            "https://tray.ai/documentation/developer/embedded-apis/users",
+            "https://tray.ai/documentation/developer/embedded-apis/authentications",
+            "https://tray.ai/documentation/developer/getting-started/prerequisites/master-and-user-tokens"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "embedded_master_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://tray.ai/documentation/developer/getting-started/prerequisites/master-and-user-tokens",
+                  "https://tray.ai/documentation/developer/platform-apis/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "embedded_user_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://tray.ai/documentation/developer/getting-started/prerequisites/master-and-user-tokens",
+                  "https://tray.ai/documentation/developer/platform-apis/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "/graphql"
+      },
+      {
+        "slug": "tray-platform-apis",
+        "name": "Tray Platform APIs",
+        "type": "http",
+        "docs": "https://tray.ai/documentation/developer/platform-apis/authentication",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tray.ai/documentation/developer/platform-apis/authentication",
+            "https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/deploy-using-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "rbac_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/deploy-using-cli",
+                  "https://tray.ai/documentation/developer/platform-apis/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "variables": [
+          {
+            "name": "region",
+            "resolveFrom": "Use the regional base URL documented by Tray; examples include US, EU, and APAC."
+          }
+        ]
+      },
+      {
+        "slug": "tray-agent-gateway-mcp",
+        "name": "Tray Agent Gateway MCP",
+        "type": "mcp",
+        "docs": "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connecting-clients",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connecting-clients",
+            "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/authentication-and-access"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "tray_identity_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connecting-clients",
+                  "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/authentication-and-access"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "agent_gateway_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connecting-clients",
+                  "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/authentication-and-access"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "tray-headless-mcp",
+        "name": "Tray Headless MCP",
+        "type": "mcp",
+        "docs": "https://tray.ai/documentation/platform/tray-headless/tray-headless-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tray.ai/documentation/platform/tray-headless/tray-headless-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "tray_identity_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://tray.ai/documentation/platform/tray-headless/tray-headless-mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.tray.io/mcp",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "workspace_id",
+            "resolveFrom": "Pass your Workspace ID per call; docs say most Tray platform calls are workspace-scoped.",
+            "description": "Workspace identifier required by many tools/calls."
+          },
+          {
+            "name": "region",
+            "resolveFrom": "Choose the endpoint matching your workspace region: US `https://api.tray.io/mcp`, EU `https://api.eu1.tray.io/mcp`, APAC `https://api.ap1.tray.io/mcp`.",
+            "description": "Region-specific MCP endpoint."
+          }
+        ]
+      },
+      {
+        "slug": "tray-cdk-cli",
+        "name": "Tray CDK CLI",
+        "type": "cli",
+        "docs": "https://tray.ai/documentation/developer/connector-development-kit/reference/cli-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tray.ai/documentation/developer/connector-development-kit/reference/cli-reference",
+            "https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/deploy-using-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "rbac_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "TRAY_API_TOKEN",
+                      "TRAY_API_URL"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/deploy-using-cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@trayio/cdk-cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "tray-cdk"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:02:57.379Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 424898,
+    "completion_tokens": 2770,
+    "total_tokens": 427668
+  },
+  "visited": [
+    "https://apis.io/apis/tray-io/tray-embedded-api/",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://tray.ai/",
+    "https://tray.ai/blog/model-context-protocol-mcp/",
+    "https://tray.ai/company/news/agent-gateway-mcp-governance/",
+    "https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/deploy-using-cli",
+    "https://tray.ai/documentation/developer/connector-development-kit/overview/introduction",
+    "https://tray.ai/documentation/developer/connector-development-kit/reference/cli-reference",
+    "https://tray.ai/documentation/developer/connector-development-kit/reference/dsl-reference",
+    "https://tray.ai/documentation/developer/connector-development-kit/releases/migration-guide",
+    "https://tray.ai/documentation/developer/embedded-apis/authentications",
+    "https://tray.ai/documentation/developer/embedded-apis/users",
+    "https://tray.ai/documentation/developer/getting-started/prerequisites/master-and-user-tokens",
+    "https://tray.ai/documentation/developer/platform-apis/authentication",
+    "https://tray.ai/documentation/platform/api-management/api-operations",
+    "https://tray.ai/documentation/platform/api-management/apim-in-embedded-integrations",
+    "https://tray.ai/documentation/platform/api-management/openapi-spec/api-reference-viewer",
+    "https://tray.ai/documentation/platform/api-management/using-the-api",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/authentication-and-access",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connecting-clients",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/overview",
+    "https://tray.ai/documentation/platform/connectivity/custom-services/introduction",
+    "https://tray.ai/documentation/platform/embedded/key-concepts/auth-slots",
+    "https://tray.ai/documentation/platform/embedded/overview/embedded-api",
+    "https://tray.ai/documentation/platform/tray-headless/tray-headless-mcp",
+    "https://tray.ai/documentation/releases/features/tray-headless-for-codex",
+    "https://tray.ai/platform/agent-gateway/",
+    "https://tray.io/llms.txt",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.postman.com/tray-docs/tray-io-s-public-workspace/collection/uo51x8u/tray-embedded-apis-graphql",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "https://&lt;base_url",
+    "https://ap1.tray.io/graphql",
+    "https://api.ap1.tray.io/",
+    "https://api.ap1.tray.io/mcp",
+    "https://api.eu1.tray.io/",
+    "https://api.eu1.tray.io/mcp",
+    "https://api.tray.io",
+    "https://api.tray.io/",
+    "https://api.tray.io/mcp",
+    "https://apis.io/apis/tray-io/tray-embedded-api/",
+    "https://app.tray.io",
+    "https://app.tray.io/",
+    "https://app.tray.io/workspaces/[UUID",
+    "https://code.claude.com/docs/en/mcp",
+    "https://e99e999e-e9ee-999e-9999-9e99ff99eee9-api.trayapp.io",
+    "https://eu1.tray.io/graphql",
+    "https://github.com/graphql-cli/graphql-cli",
+    "https://graphql.org/learn/",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://s3.amazonaws.com/images.tray.io/artisan/icons/slack.png",
+    "https://s3.amazonaws.com/images.tray.io/artisan/icons/trello.png",
+    "https://support.insomnia.rest/article/18-environment-variables",
+    "https://support.insomnia.rest/article/23-installation",
+    "https://tray.ai/",
+    "https://tray.ai/#",
+    "https://tray.ai/#1-deploy-the-connector",
+    "https://tray.ai/#2-check-deployment-status",
+    "https://tray.ai/#3-share-connector-with-emails",
+    "https://tray.ai/#access-management",
+    "https://tray.ai/#adding-users",
+    "https://tray.ai/#api-overview",
+    "https://tray.ai/#authenticating-calls",
+    "https://tray.ai/#authentication",
+    "https://tray.ai/#choosing-the-right-setup",
+    "https://tray.ai/#client-authentication",
+    "https://tray.ai/#configuring-request-body-and-reply-payload",
+    "https://tray.ai/#connect-your-client",
+    "https://tray.ai/#creating-a-session-with-a-user-token",
+    "https://tray.ai/#creating-an-endpoint",
+    "https://tray.ai/#deploying-to-different-regions",
+    "https://tray.ai/#deployment-flow",
+    "https://tray.ai/#exploring-the-schema",
+    "https://tray.ai/#graph-ql-online-playground",
+    "https://tray.ai/#graphql-create-authentication",
+    "https://tray.ai/#graphql-create-config-wizard-auth-code",
+    "https://tray.ai/#graphql-create-user",
+    "https://tray.ai/#graphql-create-user-token",
+    "https://tray.ai/#graphql-delete-authentication",
+    "https://tray.ai/#graphql-delete-user",
+    "https://tray.ai/#graphql-get-authentications",
+    "https://tray.ai/#graphql-get-users",
+    "https://tray.ai/#graphql-update-user",
+    "https://tray.ai/#import-the-tray-embedded-library",
+    "https://tray.ai/#importing-c-url-in-http-client",
+    "https://tray.ai/#insomnia-collection",
+    "https://tray.ai/#local-mcp-configuration-api-token",
+    "https://tray.ai/#making-basic-calls",
+    "https://tray.ai/#next-steps",
+    "https://tray.ai/#note-on-conventions",
+    "https://tray.ai/#overview",
+    "https://tray.ai/#postman-collection",
+    "https://tray.ai/#prerequisites---api-token",
+    "https://tray.ai/#prerequisites-api-token",
+    "https://tray.ai/#query-parameters-vs-path-parameters",
+    "https://tray.ai/#remote-mcp-servers-o-auth2",
+    "https://tray.ai/#request-schema-body",
+    "https://tray.ai/#request-schema-headers",
+    "https://tray.ai/#response-schema-forbidden",
+    "https://tray.ai/#response-schema-headers",
+    "https://tray.ai/#response-schema-internal-error",
+    "https://tray.ai/#response-schema-invalid-input",
+    "https://tray.ai/#response-schema-success",
+    "https://tray.ai/#securing-an-endpoint",
+    "https://tray.ai/#setting-api-endpoint-schema",
+    "https://tray.ai/#the-api-operation-trigger",
+    "https://tray.ai/#the-auto-respond-with-http-200-operation",
+    "https://tray.ai/#the-await-workflow-and-respond-operation",
+    "https://tray.ai/#the-validate-and-respond-operation",
+    "https://tray.ai/#tool-authentication",
+    "https://tray.ai/#tray-cdk-autocomplete-shell",
+    "https://tray.ai/#tray-cdk-connector-add-operation-operation-name-operation-type",
+    "https://tray.ai/#tray-cdk-connector-build",
+    "https://tray.ai/#tray-cdk-connector-import-openapi-spec-connector-name",
+    "https://tray.ai/#tray-cdk-connector-init-connector-name",
+    "https://tray.ai/#tray-cdk-connector-test-operation-name",
+    "https://tray.ai/#tray-cdk-deployment-create",
+    "https://tray.ai/#tray-cdk-deployment-get-connector-name-connector-version-uuid",
+    "https://tray.ai/#tray-cdk-help-commands",
+    "https://tray.ai/#tray-cdk-namespace-create-orgid-namespace",
+    "https://tray.ai/#tray-cdk-namespace-get-orgid",
+    "https://tray.ai/#tray-cdk-permissions-add-connector-name-connector-version",
+    "https://tray.ai/#tray-cdk-permissions-list-connector-name-connector-version",
+    "https://tray.ai/#tray-cdk-version",
+    "https://tray.ai/#two-layers-of-authentication",
+    "https://tray.ai/#user-list-and-role-badges",
+    "https://tray.ai/#using-autocomplete",
+    "https://tray.ai/#using-fragments",
+    "https://tray.ai/#versioning-your-api",
+    "https://tray.ai/academy",
+    "https://tray.ai/blog",
+    "https://tray.ai/blog/enterprise-ipaas-native-ai-ide-tray-headless/",
+    "https://tray.ai/blog/model-context-protocol-mcp/",
+    "https://tray.ai/company/about",
+    "https://tray.ai/company/careers",
+    "https://tray.ai/company/news/agent-gateway-mcp-governance/",
+    "https://tray.ai/company/trust",
+    "https://tray.ai/compare",
+    "https://tray.ai/compare/agentforce",
+    "https://tray.ai/compare/boomi",
+    "https://tray.ai/compare/celigo",
+    "https://tray.ai/compare/informatica",
+    "https://tray.ai/compare/jitterbit",
+    "https://tray.ai/compare/make",
+    "https://tray.ai/compare/microsoft",
+    "https://tray.ai/compare/mulesoft",
+    "https://tray.ai/compare/n8n",
+    "https://tray.ai/compare/oracle-oic",
+    "https://tray.ai/compare/sap",
+    "https://tray.ai/compare/snaplogic",
+    "https://tray.ai/compare/tibco",
+    "https://tray.ai/compare/workato",
+    "https://tray.ai/compare/zapier",
+    "https://tray.ai/connectors",
+    "https://tray.ai/contact",
+    "https://tray.ai/contact/talk-to-sales",
+    "https://tray.ai/customers",
+    "https://tray.ai/customers/airbnb",
+    "https://tray.ai/customers/apollo",
+    "https://tray.ai/customers/auctane",
+    "https://tray.ai/customers/avid",
+    "https://tray.ai/customers/awards",
+    "https://tray.ai/customers/bynder",
+    "https://tray.ai/customers/cue",
+    "https://tray.ai/customers/cvent",
+    "https://tray.ai/customers/docusign",
+    "https://tray.ai/customers/eventbrite",
+    "https://tray.ai/customers/github",
+    "https://tray.ai/customers/hackerone",
+    "https://tray.ai/customers/ibm",
+    "https://tray.ai/customers/jw-pepper",
+    "https://tray.ai/customers/life360",
+    "https://tray.ai/customers/mixpanel",
+    "https://tray.ai/customers/nice-incontact",
+    "https://tray.ai/customers/peddle",
+    "https://tray.ai/customers/podium",
+    "https://tray.ai/customers/thryv",
+    "https://tray.ai/customers/udemy",
+    "https://tray.ai/customers/wavo",
+    "https://tray.ai/customers/yext",
+    "https://tray.ai/customers/zuora",
+    "https://tray.ai/demo",
+    "https://tray.ai/developer/embedded-apis/users#graphql-create-user-token",
+    "https://tray.ai/documentation",
+    "https://tray.ai/documentation//platform/artificial-intelligence/agent-gateway/dynamic-authentication",
+    "https://tray.ai/documentation/agent-hub/browse/all/all",
+    "https://tray.ai/documentation/connectors/browse/all",
+    "https://tray.ai/documentation/connectors/core/http-client#import-curl-methods",
+    "https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/ci-cd-pipeline",
+    "https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/deploy-using-api",
+    "https://tray.ai/documentation/developer/connector-development-kit/deploying-connectors/deploy-using-cli",
+    "https://tray.ai/documentation/developer/connector-development-kit/developing-connectors/authentications/auth-ts",
+    "https://tray.ai/documentation/developer/connector-development-kit/overview/introduction",
+    "https://tray.ai/documentation/developer/connector-development-kit/reference/cli-reference",
+    "https://tray.ai/documentation/developer/connector-development-kit/reference/cli-reference#tray-cdk-deployment-create",
+    "https://tray.ai/documentation/developer/connector-development-kit/reference/dsl-reference",
+    "https://tray.ai/documentation/developer/connector-development-kit/releases/migration-guide",
+    "https://tray.ai/documentation/developer/connector-development-kit/releases/notes",
+    "https://tray.ai/documentation/developer/connector-development-kit/troubleshooting",
+    "https://tray.ai/documentation/developer/developer-tools/connector-tester",
+    "https://tray.ai/documentation/developer/developer-tools/data-transformer",
+    "https://tray.ai/documentation/developer/developer-tools/operations-explorer",
+    "https://tray.ai/documentation/developer/embedded-apis/authentication",
+    "https://tray.ai/documentation/developer/embedded-apis/authentications",
+    "https://tray.ai/documentation/developer/embedded-apis/call-connector",
+    "https://tray.ai/documentation/developer/embedded-apis/projects",
+    "https://tray.ai/documentation/developer/embedded-apis/solution-instances",
+    "https://tray.ai/documentation/developer/embedded-apis/solutions",
+    "https://tray.ai/documentation/developer/embedded-apis/users",
+    "https://tray.ai/documentation/developer/embedded-apis/users#graphql-create-user-token",
+    "https://tray.ai/documentation/developer/embedded-apis/workflows",
+    "https://tray.ai/documentation/developer/getting-started/building-integrations/storing-users-and-integrations",
+    "https://tray.ai/documentation/developer/getting-started/calling-connectors/using-connectors-and-operations",
+    "https://tray.ai/documentation/developer/getting-started/creating-end-user-auths/create-users-and-tokens",
+    "https://tray.ai/documentation/developer/getting-started/faqs",
+    "https://tray.ai/documentation/developer/getting-started/implementation-notes/pagination",
+    "https://tray.ai/documentation/developer/getting-started/introduction",
+    "https://tray.ai/documentation/developer/getting-started/note-on-billing",
+    "https://tray.ai/documentation/developer/getting-started/prerequisites/custom-oauth-apps",
+    "https://tray.ai/documentation/developer/getting-started/prerequisites/master-and-user-tokens",
+    "https://tray.ai/documentation/developer/getting-started/troubleshooting/error-handling-tray",
+    "https://tray.ai/documentation/developer/getting-started/tutorials/building-a-ui-form",
+    "https://tray.ai/documentation/developer/getting-started/using-triggers/discovering-triggers-and-operations",
+    "https://tray.ai/documentation/developer/platform-apis/agent-groups",
+    "https://tray.ai/documentation/developer/platform-apis/authentication",
+    "https://tray.ai/documentation/developer/platform-apis/authentications",
+    "https://tray.ai/documentation/developer/platform-apis/deployments",
+    "https://tray.ai/documentation/developer/platform-apis/openapi-spec",
+    "https://tray.ai/documentation/developer/platform-apis/permissions#endpoint-share-with-emails",
+    "https://tray.ai/documentation/developer/platform-apis/rate-limits",
+    "https://tray.ai/documentation/developer/platform-apis/regionality",
+    "https://tray.ai/documentation/help/frequently-asked-questions/account-management-faqs",
+    "https://tray.ai/documentation/library/browse/all/all",
+    "https://tray.ai/documentation/platform/api-management/access-control",
+    "https://tray.ai/documentation/platform/api-management/api-operations",
+    "https://tray.ai/documentation/platform/api-management/apim-in-embedded-integrations",
+    "https://tray.ai/documentation/platform/api-management/openapi-spec/api-reference-viewer",
+    "https://tray.ai/documentation/platform/api-management/openapi-spec/create-connector",
+    "https://tray.ai/documentation/platform/api-management/openapi-spec/export-openapi-spec",
+    "https://tray.ai/documentation/platform/api-management/overview",
+    "https://tray.ai/documentation/platform/api-management/troubleshooting",
+    "https://tray.ai/documentation/platform/api-management/using-the-api",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-builder/overview",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/authentication-and-access",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connecting-clients",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/connector-tools",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/dynamic-authentication",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/getting-started",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/mcp-server-configuration",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/observability-and-monitoring",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/overview",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/troubleshooting-and-limitations",
+    "https://tray.ai/documentation/platform/artificial-intelligence/agent-gateway/workflow-tools",
+    "https://tray.ai/documentation/platform/artificial-intelligence/ai-palette",
+    "https://tray.ai/documentation/platform/artificial-intelligence/ai-use-cases/fine-tuning-models",
+    "https://tray.ai/documentation/platform/artificial-intelligence/augmented-development/merlin-build",
+    "https://tray.ai/documentation/platform/artificial-intelligence/intelligent-automations",
+    "https://tray.ai/documentation/platform/artificial-intelligence/tray-idp",
+    "https://tray.ai/documentation/platform/artificial-intelligence/vector-storage",
+    "https://tray.ai/documentation/platform/automation-integration/advanced-capabilities/data-tables",
+    "https://tray.ai/documentation/platform/automation-integration/advanced-use-cases/etl/overview",
+    "https://tray.ai/documentation/platform/automation-integration/building-workflows/mapping-data/basic-data-concepts",
+    "https://tray.ai/documentation/platform/automation-integration/testing-debugging/debug-logs",
+    "https://tray.ai/documentation/platform/automation-integration/workflow-settings/documentation",
+    "https://tray.ai/documentation/platform/connectivity/additional-security-ssl-tls",
+    "https://tray.ai/documentation/platform/connectivity/authenticating-google-connectors",
+    "https://tray.ai/documentation/platform/connectivity/authentication-collector",
+    "https://tray.ai/documentation/platform/connectivity/authentications",
+    "https://tray.ai/documentation/platform/connectivity/connector-builder",
+    "https://tray.ai/documentation/platform/connectivity/custom-services/introduction",
+    "https://tray.ai/documentation/platform/connectivity/on-premise-systems/on-prem-options",
+    "https://tray.ai/documentation/platform/connectivity/updating-connector-version",
+    "https://tray.ai/documentation/platform/embedded/advanced-features/data-mapping/introduction",
+    "https://tray.ai/documentation/platform/embedded/delivery-methods/overview",
+    "https://tray.ai/documentation/platform/embedded/error-handling",
+    "https://tray.ai/documentation/platform/embedded/key-concepts/auth-slots",
+    "https://tray.ai/documentation/platform/embedded/key-concepts/solutions",
+    "https://tray.ai/documentation/platform/embedded/overview/embedded-api",
+    "https://tray.ai/documentation/platform/embedded/overview/integration-marketplace-app",
+    "https://tray.ai/documentation/platform/embedded/overview/preparing-your-environment",
+    "https://tray.ai/documentation/platform/embedded/overview/quickstart",
+    "https://tray.ai/documentation/platform/embedded/overview/what-is-embedded",
+    "https://tray.ai/documentation/platform/enterprise-core/insights",
+    "https://tray.ai/documentation/platform/enterprise-core/lifecycle-management/overview",
+    "https://tray.ai/documentation/platform/enterprise-core/logs-debugging/debug-logs",
+    "https://tray.ai/documentation/platform/enterprise-core/organisation-management/tray-org-setup",
+    "https://tray.ai/documentation/platform/enterprise-core/security-compliance/security-policies",
+    "https://tray.ai/documentation/platform/enterprise-core/usage-billing",
+    "https://tray.ai/documentation/platform/introduction/getting-started/introduction",
+    "https://tray.ai/documentation/platform/tray-headless/headless-for-claude-code",
+    "https://tray.ai/documentation/platform/tray-headless/headless-for-codex",
+    "https://tray.ai/documentation/platform/tray-headless/overview",
+    "https://tray.ai/documentation/platform/tray-headless/overview#which-should-i-use",
+    "https://tray.ai/documentation/platform/tray-headless/tray-headless-mcp",
+    "https://tray.ai/documentation/releases",
+    "https://tray.ai/documentation/releases/features/tray-headless-for-codex",
+    "https://tray.ai/events",
+    "https://tray.ai/events/agent-adoption-merlin-launch",
+    "https://tray.ai/events/agent-hub-first-look",
+    "https://tray.ai/events/apollo-tray-itsm-agent",
+    "https://tray.ai/events/building-ai-agents-live",
+    "https://tray.ai/events/defusing-the-mcp-ticking-time-bomb",
+    "https://tray.ai/events/deploying-ai-agents-solve-it-tickets",
+    "https://tray.ai/events/jw-pepper-mcp-guardrails",
+    "https://tray.ai/events/scaling-ai-agents-rich-waldron-hyoun-park",
+    "https://tray.ai/events/tray-first-look-agent-gateway",
+    "https://tray.ai/events/tray-first-look-data-engineering",
+    "https://tray.ai/events/tray-headless",
+    "https://tray.ai/events/yext-integrations-cost-reduction",
+    "https://tray.ai/glossary",
+    "https://tray.ai/glossary/agent-gateway",
+    "https://tray.ai/glossary/agentic-ai",
+    "https://tray.ai/glossary/agentic-automation",
+    "https://tray.ai/glossary/ai-agent",
+    "https://tray.ai/glossary/ai-agent-orchestration",
+    "https://tray.ai/glossary/ai-native",
+    "https://tray.ai/glossary/api-management",
+    "https://tray.ai/glossary/change-data-capture",
+    "https://tray.ai/glossary/composable",
+    "https://tray.ai/glossary/connector",
+    "https://tray.ai/glossary/data-integration",
+    "https://tray.ai/glossary/enterprise-automation",
+    "https://tray.ai/glossary/etl",
+    "https://tray.ai/glossary/governance",
+    "https://tray.ai/glossary/human-in-the-loop",
+    "https://tray.ai/glossary/hyperautomation",
+    "https://tray.ai/glossary/intelligent-document-processing",
+    "https://tray.ai/glossary/ipaas",
+    "https://tray.ai/glossary/low-code",
+    "https://tray.ai/glossary/mcp",
+    "https://tray.ai/glossary/merlin-agent-builder",
+    "https://tray.ai/glossary/orchestration",
+    "https://tray.ai/glossary/process-automation",
+    "https://tray.ai/glossary/task",
+    "https://tray.ai/glossary/workflow",
+    "https://tray.ai/glossary/workflow-automation",
+    "https://tray.ai/platform",
+    "https://tray.ai/platform/agent-gateway",
+    "https://tray.ai/platform/agent-gateway/",
+    "https://tray.ai/platform/ai-development",
+    "https://tray.ai/platform/governance-trust",
+    "https://tray.ai/platform/intelligent-ipaas",
+    "https://tray.ai/platform/merlin-agent-builder",
+    "https://tray.ai/pricing",
+    "https://tray.ai/resources/guides",
+    "https://tray.ai/resources/guides/ai-agent-strategy-playbook",
+    "https://tray.ai/resources/guides/ai-agent-vs-copilot-vs-chatbot",
+    "https://tray.ai/resources/guides/ai-agents-with-amazon-bedrock",
+    "https://tray.ai/resources/guides/enterprise-ai-agent-survey",
+    "https://tray.ai/resources/guides/gartner-how-to-choose-a-ipaas-vendor",
+    "https://tray.ai/resources/guides/gartner-hype-cycle-agentic-ai-2026",
+    "https://tray.ai/resources/guides/getting-mcp-right-five-properties-enterprise-deployment",
+    "https://tray.ai/resources/guides/itsm-ai-agent-deployment-fr",
+    "https://tray.ai/resources/guides/itsm-ai-agent-deployment-framework",
+    "https://tray.ai/resources/guides/not-everything-needs-ai-framework",
+    "https://tray.ai/resources/guides/nucleus-ipaas-matrix",
+    "https://tray.ai/solutions/by-industry",
+    "https://tray.ai/solutions/by-role",
+    "https://tray.ai/solutions/by-use-case",
+    "https://tray.ai/solutions/library",
+    "https://tray.ai/trust",
+    "https://tray.io/docs/api/sandbox",
+    "https://tray.io/graphql",
+    "https://tray.io/llms.txt",
+    "https://www.apollographql.com/",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.linkedin.com/company/tray-ai",
+    "https://www.postman.com/tray-docs/tray-io-s-public-workspace/collection/uo51x8u/tray-embedded-apis-graphql",
+    "https://www.postman.com/tray-docs/workspace/tray-io-s-public-workspace/collection/10539673-0956bf7e-9761-47d6-b213-516163dd172e",
+    "https://www.youtube.com/trayio",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://x.com/tray"
+  ]
+}

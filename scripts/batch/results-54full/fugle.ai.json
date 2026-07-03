@@ -1,0 +1,431 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "fugle.ai",
+    "detect": {
+      "domain": "fugle.ai",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T23:16:49.102Z",
+    "summary": "Fugle exposes a market data REST API, a market data WebSocket streaming API, a Fugle MCP server for Claude/AI tools, and legacy trading SDK CLIs for Python and Node.js.",
+    "description": "Fugle provides Taiwanese stock market data services and AI-assisted investing features, along with legacy programmatic trading tooling tied to partner broker workflows. Its public sites cover market data APIs, an MCP endpoint for AI assistants, and deprecated trading SDK setup.",
+    "credentials": {
+      "marketdata_api_key": {
+        "type": "api_key",
+        "label": "Fugle Market Data API key",
+        "generateUrl": "https://developer.fugle.tw/docs/key/",
+        "setup": "Sign up or log in to your Fugle account from [Fugle Developer Docs](https://developer.fugle.tw/), then go to [金鑰申請及管理](https://developer.fugle.tw/docs/key/) to apply for and manage your market data API key. The docs state market data authentication uses the `X-API-KEY` header and the site links this page as the key application flow.",
+        "acquisition": "manual"
+      },
+      "fugle_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Fugle AI MCP OAuth connection",
+        "setup": "Open Fugle AI at [fugle.ai](https://www.fugle.ai/), then connect Fugle from Claude using the MCP server URL `https://www.fugle.tw/api/v2/mcp`. The site instructs users to add the connector in Claude and click Connect to complete OAuth authorization.",
+        "acquisition": "manual"
+      },
+      "trading_api_bundle": {
+        "type": "compound",
+        "label": "Fugle Trading API credential bundle",
+        "generateUrl": "https://fugletradingapi.esunsec.com.tw/keys/Account/Logout",
+        "setup": "This legacy trading SDK requires a bundle issued through the [交易 API 金鑰網站](https://fugletradingapi.esunsec.com.tw/keys/Account/Logout): apply for the service, request a certificate, sign the agreement, wait for approval, then download the `config.ini` / `config.simulation.ini` file containing API `Key` and `Secret` plus your exported `.p12` certificate. The docs also require your brokerage account password and certificate password at login, and show the config `Entry` endpoint in the downloaded config file.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "fugle-market-data-rest-api",
+        "name": "Fugle Market Data REST API",
+        "type": "http",
+        "docs": "https://developer.fugle.tw/docs/data/http-api/getting-started",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.fugle.tw/docs/data/intro",
+            "https://developer.fugle.tw/docs/data/http-api/getting-started",
+            "https://developer.fugle.tw/docs/data/http-api/intraday/ticker"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "marketdata_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-API-KEY"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.fugle.tw/docs/data/http-api/getting-started",
+                  "https://developer.fugle.tw/docs/data/http-api/intraday/ticker"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.fugle.tw/marketdata/v1.0/stock/"
+      },
+      {
+        "slug": "fugle-market-data-websocket-api",
+        "name": "Fugle Market Data WebSocket API",
+        "type": "http",
+        "docs": "https://developer.fugle.tw/docs/data/websocket-api/getting-started",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.fugle.tw/docs/data/intro",
+            "https://developer.fugle.tw/docs/data/websocket-api/getting-started",
+            "https://developer.fugle.tw/docs/data/websocket-api/market-data-channels/trades"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "marketdata_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "scheme": "websocket-auth-message"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.fugle.tw/docs/data/websocket-api/getting-started"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "wss://api.fugle.tw/marketdata/v1.0/stock/streaming"
+      },
+      {
+        "slug": "fugle-mcp-server",
+        "name": "Fugle MCP Server",
+        "type": "mcp",
+        "docs": "https://www.fugle.ai/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.fugle.ai/",
+            "https://www.fugle.tw/api/v2/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fugle_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.fugle.ai/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.fugle.tw/api/v2/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "fugle-trading-sdk-for-python",
+        "name": "Fugle Trading SDK for Python",
+        "type": "cli",
+        "docs": "https://developer.fugle.tw/docs/trading/quick_start",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.fugle.tw/docs/trading/intro",
+            "https://developer.fugle.tw/docs/trading/prerequisites",
+            "https://developer.fugle.tw/docs/trading/quick_start"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "trading_api_bundle",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "python index.py"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.fugle.tw/docs/trading/prerequisites",
+                  "https://developer.fugle.tw/docs/trading/quick_start"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "pypi",
+            "identifier": "fugle-trade",
+            "runtimeHint": "Python 3.7+"
+          }
+        ],
+        "command": "python"
+      },
+      {
+        "slug": "fugle-trading-sdk-for-node-js",
+        "name": "Fugle Trading SDK for Node.js",
+        "type": "cli",
+        "docs": "https://developer.fugle.tw/docs/trading/quick_start",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.fugle.tw/docs/trading/intro",
+            "https://developer.fugle.tw/docs/trading/prerequisites",
+            "https://developer.fugle.tw/docs/trading/quick_start"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "trading_api_bundle",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "node index.js"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.fugle.tw/docs/trading/prerequisites",
+                  "https://developer.fugle.tw/docs/trading/quick_start"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@fugle/trade",
+            "runtimeHint": "Node.js 16+"
+          }
+        ],
+        "command": "node"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T23:16:49.102Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 125987,
+    "completion_tokens": 2144,
+    "total_tokens": 128131
+  },
+  "visited": [
+    "https://developer.fugle.tw",
+    "https://developer.fugle.tw/blog/2023-11-28-trading-signal-notifier/",
+    "https://developer.fugle.tw/blog/2024-01-19-fugle-tradingview-webhooks",
+    "https://developer.fugle.tw/docs/data/http-api/getting-started",
+    "https://developer.fugle.tw/docs/data/http-api/intraday/ticker",
+    "https://developer.fugle.tw/docs/data/intro",
+    "https://developer.fugle.tw/docs/data/websocket-api/getting-started",
+    "https://developer.fugle.tw/docs/data/websocket-api/market-data-channels/trades",
+    "https://developer.fugle.tw/docs/key",
+    "https://developer.fugle.tw/docs/trading/brokerage_partner",
+    "https://developer.fugle.tw/docs/trading/intro",
+    "https://developer.fugle.tw/docs/trading/prerequisites",
+    "https://developer.fugle.tw/docs/trading/quick_start",
+    "https://docs.fireflies.ai/getting-started/docs-mcp-server",
+    "https://fugle.ai",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.fugle.ai/",
+    "https://www.fugle.tw/api/v2/mcp",
+    "https://www.fugle.tw/api/v2/mcp/.well-known/oauth-authorization-server",
+    "https://www.fugle.tw/api/v2/mcp/.well-known/oauth-protected-resource",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "http://www.selaw.com.tw/LawArticle.aspx?LawID=G0100124",
+    "http://www.selaw.com.tw/LawArticle.aspx?LawID=G0100766",
+    "http://www.selaw.com.tw/LawArticle.aspx?LawID=G0101422",
+    "https://academy.fugle.tw",
+    "https://api.fugle.tw/marketdata/v1.0/stock/",
+    "https://api.fugle.tw/marketdata/v1.0/stock/intraday/ticker/2330",
+    "https://blog.fugle.tw",
+    "https://chatgpt.com/apps/fugle-stock/asdk_app_698627f2a4208191a693e8c5d82959dc",
+    "https://claude.ai/new?q=%E8%AB%8B%E5%B9%AB%E6%88%91%E5%AE%89%E8%A3%9D%20Fugle%20AI%20%E5%8A%A9%E7%90%86%EF%BC%8C%E5%AE%89%E8%A3%9D%E8%AA%AA%E6%98%8E%E5%9C%A8%20https%3A%2F%2Ffugle.ai",
+    "https://claude.ai/settings/connectors?modal=add-custom-connector",
+    "https://developer.fugle.tw",
+    "https://developer.fugle.tw/",
+    "https://developer.fugle.tw/#",
+    "https://developer.fugle.tw/#%E8%AD%89%E5%88%B8%E5%88%A5%E4%BB%A3%E7%A2%BC",
+    "https://developer.fugle.tw/#__docusaurus_skipToContent_fallback",
+    "https://developer.fugle.tw/#api-端點",
+    "https://developer.fugle.tw/#certificate_and_service",
+    "https://developer.fugle.tw/#channels",
+    "https://developer.fugle.tw/#example",
+    "https://developer.fugle.tw/#heartbeat",
+    "https://developer.fugle.tw/#parameters",
+    "https://developer.fugle.tw/#pingpong",
+    "https://developer.fugle.tw/#receive-data",
+    "https://developer.fugle.tw/#response",
+    "https://developer.fugle.tw/#rest-api",
+    "https://developer.fugle.tw/#run_simulation",
+    "https://developer.fugle.tw/#statement",
+    "https://developer.fugle.tw/#subscribe-channel",
+    "https://developer.fugle.tw/#websocket-api",
+    "https://developer.fugle.tw/#使用-sdk",
+    "https://developer.fugle.tw/#修改模擬環境設定檔",
+    "https://developer.fugle.tw/#加入我們的合作網路",
+    "https://developer.fugle.tw/#取消訂閱",
+    "https://developer.fugle.tw/#安裝套件",
+    "https://developer.fugle.tw/#完成模擬下單",
+    "https://developer.fugle.tw/#官方函式庫",
+    "https://developer.fugle.tw/#建立連線",
+    "https://developer.fugle.tw/#快速開始",
+    "https://developer.fugle.tw/#為什麼選擇我們的合作券商",
+    "https://developer.fugle.tw/#申請憑證",
+    "https://developer.fugle.tw/#申請模擬環境金鑰",
+    "https://developer.fugle.tw/#確認環境",
+    "https://developer.fugle.tw/#等待審核",
+    "https://developer.fugle.tw/#簽署-api-服務申請同意書",
+    "https://developer.fugle.tw/#訂閱資訊",
+    "https://developer.fugle.tw/#訂閱頻道",
+    "https://developer.fugle.tw/#證券別代碼",
+    "https://developer.fugle.tw/#身份驗證",
+    "https://developer.fugle.tw/#送出第一筆正式委託",
+    "https://developer.fugle.tw/#速率限制",
+    "https://developer.fugle.tw/blog",
+    "https://developer.fugle.tw/blog/2023-11-28-trading-signal-notifier/",
+    "https://developer.fugle.tw/blog/2024-01-19-fugle-tradingview-webhooks",
+    "https://developer.fugle.tw/docs/data-futopt/intro",
+    "https://developer.fugle.tw/docs/data/build-with-llm",
+    "https://developer.fugle.tw/docs/data/error_codes",
+    "https://developer.fugle.tw/docs/data/http-api/corporate-actions/listing-applicants",
+    "https://developer.fugle.tw/docs/data/http-api/getting-started",
+    "https://developer.fugle.tw/docs/data/http-api/historical/candles",
+    "https://developer.fugle.tw/docs/data/http-api/historical/stats",
+    "https://developer.fugle.tw/docs/data/http-api/intraday/candles",
+    "https://developer.fugle.tw/docs/data/http-api/intraday/quote",
+    "https://developer.fugle.tw/docs/data/http-api/intraday/ticker",
+    "https://developer.fugle.tw/docs/data/http-api/intraday/tickers",
+    "https://developer.fugle.tw/docs/data/http-api/intraday/trades",
+    "https://developer.fugle.tw/docs/data/http-api/intraday/volumes",
+    "https://developer.fugle.tw/docs/data/http-api/snapshot/actives",
+    "https://developer.fugle.tw/docs/data/http-api/snapshot/movers",
+    "https://developer.fugle.tw/docs/data/http-api/snapshot/quotes",
+    "https://developer.fugle.tw/docs/data/http-api/technical/bb",
+    "https://developer.fugle.tw/docs/data/http-api/technical/kdj",
+    "https://developer.fugle.tw/docs/data/http-api/technical/macd",
+    "https://developer.fugle.tw/docs/data/http-api/technical/rsi",
+    "https://developer.fugle.tw/docs/data/http-api/technical/sma",
+    "https://developer.fugle.tw/docs/data/intro",
+    "https://developer.fugle.tw/docs/data/migration-guide",
+    "https://developer.fugle.tw/docs/data/status",
+    "https://developer.fugle.tw/docs/data/websocket-api/getting-started",
+    "https://developer.fugle.tw/docs/data/websocket-api/market-data-channels/aggregates",
+    "https://developer.fugle.tw/docs/data/websocket-api/market-data-channels/books",
+    "https://developer.fugle.tw/docs/data/websocket-api/market-data-channels/candles",
+    "https://developer.fugle.tw/docs/data/websocket-api/market-data-channels/indices",
+    "https://developer.fugle.tw/docs/data/websocket-api/market-data-channels/trades",
+    "https://developer.fugle.tw/docs/faq/intro",
+    "https://developer.fugle.tw/docs/faq/trading/error_C00000#step1",
+    "https://developer.fugle.tw/docs/key",
+    "https://developer.fugle.tw/docs/key/",
+    "https://developer.fugle.tw/docs/pricing",
+    "https://developer.fugle.tw/docs/pricing/",
+    "https://developer.fugle.tw/docs/trading/best_practice",
+    "https://developer.fugle.tw/docs/trading/brokerage_partner",
+    "https://developer.fugle.tw/docs/trading/intro",
+    "https://developer.fugle.tw/docs/trading/prerequisites",
+    "https://developer.fugle.tw/docs/trading/quick_start",
+    "https://developer.fugle.tw/docs/trading/reference/changelog",
+    "https://developer.fugle.tw/docs/trading/reference/error_codes",
+    "https://developer.fugle.tw/docs/trading/reference/nodejs",
+    "https://developer.fugle.tw/docs/trading/reference/nodejs#constructor-new-fugletradeoptions",
+    "https://developer.fugle.tw/docs/trading/reference/python",
+    "https://developer.fugle.tw/docs/trading/reference/python#reset_password",
+    "https://developer.fugle.tw/docs/trading/reference/rate_limit",
+    "https://discord.gg/sdGQ3v8mEv",
+    "https://docs.fireflies.ai/getting-started/docs-mcp-server",
+    "https://fugle.ai",
+    "https://fugle.ai/#claude-platforms",
+    "https://fugle.ai/#demo",
+    "https://fugle.ai/#platforms",
+    "https://fugletradingapi-simulation.esunsec.com.tw/api/v1Environment",
+    "https://fugletradingapi.esunsec.com.tw/keys/Account/Logout",
+    "https://fugletradingapi.esunsec.com.tw/keys/Account/Logout/apikey/APIKeyManagement",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/fugle-dev",
+    "https://github.com/fugle-dev/fugle-marketdata-node",
+    "https://github.com/fugle-dev/fugle-marketdata-python",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://ml-fugle-api.tssco.com.tw/FugleSDK/",
+    "https://support.fugle.tw/account/139/",
+    "https://support.fugle.tw/fugle-member-account/fugle-login/5850/",
+    "https://support.fugle.tw/online-service/",
+    "https://t.me/fuglestockbot",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.esunsec.com.tw/trading-platforms/api-trading/",
+    "https://www.fbs.com.tw/TradeAPI/",
+    "https://www.fugle.ai",
+    "https://www.fugle.ai/",
+    "https://www.fugle.tw",
+    "https://www.fugle.tw/",
+    "https://www.fugle.tw/about",
+    "https://www.fugle.tw/account/login?referrer=api",
+    "https://www.fugle.tw/account/register?referrer=api&redirect_uri=https%3A%2F%2Fdeveloper.fugle.tw",
+    "https://www.fugle.tw/api/v2/mcp",
+    "https://www.fugle.tw/api/v2/mcp/.well-known/oauth-authorization-server",
+    "https://www.fugle.tw/api/v2/mcp/.well-known/oauth-protected-resource",
+    "https://www.fugle.tw/disclaimer",
+    "https://www.fugle.tw/privacy",
+    "https://www.fugle.tw/service",
+    "https://www.twse.com.tw/downloads/zh/products/regulation_use.pdf",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

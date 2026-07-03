@@ -18,6 +18,8 @@ export const DetectParams = Schema.Struct({ domain: Schema.String });
 export const DetectionResult = Schema.Struct({
   domain: Schema.String,
   found: Schema.Array(Schema.String),
+  probed: Schema.optional(Schema.Array(Schema.String)),
+  integrationsJson: Schema.optional(Schema.NullOr(Schema.Unknown)),
   apiCatalog: Schema.optional(Schema.Unknown),
   apiSchema: Schema.optional(Schema.Unknown),
   auth: Schema.optional(Schema.Unknown),
@@ -29,7 +31,7 @@ export const DetectionResult = Schema.Struct({
 });
 
 export const DETECT_DESCRIPTION =
-  "Detect a domain's agent-readiness: well-known manifests (api-catalog, MCP " +
+  "Detect a domain's agent-readiness: well-known manifests (integrations.json, api-catalog, MCP " +
   "server-card, agent-card, agent-skills, llms.txt) plus live capability " +
   "detection — MCP self-onboarding (DCR/CIMD) and the live OpenAPI schema.";
 
@@ -54,6 +56,8 @@ export const DiscoverResult = Schema.Struct({
   detect: Schema.Unknown,
   /** One-line summary of the service's integration surface. */
   summary: Schema.optional(Schema.String),
+  /** Plain factual description of what the service/product does. */
+  description: Schema.optional(Schema.String),
   /** ISO timestamp this result was produced. */
   discoveredAt: Schema.String,
   /** Global credential registry, keyed by id — the CANONICAL Credential schema,
@@ -97,9 +101,46 @@ const coerceCredentials = (creds: Record<string, { type: string }> | undefined) 
   );
 };
 
+/** A surface's locator — the stable thing it points at, independent of its
+ * display name. Used to carry slugs across re-discovery. */
+type SlugSurface = {
+  slug: string;
+  type: string;
+  url?: string;
+  spec?: string;
+  command?: string;
+  packages?: readonly { identifier?: string }[];
+};
+
+export const locatorOf = (s: SlugSurface): string | undefined => {
+  const loc = s.type === "cli" ? (s.command ?? s.packages?.[0]?.identifier) : (s.url ?? s.spec);
+  return loc ? `${s.type}|${loc.toLowerCase()}` : undefined;
+};
+
+/** Slug continuity: a fresh result's surface that matches a PRIOR surface by
+ * locator keeps the prior slug, even if the model renamed it — /{domain}/{slug}/
+ * links never break across re-runs. Collisions re-suffix deterministically. */
+export function preserveSlugs<T extends SlugSurface>(surfaces: T[], prior: readonly SlugSurface[]): void {
+  const bySlugLoc = new Map<string, string>();
+  for (const p of prior) {
+    const loc = locatorOf(p);
+    if (loc && p.slug) bySlugLoc.set(loc, p.slug);
+  }
+  const taken = new Set<string>();
+  for (const s of surfaces) {
+    const loc = locatorOf(s);
+    const inherited = loc ? bySlugLoc.get(loc) : undefined;
+    let slug = inherited ?? s.slug;
+    const base = slug || "surface";
+    for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+    s.slug = slug;
+    taken.add(slug);
+  }
+}
+
 /** Flatten the engine's DiscoveryResult into the JSON-clean wire shape (v3:
  * versioned; a global credentials registry + a typed, slugged surfaces list). */
-const pack = (domain: string, detect: unknown, disc: Awaited<ReturnType<typeof discover>>, usedLlm: boolean) =>
+export const packDiscovery = (domain: string, detect: unknown, disc: Awaited<ReturnType<typeof discover>>, usedLlm: boolean) =>
   JSON.parse(
     JSON.stringify({
       version: DISCOVERY_VERSION,
@@ -108,6 +149,7 @@ const pack = (domain: string, detect: unknown, disc: Awaited<ReturnType<typeof d
       usedLlm,
       discoveredAt: new Date().toISOString(),
       summary: disc?.summary,
+      description: disc?.description,
       credentials: coerceCredentials(disc?.credentials),
       surfaces: disc?.surfaces,
     }),
@@ -118,9 +160,9 @@ const pack = (domain: string, detect: unknown, disc: Awaited<ReturnType<typeof d
 export const runDiscover = (domain: string): Effect.Effect<typeof DiscoverResult.Type> =>
   Effect.promise(async () => {
     const d = await detect(domain.trim().toLowerCase());
-    if (!chatFn) return pack(d.domain, d, null, false);
+    if (!chatFn) return packDiscovery(d.domain, d, null, false);
     const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb()).catch(() => null);
-    return pack(d.domain, d, disc, true);
+    return packDiscovery(d.domain, d, disc, true);
   });
 
 /** Same pipeline as runDiscover, but emits events as it goes — status `progress`
@@ -134,7 +176,7 @@ export const discoverWithProgress = async (
   emit({ kind: "progress", message: "Checking well-known endpoints…" });
   const d = await detect(domain.trim().toLowerCase());
   emit({ kind: "progress", message: d.found.length ? `Detected: ${d.found.join(", ")}` : "No standard signals — searching" });
-  if (!chatFn) return pack(d.domain, d, null, false);
+  if (!chatFn) return packDiscovery(d.domain, d, null, false);
   const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb(), emit).catch(() => null);
-  return pack(d.domain, d, disc, true);
+  return packDiscovery(d.domain, d, disc, true);
 };

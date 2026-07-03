@@ -1,0 +1,447 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "metabase.com",
+    "detect": {
+      "domain": "metabase.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:13:16.191Z",
+    "summary": "Metabase exposes a REST API, an Agent API, an MCP server, and the `mb` CLI; auth is via API key for HTTP/CLI and embedded OAuth for MCP.",
+    "credentials": {
+      "mb_api_key": {
+        "type": "api_key",
+        "label": "Metabase API key",
+        "generateUrl": "https://www.metabase.com/docs/latest/people-and-groups/api-keys",
+        "setup": "Go to Metabase, open the admin area for API keys, and create a new key for your user or group. Metabase recommends API keys for programmatic access to the REST API. Store the resulting key securely and send it as the `x-api-key` header on requests.",
+        "acquisition": "manual"
+      },
+      "mb_oauth_user": {
+        "type": "oauth2",
+        "label": "Metabase user OAuth session for MCP",
+        "generateUrl": "https://www.metabase.com/docs/latest/ai/mcp",
+        "setup": "Use Metabase's embedded OAuth flow for MCP clients. In your MCP client, connect to the Metabase MCP endpoint and complete the browser-based authorization against Metabase's own OAuth server; no external OAuth provider is needed. The resulting user authorization is used to access the MCP server on behalf of the signed-in Metabase user.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "metabase-rest-api",
+        "name": "Metabase REST API",
+        "type": "http",
+        "docs": "https://www.metabase.com/docs/latest/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.metabase.com/docs/latest/api",
+            "https://www.metabase.com/docs/latest/people-and-groups/api-keys"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mb_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-key",
+                    "scheme": "apiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.metabase.com/docs/latest/people-and-groups/api-keys",
+                  "https://www.metabase.com/docs/latest/api"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "metabase-agent-api",
+        "name": "Metabase Agent API",
+        "type": "http",
+        "docs": "https://www.metabase.com/docs/latest/ai/agent-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.metabase.com/docs/latest/ai/agent-api",
+            "https://www.metabase.com/docs/latest/people-and-groups/api-keys"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mb_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-key",
+                    "scheme": "apiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.metabase.com/docs/latest/ai/agent-api",
+                  "https://www.metabase.com/docs/latest/people-and-groups/api-keys"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "metabase-mcp-server",
+        "name": "Metabase MCP Server",
+        "type": "mcp",
+        "docs": "https://www.metabase.com/docs/latest/ai/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.metabase.com/docs/latest/ai/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mb_oauth_user",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.metabase.com/docs/latest/ai/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.metabase.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "metabase-cli",
+        "name": "Metabase CLI",
+        "type": "cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.metabase.com/docs/latest/ai/file-based-development",
+            "https://www.metabase.com/docs/latest/installation-and-operation/metabase-cli",
+            "https://www.metabase.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mb_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "mb auth login",
+                    "env": [
+                      "METABASE_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.metabase.com/docs/latest/ai/file-based-development",
+                  "https://www.metabase.com/docs/latest/installation-and-operation/metabase-cli",
+                  "https://www.metabase.com/llms.txt"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@metabase/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "mb"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:13:16.191Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 121375,
+    "completion_tokens": 1122,
+    "total_tokens": 122497
+  },
+  "visited": [
+    "https://lobehub.com/mcp/cpr43-metabase-mcp",
+    "https://mcpservers.org/servers/hyeongjun-dev/metabase-mcp-server",
+    "https://www.metabase.com/docs/latest/ai/agent-api",
+    "https://www.metabase.com/docs/latest/ai/file-based-development",
+    "https://www.metabase.com/docs/latest/ai/mcp",
+    "https://www.metabase.com/docs/latest/people-and-groups/api-keys",
+    "https://www.metabase.com/llms.txt"
+  ],
+  "grounding": [
+    "http://localhost:3000",
+    "https://discourse.metabase.com/",
+    "https://lobehub.com/mcp/cpr43-metabase-mcp",
+    "https://mcpservers.org/servers/hyeongjun-dev/metabase-mcp-server",
+    "https://store.metabase.com/checkout",
+    "https://www.metabase.com/",
+    "https://www.metabase.com/blog",
+    "https://www.metabase.com/blog/ai-for-everyone-with-confidence",
+    "https://www.metabase.com/blog/claude-skill-learn-metabase",
+    "https://www.metabase.com/blog/metabase-plugin-openai-codex-announcement",
+    "https://www.metabase.com/blog/persistent-agent",
+    "https://www.metabase.com/blog/strip-mining-era-of-open-source-security",
+    "https://www.metabase.com/case-studies",
+    "https://www.metabase.com/cloud/",
+    "https://www.metabase.com/cloud/login",
+    "https://www.metabase.com/data-sources/",
+    "https://www.metabase.com/demo",
+    "https://www.metabase.com/docs/latest",
+    "https://www.metabase.com/docs/latest/",
+    "https://www.metabase.com/docs/latest/actions/basic",
+    "https://www.metabase.com/docs/latest/actions/custom",
+    "https://www.metabase.com/docs/latest/actions/introduction",
+    "https://www.metabase.com/docs/latest/ai/agent-api",
+    "https://www.metabase.com/docs/latest/ai/customization",
+    "https://www.metabase.com/docs/latest/ai/file-based-development",
+    "https://www.metabase.com/docs/latest/ai/mcp",
+    "https://www.metabase.com/docs/latest/ai/metabot",
+    "https://www.metabase.com/docs/latest/ai/metabot-slack",
+    "https://www.metabase.com/docs/latest/ai/overview",
+    "https://www.metabase.com/docs/latest/ai/privacy",
+    "https://www.metabase.com/docs/latest/ai/settings",
+    "https://www.metabase.com/docs/latest/ai/start",
+    "https://www.metabase.com/docs/latest/ai/system-prompts",
+    "https://www.metabase.com/docs/latest/ai/usage-auditing",
+    "https://www.metabase.com/docs/latest/ai/usage-controls",
+    "https://www.metabase.com/docs/latest/api",
+    "https://www.metabase.com/docs/latest/configuring-metabase/appearance",
+    "https://www.metabase.com/docs/latest/configuring-metabase/caching",
+    "https://www.metabase.com/docs/latest/configuring-metabase/config-file",
+    "https://www.metabase.com/docs/latest/configuring-metabase/config-template",
+    "https://www.metabase.com/docs/latest/configuring-metabase/custom-maps",
+    "https://www.metabase.com/docs/latest/configuring-metabase/customizing-jetty-webserver",
+    "https://www.metabase.com/docs/latest/configuring-metabase/email",
+    "https://www.metabase.com/docs/latest/configuring-metabase/environment-variables",
+    "https://www.metabase.com/docs/latest/configuring-metabase/fonts",
+    "https://www.metabase.com/docs/latest/configuring-metabase/localization",
+    "https://www.metabase.com/docs/latest/configuring-metabase/log-configuration",
+    "https://www.metabase.com/docs/latest/configuring-metabase/setting-up-metabase",
+    "https://www.metabase.com/docs/latest/configuring-metabase/settings",
+    "https://www.metabase.com/docs/latest/configuring-metabase/slack",
+    "https://www.metabase.com/docs/latest/configuring-metabase/timezones",
+    "https://www.metabase.com/docs/latest/configuring-metabase/webhooks",
+    "https://www.metabase.com/docs/latest/dashboards/actions",
+    "https://www.metabase.com/docs/latest/dashboards/filters",
+    "https://www.metabase.com/docs/latest/dashboards/interactive",
+    "https://www.metabase.com/docs/latest/dashboards/introduction",
+    "https://www.metabase.com/docs/latest/dashboards/linked-filters",
+    "https://www.metabase.com/docs/latest/dashboards/multiple-series",
+    "https://www.metabase.com/docs/latest/dashboards/start",
+    "https://www.metabase.com/docs/latest/dashboards/subscriptions",
+    "https://www.metabase.com/docs/latest/data-modeling/editable-tables",
+    "https://www.metabase.com/docs/latest/data-modeling/formatting",
+    "https://www.metabase.com/docs/latest/data-modeling/json-unfolding",
+    "https://www.metabase.com/docs/latest/data-modeling/metadata-editing",
+    "https://www.metabase.com/docs/latest/data-modeling/metrics",
+    "https://www.metabase.com/docs/latest/data-modeling/model-persistence",
+    "https://www.metabase.com/docs/latest/data-modeling/models",
+    "https://www.metabase.com/docs/latest/data-modeling/segments",
+    "https://www.metabase.com/docs/latest/data-modeling/semantic-types",
+    "https://www.metabase.com/docs/latest/data-modeling/start",
+    "https://www.metabase.com/docs/latest/data-stud",
+    "https://www.metabase.com/docs/latest/data-studio/dependencies/diagnostics",
+    "https://www.metabase.com/docs/latest/data-studio/dependencies/graph",
+    "https://www.metabase.com/docs/latest/data-studio/dependencies/replace-data-sources",
+    "https://www.metabase.com/docs/latest/data-studio/library",
+    "https://www.metabase.com/docs/latest/data-studio/managing-tables",
+    "https://www.metabase.com/docs/latest/data-studio/measures",
+    "https://www.metabase.com/docs/latest/data-studio/overview",
+    "https://www.metabase.com/docs/latest/data-studio/segments",
+    "https://www.metabase.com/docs/latest/data-studio/tra",
+    "https://www.metabase.com/docs/latest/data-studio/transforms/addons",
+    "https://www.metabase.com/docs/latest/data-studio/transforms/jobs-and-runs",
+    "https://www.metabase.com/docs/latest/data-studio/transforms/python-runner",
+    "https://www.metabase.com/docs/latest/data-studio/transforms/python-transforms",
+    "https://www.metabase.com/docs/latest/data-studio/transforms/query-transforms",
+    "https://www.metabase.com/docs/latest/data-studio/transforms/transform-inspector",
+    "https://www.metabase.com/docs/latest/data-studio/transforms/transforms-overview",
+    "https://www.metabase.com/docs/latest/databases/connecting",
+    "https://www.metabase.com/docs/latest/databases/connections/athena",
+    "https://www.metabase.com/docs/latest/databases/connections/aws-rds",
+    "https://www.metabase.com/docs/latest/databases/connections/bigquery",
+    "https://www.metabase.com/docs/latest/databases/connections/clickhouse",
+    "https://www.metabase.com/docs/latest/databases/connections/databricks",
+    "https://www.metabase.com/docs/latest/databases/connections/druid",
+    "https://www.metabase.com/docs/latest/databases/connections/mariadb",
+    "https://www.metabase.com/docs/latest/databases/connections/mongodb",
+    "https://www.metabase.com/docs/latest/databases/connections/mysql",
+    "https://www.metabase.com/docs/latest/databases/connections/oracle",
+    "https://www.metabase.com/docs/latest/databases/connections/postgresql",
+    "https://www.metabase.com/docs/latest/databases/connections/presto",
+    "https://www.metabase.com/docs/latest/databases/connections/redshift",
+    "https://www.metabase.com/docs/latest/databases/connections/snowflake",
+    "https://www.metabase.com/docs/latest/databases/connections/sparksql",
+    "https://www.metabase.com/docs/latest/databases/connections/sql-server",
+    "https://www.metabase.com/docs/latest/databases/connections/sqlite",
+    "https://www.metabase.com/docs/latest/databases/connections/starburst",
+    "https://www.metabase.com/docs/latest/databases/connections/vertica",
+    "https://www.metabase.com/docs/latest/databases/danger-zone",
+    "https://www.metabase.com/docs/latest/databases/encrypting-details-at-rest",
+    "https://www.metabase.com/docs/latest/databases/ssh-tunnel",
+    "https://www.metabase.com/docs/latest/databases/ssl-certificates",
+    "https://www.metabase.com/docs/latest/databases/sync-scan",
+    "https://www.metabase.com/docs/latest/databases/uploads",
+    "https://www.metabase.com/docs/latest/databases/users-roles-privileges",
+    "https://www.metabase.com/docs/latest/databases/writable-connection",
+    "https://www.metabase.com/docs/latest/developers-guide/custom-visualizations",
+    "https://www.metabase.com/docs/latest/documents/introduction",
+    "https://www.metabase.com/docs/latest/documents/start",
+    "https://www.metabase.com/docs/latest/embedding/sdk/quickstart",
+    "https://www.metabase.com/docs/latest/exploration-and-organization/data-model-reference#glossary",
+    "https://www.metabase.com/docs/latest/installation-and-operation/accessibility",
+    "https://www.metabase.com/docs/latest/installation-and-operation/activating-the-enterprise-edition",
+    "https://www.metabase.com/docs/latest/installation-and-operation/backing-up-metabase-application-data",
+    "https://www.metabase.com/docs/latest/installation-and-operation/configuring-application-database",
+    "https://www.metabase.com/docs/latest/installation-and-operation/development-instance",
+    "https://www.metabase.com/docs/latest/installation-and-operation/installing-metabase",
+    "https://www.metabase.com/docs/latest/installation-and-operation/metabase-cli",
+    "https://www.metabase.com/docs/latest/installation-and-operation/migrating-from-h2",
+    "https://www.metabase.com/docs/latest/installation-and-operation/monitoring-metabase",
+    "https://www.metabase.com/docs/latest/installation-and-operation/observability-with-prometheus",
+    "https://www.metabase.com/docs/latest/installation-and-operation/running-metabase-as-service",
+    "https://www.metabase.com/docs/latest/installation-and-operation/running-metabase-on-azure",
+    "https://www.metabase.com/docs/latest/installation-and-operation/running-metabase-on-docker",
+    "https://www.metabase.com/docs/latest/installation-and-operation/running-metabase-on-elastic-beanstalk",
+    "https://www.metabase.com/docs/latest/installation-and-operation/running-metabase-on-podman",
+    "https://www.metabase.com/docs/latest/installation-and-operation/running-the-metabase-jar-file",
+    "https://www.metabase.com/docs/latest/installation-and-operation/security-center",
+    "https://www.metabase.com/docs/latest/installation-and-operation/serialization",
+    "https://www.metabase.com/docs/latest/installation-and-operation/supported-browsers",
+    "https://www.metabase.com/docs/latest/installation-and-operation/upgrading-metabase",
+    "https://www.metabase.com/docs/latest/people-and-groups/api-keys",
+    "https://www.metabase.com/docs/latest/permissions/snippets",
+    "https://www.metabase.com/docs/latest/questions/alerts",
+    "https://www.metabase.com/docs/latest/questions/exporting-results",
+    "https://www.metabase.com/docs/latest/questions/introduction",
+    "https://www.metabase.com/docs/latest/questions/metrics-explorer",
+    "https://www.metabase.com/docs/latest/questions/native-editor/basic-sql-parameters",
+    "https://www.metabase.com/docs/latest/questions/native-editor/field-filters",
+    "https://www.metabase.com/docs/latest/questions/native-editor/filter-widgets",
+    "https://www.metabase.com/docs/latest/questions/native-editor/optional-variables",
+    "https://www.metabase.com/docs/latest/questions/native-editor/referencing-saved-questions-in-queries",
+    "https://www.metabase.com/docs/latest/questions/native-editor/snippets",
+    "https://www.metabase.com/docs/latest/questions/native-editor/sql-parameters",
+    "https://www.metabase.com/docs/latest/questions/native-editor/table-variables",
+    "https://www.metabase.com/docs/latest/questions/native-editor/time-grouping-parameters",
+    "https://www.metabase.com/docs/latest/questions/native-editor/writing-sql",
+    "https://www.metabase.com/docs/latest/questions/query-builder/editor",
+    "https://www.metabase.com/docs/latest/questions/query-builder/expressions",
+    "https://www.metabase.com/docs/latest/questions/query-builder/expressions-list",
+    "https://www.metabase.com/docs/latest/questions/query-builder/filters",
+    "https://www.metabase.com/docs/latest/questions/query-builder/join",
+    "https://www.metabase.com/docs/latest/questions/query-builder/summarizing-and-grouping",
+    "https://www.metabase.com/docs/latest/questions/start",
+    "https://www.metabase.com/docs/latest/questions/visualizations/box-plot",
+    "https://www.metabase.com/docs/latest/questions/visualizations/combo-chart",
+    "https://www.metabase.com/docs/latest/questions/visualizations/custom",
+    "https://www.metabase.com/docs/latest/questions/visualizations/detail",
+    "https://www.metabase.com/docs/latest/questions/visualizations/drill-through",
+    "https://www.metabase.com/docs/latest/questions/visualizations/funnel",
+    "https://www.metabase.com/docs/latest/questions/visualizations/gauge",
+    "https://www.metabase.com/docs/latest/questions/visualizations/line-bar-and-area-charts",
+    "https://www.metabase.com/docs/latest/questions/visualizations/map",
+    "https://www.metabase.com/docs/latest/questions/visualizations/numbers",
+    "https://www.metabase.com/docs/latest/questions/visualizations/pie-or-donut-chart",
+    "https://www.metabase.com/docs/latest/questions/visualizations/pivot-table",
+    "https://www.metabase.com/docs/latest/questions/visualizations/progress-bar",
+    "https://www.metabase.com/docs/latest/questions/visualizations/sankey",
+    "https://www.metabase.com/docs/latest/questions/visualizations/scatterplot-or-bubble-chart",
+    "https://www.metabase.com/docs/latest/questions/visualizations/table",
+    "https://www.metabase.com/docs/latest/questions/visualizations/tooltips",
+    "https://www.metabase.com/docs/latest/questions/visualizations/trend",
+    "https://www.metabase.com/docs/latest/questions/visualizations/visualizing-results",
+    "https://www.metabase.com/docs/latest/questions/visualizations/waterfall-chart",
+    "https://www.metabase.com/docs/latest/troubleshooting-guide/",
+    "https://www.metabase.com/docs/latest/usage-and-performance-tools/tools",
+    "https://www.metabase.com/events/",
+    "https://www.metabase.com/events/outer-join-2026",
+    "https://www.metabase.com/features",
+    "https://www.metabase.com/features/",
+    "https://www.metabase.com/features/analytics-dashboards",
+    "https://www.metabase.com/features/collections",
+    "https://www.metabase.com/features/data-segregation",
+    "https://www.metabase.com/features/drill-through",
+    "https://www.metabase.com/features/metabase-ai",
+    "https://www.metabase.com/features/metabot-ai",
+    "https://www.metabase.com/features/models",
+    "https://www.metabase.com/features/permissions",
+    "https://www.metabase.com/features/query-builder",
+    "https://www.metabase.com/features/semantic-layer",
+    "https://www.metabase.com/features/sql-editor",
+    "https://www.metabase.com/features/usage-analytics",
+    "https://www.metabase.com/features/white-label-analytics",
+    "https://www.metabase.com/learn/",
+    "https://www.metabase.com/learn/metabase-basics/administration/administration-and-operation/guide",
+    "https://www.metabase.com/learn/metabase-basics/embedding/overview",
+    "https://www.metabase.com/learn/metabase-basics/getting-started/index",
+    "https://www.metabase.com/learn/metabase-basics/overview/concepts",
+    "https://www.metabase.com/llms.txt",
+    "https://www.metabase.com/metabase-embedded-analytics-guide.txt",
+    "https://www.metabase.com/paid-features",
+    "https://www.metabase.com/partners/",
+    "https://www.metabase.com/pricing.md",
+    "https://www.metabase.com/pricing?use_case=bi",
+    "https://www.metabase.com/pricing?use_case=ea",
+    "https://www.metabase.com/product/air-gapping",
+    "https://www.metabase.com/product/business-intelligence",
+    "https://www.metabase.com/product/csv-uploads",
+    "https://www.metabase.com/product/data-studio",
+    "https://www.metabase.com/product/embedded-analytics",
+    "https://www.metabase.com/product/embedded-analytics-sdk",
+    "https://www.metabase.com/product/enterprise",
+    "https://www.metabase.com/product/enterprise-embedded-analytics",
+    "https://www.metabase.com/product/google-sheets",
+    "https://www.metabase.com/product/onboarding-professional-service",
+    "https://www.metabase.com/product/pro",
+    "https://www.metabase.com/product/professional-services",
+    "https://www.metabase.com/product/starter",
+    "https://www.metabase.com/releases",
+    "https://www.metabase.com/roadmap",
+    "https://www.metabase.com/security",
+    "https://www.metabase.com/start/oss/",
+    "https://www.metabase.com/start/oss/jar"
+  ]
+}

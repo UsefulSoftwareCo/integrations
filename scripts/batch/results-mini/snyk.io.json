@@ -1,0 +1,280 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "snyk.io",
+    "detect": {
+      "domain": "snyk.io",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T10:03:27.164Z",
+    "summary": "Snyk exposes a REST API, an OAuth2 API for Snyk Apps, and the Snyk CLI; all require authentication via PAT/legacy API token, or OAuth2 app credentials for app integrations.",
+    "credentials": {
+      "snyk_pat": {
+        "type": "bearer",
+        "label": "Snyk Personal Access Token",
+        "generateUrl": "https://app.snyk.io/account/personal-access-tokens",
+        "setup": "Go to [Personal Access Tokens](https://app.snyk.io/account/personal-access-tokens) after signing in to Snyk, then create a token in your account settings. Use this for local CLI login and for API access where supported. If you only see the legacy token UI, you can also manage it in [account settings](https://app.snyk.io/account).",
+        "acquisition": "manual"
+      },
+      "snyk_api_token": {
+        "type": "bearer",
+        "label": "Snyk legacy API token",
+        "generateUrl": "https://app.snyk.io/account",
+        "setup": "Open [account settings](https://app.snyk.io/account) after logging in, reveal the `key` field, and copy the legacy API token. You can revoke and regenerate it there if needed. This is the older token format still accepted by Snyk CLI and API docs.",
+        "acquisition": "manual"
+      },
+      "snyk_oauth_app": {
+        "type": "oauth2",
+        "label": "Snyk OAuth2 client credentials / app",
+        "generateUrl": "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api",
+        "setup": "Register an OAuth2 client for Snyk Apps using the OAuth2 API flow. The app uses a `client_id` plus either `client_secret` or PKCE for authorization code flow; token exchange happens via the OAuth2 API after the user authorizes the app. This is the credential you mint for an integration rather than a personal token.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "snyk-rest-api",
+        "name": "Snyk REST API",
+        "type": "http",
+        "docs": "https://docs.snyk.io/developer-tools/snyk-api/rest-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snyk.io/developer-tools/snyk-api/rest-api",
+            "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "snyk_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "snyk-oauth2-api",
+        "name": "Snyk OAuth2 API",
+        "type": "http",
+        "docs": "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "snyk_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "scheme": "none"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "snyk-cli",
+        "name": "Snyk CLI",
+        "type": "cli",
+        "docs": "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli",
+            "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/configure-the-snyk-cli/configure-snyk-cli-to-connect-to-snyk-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "snyk_pat",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "snyk auth <YOUR_PAT>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "snyk auth <YOUR_API_TOKEN>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_pat",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "SNYK_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/configure-the-snyk-cli/configure-snyk-cli-to-connect-to-snyk-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "SNYK_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/configure-the-snyk-cli/configure-snyk-cli-to-connect-to-snyk-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "snyk_oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "SNYK_OAUTH_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "snyk"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T10:03:27.165Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 99101,
+    "completion_tokens": 1628,
+    "total_tokens": 100729
+  },
+  "visited": [
+    "https://docs.snyk.io/developer-tools/snyk-api/authentication-for-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/oauth2-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/reference",
+    "https://docs.snyk.io/developer-tools/snyk-api/rest-api",
+    "https://docs.snyk.io/developer-tools/snyk-api/snyk-api",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/authenticate-to-use-the-cli",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/commands",
+    "https://docs.snyk.io/developer-tools/snyk-cli/snyk-cli/configure-the-snyk-cli/configure-snyk-cli-to-connect-to-snyk-api",
+    "https://docs.snyk.io/llms.txt",
+    "https://github.com/snyk/user-docs/blob/main/developer-tools/snyk-cli/commands/auth.md"
+  ]
+}

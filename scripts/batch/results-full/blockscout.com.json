@@ -1,0 +1,561 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "blockscout.com",
+    "detect": {
+      "domain": "blockscout.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:38:01.489Z",
+    "summary": "Blockscout exposes a required-auth PRO HTTP API at https://api.blockscout.com/v2/api using the `apikey` query param with a PRO API key, a required-auth GraphQL API (e.g. `https://eth-sepolia.blockscout.com/api/v2/graphql`) using `Authorization: Bearer` with that key, a public MCP server at https://mcp.blockscout.com with no auth, and an Autoscout management API at https://autoscout.services.blockscout.com requiring an `x-api-key` from deploy.blockscout.com/api-keys.",
+    "credentials": {
+      "blockscout_pro_api_key": {
+        "type": "api_key",
+        "label": "Blockscout PRO API key",
+        "generateUrl": "https://dev.blockscout.com/",
+        "setup": "Go to [dev.blockscout.com](https://dev.blockscout.com/) and create a PRO API key for your account. The docs say the new PRO API key replaces older per-instance keys for the main multichain API.",
+        "acquisition": "manual"
+      },
+      "blockscout_instance_api_key": {
+        "type": "api_key",
+        "label": "Blockscout per-instance API key",
+        "generateUrl": "https://docs.blockscout.com/using-blockscout/my-account/api-keys",
+        "setup": "If you are using a self-hosted Blockscout chain that supports MyAccount, open the instance's **MyAccount** panel and create an API key there. The docs note this is per-instance and only available when MyAccount login is supported.",
+        "acquisition": "manual"
+      },
+      "blockscout_autoscout_api_key": {
+        "type": "api_key",
+        "label": "Blockscout Autoscout API key",
+        "generateUrl": "https://deploy.blockscout.com/api-keys",
+        "setup": "Open [deploy.blockscout.com/api-keys](https://deploy.blockscout.com/api-keys) and create an API key. The Autoscout docs say this key is required and is sent as the `x-api-key` header to `https://autoscout.services.blockscout.com`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "blockscout-pro-api",
+        "name": "Blockscout PRO API",
+        "type": "http",
+        "docs": "https://docs.blockscout.com/devs/pro-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.blockscout.com/devs/pro-api",
+            "https://docs.blockscout.com/devs/apis"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "blockscout_pro_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "apikey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.blockscout.com/devs/pro-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.blockscout.com/v2/api",
+        "variables": [
+          {
+            "name": "chain_id",
+            "in": "query",
+            "resolveFrom": "user",
+            "description": "Selects the target chain for the multichain API"
+          }
+        ]
+      },
+      {
+        "slug": "blockscout-graphql-api",
+        "name": "Blockscout GraphQL API",
+        "type": "graphql",
+        "docs": "https://docs.blockscout.com/devs/apis/graphql",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.blockscout.com/devs/apis/graphql"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "blockscout_pro_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.blockscout.com/devs/apis/graphql"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "https://eth-sepolia.blockscout.com/api/v2/graphql"
+      },
+      {
+        "slug": "blockscout-mcp-server",
+        "name": "Blockscout MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.blockscout.com/devs/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": []
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.blockscout.com/devs/mcp-server"
+            ]
+          }
+        },
+        "url": "https://mcp.blockscout.com",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "blockscout-autoscout-api",
+        "name": "Blockscout Autoscout API",
+        "type": "http",
+        "docs": "https://docs.blockscout.com/devs/apis/autoscout-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.blockscout.com/devs/apis/autoscout-api",
+            "https://blockscout.github.io/swaggers/services/autoscout/main/index.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "blockscout_autoscout_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.blockscout.com/devs/apis/autoscout-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://autoscout.services.blockscout.com"
+      },
+      {
+        "slug": "blockscout-smart-contract-verification-api",
+        "name": "Blockscout Smart Contract Verification API",
+        "type": "http",
+        "docs": "https://docs.blockscout.com/devs/verification/blockscout-smart-contract-verification-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.blockscout.com/devs/verification/blockscout-smart-contract-verification-api"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:38:01.489Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 322233,
+    "completion_tokens": 1760,
+    "total_tokens": 323993
+  },
+  "visited": [
+    "https://blockscout.github.io/swagger.yaml",
+    "https://blockscout.github.io/swaggers/services/autoscout/main/index.html",
+    "https://docs.blockscout.com/devs/apis",
+    "https://docs.blockscout.com/devs/apis/api-archive",
+    "https://docs.blockscout.com/devs/apis/api-keys-for-self-hosted-chains",
+    "https://docs.blockscout.com/devs/apis/autoscout-api",
+    "https://docs.blockscout.com/devs/apis/graphql",
+    "https://docs.blockscout.com/devs/apis/requests-and-limits",
+    "https://docs.blockscout.com/devs/apis/swagger-hub",
+    "https://docs.blockscout.com/devs/blockscout-sdk",
+    "https://docs.blockscout.com/devs/mcp-server",
+    "https://docs.blockscout.com/devs/pro-api",
+    "https://docs.blockscout.com/devs/verification/blockscout-smart-contract-verification-api",
+    "https://docs.blockscout.com/llms.txt",
+    "https://github.com/blockscout/mcp-server",
+    "https://www.blog.blockscout.com/blockscout-graphql-api-guide/",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "http://dev.blockscout.com",
+    "https://api.blockscout.com/v2/api?chain_id=1&module=account&action=balance&address=0x...&apikey=proapi_xxx",
+    "https://autoscout.services.blockscout.com",
+    "https://blockscout.com",
+    "https://blockscout.github.io/#/Apay",
+    "https://blockscout.github.io/#/Apay/Apay_WebHookExample",
+    "https://blockscout.github.io/#/Apay/CancelApaySubscription",
+    "https://blockscout.github.io/#/Apay/CreateApayRequestNetworkDeposit",
+    "https://blockscout.github.io/#/Apay/CreateApayStripeDeposit",
+    "https://blockscout.github.io/#/Apay/CreateApaySubscription",
+    "https://blockscout.github.io/#/Apay/CreateApaySubscriptionPlan",
+    "https://blockscout.github.io/#/Apay/DeleteApaySubscriptionPlan",
+    "https://blockscout.github.io/#/Apay/GetApayDeposit",
+    "https://blockscout.github.io/#/Apay/GetApaySubscription",
+    "https://blockscout.github.io/#/Apay/GetApaySubscriptionPlan",
+    "https://blockscout.github.io/#/Apay/GetApaySubscriptionPlans",
+    "https://blockscout.github.io/#/Apay/GetStripeCustomerPortal",
+    "https://blockscout.github.io/#/Apay/ListApayDeposits",
+    "https://blockscout.github.io/#/Apay/ListApaySubscriptions",
+    "https://blockscout.github.io/#/Apay/PayForApaySubscription",
+    "https://blockscout.github.io/#/Apay/ReportApaySubscriptionUsage",
+    "https://blockscout.github.io/#/Apay/ResumeApaySubscription",
+    "https://blockscout.github.io/#/Apay/UpdateApaySubscriptionPlan",
+    "https://blockscout.github.io/#/Apay/UpdatelApaySubscription",
+    "https://blockscout.github.io/#/Autoscout",
+    "https://blockscout.github.io/#/Deployments",
+    "https://blockscout.github.io/#/Deployments/Autoscout_GetCurrentDeployment",
+    "https://blockscout.github.io/#/Deployments/Autoscout_GetDeployment",
+    "https://blockscout.github.io/#/Deployments/Autoscout_GetDeploymentLog",
+    "https://blockscout.github.io/#/Deployments/Autoscout_GetDeploymentStorageUsage",
+    "https://blockscout.github.io/#/Deployments/Autoscout_GetNewAdminPassword",
+    "https://blockscout.github.io/#/Deployments/Autoscout_ListDeploymentLogs",
+    "https://blockscout.github.io/#/Deployments/Autoscout_ListDeployments",
+    "https://blockscout.github.io/#/Deployments/Autoscout_SyncDeploymentsServerSpec",
+    "https://blockscout.github.io/#/Deposits",
+    "https://blockscout.github.io/#/Deposits/Autoscout_CreateRequestNetworkDeposit",
+    "https://blockscout.github.io/#/Deposits/Autoscout_CreateStripeDeposit",
+    "https://blockscout.github.io/#/Deposits/Autoscout_ListDeposits",
+    "https://blockscout.github.io/#/Deposits/Autoscout_PreviewDeposit",
+    "https://blockscout.github.io/#/Health",
+    "https://blockscout.github.io/#/Health/Health_Check",
+    "https://blockscout.github.io/#/Instances",
+    "https://blockscout.github.io/#/Instances/Autoscout_CreateInstance",
+    "https://blockscout.github.io/#/Instances/Autoscout_DeleteInstance",
+    "https://blockscout.github.io/#/Instances/Autoscout_GetConfigSchema",
+    "https://blockscout.github.io/#/Instances/Autoscout_GetInstance",
+    "https://blockscout.github.io/#/Instances/Autoscout_ListInstances",
+    "https://blockscout.github.io/#/Instances/Autoscout_RegenerateConfigBatch",
+    "https://blockscout.github.io/#/Instances/Autoscout_SearchInstances",
+    "https://blockscout.github.io/#/Instances/Autoscout_UpdateConfig",
+    "https://blockscout.github.io/#/Instances/Autoscout_UpdateConfigPartial",
+    "https://blockscout.github.io/#/Instances/Autoscout_UpdateInstanceStatus",
+    "https://blockscout.github.io/#/Instances/Autoscout_UpdateInstanceStatusBatch",
+    "https://blockscout.github.io/#/Plugins",
+    "https://blockscout.github.io/#/Plugins/Autoscout_ListPluginEvents",
+    "https://blockscout.github.io/#/Plugins/Autoscout_ListPluginLogs",
+    "https://blockscout.github.io/#/Subscription",
+    "https://blockscout.github.io/#/Subscription/Autoscout_CancelStripeSubscription",
+    "https://blockscout.github.io/#/Subscription/Autoscout_GetStripeCustomerPortal",
+    "https://blockscout.github.io/#/Subscription/Autoscout_GetStripeSubscriptionStatus",
+    "https://blockscout.github.io/#/Subscriptions",
+    "https://blockscout.github.io/#/Subscriptions/Autoscout_CreateStripeSubscription",
+    "https://blockscout.github.io/#/Teams",
+    "https://blockscout.github.io/#/Teams/Autoscout_AcceptTeamInvite",
+    "https://blockscout.github.io/#/Teams/Autoscout_CreateTeam",
+    "https://blockscout.github.io/#/Teams/Autoscout_CreateTeamInvite",
+    "https://blockscout.github.io/#/Teams/Autoscout_DeleteTeam",
+    "https://blockscout.github.io/#/Teams/Autoscout_DeleteTeamInvite",
+    "https://blockscout.github.io/#/Teams/Autoscout_GetTeam",
+    "https://blockscout.github.io/#/Teams/Autoscout_LeaveTeam",
+    "https://blockscout.github.io/#/Teams/Autoscout_ListTeamInvites",
+    "https://blockscout.github.io/#/Teams/Autoscout_ListTeamMembers",
+    "https://blockscout.github.io/#/Teams/Autoscout_ListTeams",
+    "https://blockscout.github.io/#/Teams/Autoscout_RemoveTeamMember",
+    "https://blockscout.github.io/#/Teams/Autoscout_ResendTeamInvite",
+    "https://blockscout.github.io/#/Teams/Autoscout_UpdateTeam",
+    "https://blockscout.github.io/#/Teams/Autoscout_UpdateTeamMemberRole",
+    "https://blockscout.github.io/#/Users",
+    "https://blockscout.github.io/#/Users/Autoscout_AcceptTermsOfService",
+    "https://blockscout.github.io/#/Users/Autoscout_ActivateRegularPromocode",
+    "https://blockscout.github.io/#/Users/Autoscout_CreateAuthToken",
+    "https://blockscout.github.io/#/Users/Autoscout_CreateUserAcquisitionSource",
+    "https://blockscout.github.io/#/Users/Autoscout_DeleteAuthToken",
+    "https://blockscout.github.io/#/Users/Autoscout_GetBilling",
+    "https://blockscout.github.io/#/Users/Autoscout_GetLatestTermsOfService",
+    "https://blockscout.github.io/#/Users/Autoscout_GetProfile",
+    "https://blockscout.github.io/#/Users/Autoscout_ListAuthTokens",
+    "https://blockscout.github.io/#/Users/Autoscout_PreviewRegularPromocode",
+    "https://blockscout.github.io/#/Users/Autoscout_RegisterProfile",
+    "https://blockscout.github.io/#/Users/Autoscout_SearchUsers",
+    "https://blockscout.github.io/#/Users/Autoscout_UpdateProfile",
+    "https://blockscout.github.io/swagger.yaml",
+    "https://blockscout.github.io/swaggers/",
+    "https://blockscout.github.io/swaggers/services/autoscout/main/index.html",
+    "https://chains.blockscout.com",
+    "https://chains.blockscout.com/",
+    "https://deploy.blockscout.com/api-keys",
+    "https://dev.blockscout.com",
+    "https://dev.blockscout.com/",
+    "https://discord.gg/blockscout",
+    "https://docs.blockscout.com/",
+    "https://docs.blockscout.com/#access-graphql-api",
+    "https://docs.blockscout.com/#api-reference",
+    "https://docs.blockscout.com/#architecture-and-data-flow",
+    "https://docs.blockscout.com/#blockscout-api-usage",
+    "https://docs.blockscout.com/#blockscout-pro-api-%E2%80%94-multichain-onchain-data-one-api-key",
+    "https://docs.blockscout.com/#blockscout-pro-api-—-multichain-onchain-data-one-api-key",
+    "https://docs.blockscout.com/#built-for",
+    "https://docs.blockscout.com/#check-deployment-status",
+    "https://docs.blockscout.com/#common-supported-chain-ids",
+    "https://docs.blockscout.com/#complete-integration-example",
+    "https://docs.blockscout.com/#content-area",
+    "https://docs.blockscout.com/#create-an-instance",
+    "https://docs.blockscout.com/#etherscan-compatible-endpoints",
+    "https://docs.blockscout.com/#example-query-to-retrieve-transactions-for-a-specific-address",
+    "https://docs.blockscout.com/#examples",
+    "https://docs.blockscout.com/#explorer-enriched-data",
+    "https://docs.blockscout.com/#flattened-contract",
+    "https://docs.blockscout.com/#get-started-in-3-steps",
+    "https://docs.blockscout.com/#installation",
+    "https://docs.blockscout.com/#key-features",
+    "https://docs.blockscout.com/#license-type",
+    "https://docs.blockscout.com/#mainnets",
+    "https://docs.blockscout.com/#more-capacity-at-every-tier",
+    "https://docs.blockscout.com/#multi-part-solidity-files",
+    "https://docs.blockscout.com/#multichain-by-default",
+    "https://docs.blockscout.com/#overview",
+    "https://docs.blockscout.com/#param-autodetect-constructor-args",
+    "https://docs.blockscout.com/#param-chosen-contract-index",
+    "https://docs.blockscout.com/#param-compiler-version",
+    "https://docs.blockscout.com/#param-compiler-version-1",
+    "https://docs.blockscout.com/#param-constructor-args",
+    "https://docs.blockscout.com/#param-contract-name",
+    "https://docs.blockscout.com/#param-evm-version",
+    "https://docs.blockscout.com/#param-files-0",
+    "https://docs.blockscout.com/#param-files-0-1",
+    "https://docs.blockscout.com/#param-files-0-2",
+    "https://docs.blockscout.com/#param-files-1",
+    "https://docs.blockscout.com/#param-is-optimization-enabled",
+    "https://docs.blockscout.com/#param-libraries",
+    "https://docs.blockscout.com/#param-license-type",
+    "https://docs.blockscout.com/#param-license-type-1",
+    "https://docs.blockscout.com/#param-object",
+    "https://docs.blockscout.com/#param-optimization-runs",
+    "https://docs.blockscout.com/#popup-features",
+    "https://docs.blockscout.com/#queries",
+    "https://docs.blockscout.com/#query-types",
+    "https://docs.blockscout.com/#setup",
+    "https://docs.blockscout.com/#setup-2",
+    "https://docs.blockscout.com/#start-instance",
+    "https://docs.blockscout.com/#stop-an-instance",
+    "https://docs.blockscout.com/#supported-chains",
+    "https://docs.blockscout.com/#the-problem",
+    "https://docs.blockscout.com/#toast-features",
+    "https://docs.blockscout.com/#transaction-history-popup",
+    "https://docs.blockscout.com/#transaction-toast-notifications",
+    "https://docs.blockscout.com/#trusted-infrastructure",
+    "https://docs.blockscout.com/#update-an-instance",
+    "https://docs.blockscout.com/#usage",
+    "https://docs.blockscout.com/#usage-2",
+    "https://docs.blockscout.com/#use-cases",
+    "https://docs.blockscout.com/#usenotification-hook",
+    "https://docs.blockscout.com/#usetransactionpopup-hook",
+    "https://docs.blockscout.com/#verification-flattened-contract",
+    "https://docs.blockscout.com/#verification-multipart-copy",
+    "https://docs.blockscout.com/#verification-multipart-vyper",
+    "https://docs.blockscout.com/#verification-service-running",
+    "https://docs.blockscout.com/#verification-sourcify",
+    "https://docs.blockscout.com/#verification-standard-json",
+    "https://docs.blockscout.com/#verification-standard-json-vyper",
+    "https://docs.blockscout.com/#verification-vyper-contract",
+    "https://docs.blockscout.com/#verify-smart-contract",
+    "https://docs.blockscout.com/#via-sourcify-files",
+    "https://docs.blockscout.com/#via-standard-json-input",
+    "https://docs.blockscout.com/#vyper-contracts",
+    "https://docs.blockscout.com/#vyper-multi-part-files",
+    "https://docs.blockscout.com/#vyper-standard-json-input",
+    "https://docs.blockscout.com/#what-chains-are-supported",
+    "https://docs.blockscout.com/#what-is-graphql",
+    "https://docs.blockscout.com/#why-developers-switch-to-blockscout-pro-api",
+    "https://docs.blockscout.com/about/announcements.md",
+    "https://docs.blockscout.com/about/announcements/newsletter-and-blog.md",
+    "https://docs.blockscout.com/about/chains.md",
+    "https://docs.blockscout.com/about/features",
+    "https://docs.blockscout.com/about/features.md",
+    "https://docs.blockscout.com/about/funding.md",
+    "https://docs.blockscout.com/about/partners-and-integrations.md",
+    "https://docs.blockscout.com/about/partners-and-integrations/raas-providers.md",
+    "https://docs.blockscout.com/about/partners-and-integrations/vera-verifier-alliance.md",
+    "https://docs.blockscout.com/about/roadmap.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/get-a-bundler-by-address-hash.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/get-a-factory-by-address-hash.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/get-a-human-readable-llm-based-user-operation-summary.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/get-a-paymaster-by-address-hash.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/get-a-user-operation-by-hash.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/get-an-account-abstraction-wallet-by-address-hash.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/get-the-status-of-the-account-abstraction-microservice.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/list-of-account-abstraction-wallets.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/list-of-recent-bundles.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/list-of-recent-user-operations.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/list-of-top-bundlers.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/list-of-top-paymasters.md",
+    "https://docs.blockscout.com/api-reference/account-abstraction/list-of-top-wallet-factories.md",
+    "https://docs.blockscout.com/api-reference/account/get-a-list-of-internal-transactions.md",
+    "https://docs.blockscout.com/api-reference/account/get-a-list-of-transactions-by-address.md",
+    "https://docs.blockscout.com/api-reference/account/get-balance-for-multiple-addresses-in-a-single-call.md",
+    "https://docs.blockscout.com/api-reference/account/get-erc-1155-token-transfer-events-by-address.md",
+    "https://docs.blockscout.com/api-reference/account/get-erc-20-token-balance-for-a-single-address.md",
+    "https://docs.blockscout.com/api-reference/account/get-erc-20-token-transfer-events-by-address.md",
+    "https://docs.blockscout.com/api-reference/account/get-erc-404-token-transfer-events-by-address.md",
+    "https://docs.blockscout.com/api-reference/account/get-erc-721-token-transfer-events-by-address.md",
+    "https://docs.blockscout.com/api-reference/account/get-eth-balance-json-rpc-format.md",
+    "https://docs.blockscout.com/api-reference/account/get-list-of-blocks-mined-by-address.md",
+    "https://docs.blockscout.com/api-reference/account/get-native-token-balance-for-a-single-address.md",
+    "https://docs.blockscout.com/api-reference/account/get-pending-transactions-for-an-address.md",
+    "https://docs.blockscout.com/api-reference/account/list-accounts-and-native-balances.md",
+    "https://docs.blockscout.com/api-reference/addresses/export-celo-election-rewards-as-csv.md",
+    "https://docs.blockscout.com/api-reference/addresses/export-internal-transactions-as-csv.md",
+    "https://docs.blockscout.com/api-reference/addresses/export-logs-as-csv.md",
+    "https://docs.blockscout.com/api-reference/addresses/export-token-transfers-as-csv.md",
+    "https://docs.blockscout.com/api-reference/addresses/export-transactions-as-csv.md",
+    "https://docs.blockscout.com/api-reference/addresses/get-activity-count-stats-for-a-specific-address.md",
+    "https://docs.blockscout.com/api-reference/addresses/get-counters-for-address-tabs.md",
+    "https://docs.blockscout.com/api-reference/addresses/get-daily-native-coin-balance-snapshots-for-an-address-from-previous-10-days.md",
+    "https://docs.blockscout.com/api-reference/addresses/get-native-coin-balance-history-for-an-address-showing-all-balance-changes.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-addresses-holding-native-coins-sorted-by-balance--top-accounts.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-all-internal-transactions-involving-a-specific-address.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-all-token-balances-held-by-a-specific-address.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-beacon-deposits-for-a-specific-address.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-blocks-validated-mined-by-a-specific-validatorminer-address.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-celo-election-rewards-for-a-specific-address.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-event-logs-emitted-by-or-involving-a-specific-address.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-nfts-owned-by-a-specific-address-with-optional-type-filtering.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-nfts-owned-by-an-address-grouped-by-collectionproject.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-token-balances-for-an-address-with-pagination-and-type-filtering.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-token-transfers-involving-a-specific-address-with-filtering-options.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-transactions-involving-a-specific-address-with-to-from-filtering.md",
+    "https://docs.blockscout.com/api-reference/addresses/list-validator-withdrawals-involving-a-specific-address.md",
+    "https://docs.blockscout.com/api-reference/addresses/retrieve-detailed-information-about-a-specific-address-or-contract.md",
+    "https://docs.blockscout.com/api-reference/advanced-filters/export-advanced-filter-results-as-csv.md",
+    "https://docs.blockscout.com/api-reference/advanced-filters/list-known-contract-methods.md",
+    "https://docs.blockscout.com/api-reference/advanced-filters/list-transactions-internal-transactions-and-token-transfers-matching-the-advanced-filter-criteria.md",
+    "https://docs.blockscout.com/api-reference/arbitr",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-batch-by-anytrust-data-hash.md",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-batch-by-celestia-blob-reference.md",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-batch-by-eigenda-data-hash.md",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-batch-by-number.md",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-batches-count.md",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-claim-data-for-a-withdrawal.md",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-cross-chain-messages-count.md",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-the-latest-batch-number.md",
+    "https://docs.blockscout.com/api-reference/arbitrum/get-withdrawal-messages-for-a-transaction.md",
+    "https://docs.blockscout.com/api-reference/eth-rpc/ethereum-json-rpc-endpoint",
+    "https://docs.blockscout.com/api-reference/statsservice/returns-stats-to-be-displayed-on-the-transactions-page",
+    "https://docs.blockscout.com/devs/api-for-ai-agents",
+    "https://docs.blockscout.com/devs/apis",
+    "https://docs.blockscout.com/devs/apis/api-archive",
+    "https://docs.blockscout.com/devs/apis/api-keys-for-self-hosted-chains",
+    "https://docs.blockscout.com/devs/apis/autoscout-api",
+    "https://docs.blockscout.com/devs/apis/graphql",
+    "https://docs.blockscout.com/devs/apis/requests-and-limits",
+    "https://docs.blockscout.com/devs/apis/rest",
+    "https://docs.blockscout.com/devs/apis/rpc",
+    "https://docs.blockscout.com/devs/apis/rpc/contract#verify-a-contract-with-its-source-code-and-contract-creation-information",
+    "https://docs.blockscout.com/devs/apis/rpc/eth-rpc",
+    "https://docs.blockscout.com/devs/apis/swagger-hub",
+    "https://docs.blockscout.com/devs/blockscout-license",
+    "https://docs.blockscout.com/devs/blockscout-sdk",
+    "https://docs.blockscout.com/devs/chainscout-chains-list",
+    "https://docs.blockscout.com/devs/dev-portal",
+    "https://docs.blockscout.com/devs/error-responses",
+    "https://docs.blockscout.com/devs/for-web3-developers",
+    "https://docs.blockscout.com/devs/integrate-merits",
+    "https://docs.blockscout.com/devs/mcp-examples/rollup-deployment-variables",
+    "https://docs.blockscout.com/devs/mcp-server",
+    "https://docs.blockscout.com/devs/metadata-service",
+    "https://docs.blockscout.com/devs/migrate-from-etherscan",
+    "https://docs.blockscout.com/devs/multichain-service",
+    "https://docs.blockscout.com/devs/pro-api",
+    "https://docs.blockscout.com/devs/pro-api-responses-and-routes",
+    "https://docs.blockscout.com/devs/replace-links",
+    "https://docs.blockscout.com/devs/use-cases-overview",
+    "https://docs.blockscout.com/devs/verification#via-flattened-source-code",
+    "https://docs.blockscout.com/devs/verification/blockscout-smart-contract-verification-api",
+    "https://docs.blockscout.com/devs/verification/contracts-verification-via-sourcify",
+    "https://docs.blockscout.com/devs/verification/websocket-notifications",
+    "https://docs.blockscout.com/faqs/developer-faqs",
+    "https://docs.blockscout.com/faqs/faqs",
+    "https://docs.blockscout.com/get-started/integrating-data",
+    "https://docs.blockscout.com/get-started/migration-guide",
+    "https://docs.blockscout.com/get-started/running-blockscout",
+    "https://docs.blockscout.com/get-started/using-an-explorer",
+    "https://docs.blockscout.com/llms.txt",
+    "https://docs.blockscout.com/resources/contributing-to-blockscout",
+    "https://docs.blockscout.com/resources/media-kit",
+    "https://docs.blockscout.com/resources/premium-features",
+    "https://docs.blockscout.com/resources/release-notes",
+    "https://docs.blockscout.com/resources/security-program",
+    "https://docs.blockscout.com/setup/celestia-node-indexer",
+    "https://docs.blockscout.com/setup/db-schema",
+    "https://docs.blockscout.com/setup/testing",
+    "https://docs.blockscout.com/using-blockscout/export-to-csv",
+    "https://docs.blockscout.com/using-blockscout/my-account/api-keys",
+    "https://docs.blockscout.com/using-blockscout/widgets",
+    "https://eth-sepolia.blockscout.com/api/v2/graphql",
+    "https://eth.blockscout.com",
+    "https://eth.blockscout.com/api-docs?tab=graphql_api",
+    "https://eth.blockscout.com/api/v2/smart-contracts/0x030f7c7dbd472864220bcf9e37ede1b8a3125970/verification/via/sourcify",
+    "https://eth.blockscout.com/api/v2/smart-contracts/0x9c1c619176b4f8521a0ab166945d785b92aef453/verification/via/standard-input",
+    "https://eth.blockscout.com/api/v2/smart-contracts/0xb12cad649a56e67188bbaa56583c18dc7d2812ed/verification/via/flattened-code",
+    "https://eth.blockscout.com/api/v2/smart-contracts/verification/config",
+    "https://ethereum.github.io/execution-apis/api-documentation/",
+    "https://github.com/blockscout/app-sdk",
+    "https://github.com/blockscout/blockscout",
+    "https://github.com/blockscout/blockscout-rs",
+    "https://github.com/blockscout/blockscout/blob/master/apps/block_scout_web/priv/rate_limit_config.json",
+    "https://github.com/blockscout/blockscout/blob/master/apps/block_scout_web/rate_limits.md",
+    "https://github.com/blockscout/blockscout/discussions",
+    "https://github.com/blockscout/chainscout/blob/main/data/chains.json",
+    "https://github.com/blockscout/docs/blob/594e4c2ef83556b3cb41e9fd43bca776afb63c05/for-developers/information-and-settings/env-variables/backend-envs-chain-specific.md?plain=1#L136",
+    "https://github.com/blockscout/docs/blob/df6996a0f8e553c2d4b1c3dcda6ef2518a8b39f9/for-developers/information-and-settings/env-variables/backend-envs-chain-specific.md?plain=1#L102-L119",
+    "https://github.com/blockscout/mcp-server",
+    "https://github.com/graphql/graphiql",
+    "https://github.com/poanetwork/blockscout",
+    "https://mcp.blockscout.com",
+    "https://sdk-compatibility.blockscout.com/",
+    "https://t.me/blockscoutcommunity",
+    "https://www.blockscout.com/",
+    "https://www.blog.blockscout.com/",
+    "https://www.blog.blockscout.com/blockscout-graphql-api-guide/",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=blockscout",
+    "https://www.npmjs.com/package/@blockscout/app-sdk",
+    "https://x.com/blockscout",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

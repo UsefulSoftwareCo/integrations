@@ -1,0 +1,634 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "snowplow.io",
+    "detect": {
+      "domain": "snowplow.io",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:56:54.227Z",
+    "summary": "Snowplow exposes a documented Console REST API, a Snowplow CLI, a local stdio MCP server bundled with the CLI, and a remote HTTP MCP server tied to Snowplow Console authentication.",
+    "description": "Snowplow provides customer data infrastructure for collecting, validating, enriching, and delivering event-level behavioral data to warehouses, lakes, streams, and downstream applications. It also includes Event Studio and AI-oriented tooling for managing tracking plans, schemas, and related resources.",
+    "credentials": {
+      "console_api_key_pair": {
+        "type": "compound",
+        "label": "Snowplow Console API key ID + API key secret",
+        "generateUrl": "https://console.snowplowanalytics.com/credentials",
+        "setup": "In [Snowplow Console](https://console.snowplowanalytics.com/), go to **Settings** → **Manage organization** → **API keys for managing Snowplow** (or the [credentials section](https://console.snowplowanalytics.com/credentials)). Create an API key and securely save both the `API key ID` and the `API key` secret. The docs state this pair is used together like a username/password combination.",
+        "acquisition": "manual"
+      },
+      "console_access_token": {
+        "type": "jwt",
+        "label": "Snowplow Console access token",
+        "generateUrl": "https://console.snowplowanalytics.com/api/msc/v1/docs/index.html?url=/api/msc/v1/docs/docs.yaml",
+        "setup": "First create a [Snowplow Console API key](https://docs.snowplow.io/docs/account-management/). Then exchange the `API key ID` and `API key` at `GET https://console.snowplowanalytics.com/api/msc/v1/organizations/<ORGANIZATION_ID>/credentials/v3/token` using headers `X-API-Key-ID` and `X-API-Key`. The response returns `{\"accessToken\":\"<JWT>\"}`; use that JWT as `Authorization: Bearer <JWT>`. The token is temporary and the docs say it is valid for 24 hours.",
+        "acquisition": "manual"
+      },
+      "console_oauth_login": {
+        "type": "oauth2",
+        "label": "Snowplow Console OAuth login",
+        "generateUrl": "https://console.snowplowanalytics.com/",
+        "setup": "For the remote MCP server, sign in to [Snowplow Console](https://console.snowplowanalytics.com/) when your MCP client opens the browser during first use. The MCP docs say the server authenticates through your existing Snowplow Console login via OAuth. For Claude.ai custom connectors, the docs show the MCP URL `https://console.snowplowanalytics.com/api/agent/mcp` and OAuth client ID `NxCcdyu13Cr4umnIYw70evvUyRXRvyWf`; Claude.ai redirects you to Snowplow login to authorize access.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "snowplow-console-api",
+        "name": "Snowplow Console API",
+        "type": "http",
+        "docs": "https://console.snowplowanalytics.com/api/msc/v1/docs/index.html?url=/api/msc/v1/docs/docs.yaml",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snowplow.io/docs/account-management/",
+            "https://docs.snowplow.io/docs/event-studio/programmatic-management/",
+            "https://console.snowplowanalytics.com/api/msc/v1/docs/index.html?url=/api/msc/v1/docs/docs.yaml"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "console_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snowplow.io/docs/account-management/",
+                  "https://docs.snowplow.io/docs/event-studio/programmatic-management/",
+                  "https://console.snowplowanalytics.com/api/msc/v1/docs/index.html?url=/api/msc/v1/docs/docs.yaml"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://console.snowplowanalytics.com/api/msc/v1/docs/docs.yaml",
+        "url": "https://console.snowplowanalytics.com/api/msc/v1",
+        "variables": [
+          {
+            "name": "organizationId",
+            "resolveFrom": "Snowplow Console Manage organization page",
+            "description": "Organization ID is required in Console API paths."
+          }
+        ]
+      },
+      {
+        "slug": "snowplow-cli",
+        "name": "Snowplow CLI",
+        "type": "cli",
+        "docs": "https://docs.snowplow.io/docs/api-reference/snowplow-cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snowplow.io/docs/api-reference/snowplow-cli/",
+            "https://docs.snowplow.io/docs/api-reference/snowplow-cli/reference/",
+            "https://docs.snowplow.io/docs/api-reference/snowplow-cli/send-events/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "console_api_key_pair",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "snowplow-cli setup",
+                    "env": [
+                      "SNOWPLOW_CONSOLE_API_KEY_ID",
+                      "SNOWPLOW_CONSOLE_API_KEY",
+                      "SNOWPLOW_CONSOLE_ORG_ID"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snowplow.io/docs/api-reference/snowplow-cli/",
+                  "https://docs.snowplow.io/docs/api-reference/snowplow-cli/reference/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "snowplow/taps/snowplow-cli"
+          },
+          {
+            "registryType": "github-release",
+            "identifier": "snowplow/snowplow-cli",
+            "runtimeHint": "prebuilt binaries"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "@snowplow/snowplow-cli",
+            "runtimeHint": "used via npx for MCP mode"
+          }
+        ],
+        "command": "snowplow-cli",
+        "notes": "Most management commands use Console API credentials and organization ID. The `events send` subcommand can send to a Collector without Console credentials when given `--collector`."
+      },
+      {
+        "slug": "snowplow-cli-mcp-server",
+        "name": "Snowplow CLI MCP server",
+        "type": "mcp",
+        "docs": "https://docs.snowplow.io/docs/llms-support/cli-mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snowplow.io/docs/llms-support/cli-mcp-server/",
+            "https://docs.snowplow.io/docs/api-reference/snowplow-cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "console_api_key_pair",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "snowplow-cli setup",
+                    "env": [
+                      "SNOWPLOW_CONSOLE_API_KEY_ID",
+                      "SNOWPLOW_CONSOLE_API_KEY",
+                      "SNOWPLOW_CONSOLE_ORG_ID"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snowplow.io/docs/llms-support/cli-mcp-server/",
+                  "https://docs.snowplow.io/docs/api-reference/snowplow-cli/"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "stdio"
+        ],
+        "command": "snowplow-cli mcp"
+      },
+      {
+        "slug": "snowplow-mcp-server",
+        "name": "Snowplow MCP server",
+        "type": "mcp",
+        "docs": "https://docs.snowplow.io/docs/llms-support/snowplow-mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.snowplow.io/docs/llms-support/snowplow-mcp/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "console_oauth_login",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snowplow.io/docs/llms-support/snowplow-mcp/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "console_api_key_pair",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.snowplow.io/docs/llms-support/snowplow-mcp/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://console.snowplowanalytics.com/api/agent/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:56:54.227Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 285019,
+    "completion_tokens": 2249,
+    "total_tokens": 287268
+  },
+  "visited": [
+    "https://console.snowplowanalytics.com/api/msc/v1/docs/docs.yaml",
+    "https://console.snowplowanalytics.com/api/msc/v1/docs/index.html?url=/api/msc/v1/docs/docs.yaml",
+    "https://docs.snowplow.io/docs/",
+    "https://docs.snowplow.io/docs/account-management/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/reference/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/send-events/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/data-structures-api/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/event-specifications-api/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/snowplow-cli/data-structures/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/tracking-plans-api/",
+    "https://docs.snowplow.io/docs/llms-support/",
+    "https://docs.snowplow.io/docs/llms-support/cli-mcp-server/",
+    "https://docs.snowplow.io/docs/llms-support/snowplow-mcp/",
+    "https://snowplow.io/llms.txt"
+  ],
+  "grounding": [
+    "http://iglucentral.com/schemas/com.snowplowanalytics.self-desc/schema/jsonschema/1-0-0#",
+    "http://json-schema.org/draft-04/schema#",
+    "https://brew.sh/",
+    "https://claude.ai",
+    "https://claude.com/product/claude-code",
+    "https://co",
+    "https://community.snowplow.io/",
+    "https://console.snowplowanalytics.com",
+    "https://console.snowplowanalytics.com/",
+    "https://console.snowplowanalytics.com/#/Credentials",
+    "https://console.snowplowanalytics.com/#/Credentials/deleteOrganizationsOrganizationidCredentialsV2Api-keysApikeyid",
+    "https://console.snowplowanalytics.com/#/Credentials/getOrganizationsOrganizationidCredentialsV2Api-keys",
+    "https://console.snowplowanalytics.com/#/Credentials/getOrganizationsOrganizationidCredentialsV2Api-keysApikeyid",
+    "https://console.snowplowanalytics.com/#/Credentials/getOrganizationsOrganizationidCredentialsV2Token",
+    "https://console.snowplowanalytics.com/#/Credentials/getOrganizationsOrganizationidCredentialsV3Token",
+    "https://console.snowplowanalytics.com/#/Credentials/postOrganizationsOrganizationidCredentialsV2Api-keys",
+    "https://console.snowplowanalytics.com/#/Data%20Catalog",
+    "https://console.snowplowanalytics.com/#/Data%20Catalog/getOrganizationsOrganizationidData-catalogV1",
+    "https://console.snowplowanalytics.com/#/Data%20Catalog/getOrganizationsOrganizationidData-catalogV1Search",
+    "https://console.snowplowanalytics.com/#/Data%20Models",
+    "https://console.snowplowanalytics.com/#/Data%20Models/getOrganizationsOrganizationidData-modelsV1Models",
+    "https://console.snowplowanalytics.com/#/Data%20Models/getOrganizationsOrganizationidData-modelsV1ModelsModelname",
+    "https://console.snowplowanalytics.com/#/Data%20Models/putOrganizationsOrganizationidData-modelsV1ModelsModelname",
+    "https://console.snowplowanalytics.com/#/Data%20Structure%20Drafts",
+    "https://console.snowplowanalytics.com/#/Data%20Structure%20Drafts/deleteOrganizationsOrganizationidData-structure-draftsV1Schemahash",
+    "https://console.snowplowanalytics.com/#/Data%20Structure%20Drafts/getOrganizationsOrganizationidData-structure-draftsV1",
+    "https://console.snowplowanalytics.com/#/Data%20Structure%20Drafts/getOrganizationsOrganizationidData-structure-draftsV1Schemahash",
+    "https://console.snowplowanalytics.com/#/Data%20Structure%20Drafts/getOrganizationsOrganizationidData-structure-draftsV1SchemahashSchema",
+    "https://console.snowplowanalytics.com/#/Data%20Structure%20Drafts/getOrganizationsOrganizationidData-structure-draftsV1Schemas",
+    "https://console.snowplowanalytics.com/#/Data%20Structure%20Drafts/postOrganizationsOrganizationidData-structure-draftsV1",
+    "https://console.snowplowanalytics.com/#/Data%20Structure%20Drafts/postOrganizationsOrganizationidData-structure-draftsV1Promote",
+    "https://console.snowplowanalytics.com/#/Data%20Structures",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/getOrganizationsOrganizationidData-structuresV1",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/getOrganizationsOrganizationidData-structuresV1Schemahash",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/getOrganizationsOrganizationidData-structuresV1SchemahashDeployments",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/getOrganizationsOrganizationidData-structuresV1SchemahashVersionsVersion",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/patchOrganizationsOrganizationidData-structuresV1SchemahashMeta",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/postOrganizationsOrganizationidData-structuresV1Batch-promotion",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/postOrganizationsOrganizationidData-structuresV1Deployment-requests",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/postOrganizationsOrganizationidData-structuresV1Sync",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/postOrganizationsOrganizationidData-structuresV1Validation-requests",
+    "https://console.snowplowanalytics.com/#/Data%20Structures/putOrganizationsOrganizationidData-structuresV1SchemahashMeta",
+    "https://console.snowplowanalytics.com/#/Event%20Specification",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/deleteOrganizationsOrganizationidEvent-specsV1Eventspecid",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/getOrganizationsOrganizationidEvent-specsV1",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/getOrganizationsOrganizationidEvent-specsV1Eventspecid",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/getOrganizationsOrganizationidEvent-specsV1EventspecidHistory",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/getOrganizationsOrganizationidEvent-specsV1EventspecidVersions",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/getOrganizationsOrganizationidEvent-specsV1Metrics",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/patchOrganizationsOrganizationidEvent-specsV1Eventspecid",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/postOrganizationsOrganizationidEvent-specsV1",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/postOrganizationsOrganizationidEvent-specsV1Clone",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/postOrganizationsOrganizationidEvent-specsV1Compatibility",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/postOrganizationsOrganizationidEvent-specsV1Versions",
+    "https://console.snowplowanalytics.com/#/Event%20Specification/putOrganizationsOrganizationidEvent-specsV1Eventspecid",
+    "https://console.snowplowanalytics.com/#/Jobs",
+    "https://console.snowplowanalytics.com/#/Jobs/getOrganizationsOrganizationidJobsV1Runs",
+    "https://console.snowplowanalytics.com/#/Jobs/getOrganizationsOrganizationidJobsV1RunsRunid",
+    "https://console.snowplowanalytics.com/#/Jobs/getOrganizationsOrganizationidJobsV1RunsRunidSteps",
+    "https://console.snowplowanalytics.com/#/Jobs/getOrganizationsOrganizationidJobsV1RunsRunidStepsStepname",
+    "https://console.snowplowanalytics.com/#/Metrics",
+    "https://console.snowplowanalytics.com/#/Metrics/getOrganizationsOrganizationidMetricsV1PipelinesPipelineidFailed-events",
+    "https://console.snowplowanalytics.com/#/Metrics/getOrganizationsOrganizationidMetricsV1PipelinesPipelineidFailed-eventsErrorid",
+    "https://console.snowplowanalytics.com/#/Organizations",
+    "https://console.snowplowanalytics.com/#/Organizations/getOrganizations",
+    "https://console.snowplowanalytics.com/#/Resources",
+    "https://console.snowplowanalytics.com/#/Resources/deleteOrganizationsOrganizationidResourcesV1IglusIgluenvironmentKeysIgluapikeyid",
+    "https://console.snowplowanalytics.com/#/Resources/getOrganizationsOrganizationidResourcesV1Iglus",
+    "https://console.snowplowanalytics.com/#/Resources/getOrganizationsOrganizationidResourcesV1Minis",
+    "https://console.snowplowanalytics.com/#/Resources/getOrganizationsOrganizationidResourcesV1MinisMiniidConfigurationEnrichments",
+    "https://console.snowplowanalytics.com/#/Resources/getOrganizationsOrganizationidResourcesV1Pipelines",
+    "https://console.snowplowanalytics.com/#/Resources/getOrganizationsOrganizationidResourcesV1PipelinesPipelineid",
+    "https://console.snowplowanalytics.com/#/Resources/getOrganizationsOrganizationidResourcesV1PipelinesPipelineidConfigurationCollector",
+    "https://console.snowplowanalytics.com/#/Resources/getOrganizationsOrganizationidResourcesV1PipelinesPipelineidConfigurationEnrichments",
+    "https://console.snowplowanalytics.com/#/Resources/postOrganizationsOrganizationidResourcesV1IglusIgluenvironmentKeys",
+    "https://console.snowplowanalytics.com/#/Resources/putOrganizationsOrganizationidResourcesV1PipelinesPipelineidConfigurationCollector",
+    "https://console.snowplowanalytics.com/#/Subscriptions",
+    "https://console.snowplowanalytics.com/#/Subscriptions/getOrganizationsOrganizationidSubscriptionsV1",
+    "https://console.snowplowanalytics.com/#/Subscriptions/putOrganizationsOrganizationidSubscriptionsV1",
+    "https://console.snowplowanalytics.com/#/Targets",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/deleteOrganizationsOrganizationidTracking-scenariosV2Scenarioid",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/getOrganizationsOrganizationidTracking-scenariosV2",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/getOrganizationsOrganizationidTracking-scenariosV2Metrics",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/getOrganizationsOrganizationidTracking-scenariosV2Scenarioid",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/getOrganizationsOrganizationidTracking-scenariosV2ScenarioidHistory",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/postOrganizationsOrganizationidTracking-scenariosV2",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/postOrganizationsOrganizationidTracking-scenariosV2Clone",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/postOrganizationsOrganizationidTracking-scenariosV2Compatibility",
+    "https://console.snowplowanalytics.com/#/Tracking%20Scenarios/putOrganizationsOrganizationidTracking-scenariosV2Scenarioid",
+    "https://console.snowplowanalytics.com/#/Users",
+    "https://console.snowplowanalytics.com/#/Users/deleteOrganizationsOrganizationidUsersUserid",
+    "https://console.snowplowanalytics.com/#/Users/getOrganizationsOrganizationidUsers",
+    "https://console.snowplowanalytics.com/#/Users/getOrganizationsOrganizationidUsersUserid",
+    "https://console.snowplowanalytics.com/#/Users/postOrganizationsOrganizationidUsers",
+    "https://console.snowplowanalytics.com/#/Users/putOrganizationsOrganizationidUsersUserid",
+    "https://console.snowplowanalytics.com/./docs.yaml",
+    "https://console.snowplowanalytics.com/api/agent/mcp",
+    "https://console.snowplowanalytics.com/api/msc/v1",
+    "https://console.snowplowanalytics.com/api/msc/v1/docs",
+    "https://console.snowplowanalytics.com/api/msc/v1/docs/",
+    "https://console.snowplowanalytics.com/api/msc/v1/docs/docs.yaml",
+    "https://console.snowplowanalytics.com/api/msc/v1/docs/index.html?url=/api/msc/v1/docs/docs.yaml",
+    "https://console.snowplowanalytics.com/api/msc/v1/organizations/",
+    "https://console.snowplowanalytics.com/api/msc/v1/organizations/cad39ca5-3e1e-4e88-91af-87d977a4acd8/data-structures/v1/deployment-requests",
+    "https://console.snowplowanalytics.com/api/msc/v1/organizations/cad39ca5-3e1e-4e88-91af-87d977a4acd8/data-structures/v1/validation-requests",
+    "https://console.snowplowanalytics.com/api/msc/v1/organizations/f51dada7-4f11-4b6a-bbbd-2cf6a3673035/event-specs/v1/d1336abc-1b60-46f7-be2d-2105f2daf283",
+    "https://console.snowplowanalytics.com/credentials",
+    "https://console.snowplowanalytics.com/settings",
+    "https://cursor.com/",
+    "https://dl.acm.org/doi/pdf/10.1145/3460319.3464796",
+    "https://docs.snowplow.io/#__docusaurus_skipToContent_fallback",
+    "https://docs.snowplow.io/#add-a-subscription",
+    "https://docs.snowplow.io/#api-key",
+    "https://docs.snowplow.io/#attach-entities",
+    "https://docs.snowplow.io/#authentication",
+    "https://docs.snowplow.io/#automated-setup",
+    "https://docs.snowplow.io/#capabilities-of-the-server",
+    "https://docs.snowplow.io/#command-options",
+    "https://docs.snowplow.io/#compatibility-checks",
+    "https://docs.snowplow.io/#configure",
+    "https://docs.snowplow.io/#configure-the-mcp-server",
+    "https://docs.snowplow.io/#configure-yaml-language-server-optional",
+    "https://docs.snowplow.io/#console-api",
+    "https://docs.snowplow.io/#create-an-api-key",
+    "https://docs.snowplow.io/#creating-a-tracking-plan",
+    "https://docs.snowplow.io/#creating-an-event-specification",
+    "https://docs.snowplow.io/#creating-and-updating-tracking-plans",
+    "https://docs.snowplow.io/#data-products",
+    "https://docs.snowplow.io/#data-products-add-event-spec",
+    "https://docs.snowplow.io/#data-products-download",
+    "https://docs.snowplow.io/#data-products-generate",
+    "https://docs.snowplow.io/#data-products-purge",
+    "https://docs.snowplow.io/#delete-a-subscription",
+    "https://docs.snowplow.io/#delete-a-tracking-plan",
+    "https://docs.snowplow.io/#deployments",
+    "https://docs.snowplow.io/#editing-an-event-specification",
+    "https://docs.snowplow.io/#example",
+    "https://docs.snowplow.io/#example-1",
+    "https://docs.snowplow.io/#example-prompts",
+    "https://docs.snowplow.io/#examples",
+    "https://docs.snowplow.io/#examples-1",
+    "https://docs.snowplow.io/#examples-2",
+    "https://docs.snowplow.io/#examples-3",
+    "https://docs.snowplow.io/#examples-4",
+    "https://docs.snowplow.io/#generating-a-data-structure-hash",
+    "https://docs.snowplow.io/#install",
+    "https://docs.snowplow.io/#install-the-mcp-server",
+    "https://docs.snowplow.io/#install-with-the-claude-code-plugin-marketplace",
+    "https://docs.snowplow.io/#integration-with-the-sdk-generator",
+    "https://docs.snowplow.io/#managing-meta-data",
+    "https://docs.snowplow.io/#manual-configuration",
+    "https://docs.snowplow.io/#mcp-server",
+    "https://docs.snowplow.io/#migrate-from-the-snowplow-tracking-cli",
+    "https://docs.snowplow.io/#migrating-from-the-legacy-api",
+    "https://docs.snowplow.io/#oauth",
+    "https://docs.snowplow.io/#obtain-an-access-token",
+    "https://docs.snowplow.io/#one-line-install-claude-code-cursor",
+    "https://docs.snowplow.io/#options",
+    "https://docs.snowplow.io/#options-1",
+    "https://docs.snowplow.io/#options-2",
+    "https://docs.snowplow.io/#options-3",
+    "https://docs.snowplow.io/#options-4",
+    "https://docs.snowplow.io/#options-inherited-from-parent-commands",
+    "https://docs.snowplow.io/#options-inherited-from-parent-commands-1",
+    "https://docs.snowplow.io/#options-inherited-from-parent-commands-2",
+    "https://docs.snowplow.io/#options-inherited-from-parent-commands-3",
+    "https://docs.snowplow.io/#options-inherited-from-parent-commands-4",
+    "https://docs.snowplow.io/#prerequisites",
+    "https://docs.snowplow.io/#provided-tools",
+    "https://docs.snowplow.io/#publishing-an-event-specification",
+    "https://docs.snowplow.io/#query-parameters-and-filters",
+    "https://docs.snowplow.io/#resend-a-subscription-confirmation-email",
+    "https://docs.snowplow.io/#response-format",
+    "https://docs.snowplow.io/#retrieve-a-list-of-all-data-structures",
+    "https://docs.snowplow.io/#retrieve-a-list-of-all-tracking-plans",
+    "https://docs.snowplow.io/#retrieve-a-list-of-event-specifications",
+    "https://docs.snowplow.io/#retrieve-a-specific-data-structure",
+    "https://docs.snowplow.io/#retrieve-a-specific-event-specification",
+    "https://docs.snowplow.io/#retrieve-all-subscriptions-for-a-tracking-plan",
+    "https://docs.snowplow.io/#retrieve-history-information-for-a-tracking-plan",
+    "https://docs.snowplow.io/#retrieve-specific-version-of-a-specific-data-structure",
+    "https://docs.snowplow.io/#retrieving-data-structures",
+    "https://docs.snowplow.io/#retrieving-information-about-a-specific-tracking-plan",
+    "https://docs.snowplow.io/#retrieving-information-about-tracking-plans",
+    "https://docs.snowplow.io/#send-a-schema-and-data-separately",
+    "https://docs.snowplow.io/#send-a-self-describing-json",
+    "https://docs.snowplow.io/#send-an-event",
+    "https://docs.snowplow.io/#snowplow-cli",
+    "https://docs.snowplow.io/#subscription-management-for-tracking-plans",
+    "https://docs.snowplow.io/#synopsis",
+    "https://docs.snowplow.io/#synopsis-1",
+    "https://docs.snowplow.io/#synopsis-2",
+    "https://docs.snowplow.io/#synopsis-3",
+    "https://docs.snowplow.io/#update-a-subscription",
+    "https://docs.snowplow.io/#updating-a-tracking-plan",
+    "https://docs.snowplow.io/#use-cases",
+    "https://docs.snowplow.io/#use-the-access-token-with-console-api",
+    "https://docs.snowplow.io/#using-the-tools",
+    "https://docs.snowplow.io/#validation",
+    "https://docs.snowplow.io/#validations",
+    "https://docs.snowplow.io/#verify-configuration",
+    "https://docs.snowplow.io/cookie-preferences/",
+    "https://docs.snowplow.io/docs/",
+    "https://docs.snowplow.io/docs/account-management/",
+    "https://docs.snowplow.io/docs/account-management/#create-an-api-key",
+    "https://docs.snowplow.io/docs/account-management/managing-permissions/",
+    "https://docs.snowplow.io/docs/account-management/managing-users/",
+    "https://docs.snowplow.io/docs/api-reference/",
+    "https://docs.snowplow.io/docs/api-reference/analytics-sdk/",
+    "https://docs.snowplow.io/docs/api-reference/dataflow-runner/",
+    "https://docs.snowplow.io/docs/api-reference/enrichment-components/",
+    "https://docs.snowplow.io/docs/api-reference/failed-events/",
+    "https://docs.snowplow.io/docs/api-reference/iglu/",
+    "https://docs.snowplow.io/docs/api-reference/json-schema-reference/",
+    "https://docs.snowplow.io/docs/api-reference/loaders-storage-targets/",
+    "https://docs.snowplow.io/docs/api-reference/snowbridge/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/data-structures/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/reference/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/reference/#events-send",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/send-events/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-cli/tracking-plans/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-micro/",
+    "https://docs.snowplow.io/docs/api-reference/snowplow-mini/",
+    "https://docs.snowplow.io/docs/api-reference/stream-collector/",
+    "https://docs.snowplow.io/docs/api-reference/trackers/",
+    "https://docs.snowplow.io/docs/api-reference/versions/",
+    "https://docs.snowplow.io/docs/data-product-studio/data-quality/",
+    "https://docs.snowplow.io/docs/data-product-studio/data-structures/manage/api/",
+    "https://docs.snowplow.io/docs/data-product-studio/snowtype/using-the-cli/",
+    "https://docs.snowplow.io/docs/destinations/",
+    "https://docs.snowplow.io/docs/destinations/real-time-destinations/",
+    "https://docs.snowplow.io/docs/event-studio/",
+    "https://docs.snowplow.io/docs/event-studio/data-structures/",
+    "https://docs.snowplow.io/docs/event-studio/event-catalog/",
+    "https://docs.snowplow.io/docs/event-studio/implement-tracking/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/data-structures-api/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/event-specifications-api/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/snowplow-cli/data-structures/",
+    "https://docs.snowplow.io/docs/event-studio/programmatic-management/tracking-plans-api/",
+    "https://docs.snowplow.io/docs/event-studio/query-sql/",
+    "https://docs.snowplow.io/docs/event-studio/source-applications/",
+    "https://docs.snowplow.io/docs/event-studio/tracking-plans/",
+    "https://docs.snowplow.io/docs/event-studio/tracking-plans/event-specifications/",
+    "https://docs.snowplow.io/docs/events/",
+    "https://docs.snowplow.io/docs/fundamentals/",
+    "https://docs.snowplow.io/docs/fundamentals/canonical-event/",
+    "https://docs.snowplow.io/docs/fundamentals/entities/",
+    "https://docs.snowplow.io/docs/fundamentals/events/#self-describing-events",
+    "https://docs.snowplow.io/docs/fundamentals/failed-events/",
+    "https://docs.snowplow.io/docs/fundamentals/schemas/",
+    "https://docs.snowplow.io/docs/get-started/",
+    "https://docs.snowplow.io/docs/glossary/",
+    "https://docs.snowplow.io/docs/identities/",
+    "https://docs.snowplow.io/docs/licensing/",
+    "https://docs.snowplow.io/docs/llms-support/",
+    "https://docs.snowplow.io/docs/llms-support/cli-mcp-server/",
+    "https://docs.snowplow.io/docs/llms-support/console-agent/",
+    "https://docs.snowplow.io/docs/llms-support/snowplow-mcp/",
+    "https://docs.snowplow.io/docs/migration-guides/",
+    "https://docs.snowplow.io/docs/modeling-your-data/",
+    "https://docs.snowplow.io/docs/modeling-your-data/modeling-your-data-with-dbt/package-features/identity-stitching/",
+    "https://docs.snowplow.io/docs/monitoring/",
+    "https://docs.snowplow.io/docs/monitoring/recovering-failed-events/manual/extending/",
+    "https://docs.snowplow.io/docs/pipeline/",
+    "https://docs.snowplow.io/docs/pipeline/enrichments/",
+    "https://docs.snowplow.io/docs/signals/",
+    "https://docs.snowplow.io/docs/signals/applications/",
+    "https://docs.snowplow.io/docs/signals/attributes/",
+    "https://docs.snowplow.io/docs/signals/concepts/",
+    "https://docs.snowplow.io/docs/signals/connection/",
+    "https://docs.snowplow.io/docs/signals/get-started/",
+    "https://docs.snowplow.io/docs/signals/interventions/",
+    "https://docs.snowplow.io/docs/signals/introduction/",
+    "https://docs.snowplow.io/docs/signals/setup/",
+    "https://docs.snowplow.io/docs/sources/",
+    "https://docs.snowplow.io/docs/sources/trackers/",
+    "https://docs.snowplow.io/docs/sources/trackers/mobile-trackers/",
+    "https://docs.snowplow.io/docs/sources/trackers/server-side-trackers/",
+    "https://docs.snowplow.io/docs/sources/trackers/web-trackers/quick-start-guide/",
+    "https://docs.snowplow.io/docs/testing/",
+    "https://docs.snowplow.io/docs/testing/data-structures-ci-tool/",
+    "https://docs.snowplow.io/docs/testing/snowplow-micro/",
+    "https://docs.snowplow.io/terms-and-conditions/",
+    "https://docs.snowplow.io/tutorials/data-structures-in-git/introduction/",
+    "https://docs.snowplow.io/tutorials/snowplow-cli-mcp/introduction/",
+    "https://github.com/redhat-developer/yaml-language-server?tab=readme-ov-file#clients",
+    "https://github.com/snowplow/",
+    "https://github.com/snowplow/documentation/tree/main/docs/account-management/index.md",
+    "https://github.com/snowplow/documentation/tree/main/docs/api-reference/snowplow-cli/index.md",
+    "https://github.com/snowplow/documentation/tree/main/docs/api-reference/snowplow-cli/send-events/index.md",
+    "https://github.com/snowplow/documentation/tree/main/docs/event-studio/programmatic-management/data-structures-api/index.md",
+    "https://github.com/snowplow/documentation/tree/main/docs/event-studio/programmatic-management/index.md",
+    "https://github.com/snowplow/documentation/tree/main/docs/event-studio/programmatic-management/tracking-plans-api/index.md",
+    "https://github.com/snowplow/documentation/tree/main/docs/llms-support/cli-mcp-server/index.md",
+    "https://github.com/snowplow/documentation/tree/main/docs/llms-support/snowplow-mcp/index.md",
+    "https://github.com/snowplow/iglu-central",
+    "https://github.com/snowplow/skills",
+    "https://github.com/snowplow/snowplow-cli/releases",
+    "https://github.com/snowplow/snowplow-cli/releases/latest/download/snowplow-cli_linux_x86_64chmod",
+    "https://github.com/vercel-labs/plugins",
+    "https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml",
+    "https://modelcontextprotocol.io/",
+    "https://snowplow.io/",
+    "https://snowplow.io/blog/",
+    "https://snowplow.io/blog/advanced-data-modeling-techniques",
+    "https://snowplow.io/blog/real-time-personalization-with-snowplow-flink-and-evoura",
+    "https://snowplow.io/blog/seven-principles-of-ambient-agents",
+    "https://snowplow.io/blog/snowplow-mcp-server",
+    "https://snowplow.io/blog/the-fifth-shift",
+    "https://snowplow.io/blueprints/composable-analytics",
+    "https://snowplow.io/blueprints/composable-customer-data-platform",
+    "https://snowplow.io/blueprints/real-time-product-personalization",
+    "https://snowplow.io/comparison/snowplow-bdp-vs-etl-tools",
+    "https://snowplow.io/comparisons/snowplow-vs-adobe",
+    "https://snowplow.io/comparisons/snowplow-vs-google-analytics",
+    "https://snowplow.io/comparisons/snowplow-vs-hightouch",
+    "https://snowplow.io/comparisons/snowplow-vs-rudderstack",
+    "https://snowplow.io/comparisons/snowplow-vs-segment",
+    "https://snowplow.io/comparisons/snowplow-vs-tealium",
+    "https://snowplow.io/customers/",
+    "https://snowplow.io/data-management/data-product-studio",
+    "https://snowplow.io/data-management/event-tracking",
+    "https://snowplow.io/data-pipeline",
+    "https://snowplow.io/extensions/audience-hub",
+    "https://snowplow.io/get-started/snowplow-free-trial",
+    "https://snowplow.io/llms.txt",
+    "https://snowplow.io/marketing-attribution-optimization",
+    "https://snowplow.io/privacy-policy",
+    "https://snowplow.io/profiles-store",
+    "https://snowplow.io/signals",
+    "https://snowplow.io/sitemap.xml",
+    "https://snowplow.io/snowplow-frequently-asked-questions",
+    "https://snowplow.io/use-case/composable-analytics",
+    "https://snowplow.io/use-case/composable-customer-data-platform",
+    "https://snowplow.io/use-case/customer-facing-ai-agents",
+    "https://snowplow.io/use-case/real-time-product-personalization",
+    "https://snowplow.io/why-snowplow-cdi-versus-customer-data-platform",
+    "https://snowplow.io/why-snowplow-cdi-versus-packaged-analytics",
+    "https://snowplow.io/why-snowplow-cdi-versus-snowplow-open-source",
+    "https://support.snowplow.io/",
+    "https://support.snowplow.io/hc/en-us/categories/24623156008733-Product-Updates",
+    "https://www.npmjs.com/package/mcp-remote"
+  ]
+}

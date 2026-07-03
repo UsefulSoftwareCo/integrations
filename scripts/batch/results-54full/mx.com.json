@@ -1,0 +1,827 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "mx.com",
+    "detect": {
+      "domain": "mx.com",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:39:46.871Z",
+    "summary": "MX exposes multiple HTTP APIs—Platform API (OpenAPI), Data Enhancement Off Platform, MDX Real Time, MDX On Demand v5, Migration, Reporting, legacy Nexus and Atrium, plus a Batch SFTP interface—with auth primarily via Client Dashboard-issued `client_id` + `api_key` (Basic auth for Platform, `MD-API-KEY` plus `client_id` in path/query for several legacy APIs), Nexus session tokens from SSO, MX-provisioned Batch SFTP credentials, and MX-provisioned HMAC keys for MDX On Demand.",
+    "credentials": {
+      "mx_client_api_key": {
+        "type": "basic",
+        "label": "MX client ID + API key",
+        "generateUrl": "https://dashboard.mx.com/sign_in",
+        "setup": "Sign in to the [Client Dashboard](https://dashboard.mx.com/sign_in). Under [Client Dashboard](https://docs.mx.com/resources/client-dashboard), use **Manage API Keys** to view/copy/rotate your development and production API keys, and note your `client_id` from the dashboard. MX docs state these values can be used with Basic auth for the Platform API, with `client_id` as the username and `api_key` as the password. Many legacy APIs also require the same `api_key` in an `MD-API-KEY` header and the `client_id` in the base URL or query string. Whitelist your source IPs in the dashboard before calling IP-restricted APIs.",
+        "acquisition": "manual"
+      },
+      "mx_nexus_session_token": {
+        "type": "bearer",
+        "label": "MX Nexus session token",
+        "setup": "This token is minted per user/session, not manually created in the dashboard. First obtain an API token from the [MX SSO API](https://docs.mx.com/api-reference/more-apis/sso/) and then exchange it by `POST`ing to Nexus `/sessions`, as described in [Nexus Authentication and Security](https://docs.mx.com/api-reference/nexus/overview/). The resulting session token is sent in the `MD-SESSION-TOKEN` header and expires after 30 minutes unless refreshed by use.",
+        "acquisition": "manual"
+      },
+      "mx_mdx_ondemand_hmac": {
+        "type": "signature",
+        "label": "MDX On Demand HMAC key",
+        "setup": "For [MDX On Demand v5](https://docs.mx.com/api-reference/more-apis/mdx/mdx-on-demand/), MX provides a shared HMAC key during partner integration. Your implementation must verify `MDX-HMAC` and `Content-MD5` headers on requests from MX, and use the session flow described in the docs. The key is provided by MX in base64 and supports HMAC SHA1/SHA224/SHA256/SHA384/SHA512.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "mx-platform-api",
+        "name": "MX Platform API",
+        "type": "http",
+        "docs": "https://docs.mx.com/api-reference/platform-api/reference/mx-platform-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mx.com/api-reference/platform-api/reference/mx-platform-api",
+            "https://docs.mx.com/api-reference/platform-api/overview/",
+            "https://docs.mx.com/resources/test-platform"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mx.com/resources/test-platform",
+                  "https://docs.mx.com/resources/client-dashboard"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://docs.mx.com/openapi/platform-api/v20250224.yaml",
+        "requiredHeaders": [
+          {
+            "name": "Accept-Version",
+            "source": {
+              "kind": "static",
+              "value": "v20250224"
+            },
+            "description": "Current version header shown in docs; requests are versioned via this header."
+          }
+        ]
+      },
+      {
+        "slug": "mx-batch-api",
+        "name": "MX Batch API",
+        "type": "http",
+        "docs": "https://docs.mx.com/api-reference/more-apis/batch-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mx.com/api-reference/more-apis/batch-api/"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "mx-data-enhancement-off-platform-api",
+        "name": "MX Data Enhancement Off Platform API",
+        "type": "http",
+        "docs": "https://docs.mx.com/api-reference/more-apis/data-enhancement-off-platform/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mx.com/api-reference/more-apis/data-enhancement-off-platform/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "MD-API-KEY"
+                  }
+                },
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "path"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mx.com/api-reference/more-apis/data-enhancement-off-platform/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://deduction.moneydesktop.com/:client_id",
+        "requiredHeaders": [
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.mx.deduction.v1+json"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.mx.deduction.v1+json"
+            }
+          }
+        ],
+        "variables": [
+          {
+            "name": "client_id",
+            "description": "MX-assigned client ID included in the base URL path."
+          }
+        ]
+      },
+      {
+        "slug": "mx-mdx-real-time-api",
+        "name": "MX MDX Real Time API",
+        "type": "http",
+        "docs": "https://docs.mx.com/api-reference/more-apis/mdx/mdx-real-time/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mx.com/api-reference/more-apis/mdx/mdx-real-time/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "MD-API-KEY"
+                  }
+                },
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "path"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mx.com/api-reference/more-apis/mdx/mdx-real-time/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://live.moneydesktop.com/:client_id",
+        "variables": [
+          {
+            "name": "client_id",
+            "description": "MX client ID included in the base URL path."
+          }
+        ]
+      },
+      {
+        "slug": "mx-mdx-on-demand-v5",
+        "name": "MX MDX On Demand v5",
+        "type": "http",
+        "docs": "https://docs.mx.com/api-reference/more-apis/mdx/mdx-on-demand/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mx.com/api-reference/more-apis/mdx/mdx-on-demand/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mx_mdx_ondemand_hmac",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "MDX-HMAC"
+                  }
+                },
+                {
+                  "id": "mx_mdx_ondemand_hmac",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Content-MD5"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mx.com/api-reference/more-apis/mdx/mdx-on-demand/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{partner_base_url}/{institution_id}",
+        "requiredHeaders": [
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.moneydesktop.mdx.v5+xml"
+            }
+          }
+        ],
+        "variables": [
+          {
+            "name": "partner_base_url",
+            "description": "Partner-hosted base URL provided to MX by the data provider."
+          },
+          {
+            "name": "institution_id",
+            "description": "Institution identifier provided to MX by the data provider."
+          }
+        ]
+      },
+      {
+        "slug": "mx-migration-api",
+        "name": "MX Migration API",
+        "type": "http",
+        "docs": "https://docs.mx.com/api-reference/more-apis/migration/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mx.com/api-reference/more-apis/migration/",
+            "https://docs.mx.com/api-reference/more-apis/migration/api-requirements"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "MD-API-KEY"
+                  }
+                },
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "path"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mx.com/api-reference/more-apis/migration/api-requirements"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://migration.moneydesktop.com/{client_id}",
+        "variables": [
+          {
+            "name": "client_id",
+            "description": "MX client ID included in the base URL path."
+          }
+        ]
+      },
+      {
+        "slug": "mx-reporting-api",
+        "name": "MX Reporting API",
+        "type": "http",
+        "docs": "https://docs.mx.com/api-reference/more-apis/reporting/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mx.com/api-reference/more-apis/reporting/",
+            "https://docs.mx.com/api-reference/more-apis/reporting/requirements",
+            "https://docs.mx.com/api-reference/more-apis/reporting/using-the-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "MD-API-KEY"
+                  }
+                },
+                {
+                  "id": "mx_client_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "path"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.mx.com/api-reference/more-apis/reporting/requirements",
+                  "https://docs.mx.com/api-reference/more-apis/reporting/using-the-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://logs.moneydesktop.com/download/:client_id",
+        "requiredHeaders": [
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.mx.logs.v1+avro"
+            }
+          }
+        ],
+        "variables": [
+          {
+            "name": "client_id",
+            "description": "MX client ID included in the download base URL path."
+          }
+        ]
+      },
+      {
+        "slug": "mx-atrium-api",
+        "name": "MX Atrium API",
+        "type": "http",
+        "docs": "https://docs.mx.com/api-reference/atrium/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.mx.com/api-reference/atrium"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://vestibule.mx.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:39:46.872Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 643463,
+    "completion_tokens": 2871,
+    "total_tokens": 646334
+  },
+  "visited": [
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
+    "https://docs.mx.com/api-reference/atrium",
+    "https://docs.mx.com/api-reference/audience/overview/",
+    "https://docs.mx.com/api-reference/more-apis/batch-api/",
+    "https://docs.mx.com/api-reference/more-apis/data-enhancement-off-platform/",
+    "https://docs.mx.com/api-reference/more-apis/mdx/",
+    "https://docs.mx.com/api-reference/more-apis/mdx/mdx-on-demand/",
+    "https://docs.mx.com/api-reference/more-apis/mdx/mdx-real-time/",
+    "https://docs.mx.com/api-reference/more-apis/migration/",
+    "https://docs.mx.com/api-reference/more-apis/migration/api-requirements",
+    "https://docs.mx.com/api-reference/more-apis/reporting/",
+    "https://docs.mx.com/api-reference/more-apis/reporting/requirements",
+    "https://docs.mx.com/api-reference/more-apis/reporting/using-the-api",
+    "https://docs.mx.com/api-reference/nexus/overview/",
+    "https://docs.mx.com/api-reference/nexus/reference/nexus-api",
+    "https://docs.mx.com/api-reference/platform-api/overview/",
+    "https://docs.mx.com/api-reference/platform-api/reference/mx-platform-api",
+    "https://docs.mx.com/connect",
+    "https://docs.mx.com/resources/client-dashboard",
+    "https://docs.mx.com/resources/oauth-guide",
+    "https://docs.mx.com/resources/test-platform",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://mx.com/llms.txt",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "http://avro.apache.org/docs/current/index.html",
+    "https://api.mx.com",
+    "https://atrium.mx.com/",
+    "https://avro.apache.org/docs/1.8.1/spec.html#Schema+Resolution",
+    "https://dashboard.mx.com",
+    "https://dashboard.mx.com/",
+    "https://dashboard.mx.com/checkout",
+    "https://dashboard.mx.com/oauth-settings",
+    "https://dashboard.mx.com/security",
+    "https://dashboard.mx.com/sign_in",
+    "https://dashboard.mx.com/sign_up?_gl=1*1m4zhr5*_ga*biUyNTI1MjUyNTJGYQ..*_ga_Y1KF9XT0B9*MTY4NjA3NDg5Mi44OC4wLjE2ODYwNzQ4OTIuMC4wLjA",
+    "https://data.moneydesktop.com/",
+    "https://data.moneydesktop.com/clients/:client_id/users/:user_id/",
+    "https://dataprovider_base_url/:institution_id/accounts",
+    "https://deduction.moneydesktop.com/:client_id",
+    "https://developer.apple.com/documentation/uikit/uiwebview",
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
+    "https://docs.mx.com/",
+    "https://docs.mx.com/#",
+    "https://docs.mx.com/#429-too-many-requests",
+    "https://docs.mx.com/#__docusaurus_skipToContent_fallback",
+    "https://docs.mx.com/#accept-header",
+    "https://docs.mx.com/#add-team-members",
+    "https://docs.mx.com/#additional-authentication",
+    "https://docs.mx.com/#additional-error-codes",
+    "https://docs.mx.com/#aggregation-and-data-availability",
+    "https://docs.mx.com/#aggregation-limits",
+    "https://docs.mx.com/#aggregation-metrics",
+    "https://docs.mx.com/#aggregation-throttling",
+    "https://docs.mx.com/#api-architecture-and-resource-structure",
+    "https://docs.mx.com/#api-key",
+    "https://docs.mx.com/#authenticating-a-user",
+    "https://docs.mx.com/#authentication",
+    "https://docs.mx.com/#authentication-and-security",
+    "https://docs.mx.com/#base-url",
+    "https://docs.mx.com/#base-urls",
+    "https://docs.mx.com/#block-an-institution",
+    "https://docs.mx.com/#browser-support",
+    "https://docs.mx.com/#byte-serving-for-large-files",
+    "https://docs.mx.com/#caching",
+    "https://docs.mx.com/#canonical-string",
+    "https://docs.mx.com/#character-encoding",
+    "https://docs.mx.com/#character-set",
+    "https://docs.mx.com/#check-files",
+    "https://docs.mx.com/#client-access-tokens",
+    "https://docs.mx.com/#compression",
+    "https://docs.mx.com/#connection-errors",
+    "https://docs.mx.com/#consuming-daily-reporting-files",
+    "https://docs.mx.com/#content-area",
+    "https://docs.mx.com/#content-type-header",
+    "https://docs.mx.com/#core-resources",
+    "https://docs.mx.com/#data-availability",
+    "https://docs.mx.com/#data-availability-and-null-values",
+    "https://docs.mx.com/#data-encoding",
+    "https://docs.mx.com/#data-format",
+    "https://docs.mx.com/#data-management-responsibility",
+    "https://docs.mx.com/#data-sanitization",
+    "https://docs.mx.com/#date-and-time-formats",
+    "https://docs.mx.com/#dates-and-times",
+    "https://docs.mx.com/#ddos-protection",
+    "https://docs.mx.com/#default-values",
+    "https://docs.mx.com/#deletes-cascade",
+    "https://docs.mx.com/#deleting-objects",
+    "https://docs.mx.com/#deprecated-fields-and-endpoints",
+    "https://docs.mx.com/#deprecating-fields-and-resources",
+    "https://docs.mx.com/#development-and-production-environments",
+    "https://docs.mx.com/#enabling-resource-groups",
+    "https://docs.mx.com/#enhancements-that-require-advanced-notice-or-a-new-version",
+    "https://docs.mx.com/#enhancements-that-will-require-a-new-version-or-advanced-notice",
+    "https://docs.mx.com/#enhancements-within-the-current-version",
+    "https://docs.mx.com/#error-response-format",
+    "https://docs.mx.com/#errors",
+    "https://docs.mx.com/#escaped-characters",
+    "https://docs.mx.com/#example-request",
+    "https://docs.mx.com/#existing-members",
+    "https://docs.mx.com/#file-format",
+    "https://docs.mx.com/#generated-signature",
+    "https://docs.mx.com/#generating-sample-data-for-the-integrations-environment",
+    "https://docs.mx.com/#getting-started",
+    "https://docs.mx.com/#guides",
+    "https://docs.mx.com/#handling-session-timeouts",
+    "https://docs.mx.com/#headers",
+    "https://docs.mx.com/#headers-2",
+    "https://docs.mx.com/#hmac-notes",
+    "https://docs.mx.com/#hmac-signature",
+    "https://docs.mx.com/#hmac-signature-2",
+    "https://docs.mx.com/#http-status-code-summary",
+    "https://docs.mx.com/#https",
+    "https://docs.mx.com/#identifiers-and-metadata",
+    "https://docs.mx.com/#initial-sftp-setup",
+    "https://docs.mx.com/#integration-environment-for-initial-integration-testing",
+    "https://docs.mx.com/#integration-environment-public-key",
+    "https://docs.mx.com/#ip-filtering",
+    "https://docs.mx.com/#ip-filtering-and-whitelisting",
+    "https://docs.mx.com/#ip-whitelisting",
+    "https://docs.mx.com/#job-type-header",
+    "https://docs.mx.com/#language-support",
+    "https://docs.mx.com/#limitations",
+    "https://docs.mx.com/#limits-on-the-api",
+    "https://docs.mx.com/#md5-authentication",
+    "https://docs.mx.com/#md5-hash",
+    "https://docs.mx.com/#member-use-cases",
+    "https://docs.mx.com/#more-features",
+    "https://docs.mx.com/#mx-ip-address-ranges",
+    "https://docs.mx.com/#mx-session-token",
+    "https://docs.mx.com/#mx-skip-webhook-header",
+    "https://docs.mx.com/#new-members",
+    "https://docs.mx.com/#null-values",
+    "https://docs.mx.com/#number-limits",
+    "https://docs.mx.com/#numbers-limits",
+    "https://docs.mx.com/#oauth-support",
+    "https://docs.mx.com/#oauth-webview-limitations",
+    "https://docs.mx.com/#object-history-and-revision-numbers",
+    "https://docs.mx.com/#orchestration",
+    "https://docs.mx.com/#pagination",
+    "https://docs.mx.com/#parsing-avro-files",
+    "https://docs.mx.com/#pgp-keys",
+    "https://docs.mx.com/#production-environment",
+    "https://docs.mx.com/#production-environment-public-key",
+    "https://docs.mx.com/#rate-limiting",
+    "https://docs.mx.com/#register-for-oauth",
+    "https://docs.mx.com/#registration",
+    "https://docs.mx.com/#reset-your-password",
+    "https://docs.mx.com/#resources",
+    "https://docs.mx.com/#response-format",
+    "https://docs.mx.com/#retrievable-data",
+    "https://docs.mx.com/#schema-evolution",
+    "https://docs.mx.com/#security",
+    "https://docs.mx.com/#sending-files-via-sftp",
+    "https://docs.mx.com/#session-request",
+    "https://docs.mx.com/#sessionless-requests",
+    "https://docs.mx.com/#sessions",
+    "https://docs.mx.com/#sftp-hostname-and-port",
+    "https://docs.mx.com/#soft-deletes-and-purges",
+    "https://docs.mx.com/#some-soft-deleted-members-may-be-restored",
+    "https://docs.mx.com/#sort-order",
+    "https://docs.mx.com/#step-1-check-the-size-of-available-files",
+    "https://docs.mx.com/#step-1-request-an-api-token",
+    "https://docs.mx.com/#step-2-download-file-segments-using-the-curl-command",
+    "https://docs.mx.com/#step-2-exchange-an-api-token-for-a-session-token",
+    "https://docs.mx.com/#step-3-assemble-the-segments-back-into-a-single-file",
+    "https://docs.mx.com/#supported-desktop-browsers%E2%80%8B",
+    "https://docs.mx.com/#supported-desktop-browsers​",
+    "https://docs.mx.com/#supported-mobile-browsers%E2%80%8B",
+    "https://docs.mx.com/#supported-mobile-browsers​",
+    "https://docs.mx.com/#transaction-ids",
+    "https://docs.mx.com/#url-extension",
+    "https://docs.mx.com/#user-deletes-are-permanent",
+    "https://docs.mx.com/#using-our-api-with-postman",
+    "https://docs.mx.com/#version-header",
+    "https://docs.mx.com/#versioning",
+    "https://docs.mx.com/#versioning-and-potentially-breaking-changes",
+    "https://docs.mx.com/#view-logs",
+    "https://docs.mx.com/#whats-changed",
+    "https://docs.mx.com/#when-to-use-mx-bank-vs-mxcu",
+    "https://docs.mx.com/#whitelist-ip-addresses",
+    "https://docs.mx.com/#widget-dimensions",
+    "https://docs.mx.com/api-reference/atrium",
+    "https://docs.mx.com/api-reference/atrium/",
+    "https://docs.mx.com/api-reference/atrium/#testing",
+    "https://docs.mx.com/api-reference/atrium/reference/members/aggregate-member",
+    "https://docs.mx.com/api-reference/atrium/reference/members/connection-status",
+    "https://docs.mx.com/api-reference/atrium/reference/members/update-member",
+    "https://docs.mx.com/api-reference/audience/overview/",
+    "https://docs.mx.com/api-reference/more-apis/batch-api/",
+    "https://docs.mx.com/api-reference/more-apis/batch-api/file-contents/",
+    "https://docs.mx.com/api-reference/more-apis/batch-api/response-files",
+    "https://docs.mx.com/api-reference/more-apis/data-enhancement-off-platform/",
+    "https://docs.mx.com/api-reference/more-apis/data-enhancement-off-platform/reference/categories/accounts",
+    "https://docs.mx.com/api-reference/more-apis/mdx",
+    "https://docs.mx.com/api-reference/more-apis/mdx/",
+    "https://docs.mx.com/api-reference/more-apis/mdx/mdx-on-demand/",
+    "https://docs.mx.com/api-reference/more-apis/mdx/mdx-on-demand/reference/account-numbers/account-number-fields",
+    "https://docs.mx.com/api-reference/more-apis/mdx/mdx-real-time/",
+    "https://docs.mx.com/api-reference/more-apis/mdx/mdx-real-time/reference/account-numbers/account-number-fields",
+    "https://docs.mx.com/api-reference/more-apis/mdx/mdx-real-time/reference/users/update-user",
+    "https://docs.mx.com/api-reference/more-apis/migration",
+    "https://docs.mx.com/api-reference/more-apis/migration/",
+    "https://docs.mx.com/api-reference/more-apis/migration/api-requirements",
+    "https://docs.mx.com/api-reference/more-apis/migration/reference/accounts/create-account",
+    "https://docs.mx.com/api-reference/more-apis/migration/reference/transactions/create-transaction",
+    "https://docs.mx.com/api-reference/more-apis/reporting",
+    "https://docs.mx.com/api-reference/more-apis/reporting/",
+    "https://docs.mx.com/api-reference/more-apis/reporting/data-specifications/analytics-events",
+    "https://docs.mx.com/api-reference/more-apis/reporting/data-specifications/base-resources",
+    "https://docs.mx.com/api-reference/more-apis/reporting/data-specifications/discovered-accounts",
+    "https://docs.mx.com/api-reference/more-apis/reporting/data-specifications/user-communications",
+    "https://docs.mx.com/api-reference/more-apis/reporting/reference/daily-files/download-daily-files",
+    "https://docs.mx.com/api-reference/more-apis/reporting/reference/daily-files/list-daily-files",
+    "https://docs.mx.com/api-reference/more-apis/reporting/requirements",
+    "https://docs.mx.com/api-reference/more-apis/reporting/requirements#schema-evolution",
+    "https://docs.mx.com/api-reference/more-apis/reporting/sample-files",
+    "https://docs.mx.com/api-reference/more-apis/reporting/sftp-delivery",
+    "https://docs.mx.com/api-reference/more-apis/reporting/snapshots",
+    "https://docs.mx.com/api-reference/more-apis/reporting/using-the-api",
+    "https://docs.mx.com/api-reference/more-apis/saml/",
+    "https://docs.mx.com/api-reference/nexus/overview",
+    "https://docs.mx.com/api-reference/nexus/overview#headers",
+    "https://docs.mx.com/api-reference/nexus/overview/",
+    "https://docs.mx.com/api-reference/nexus/overview/deleting-objects",
+    "https://docs.mx.com/api-reference/nexus/overview/errors",
+    "https://docs.mx.com/api-reference/nexus/overview/webhooks",
+    "https://docs.mx.com/api-reference/nexus/reference/nexus-api",
+    "https://docs.mx.com/api-reference/platform-api/overview#authentication-and-security",
+    "https://docs.mx.com/api-reference/platform-api/overview/",
+    "https://docs.mx.com/api-reference/platform-api/overview/background-foreground",
+    "https://docs.mx.com/api-reference/platform-api/overview/deleting-objects",
+    "https://docs.mx.com/api-reference/platform-api/overview/errors",
+    "https://docs.mx.com/api-reference/platform-api/overview/formats-requirements",
+    "https://docs.mx.com/api-reference/platform-api/overview/formats-requirements#member-use-cases",
+    "https://docs.mx.com/api-reference/platform-api/overview/migration",
+    "https://docs.mx.com/api-reference/platform-api/overview/versioning",
+    "https://docs.mx.com/api-reference/platform-api/overview/versioning#v20250224",
+    "https://docs.mx.com/api-reference/platform-api/reference/members#member-connection-statuses",
+    "https://docs.mx.com/api-reference/platform-api/reference/mx-platform-api",
+    "https://docs.mx.com/api-reference/platform-api/reference/widgets",
+    "https://docs.mx.com/api-reference/platform-api/v20111101/reference/mx-platform-api",
+    "https://docs.mx.com/api-reference/sso/v2/",
+    "https://docs.mx.com/api-reference/sso/v3/",
+    "https://docs.mx.com/assets/files/batch-file-checker-d2d8ce18ff1461231c13efc52a396d4a.zip",
+    "https://docs.mx.com/connect",
+    "https://docs.mx.com/connect/best-practices",
+    "https://docs.mx.com/connect/demo-app",
+    "https://docs.mx.com/connect/testing-the-connect-widget",
+    "https://docs.mx.com/connect/ui-walkthrough",
+    "https://docs.mx.com/connect/widget-events",
+    "https://docs.mx.com/llms.txt",
+    "https://docs.mx.com/nexus",
+    "https://docs.mx.com/openapi/platform-api/v20250224.yaml",
+    "https://docs.mx.com/products/connectivity/account-aggregation",
+    "https://docs.mx.com/products/connectivity/account-owner-identification",
+    "https://docs.mx.com/products/connectivity/balance-checks",
+    "https://docs.mx.com/products/connectivity/extended-transaction-history",
+    "https://docs.mx.com/products/connectivity/instant-account-verification",
+    "https://docs.mx.com/products/connectivity/microdeposits",
+    "https://docs.mx.com/products/connectivity/overview",
+    "https://docs.mx.com/products/connectivity/overview/data-architecture",
+    "https://docs.mx.com/products/connectivity/statements",
+    "https://docs.mx.com/products/data/customer-analytics",
+    "https://docs.mx.com/products/data/data-access",
+    "https://docs.mx.com/products/data/investment-data-enhancement",
+    "https://docs.mx.com/products/data/marketing-hub",
+    "https://docs.mx.com/products/experience/insights",
+    "https://docs.mx.com/products/experience/legacy-mobile",
+    "https://docs.mx.com/products/experience/mobile",
+    "https://docs.mx.com/products/experience/pfm",
+    "https://docs.mx.com/release-notes",
+    "https://docs.mx.com/resources/atrium",
+    "https://docs.mx.com/resources/atrium/",
+    "https://docs.mx.com/resources/atrium/getting-started",
+    "https://docs.mx.com/resources/atrium/testing-your-setup#test-endpoints",
+    "https://docs.mx.com/resources/changelog/platform",
+    "https://docs.mx.com/resources/client-dashboard",
+    "https://docs.mx.com/resources/client-dashboard/",
+    "https://docs.mx.com/resources/client-dashboard/how-to-setup-saml-sso",
+    "https://docs.mx.com/resources/client-dashboard/manage-api-keys",
+    "https://docs.mx.com/resources/client-dashboard/manage-webhooks",
+    "https://docs.mx.com/resources/client-dashboard/mobile",
+    "https://docs.mx.com/resources/client-dashboard/user-lookup",
+    "https://docs.mx.com/resources/glossary/",
+    "https://docs.mx.com/resources/integration-checklist",
+    "https://docs.mx.com/resources/integration-checklist/",
+    "https://docs.mx.com/resources/oauth-guide",
+    "https://docs.mx.com/resources/oauth-guide#registration",
+    "https://docs.mx.com/resources/oauth-guide/",
+    "https://docs.mx.com/resources/oauth-guide/oauth-in-browsers",
+    "https://docs.mx.com/resources/oauth-guide/oauth-in-connect-widget",
+    "https://docs.mx.com/resources/oauth-guide/oauth-in-mobile-apps",
+    "https://docs.mx.com/resources/partner-managed-data/",
+    "https://docs.mx.com/resources/status-page",
+    "https://docs.mx.com/resources/status-page/",
+    "https://docs.mx.com/resources/test-platform",
+    "https://docs.mx.com/resources/test-platform/",
+    "https://docs.mx.com/resources/test-platform/mxbank",
+    "https://docs.mx.com/resources/test-platform/mxcu",
+    "https://docs.mx.com/resources/webhooks",
+    "https://docs.mx.com/resources/webhooks/",
+    "https://docs.mx.com/resources/webhooks/verifications",
+    "https://docs.mx.com/support",
+    "https://en.wikipedia.org/wiki/Hash-based_message_authentication_code",
+    "https://github.com/mxenabled",
+    "https://github.com/mxenabled/atrium-csharp",
+    "https://github.com/mxenabled/atrium-go",
+    "https://github.com/mxenabled/atrium-java",
+    "https://github.com/mxenabled/atrium-php",
+    "https://github.com/mxenabled/atrium-python",
+    "https://github.com/mxenabled/atrium-ruby",
+    "https://github.com/mxenabled/mx-atrium-node",
+    "https://int-api.mx.com",
+    "https://int-api.mx.com/endpoint",
+    "https://int-data.moneydesktop.com/",
+    "https://int-data.moneydesktop.com/accounts",
+    "https://int-data.moneydesktop.com/clients/:client_id/users/:user_id/",
+    "https://int-data.moneydesktop.com/clients/:client_id/users/:user_id/accounts",
+    "https://int-data.moneydesktop.com/clients/epicbank01/users/12345/members",
+    "https://int-deduction.moneydesktop.com/:client_id",
+    "https://int-live.moneydesktop.com/:client_id",
+    "https://int-logs.moneydesktop.com/download/:client_id",
+    "https://int-logs.moneydesktop.com/download/{client_id}",
+    "https://int-logs.moneydesktop.com/download/{client_id}/2019-10-07/transactions/created",
+    "https://int-migration.moneydesktop.com/Acme_Bank/users/U-39XBF7/migrate/members.json",
+    "https://int-migration.moneydesktop.com/{client_id}",
+    "https://live.moneydesktop.com/:client_id",
+    "https://live.moneydesktop.com/ACME_Bank/",
+    "https://live.moneydesktop.com/your_client_id/users.json",
+    "https://logs.moneydesktop.com/download/:client_id",
+    "https://maps.google.com/?q=3401+N+Thanksgiving+Way+Ste+150+Lehi+UT+84043",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://migration.moneydesktop.com/ACME_Bank/",
+    "https://migration.moneydesktop.com/{client_id}",
+    "https://mx.com",
+    "https://mx.com/llms.txt",
+    "https://postman.com",
+    "https://status.mx.com",
+    "https://support.mx.com",
+    "https://support.mx.com/login",
+    "https://techdocs.akamai.com/origin-ip-acl/docs/update-your-origin-server",
+    "https://twitter.com/intent/follow?original_referer=https%3A%2F%2Fwww.docs.mx.com%2F&screen_name=mX",
+    "https://vestibule.mx.com/",
+    "https://ww",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.chase.com/digital/resources/privacy-security/security/system-requirements",
+    "https://www.linkedin.com/company/mxenabled",
+    "https://www.mx.com",
+    "https://www.mx.com/blog/",
+    "https://www.mx.com/careers/",
+    "https://www.mx.com/case-studies/",
+    "https://www.mx.com/company/",
+    "https://www.mx.com/contact",
+    "https://www.mx.com/cookie-policy/",
+    "https://www.mx.com/events/",
+    "https://www.mx.com/guides/",
+    "https://www.mx.com/learn/",
+    "https://www.mx.com/news/",
+    "https://www.mx.com/privacy-policy",
+    "https://www.mx.com/privacy-policy/",
+    "https://www.mx.com/privacy/",
+    "https://www.mx.com/products/account-aggregation/",
+    "https://www.mx.com/products/balance-checks/",
+    "https://www.mx.com/products/connectivity/",
+    "https://www.mx.com/products/customer-analytics/",
+    "https://www.mx.com/products/data-access/",
+    "https://www.mx.com/products/data-enhancement/",
+    "https://www.mx.com/products/data/",
+    "https://www.mx.com/products/experience/",
+    "https://www.mx.com/products/financial-insights/",
+    "https://www.mx.com/products/instant-account-verifications/",
+    "https://www.mx.com/products/investment-data/",
+    "https://www.mx.com/products/mobile-banking/",
+    "https://www.mx.com/products/personal-financial-management/",
+    "https://www.mx.com/products/platform-api",
+    "https://www.mx.com/request-demo/?referring_page=https://www.docs.mx.com",
+    "https://www.mx.com/request-demo?referring_page=https://www.docs.mx.com",
+    "https://www.mx.com/research/",
+    "https://www.mx.com/security-policy",
+    "https://www.mx.com/security-policy/",
+    "https://www.mx.com/summit/",
+    "https://www.mx.com/terms",
+    "https://www.mx.com/terms/",
+    "https://www.mx.com/use-cases/account-opening/",
+    "https://www.mx.com/use-cases/customer-intelligence/",
+    "https://www.mx.com/use-cases/digital-banking/",
+    "https://www.mx.com/use-cases/financial-wellness/",
+    "https://www.mx.com/use-cases/fraud-risk-management/",
+    "https://www.mx.com/use-cases/loan-origination-processing/",
+    "https://www.mx.com/use-cases/open-finance/",
+    "https://www.mx.com/use-cases/payment-verifications/",
+    "https://www.mx.com/webinars/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql",
+    "https://{partner_base_url}/{institution_id}"
+  ]
+}

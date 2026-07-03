@@ -1,0 +1,683 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "figma.com",
+    "detect": {
+      "domain": "figma.com",
+      "found": [
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://figma.com"
+          ],
+          "authorizationEndpoint": "https://www.figma.com/oauth/mcp",
+          "tokenEndpoint": "https://api.figma.com/v1/oauth/token",
+          "scopes": [
+            "mcp:connect"
+          ],
+          "registrationEndpoint": "https://api.figma.com/v1/oauth/mcp/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token",
+            "urn:ietf:params:oauth:grant-type:jwt-bearer"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T18:49:15.102Z",
+    "summary": "Mapped Figma’s public developer integration surface: 2 HTTP APIs (REST with OpenAPI, plus SCIM), 1 MCP server, and 1 CLI; all require Figma-issued credentials.",
+    "credentials": {
+      "figma_oauth_app": {
+        "type": "oauth2",
+        "label": "Figma OAuth app",
+        "generateUrl": "https://www.figma.com/developers/apps",
+        "setup": "Go to [My Apps](https://www.figma.com/developers/apps), click **Create a new app**, choose a team or organization, then copy the **Client ID** and **Client Secret** when the app is created. Finish the app configuration in [OAuth apps](https://developers.figma.com/docs/rest-api/oauth-apps/), including redirect/callback settings and scopes, before using it for user authorization and token exchange."
+      },
+      "figma_pat": {
+        "type": "api_key",
+        "label": "Figma personal access token",
+        "generateUrl": "https://developers.figma.com/docs/rest-api/personal-access-tokens/",
+        "setup": "Sign in to Figma, open **Settings** from the file browser account menu, go to the **Security** tab, and in **Personal access tokens** click **Generate new token**. Choose expiration and scopes, then copy the token when shown. Figma documents this flow in [Personal access tokens](https://developers.figma.com/docs/rest-api/personal-access-tokens/)."
+      },
+      "figma_plan_token": {
+        "type": "bearer",
+        "label": "Figma plan access token",
+        "generateUrl": "https://developers.figma.com/docs/rest-api/plan-access-tokens/",
+        "setup": "Have an organization or enterprise admin create a plan access token from Figma admin controls as described in [Authentication](https://developers.figma.com/docs/rest-api/authentication/) and the [Plan access tokens](https://developers.figma.com/docs/rest-api/plan-access-tokens/) guide. Plan access tokens are organization-level tokens for automation and are available on Organization and Enterprise plans."
+      },
+      "figma_scim_token": {
+        "type": "bearer",
+        "label": "Figma SCIM API token",
+        "generateUrl": "https://developers.figma.com/docs/rest-api/scim/",
+        "setup": "As an organization administrator, open Figma **Admin Settings**, go to **Login and Provisioning** → **SCIM Provisioning**, click **Generate Token**, and copy the token when shown. From **Login and Provisioning** → **SAML SSO**, also copy the **Tenant ID**, which is needed to build the SCIM base URL. See [SCIM API Reference](https://developers.figma.com/docs/rest-api/scim/)."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "figma-scim-api",
+        "name": "Figma SCIM API",
+        "type": "http",
+        "docs": "https://developers.figma.com/docs/rest-api/scim/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.figma.com/docs/rest-api/scim/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "figma_scim_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.figma.com/docs/rest-api/scim/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.figma.com/scim/v2/:tenantid",
+        "variables": [
+          {
+            "name": "tenantid",
+            "resolveFrom": "Figma Admin Settings → Login and Provisioning → SAML SSO",
+            "description": "Tenant ID used to construct the SCIM base URL."
+          }
+        ]
+      },
+      {
+        "slug": "figma-mcp-server",
+        "name": "Figma MCP Server",
+        "type": "mcp",
+        "docs": "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.figma.com/docs/figma-mcp-server/",
+            "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "figma_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.figma.com/oauth/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "figma-code-connect-cli",
+        "name": "Figma Code Connect CLI",
+        "type": "cli",
+        "docs": "https://developers.figma.com/docs/code-connect/cli-reference/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.figma.com/docs/code-connect/cli-reference/",
+            "https://developers.figma.com/docs/code-connect/quickstart-guide/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "figma_pat",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx figma ... --token <token>",
+                    "env": [
+                      "FIGMA_ACCESS_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.figma.com/docs/code-connect/cli-reference/",
+                  "https://developers.figma.com/docs/code-connect/quickstart-guide/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@figma/code-connect",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "figma"
+      },
+      {
+        "slug": "figma-rest-api",
+        "name": "Figma REST API",
+        "type": "http",
+        "docs": "https://developers.figma.com/docs/rest-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.figma.com/docs/rest-api/",
+            "https://developers.figma.com/docs/rest-api/authentication/",
+            "https://developers.figma.com/docs/rest-api/personal-access-tokens/",
+            "https://developers.figma.com/docs/rest-api/oauth-apps/",
+            "https://developers.figma.com/docs/rest-api/plan-access-tokens/",
+            "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.yaml",
+            "https://raw.githubusercontent.com/figma/rest-api-spec/main/README.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "figma_pat",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "PersonalAccessToken"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.yaml",
+                  "https://developers.figma.com/docs/rest-api/personal-access-tokens/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "figma_plan_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "PlanAccessToken"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.yaml",
+                  "https://developers.figma.com/docs/rest-api/plan-access-tokens/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "figma_oauth_app",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "OAuth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.yaml",
+                  "https://developers.figma.com/docs/rest-api/oauth-apps/"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.yaml",
+        "url": "https://api.figma.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T18:49:15.103Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 134656,
+    "completion_tokens": 2392,
+    "total_tokens": 137048
+  },
+  "visited": [
+    "https://developers.figma.com/",
+    "https://developers.figma.com/docs/code-connect/",
+    "https://developers.figma.com/docs/code-connect/cli-reference/",
+    "https://developers.figma.com/docs/code-connect/comparing-cc/",
+    "https://developers.figma.com/docs/code-connect/quickstart-guide/",
+    "https://developers.figma.com/docs/figma-mcp-server/",
+    "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
+    "https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/",
+    "https://developers.figma.com/docs/plugins/",
+    "https://developers.figma.com/docs/plugins/api/api-reference/",
+    "https://developers.figma.com/docs/rest-api/",
+    "https://developers.figma.com/docs/rest-api/authentication/",
+    "https://developers.figma.com/docs/rest-api/file-endpoints/",
+    "https://developers.figma.com/docs/rest-api/oauth-apps/",
+    "https://developers.figma.com/docs/rest-api/personal-access-tokens/",
+    "https://developers.figma.com/docs/rest-api/plan-access-tokens/",
+    "https://developers.figma.com/docs/rest-api/scim/",
+    "https://github.com/figma/rest-api-spec",
+    "https://help.figma.com/hc/en-us/articles/23920389749655-Code-Connect",
+    "https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server",
+    "https://help.figma.com/hc/en-us/articles/35281350665623-Figma-MCP-collection-How-to-set-up-the-Figma-remote-MCP-server",
+    "https://help.figma.com/hc/en-us/articles/39216419318551-Get-started-with-the-Figma-MCP-server",
+    "https://raw.githubusercontent.com/figma/rest-api-spec/main/README.md",
+    "https://raw.githubusercontent.com/figma/rest-api-spec/main/dist/openapi.yaml",
+    "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.json",
+    "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.yaml",
+    "https://stackoverflow.com/questions/79792727/how-to-implement-oauth-with-figma-in-fastmcp",
+    "https://www.figma.com/community/plugin/1491170387210430289/console-cli",
+    "https://www.figma.com/mcp-catalog/"
+  ],
+  "grounding": [
+    "https://api.figma-gov.com",
+    "https://api.figma-gov.com/v1/activity_logs",
+    "https://api.figma.com",
+    "https://api.figma.com/v1/files/:key",
+    "https://app.taskbridge.io/auth/figma/callback",
+    "https://archiveprogram.github.com",
+    "https://claude.com/blog/claude-code-plugins",
+    "https://claude.com/blog/skills",
+    "https://develope",
+    "https://developer.apple.com/download/all/?q=Xcode%2027%20beta",
+    "https://developers.figma.com/",
+    "https://developers.figma.com/#",
+    "https://developers.figma.com/#__docusaurus_skipToContent_fallback",
+    "https://developers.figma.com/#access-tokens",
+    "https://developers.figma.com/#arguments",
+    "https://developers.figma.com/#arguments-1",
+    "https://developers.figma.com/#authenticate-users",
+    "https://developers.figma.com/#base-url",
+    "https://developers.figma.com/#before-you-begin",
+    "https://developers.figma.com/#claude-code",
+    "https://developers.figma.com/#codex",
+    "https://developers.figma.com/#commands",
+    "https://developers.figma.com/#configure-an-oauth-app",
+    "https://developers.figma.com/#configure-your-project",
+    "https://developers.figma.com/#create-a-plan-access-token",
+    "https://developers.figma.com/#create-an-oauth-app",
+    "https://developers.figma.com/#cursor",
+    "https://developers.figma.com/#description",
+    "https://developers.figma.com/#description-1",
+    "https://developers.figma.com/#description-2",
+    "https://developers.figma.com/#description-3",
+    "https://developers.figma.com/#description-4",
+    "https://developers.figma.com/#description-5",
+    "https://developers.figma.com/#edit-a-plan-access-token",
+    "https://developers.figma.com/#enabling-the-remote-mcp-server",
+    "https://developers.figma.com/#example-get-design-context",
+    "https://developers.figma.com/#example-public-oauth-app-submission",
+    "https://developers.figma.com/#example-send-ui-to-figma",
+    "https://developers.figma.com/#examples",
+    "https://developers.figma.com/#examples-1",
+    "https://developers.figma.com/#examples-2",
+    "https://developers.figma.com/#examples-3",
+    "https://developers.figma.com/#examples-4",
+    "https://developers.figma.com/#figma-connect-create",
+    "https://developers.figma.com/#figma-connect-migrate",
+    "https://developers.figma.com/#figma-connect-parse",
+    "https://developers.figma.com/#figma-connect-preview",
+    "https://developers.figma.com/#figma-connect-publish",
+    "https://developers.figma.com/#figma-connect-unpublish",
+    "https://developers.figma.com/#find-your-tenant-id",
+    "https://developers.figma.com/#generate-a-personal-access-token",
+    "https://developers.figma.com/#generate-an-api-token",
+    "https://developers.figma.com/#getting-started",
+    "https://developers.figma.com/#global-options",
+    "https://developers.figma.com/#how-does-it-work",
+    "https://developers.figma.com/#how-to-connect",
+    "https://developers.figma.com/#install-the-code-connect-command-line-tool",
+    "https://developers.figma.com/#manual-setup-for-claude-code",
+    "https://developers.figma.com/#manual-setup-for-codex",
+    "https://developers.figma.com/#manual-setup-for-cursor",
+    "https://developers.figma.com/#manual-setup-for-xcode",
+    "https://developers.figma.com/#next-steps",
+    "https://developers.figma.com/#oauth-apps",
+    "https://developers.figma.com/#openapi-specification",
+    "https://developers.figma.com/#options",
+    "https://developers.figma.com/#options-1",
+    "https://developers.figma.com/#options-2",
+    "https://developers.figma.com/#options-3",
+    "https://developers.figma.com/#options-4",
+    "https://developers.figma.com/#options-5",
+    "https://developers.figma.com/#plan-access-tokens",
+    "https://developers.figma.com/#privacy-and-code-connect",
+    "https://developers.figma.com/#publish-code-connect-files",
+    "https://developers.figma.com/#refresh-a-plan-access-token",
+    "https://developers.figma.com/#refreshing-tokens",
+    "https://developers.figma.com/#revoke-a-plan-access-token",
+    "https://developers.figma.com/#scim-api-base-url",
+    "https://developers.figma.com/#scim-prerequisites",
+    "https://developers.figma.com/#supported-endpoints",
+    "https://developers.figma.com/#unpublish-code-connect-files",
+    "https://developers.figma.com/#usage",
+    "https://developers.figma.com/#usage-1",
+    "https://developers.figma.com/#usage-2",
+    "https://developers.figma.com/#usage-3",
+    "https://developers.figma.com/#usage-4",
+    "https://developers.figma.com/#usage-5",
+    "https://developers.figma.com/#usage-6",
+    "https://developers.figma.com/#use-a-plan-access-token",
+    "https://developers.figma.com/#use-oauth-token",
+    "https://developers.figma.com/#use-the-personal-access-token",
+    "https://developers.figma.com/#using-the-codex-app-preferred",
+    "https://developers.figma.com/#using-the-figma-plugin-for-claude-code-preferred",
+    "https://developers.figma.com/#using-the-figma-plugin-for-cursor-preferred",
+    "https://developers.figma.com/#using-the-figma-plugin-for-xcode-preferred",
+    "https://developers.figma.com/#using-the-mcp-server",
+    "https://developers.figma.com/#vs-code",
+    "https://developers.figma.com/#what-can-i-do-with-the-figma-api",
+    "https://developers.figma.com/#what-type-of-authentication-should-i-use",
+    "https://developers.figma.com/#when-to-use-plan-access-tokens",
+    "https://developers.figma.com/#write-template-files-with-an-ai-coding-agent",
+    "https://developers.figma.com/#write-your-first-template-file",
+    "https://developers.figma.com/#xcode",
+    "https://developers.figma.com/compare-apis/",
+    "https://developers.figma.com/cursor://anysphere.cursor-deeplink/mcp/install?name=Figma&config=eyJ1cmwiOiJodHRwczovL21jcC5maWdtYS5jb20vbWNwIn0%3D",
+    "https://developers.figma.com/docs/code-connect/",
+    "https://developers.figma.com/docs/code-connect/api/config-file/",
+    "https://developers.figma.com/docs/code-connect/api/config-file/#label",
+    "https://developers.figma.com/docs/code-connect/batch-files/",
+    "https://developers.figma.com/docs/code-connect/cli-reference/",
+    "https://developers.figma.com/docs/code-connect/code-connect-ui-github/",
+    "https://developers.figma.com/docs/code-connect/code-connect-ui-setup/",
+    "https://developers.figma.com/docs/code-connect/comparing-cc/",
+    "https://developers.figma.com/docs/code-connect/compose/",
+    "https://developers.figma.com/docs/code-connect/html/",
+    "https://developers.figma.com/docs/code-connect/quickstart-guide/",
+    "https://developers.figma.com/docs/code-connect/react/",
+    "https://developers.figma.com/docs/code-connect/storybook/",
+    "https://developers.figma.com/docs/code-connect/swiftui/",
+    "https://developers.figma.com/docs/code-connect/template-api/",
+    "https://developers.figma.com/docs/code-connect/template-files/",
+    "https://developers.figma.com/docs/embeds/",
+    "https://developers.figma.com/docs/embeds/embed-api/",
+    "https://developers.figma.com/docs/figma-mcp-server/",
+    "https://developers.figma.com/docs/figma-mcp-server/add-custom-rules/",
+    "https://developers.figma.com/docs/figma-mcp-server/avoid-large-frames/",
+    "https://developers.figma.com/docs/figma-mcp-server/bringing-make-context-to-your-agent/",
+    "https://developers.figma.com/docs/figma-mcp-server/code-connect-integration/",
+    "https://developers.figma.com/docs/figma-mcp-server/code-to-canvas/",
+    "https://developers.figma.com/docs/figma-mcp-server/create-skills/",
+    "https://developers.figma.com/docs/figma-mcp-server/getting-500-error/",
+    "https://developers.figma.com/docs/figma-mcp-server/images-stopped-loading/",
+    "https://developers.figma.com/docs/figma-mcp-server/local-server-installation/",
+    "https://developers.figma.com/docs/figma-mcp-server/mcp-clients-issues/",
+    "https://developers.figma.com/docs/figma-mcp-server/mcp-vs-agent/",
+    "https://developers.figma.com/docs/figma-mcp-server/rate-limits-access/",
+    "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
+    "https://developers.figma.com/docs/figma-mcp-server/server-returning-web-code/",
+    "https://developers.figma.com/docs/figma-mcp-server/structure-figma-file/",
+    "https://developers.figma.com/docs/figma-mcp-server/stuck-or-slow/",
+    "https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/",
+    "https://developers.figma.com/docs/figma-mcp-server/tools-not-loading/",
+    "https://developers.figma.com/docs/figma-mcp-server/trigger-specific-tools/",
+    "https://developers.figma.com/docs/figma-mcp-server/variables-vs-code/",
+    "https://developers.figma.com/docs/figma-mcp-server/write-effective-prompts/",
+    "https://developers.figma.com/docs/figma-mcp-server/write-to-canvas/",
+    "https://developers.figma.com/docs/plugins/",
+    "https://developers.figma.com/docs/plugins/api/api-reference/",
+    "https://developers.figma.com/docs/rest-api/",
+    "https://developers.figma.com/docs/rest-api/activity-logs-endpoints/",
+    "https://developers.figma.com/docs/rest-api/ai-usage-endpoints/",
+    "https://developers.figma.com/docs/rest-api/authentication/",
+    "https://developers.figma.com/docs/rest-api/authentication/#access-tokens",
+    "https://developers.figma.com/docs/rest-api/authentication/#oauth-apps",
+    "https://developers.figma.com/docs/rest-api/changelog/",
+    "https://developers.figma.com/docs/rest-api/comments-endpoints/",
+    "https://developers.figma.com/docs/rest-api/component-endpoints/",
+    "https://developers.figma.com/docs/rest-api/dev-resources-endpoints/",
+    "https://developers.figma.com/docs/rest-api/developer-logs-endpoints/",
+    "https://developers.figma.com/docs/rest-api/discovery-endpoints/",
+    "https://developers.figma.com/docs/rest-api/errors/",
+    "https://developers.figma.com/docs/rest-api/file-endpoints/",
+    "https://developers.figma.com/docs/rest-api/file-endpoints/#get-images-endpoint",
+    "https://developers.figma.com/docs/rest-api/library-analytics-endpoints/",
+    "https://developers.figma.com/docs/rest-api/oauth-apps/",
+    "https://developers.figma.com/docs/rest-api/oembed-endpoints/",
+    "https://developers.figma.com/docs/rest-api/payments-endpoints/",
+    "https://developers.figma.com/docs/rest-api/personal-access-tokens/",
+    "https://developers.figma.com/docs/rest-api/plan-access-tokens/",
+    "https://developers.figma.com/docs/rest-api/projects-endpoints/",
+    "https://developers.figma.com/docs/rest-api/rate-limits/",
+    "https://developers.figma.com/docs/rest-api/republish-oauth-apps/",
+    "https://developers.figma.com/docs/rest-api/scim-endpoints/",
+    "https://developers.figma.com/docs/rest-api/scim-examples/",
+    "https://developers.figma.com/docs/rest-api/scim-supported-schemas/",
+    "https://developers.figma.com/docs/rest-api/scim/",
+    "https://developers.figma.com/docs/rest-api/scopes/",
+    "https://developers.figma.com/docs/rest-api/users-endpoints/",
+    "https://developers.figma.com/docs/rest-api/variables-endpoints/",
+    "https://developers.figma.com/docs/rest-api/version-history-endpoints/",
+    "https://developers.figma.com/docs/rest-api/webhooks-endpoints/",
+    "https://developers.figma.com/xcode://agent-plugin-clone?repo=https%3A%2F%2Fgithub.com%2Ffigma%2Fmcp-server-guide",
+    "https://developers.openai.com/codex/app/",
+    "https://developers.openai.com/codex/cli/",
+    "https://discord.gg/xzQhe2Vcvx",
+    "https://docs.github.com",
+    "https://docs.github.com/",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+    "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+    "https://en.wikipedia.org/wiki/Principle_of_least_privilege",
+    "https://en.wikipedia.org/wiki/Representational_state_transfer",
+    "https://figma.com/design/ABCDEFG123",
+    "https://figma.com/file/abc123/",
+    "https://figma.com/files/123456789/project/123",
+    "https://figma.com/files/123456789/team/456",
+    "https://figma.com/files/123456789/workspace/789",
+    "https://form.asana.com/?k=6r2Tos6p01DyVKGLeYJByg&d=10497086658021",
+    "https://form.asana.com/?k=kBG-ejRQTdY8x_H6a4vM3Q&d=10497086658021",
+    "https://forum.figma.com/",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#",
+    "https://github.com/#MIT-1-ov-file",
+    "https://github.com/#contributing-ov-file",
+    "https://github.com/#readme-ov-file",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Ffigma%2Frest-api-spec&report=figma+%28user%29",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/figma",
+    "https://github.com/figma/mcp-server-guide",
+    "https://github.com/figma/mcp-server-guide/blob/main/skills/figma-code-connect/SKILL.md",
+    "https://github.com/figma/rest-api-spec",
+    "https://github.com/figma/rest-api-spec/actions",
+    "https://github.com/figma/rest-api-spec/activity",
+    "https://github.com/figma/rest-api-spec/blob/main/CONTRIBUTING.md",
+    "https://github.com/figma/rest-api-spec/blob/main/LICENSE",
+    "https://github.com/figma/rest-api-spec/blob/main/README.md",
+    "https://github.com/figma/rest-api-spec/blob/main/package-lock.json",
+    "https://github.com/figma/rest-api-spec/blob/main/package.json",
+    "https://github.com/figma/rest-api-spec/branches",
+    "https://github.com/figma/rest-api-spec/commit/5ec080e0bac712b05d9a6d915430ac80fdc113d5",
+    "https://github.com/figma/rest-api-spec/commit/68890da2acd7f68ff43356e9d234caec150d8bbb",
+    "https://github.com/figma/rest-api-spec/commit/9fecd06a347623ca6dad665948c6940f0df35e83",
+    "https://github.com/figma/rest-api-spec/commit/cff1a53b91d73e3c8c757c1e860e2dd9549565cf",
+    "https://github.com/figma/rest-api-spec/commit/e854a2c2dff3ff8cb743e9a06575fbbf225faa33",
+    "https://github.com/figma/rest-api-spec/commits/main/",
+    "https://github.com/figma/rest-api-spec/commits?author=timbonicus",
+    "https://github.com/figma/rest-api-spec/custom-properties",
+    "https://github.com/figma/rest-api-spec/forks",
+    "https://github.com/figma/rest-api-spec/graphs/contributors",
+    "https://github.com/figma/rest-api-spec/issues",
+    "https://github.com/figma/rest-api-spec/network/dependents",
+    "https://github.com/figma/rest-api-spec/pull/1",
+    "https://github.com/figma/rest-api-spec/pull/17",
+    "https://github.com/figma/rest-api-spec/pull/95",
+    "https://github.com/figma/rest-api-spec/pulls",
+    "https://github.com/figma/rest-api-spec/pulse",
+    "https://github.com/figma/rest-api-spec/security",
+    "https://github.com/figma/rest-api-spec/stargazers",
+    "https://github.com/figma/rest-api-spec/tags",
+    "https://github.com/figma/rest-api-spec/tree/main/dist",
+    "https://github.com/figma/rest-api-spec/tree/main/openapi",
+    "https://github.com/figma/rest-api-spec/watchers",
+    "https://github.com/figma/sds",
+    "https://github.com/figma/widget-samples",
+    "https://github.com/login?return_to=%2Ffigma%2Frest-api-spec",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Ffigma%2Frest-api-spec",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=figma%2Frest-api-spec",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.community/",
+    "https://help.figma.com/",
+    "https://help.figma.com/hc/articles/14381406380183-Guide-to-the-file-browser",
+    "https://help.figma.com/hc/articles/360039957374-Get-started-with-organizations#saml-sso",
+    "https://help.figma.com/hc/articles/360040047614",
+    "https://help.figma.com/hc/articles/360040532353",
+    "https://help.figma.com/hc/articles/360040532413",
+    "https://help.figma.com/hc/articles/360040533373",
+    "https://help.figma.com/hc/articles/360048269533",
+    "https://help.figma.com/hc/articles/360048514653-Set-up-automatic-provisioning-via-SCIM#h_01HKBBEECSE7G6J30VA86KFB8F",
+    "https://help.figma.com/hc/en-us/articles/15023124644247-Guide-to-Dev-Mode",
+    "https://help.figma.com/hc/en-us/articles/23920389749655-Code-Connect",
+    "https://help.figma.com/hc/en-us/articles/32132100833559#h_01K25F7RBRZKCATVJHNXCS6KXW",
+    "https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server",
+    "https://help.figma.com/hc/en-us/articles/34963247780247",
+    "https://help.figma.com/hc/en-us/articles/35074258201495",
+    "https://help.figma.com/hc/en-us/articles/35281350665623-Figma-MCP-collection-How-to-set-up-the-Figma-remote-MCP-server",
+    "https://help.figma.com/hc/en-us/articles/360039817634-Enable-two-factor-authentication-2FA",
+    "https://help.figma.com/hc/en-us/articles/360052497994-Set-login-and-authentication-method#h_01HKBBTSB0PZJ96CNZA5C8VX5V",
+    "https://help.figma.com/hc/en-us/articles/39166810751895-Figma-skills-for-MCP",
+    "https://help.figma.com/hc/en-us/articles/39216419318551-Get-started-with-the-Figma-MCP-server",
+    "https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens",
+    "https://maintainers.github.com",
+    "https://mcp.figma.com/mcp",
+    "https://modelcontextprotocol.io/",
+    "https://nodejs.org/en/download/package-manager",
+    "https://oauth.net/2/",
+    "https://raw.githubusercontent.com/figma/rest-api-spec/main/README.md",
+    "https://raw.githubusercontent.com/figma/rest-api-spec/main/dist/openapi.yaml",
+    "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.json",
+    "https://raw.githubusercontent.com/figma/rest-api-spec/main/openapi/openapi.yaml",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stackoverflow.com/questions/79792727/how-to-implement-oauth-with-figma-in-fastmcp",
+    "https://staging.taskbridge.io/auth/figma/callback",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://support.github.com?tags=dotcom-footer",
+    "https://taskbridge.io",
+    "https://tools.openapis.org/",
+    "https://www.figma.com/blog/",
+    "https://www.figma.com/careers/",
+    "https://www.figma.com/community/file/1380235722331273046",
+    "https://www.figma.com/community/plugin/1491170387210430289/console-cli",
+    "https://www.figma.com/contact/",
+    "https://www.figma.com/developer-terms/",
+    "https://www.figma.com/developers",
+    "https://www.figma.com/developers/api",
+    "https://www.figma.com/developers/api#changelog",
+    "https://www.figma.com/developers/apps",
+    "https://www.figma.com/developers/embed#embed-api",
+    "https://www.figma.com/developers/tokens",
+    "https://www.figma.com/downloads/",
+    "https://www.figma.com/education/",
+    "https://www.figma.com/enterprise/",
+    "https://www.figma.com/figjam/",
+    "https://www.figma.com/file/1234abcd/My-File?node-id=123import",
+    "https://www.figma.com/file/1234abcd/Test-File?node-id=1-39",
+    "https://www.figma.com/file/your-file-id/Button?node-id=123import",
+    "https://www.figma.com/file/{file_key}/{title}",
+    "https://www.figma.com/file/{file_key}/{title}?node-id={id}",
+    "https://www.figma.com/legal",
+    "https://www.figma.com/legal/privacy/",
+    "https://www.figma.com/mcp-catalog/",
+    "https://www.figma.com/pricing/",
+    "https://www.figma.com/product-specific-terms/",
+    "https://www.figma.com/release-notes/",
+    "https://www.figma.com/scim/v2/:tenantid",
+    "https://www.figma.com/scim/v2/:tenantid/UsersAuthorization",
+    "https://www.figma.com/security/",
+    "https://www.figma.com/signup",
+    "https://www.githubstatus.com/"
+  ]
+}

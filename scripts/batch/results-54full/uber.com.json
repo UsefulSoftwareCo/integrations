@@ -1,0 +1,1136 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "uber.com",
+    "detect": {
+      "domain": "uber.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:04:10.540Z",
+    "summary": "Uber exposes multiple developer-facing HTTP APIs (Riders, Eats Marketplace, Direct, Guest Rides, Vouchers, Driver, Business Receipts, Suppliers/Vehicles, Ads, and Pay) plus a cataloged public MCP endpoint at mcp.uber.com.",
+    "description": "Uber is a transportation, delivery, and business platform that offers ride-hailing, food delivery, courier delivery, payments, advertising, and enterprise workflow products. Its developer program provides APIs for integrating these services into partner applications and business systems.",
+    "credentials": {
+      "uber_oauth_app": {
+        "type": "oauth2",
+        "label": "Uber developer application (client ID and client secret)",
+        "generateUrl": "https://developer.uber.com/dashboard/create",
+        "setup": "Sign in to the [Uber Developer Dashboard](https://developer.uber.com/dashboard), create an application from [Create App](https://developer.uber.com/dashboard/create), then open the app's Auth/Application settings to copy its `client_id` and `client_secret`. Add your `redirect_uri` there if you will use authorization-code flows. Some product APIs require Uber approval or enterprise access before the app can use the needed scopes.",
+        "acquisition": "manual"
+      },
+      "uber_server_token": {
+        "type": "api_key",
+        "label": "Uber Riders server token (legacy)",
+        "generateUrl": "https://developer.uber.com/dashboard",
+        "setup": "Open your existing Riders app in the [Uber Developer Dashboard](https://developer.uber.com/dashboard), go to the Auth tab, and copy the app's `server token`. Uber documents that new server tokens are no longer granted; only existing legacy tokens continue to work until migration off server tokens is complete.",
+        "acquisition": "manual"
+      },
+      "uber_personal_access_token": {
+        "type": "bearer",
+        "label": "Uber personal user access token for testing",
+        "generateUrl": "https://developer.uber.com/dashboard",
+        "setup": "For quick testing, open your app in the [Uber Developer Dashboard](https://developer.uber.com/dashboard), go to the Auth tab, select scopes, and in “Test with a Personal Access Token” click \"Generate a new token\". The token is shown once and represents the Uber account currently signed into the dashboard.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "uber-riders-api",
+        "name": "Uber Riders API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/riders/references/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/riders/references/api",
+            "https://developer.uber.com/docs/riders/guides/authentication/introduction",
+            "https://developer.uber.com/docs/riders/guides/authentication/server-token",
+            "https://developer.uber.com/docs/riders/guides/authentication/user-access-token"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_server_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/riders/references/api",
+                  "https://developer.uber.com/docs/riders/guides/authentication/server-token",
+                  "https://developer.uber.com/docs/riders/guides/authentication/introduction"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "uber_personal_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/riders/references/api",
+                  "https://developer.uber.com/docs/riders/guides/authentication/user-access-token"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/riders/guides/authentication/user-access-token"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.uber.com/v1.2"
+      },
+      {
+        "slug": "uber-eats-marketplace-api",
+        "name": "Uber Eats Marketplace API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/eats/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/eats/introduction",
+            "https://developer.uber.com/docs/eats/guides/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/eats/guides/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "uber-mcp-rides-3p",
+        "name": "Uber MCP rides-3p",
+        "type": "mcp",
+        "docs": "https://mcp.uber.com/claude/rides-3p/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://mcp.uber.com/claude/rides-3p/mcp"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://mcp.uber.com/claude/rides-3p/mcp"
+            ]
+          }
+        },
+        "url": "https://mcp.uber.com/claude/rides-3p/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "uber-direct-api",
+        "name": "Uber Direct API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/deliveries/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/deliveries/overview"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "uber-guest-rides-api",
+        "name": "Uber Guest Rides API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/guest-rides/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/guest-rides/introduction",
+            "https://developer.uber.com/docs/guest-rides/guides/authentication",
+            "https://developer.uber.com/docs/guest-rides/all-spec"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/guest-rides/guides/authentication",
+                  "https://developer.uber.com/docs/guest-rides/all-spec"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "uber-vouchers-api",
+        "name": "Uber Vouchers API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/vouchers/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/vouchers/introduction",
+            "https://developer.uber.com/docs/vouchers/guides/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/vouchers/guides/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "uber-driver-api",
+        "name": "Uber Driver API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/drivers/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/drivers/introduction",
+            "https://developer.uber.com/docs/drivers/guides/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/drivers/guides/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "uber-for-business-receipts-api",
+        "name": "Uber for Business Receipts API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/businesses/receipts/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/businesses/introduction",
+            "https://developer.uber.com/docs/businesses/receipts/guides/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/businesses/receipts/guides/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "uber-for-suppliers-api",
+        "name": "Uber for Suppliers API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/vehicles/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/vehicles/introduction",
+            "https://developer.uber.com/docs/vehicles/guides/authorization"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/vehicles/guides/authorization"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "uber-ads-api",
+        "name": "Uber Ads API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/ads/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/ads/introduction",
+            "https://developer.uber.com/docs/ads/get-started/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/ads/get-started/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "uber-pay-api",
+        "name": "Uber Pay API",
+        "type": "http",
+        "docs": "https://developer.uber.com/docs/payments/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.uber.com/docs/payments/introduction",
+            "https://developer.uber.com/docs/payments/guides/integration/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "uber_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.uber.com/docs/payments/guides/integration/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:04:10.541Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 193477,
+    "completion_tokens": 2701,
+    "total_tokens": 196178
+  },
+  "visited": [
+    "https://developer.uber.com/docs",
+    "https://developer.uber.com/docs/ads/get-started/authentication",
+    "https://developer.uber.com/docs/ads/introduction",
+    "https://developer.uber.com/docs/businesses/introduction",
+    "https://developer.uber.com/docs/businesses/receipts/guides/authentication",
+    "https://developer.uber.com/docs/deliveries/overview",
+    "https://developer.uber.com/docs/drivers/guides/authentication",
+    "https://developer.uber.com/docs/drivers/introduction",
+    "https://developer.uber.com/docs/drivers/tutorials/api/curl",
+    "https://developer.uber.com/docs/eats/guides/authentication",
+    "https://developer.uber.com/docs/eats/introduction",
+    "https://developer.uber.com/docs/guest-rides/all-spec",
+    "https://developer.uber.com/docs/guest-rides/guides/authentication",
+    "https://developer.uber.com/docs/guest-rides/introduction",
+    "https://developer.uber.com/docs/payments/guides/integration/authentication",
+    "https://developer.uber.com/docs/payments/introduction",
+    "https://developer.uber.com/docs/riders/guides/authentication/introduction",
+    "https://developer.uber.com/docs/riders/guides/authentication/server-token",
+    "https://developer.uber.com/docs/riders/guides/authentication/user-access-token",
+    "https://developer.uber.com/docs/riders/references/api",
+    "https://developer.uber.com/docs/vehicles/guides/authorization",
+    "https://developer.uber.com/docs/vehicles/introduction",
+    "https://developer.uber.com/docs/vouchers/guides/authentication",
+    "https://developer.uber.com/docs/vouchers/introduction",
+    "https://github.com/199-mcp/mcp-uber",
+    "https://mcp.uber.com/claude/rides-3p/mcp",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://en.wikipedia.org/wiki/Cross-origin_resource_sharing",
+    "http://en.wikipedia.org/wiki/E.164",
+    "http://localhost",
+    "http://oauth.net/code/",
+    "http://t.uber.com/integration-support",
+    "http://www.postgresql.org/docs/8.2/static/queries-limit.html",
+    "https://aaronparecki.com/2012/07/29/2/oauth2-simplified",
+    "https://api.uber",
+    "https://api.uber.com/",
+    "https://api.uber.com/v1.2/me",
+    "https://api.uber.com/v1.2/products?latitude=37.7759792&longitude=-122.41823",
+    "https://api.uber.com/v1/ads/account/{account_id}/campaigns",
+    "https://api.uber.com/v1/eats/stores",
+    "https://api.uber.com/v1/guests/",
+    "https://api.uber.com/v1/partners/me",
+    "https://auth.uber.com",
+    "https://auth.uber.com/oauth/revoke",
+    "https://auth.uber.com/oauth/v2/authorize",
+    "https://auth.uber.com/oauth/v2/authorize?client_id=",
+    "https://auth.uber.com/oauth/v2/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_REDIRECT_URI&scope=ads.campaigns.read",
+    "https://auth.uber.com/oauth/v2/revoke",
+    "https://auth.uber.com/oauth/v2/token",
+    "https://bonjour.uber.com/marketplace/vehicle-solutions-agreement?client_id=",
+    "https://business.uber.com",
+    "https://businesses.uber.com/contact-representative.html?source=devdocs",
+    "https://de",
+    "https://developer.github.com/v3/oauth/#common-errors-for-the-authorization-request",
+    "https://developer.uber",
+    "https://developer.uber.com/",
+    "https://developer.uber.com/#about-uber-direct",
+    "https://developer.uber.com/#api",
+    "https://developer.uber.com/#api-endpoints",
+    "https://developer.uber.com/#api-token-generation-errors",
+    "https://developer.uber.com/#authentication",
+    "https://developer.uber.com/#authentication-flows",
+    "https://developer.uber.com/#authorization-code-flow",
+    "https://developer.uber.com/#authorization-code-scopes",
+    "https://developer.uber.com/#authorization-flow",
+    "https://developer.uber.com/#available-endpoints",
+    "https://developer.uber.com/#available-scopes",
+    "https://developer.uber.com/#before-you-start",
+    "https://developer.uber.com/#business-use-cases-of-supplier-success",
+    "https://developer.uber.com/#client-credentials-flow",
+    "https://developer.uber.com/#client-credentials-scopes",
+    "https://developer.uber.com/#common-issues",
+    "https://developer.uber.com/#common-problems-and-solutions",
+    "https://developer.uber.com/#common-types",
+    "https://developer.uber.com/#core-capabilities",
+    "https://developer.uber.com/#cross-origin-resource-sharing",
+    "https://developer.uber.com/#debugging-&-authentication-errors",
+    "https://developer.uber.com/#developer-guides",
+    "https://developer.uber.com/#distinction-between-rentals-and-fleets",
+    "https://developer.uber.com/#documentation-guide",
+    "https://developer.uber.com/#driver-eligibility-and-risk-assessment-[details",
+    "https://developer.uber.com/#error-handling",
+    "https://developer.uber.com/#error-response",
+    "https://developer.uber.com/#error-responses",
+    "https://developer.uber.com/#errors",
+    "https://developer.uber.com/#example-request",
+    "https://developer.uber.com/#example-request-1",
+    "https://developer.uber.com/#example-response",
+    "https://developer.uber.com/#example-response-1",
+    "https://developer.uber.com/#faq",
+    "https://developer.uber.com/#generate-via-api",
+    "https://developer.uber.com/#generate-via-the-developer-dashboard",
+    "https://developer.uber.com/#getting-started",
+    "https://developer.uber.com/#how-oauth-2.0-works",
+    "https://developer.uber.com/#http-status-codes",
+    "https://developer.uber.com/#integration-paths",
+    "https://developer.uber.com/#integration-process",
+    "https://developer.uber.com/#json",
+    "https://developer.uber.com/#make-api-requests",
+    "https://developer.uber.com/#marketplace-api-overview",
+    "https://developer.uber.com/#need-help?",
+    "https://developer.uber.com/#next-steps",
+    "https://developer.uber.com/#oauth-authorization-code-flow-guide",
+    "https://developer.uber.com/#oauth-using-authorization-code",
+    "https://developer.uber.com/#oauth-using-client-credentials",
+    "https://developer.uber.com/#overview",
+    "https://developer.uber.com/#pagination",
+    "https://developer.uber.com/#payments",
+    "https://developer.uber.com/#platform-capabilities-and-implementation",
+    "https://developer.uber.com/#postman-collections",
+    "https://developer.uber.com/#profile",
+    "https://developer.uber.com/#quickstart:-testing-with-a-personal-user-access-token",
+    "https://developer.uber.com/#receipt-api",
+    "https://developer.uber.com/#reference",
+    "https://developer.uber.com/#refreshing-access-tokens",
+    "https://developer.uber.com/#refreshing-tokens",
+    "https://developer.uber.com/#required-scopes",
+    "https://developer.uber.com/#rest",
+    "https://developer.uber.com/#revoking-tokens",
+    "https://developer.uber.com/#sap-concur-integration",
+    "https://developer.uber.com/#scim-provisioning",
+    "https://developer.uber.com/#scopes",
+    "https://developer.uber.com/#server-token",
+    "https://developer.uber.com/#server-token-authentication",
+    "https://developer.uber.com/#sftp-data-automation",
+    "https://developer.uber.com/#single-sign-on-(sso",
+    "https://developer.uber.com/#staying-updated",
+    "https://developer.uber.com/#step-1-user-authorizes-your-app",
+    "https://developer.uber.com/#step-1:-authorize",
+    "https://developer.uber.com/#step-1:-generate-token",
+    "https://developer.uber.com/#step-1:-redirect-for-authorization",
+    "https://developer.uber.com/#step-1:-user-authorizes-your-app",
+    "https://developer.uber.com/#step-2:-exchange-code-for-token",
+    "https://developer.uber.com/#step-2:-receive-redirect",
+    "https://developer.uber.com/#step-2:-use-bearer-token",
+    "https://developer.uber.com/#step-3:-get-an-access-token",
+    "https://developer.uber.com/#step-3:-use-for-store-operations",
+    "https://developer.uber.com/#step-4:-use-bearer-token",
+    "https://developer.uber.com/#the-difference-between-uber-direct-apis-and-uber-eats-marketplace-apis",
+    "https://developer.uber.com/#this-documentation-is-out-of-date.-please-go-to-this-link-for-latest-version",
+    "https://developer.uber.com/#token-authentication-code",
+    "https://developer.uber.com/#token-client-credentials",
+    "https://developer.uber.com/#token-generation",
+    "https://developer.uber.com/#token-management",
+    "https://developer.uber.com/#token-security",
+    "https://developer.uber.com/#trips",
+    "https://developer.uber.com/#usage",
+    "https://developer.uber.com/#user-access-token",
+    "https://developer.uber.com/#user-access-token-authentication",
+    "https://developer.uber.com/#using-access-tokens",
+    "https://developer.uber.com/#vehicle-management-[details",
+    "https://developer.uber.com/#vehicle-onboarding-and-compliance-[details",
+    "https://developer.uber.com/#versioning",
+    "https://developer.uber.com/#what-you-can-build",
+    "https://developer.uber.com/api-change-log",
+    "https://developer.uber.com/blob:https://developer.uber.com/853e6918-5996-4f8c-84ef-f8211bb109f2",
+    "https://developer.uber.com/dashboard",
+    "https://developer.uber.com/dashboard/",
+    "https://developer.uber.com/dashboard/create",
+    "https://developer.uber.com/docs",
+    "https://developer.uber.com/docs/ads/api/v1/create-ad-groups",
+    "https://developer.uber.com/docs/ads/api/v1/create-ads",
+    "https://developer.uber.com/docs/ads/api/v1/create-campaigns",
+    "https://developer.uber.com/docs/ads/api/v1/generate-reports",
+    "https://developer.uber.com/docs/ads/api/v1/get-ad-accounts",
+    "https://developer.uber.com/docs/ads/api/v1/get-ad-groups",
+    "https://developer.uber.com/docs/ads/api/v1/get-ads",
+    "https://developer.uber.com/docs/ads/api/v1/get-campaigns",
+    "https://developer.uber.com/docs/ads/api/v1/get-products",
+    "https://developer.uber.com/docs/ads/api/v1/get-report",
+    "https://developer.uber.com/docs/ads/api/v1/get-stores",
+    "https://developer.uber.com/docs/ads/api/v1/sync-report",
+    "https://developer.uber.com/docs/ads/api/v1/update-ad-groups",
+    "https://developer.uber.com/docs/ads/api/v1/update-ads",
+    "https://developer.uber.com/docs/ads/api/v1/update-campaigns",
+    "https://developer.uber.com/docs/ads/campaign-management/ad-products",
+    "https://developer.uber.com/docs/ads/campaign-management/limitations",
+    "https://developer.uber.com/docs/ads/campaign-management/models/ad",
+    "https://developer.uber.com/docs/ads/campaign-management/models/ad-group",
+    "https://developer.uber.com/docs/ads/campaign-management/models/campaign",
+    "https://developer.uber.com/docs/ads/campaign-management/overview",
+    "https://developer.uber.com/docs/ads/campaign-management/targeting-overview",
+    "https://developer.uber.com/docs/ads/campaign-management/targeting-sponsored-listings",
+    "https://developer.uber.com/docs/ads/campaign-management/targeting-sponsored-search",
+    "https://developer.uber.com/docs/ads/changelog",
+    "https://developer.uber.com/docs/ads/get-started/authentication",
+    "https://developer.uber.com/docs/ads/get-started/quick-start",
+    "https://developer.uber.com/docs/ads/introduction",
+    "https://developer.uber.com/docs/ads/overview/data-types",
+    "https://developer.uber.com/docs/ads/overview/error-handling",
+    "https://developer.uber.com/docs/ads/overview/rate-limiting",
+    "https://developer.uber.com/docs/ads/overview/versioning",
+    "https://developer.uber.com/docs/ads/references/models/v1/account-billing-address",
+    "https://developer.uber.com/docs/ads/references/models/v1/ad",
+    "https://developer.uber.com/docs/ads/references/models/v1/ad-account",
+    "https://developer.uber.com/docs/ads/references/models/v1/ad-subjects",
+    "https://developer.uber.com/docs/ads/references/models/v1/ad-summary",
+    "https://developer.uber.com/docs/ads/references/models/v1/address",
+    "https://developer.uber.com/docs/ads/references/models/v1/adgroup",
+    "https://developer.uber.com/docs/ads/references/models/v1/adgroup-action",
+    "https://developer.uber.com/docs/ads/references/models/v1/adgroup-configured-status",
+    "https://developer.uber.com/docs/ads/references/models/v1/adgroup-effective-status",
+    "https://developer.uber.com/docs/ads/references/models/v1/adgroup-effective-status-reasons",
+    "https://developer.uber.com/docs/ads/references/models/v1/adgroup-summary",
+    "https://developer.uber.com/docs/ads/references/models/v1/auto-bidding",
+    "https://developer.uber.com/docs/ads/references/models/v1/auto-bidding-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/auto-resume-action",
+    "https://developer.uber.com/docs/ads/references/models/v1/bidding",
+    "https://developer.uber.com/docs/ads/references/models/v1/bidding-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/billing",
+    "https://developer.uber.com/docs/ads/references/models/v1/budget",
+    "https://developer.uber.com/docs/ads/references/models/v1/budget-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/campaign",
+    "https://developer.uber.com/docs/ads/references/models/v1/campaign-configured-status",
+    "https://developer.uber.com/docs/ads/references/models/v1/campaign-effective-status",
+    "https://developer.uber.com/docs/ads/references/models/v1/campaign-effective-status-reasons",
+    "https://developer.uber.com/docs/ads/references/models/v1/cofunding-source",
+    "https://developer.uber.com/docs/ads/references/models/v1/create-ad-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/create-adgroup-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/create-campaign-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/currency-amount",
+    "https://developer.uber.com/docs/ads/references/models/v1/custom-audience-targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/dayparting-day-schedule",
+    "https://developer.uber.com/docs/ads/references/models/v1/dayparting-interval",
+    "https://developer.uber.com/docs/ads/references/models/v1/dayparting-schedule",
+    "https://developer.uber.com/docs/ads/references/models/v1/dayparting-time",
+    "https://developer.uber.com/docs/ads/references/models/v1/effective-status-reasons",
+    "https://developer.uber.com/docs/ads/references/models/v1/existing-to-location-targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/goal-based-bidding",
+    "https://developer.uber.com/docs/ads/references/models/v1/goal-based-bidding-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/keyword-targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/lapsed-to-location-targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/manual-bidding",
+    "https://developer.uber.com/docs/ads/references/models/v1/manual-bidding-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/new-to-brand-targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/new-to-location-targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/order-frequency-targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/order-frequency-time-range",
+    "https://developer.uber.com/docs/ads/references/models/v1/past-days-range",
+    "https://developer.uber.com/docs/ads/references/models/v1/permission",
+    "https://developer.uber.com/docs/ads/references/models/v1/product",
+    "https://developer.uber.com/docs/ads/references/models/v1/schedule",
+    "https://developer.uber.com/docs/ads/references/models/v1/schedule-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/store",
+    "https://developer.uber.com/docs/ads/references/models/v1/store-subjects",
+    "https://developer.uber.com/docs/ads/references/models/v1/targeting-criteria",
+    "https://developer.uber.com/docs/ads/references/models/v1/targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/uber-one-targeting-criterion",
+    "https://developer.uber.com/docs/ads/references/models/v1/update-ad-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/update-adgroup-input",
+    "https://developer.uber.com/docs/ads/references/models/v1/update-campaign-input",
+    "https://developer.uber.com/docs/ads/reporting-metrics/async-get-started",
+    "https://developer.uber.com/docs/ads/reporting-metrics/metrics-glossary",
+    "https://developer.uber.com/docs/ads/reporting-metrics/overview",
+    "https://developer.uber.com/docs/ads/reporting-metrics/report-types/ad-keyword-identification",
+    "https://developer.uber.com/docs/ads/reporting-metrics/report-types/ad-performance",
+    "https://developer.uber.com/docs/ads/reporting-metrics/report-types/ad-performance-by-audience-tenure",
+    "https://developer.uber.com/docs/ads/reporting-metrics/report-types/ad-performance-by-keyword",
+    "https://developer.uber.com/docs/ads/reporting-metrics/report-types/ad-performance-by-location",
+    "https://developer.uber.com/docs/ads/reporting-metrics/report-types/gr-category-share-by-brand",
+    "https://developer.uber.com/docs/ads/reporting-metrics/report-types/gr-category-share-by-brand-owner",
+    "https://developer.uber.com/docs/ads/reporting-metrics/report-types/gr-total-sales",
+    "https://developer.uber.com/docs/ads/reporting-metrics/sync-get-started",
+    "https://developer.uber.com/docs/businesses/data-automation/data-download",
+    "https://developer.uber.com/docs/businesses/data-automation/employees",
+    "https://developer.uber.com/docs/businesses/data-automation/expenses",
+    "https://developer.uber.com/docs/businesses/data-automation/faq",
+    "https://developer.uber.com/docs/businesses/data-automation/introduction",
+    "https://developer.uber.com/docs/businesses/data-automation/introduction#setup",
+    "https://developer.uber.com/docs/businesses/data-automation/super-dash",
+    "https://developer.uber.com/docs/businesses/data-automation/workday",
+    "https://developer.uber.com/docs/businesses/introduction",
+    "https://developer.uber.com/docs/businesses/receipts/changelog",
+    "https://developer.uber.com/docs/businesses/receipts/guides/3pauthentication",
+    "https://developer.uber.com/docs/businesses/receipts/guides/account-setup",
+    "https://developer.uber.com/docs/businesses/receipts/guides/authentication",
+    "https://developer.uber.com/docs/businesses/receipts/guides/code-samples",
+    "https://developer.uber.com/docs/businesses/receipts/guides/curl",
+    "https://developer.uber.com/docs/businesses/receipts/guides/sandbox",
+    "https://developer.uber.com/docs/businesses/receipts/guides/webhooks",
+    "https://developer.uber.com/docs/businesses/receipts/introduction",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/v1/business-order-order_id-receipt-get",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/v1/business-trips-trip_id-invoice_urls-get",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/v1/business-trips-trip_id-receipt-get",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/v1/business-trips-trip_id-receipt-pdf_url-get",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/v1/sandbox-get-run",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/v1/sandbox-post-terminal-state-eats-run",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/v1/sandbox-post-terminal-state-trip-run",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/webhooks/invoice-ready",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/webhooks/order-receipt",
+    "https://developer.uber.com/docs/businesses/receipts/references/api/webhooks/receipt-ready",
+    "https://developer.uber.com/docs/businesses/references/api/v2/token-post",
+    "https://developer.uber.com/docs/businesses/sso/configure/domain-ownership-verification",
+    "https://developer.uber.com/docs/businesses/sso/configure/idp/azure",
+    "https://developer.uber.com/docs/businesses/sso/configure/idp/okta",
+    "https://developer.uber.com/docs/businesses/sso/configure/idp/onelogin",
+    "https://developer.uber.com/docs/businesses/sso/configure/idp/pingfederate/enabling-sso",
+    "https://developer.uber.com/docs/businesses/sso/configure/idp/pingfederate/prerequisites",
+    "https://developer.uber.com/docs/businesses/sso/configure/idp/pingfederate/sso-configuration",
+    "https://developer.uber.com/docs/businesses/sso/configure/steps",
+    "https://developer.uber.com/docs/businesses/sso/introduction",
+    "https://developer.uber.com/docs/businesses/sso/user-experience",
+    "https://developer.uber.com/docs/businesses/terms-of-use",
+    "https://developer.uber.com/docs/concur/introduction",
+    "https://developer.uber.com/docs/concur/superdash/introduction",
+    "https://developer.uber.com/docs/deliveries/api-reference/business-location-management",
+    "https://developer.uber.com/docs/deliveries/api-reference/cpp",
+    "https://developer.uber.com/docs/deliveries/api-reference/daas",
+    "https://developer.uber.com/docs/deliveries/api-reference/org",
+    "https://developer.uber.com/docs/deliveries/api-reference/refund",
+    "https://developer.uber.com/docs/deliveries/changelog",
+    "https://developer.uber.com/docs/deliveries/daas/references/api/webhooks/courier-update-webhook",
+    "https://developer.uber.com/docs/deliveries/daas/references/api/webhooks/cpp-shopping-notification",
+    "https://developer.uber.com/docs/deliveries/daas/references/api/webhooks/delivery-status-webhook",
+    "https://developer.uber.com/docs/deliveries/daas/references/api/webhooks/refund-webhook",
+    "https://developer.uber.com/docs/deliveries/faq",
+    "https://developer.uber.com/docs/deliveries/get-started",
+    "https://developer.uber.com/docs/deliveries/get-started#create-account",
+    "https://developer.uber.com/docs/deliveries/guides/authentication",
+    "https://developer.uber.com/docs/deliveries/guides/delivery-window",
+    "https://developer.uber.com/docs/deliveries/guides/geocoding",
+    "https://developer.uber.com/docs/deliveries/guides/pincode",
+    "https://developer.uber.com/docs/deliveries/guides/proof-of-delivery",
+    "https://developer.uber.com/docs/deliveries/guides/robocourier",
+    "https://developer.uber.com/docs/deliveries/guides/sdk",
+    "https://developer.uber.com/docs/deliveries/guides/webhooks",
+    "https://developer.uber.com/docs/deliveries/overview",
+    "https://developer.uber.com/docs/deliveries/support",
+    "https://developer.uber.com/docs/drivers/change-log",
+    "https://developer.uber.com/docs/drivers/faq",
+    "https://developer.uber.com/docs/drivers/guides/authentication",
+    "https://developer.uber.com/docs/drivers/guides/authentication#refreshing-tokens",
+    "https://developer.uber.com/docs/drivers/guides/client-libraries",
+    "https://developer.uber.com/docs/drivers/guides/errors",
+    "https://developer.uber.com/docs/drivers/guides/localization",
+    "https://developer.uber.com/docs/drivers/guides/rate-limiting",
+    "https://developer.uber.com/docs/drivers/guides/sandbox",
+    "https://developer.uber.com/docs/drivers/guides/scopes",
+    "https://developer.uber.com/docs/drivers/guides/versioning",
+    "https://developer.uber.com/docs/drivers/introduction",
+    "https://developer.uber.com/docs/drivers/references/api",
+    "https://developer.uber.com/docs/drivers/references/api/v1/partners-me-get",
+    "https://developer.uber.com/docs/drivers/references/api/v1/partners-payments-get",
+    "https://developer.uber.com/docs/drivers/references/api/v1/partners-trips-get",
+    "https://developer.uber.com/docs/drivers/references/api/v2/token-post",
+    "https://developer.uber.com/docs/drivers/terms-of-use",
+    "https://developer.uber.com/docs/drivers/tutorials/api/best-practices",
+    "https://developer.uber.com/docs/drivers/tutorials/api/curl",
+    "https://developer.uber.com/docs/drivers/tutorials/api/faq",
+    "https://developer.uber.com/docs/drivers/tutorials/api/introduction",
+    "https://developer.uber.com/docs/drivers/tutorials/api/python",
+    "https://developer.uber.com/docs/eats/api-change-log",
+    "https://developer.uber.com/docs/eats/faq",
+    "https://developer.uber.com/docs/eats/guides/authentication",
+    "https://developer.uber.com/docs/eats/guides/errors",
+    "https://developer.uber.com/docs/eats/guides/getting-started",
+    "https://developer.uber.com/docs/eats/guides/going-live",
+    "https://developer.uber.com/docs/eats/guides/integration-activation-flows",
+    "https://developer.uber.com/docs/eats/guides/menu-integration",
+    "https://developer.uber.com/docs/eats/guides/order-integration",
+    "https://developer.uber.com/docs/eats/guides/reporting",
+    "https://developer.uber.com/docs/eats/guides/retail-order-fulfillment",
+    "https://developer.uber.com/docs/eats/guides/sandbox",
+    "https://developer.uber.com/docs/eats/guides/store-integration",
+    "https://developer.uber.com/docs/eats/guides/webhooks",
+    "https://developer.uber.com/docs/eats/introduction",
+    "https://developer.uber.com/docs/eats/quality-and-performance",
+    "https://developer.uber.com/docs/eats/references/api/delivery_byoc_suite",
+    "https://developer.uber.com/docs/eats/references/api/delivery_partner_suite",
+    "https://developer.uber.com/docs/eats/references/api/integration_activation_suite",
+    "https://developer.uber.com/docs/eats/references/api/order_suite",
+    "https://developer.uber.com/docs/eats/references/api/promotions_suite",
+    "https://developer.uber.com/docs/eats/references/api/reporting_suite",
+    "https://developer.uber.com/docs/eats/references/api/store_suite",
+    "https://developer.uber.com/docs/eats/references/api/v1/get-eats-stores",
+    "https://developer.uber.com/docs/eats/references/api/v1/get-eats-stores-storeid",
+    "https://developer.uber.com/docs/eats/references/api/v1/get-eats-stores-storeid-canceledorders",
+    "https://developer.uber.com/docs/eats/references/api/v1/get-eats-stores-storeid-createdorders",
+    "https://developer.uber.com/docs/eats/references/api/v1/get-eats-stores-storeid-holidayhours",
+    "https://developer.uber.com/docs/eats/references/api/v1/get-eats-stores-storeid-status",
+    "https://developer.uber.com/docs/eats/references/api/v1/post-eats-order-orderid-acceptposorder",
+    "https://developer.uber.com/docs/eats/references/api/v1/post-eats-order-orderid-cancel",
+    "https://developer.uber.com/docs/eats/references/api/v1/post-eats-order-orderid-denyposorder",
+    "https://developer.uber.com/docs/eats/references/api/v1/post-eats-orders-orderid-restaurantdelivery-status",
+    "https://developer.uber.com/docs/eats/references/api/v1/post-eats-stores-storeid-holidayhours",
+    "https://developer.uber.com/docs/eats/references/api/v1/post-eats-stores-storeid-status",
+    "https://developer.uber.com/docs/eats/references/api/v2/Menu-refresh-request-webhook",
+    "https://developer.uber.com/docs/eats/references/api/v2/example-menu-payloads",
+    "https://developer.uber.com/docs/eats/references/api/v2/get-eats-order-orderid",
+    "https://developer.uber.com/docs/eats/references/api/v2/get-eats-stores-storeid-menu",
+    "https://developer.uber.com/docs/eats/references/api/v2/patch-eats-orders-orderid-cart",
+    "https://developer.uber.com/docs/eats/references/api/v2/post-eats-stores-storeid-menus-items-itemid",
+    "https://developer.uber.com/docs/eats/references/api/v2/product-types",
+    "https://developer.uber.com/docs/eats/references/api/v2/put-eats-stores-storeid-menu",
+    "https://developer.uber.com/docs/eats/references/api/v2/required-metadata-regulations",
+    "https://developer.uber.com/docs/eats/references/api/v2/troubleshoot-errors",
+    "https://developer.uber.com/docs/eats/references/api/webhooks.orders-notification",
+    "https://developer.uber.com/docs/eats/references/api/webhooks/orders-release",
+    "https://developer.uber.com/docs/guest-rides/about/u4b-api-introduction",
+    "https://developer.uber.com/docs/guest-rides/all-spec",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/AUTHENTICATION/operation/postOAuthToken",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/ESTIMATES/operation/createTripEstimate",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/ESTIMATES/operation/getTripEstimate",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/GUEST-DETAILS/operation/getGuestPhoneInfo",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/LOCATION-REFINEMENT/operation/getGuestAddressAutocomplete",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/LOCATION-REFINEMENT/operation/getGuestZones",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/MANAGE-TRIP-ON-BEHALF-OF-USER/operation/addGuestTripTip",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/MANAGE-TRIP-ON-BEHALF-OF-USER/operation/dispatchFlexibleRide",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/SANDBOX/operation/createSandboxRun",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/SANDBOX/operation/getSandboxRun",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/SANDBOX/operation/updateSandboxDriverState",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIP-COMMUNICATION/operation/createTripCommunicationSession",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIP-COMMUNICATION/operation/initiatePhoneCall",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIP-COMMUNICATION/operation/sendMessageToDriver",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIPS/operation/cancelGuestTrip",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIPS/operation/createGuestTrip",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIPS/operation/getGuestTrip",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIPS/operation/getGuestTripReceipt",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIPS/operation/listGuestTrips",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/TRIPS/operation/updateGuestTrip",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/WEBHOOKS/paths/guests.trips.driver_location/post",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/WEBHOOKS/paths/guests.trips.receipt_ready/post",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/WEBHOOKS/paths/guests.trips.status_changed/post",
+    "https://developer.uber.com/docs/guest-rides/all-spec#tag/WEBHOOKS/paths/guests.trips.trip_message/post",
+    "https://developer.uber.com/docs/guest-rides/changelog",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/comms",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/dispatch-and-cancellation",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/frequently-asked-questions",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/fulfillment-indicator",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/on-post",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/overview",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/pickup-refinement",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/pulling-product-estimates",
+    "https://developer.uber.com/docs/guest-rides/guest-ride-api-build-guide/requesting-a-trip",
+    "https://developer.uber.com/docs/guest-rides/guides/3pauthentication",
+    "https://developer.uber.com/docs/guest-rides/guides/authentication",
+    "https://developer.uber.com/docs/guest-rides/guides/code-samples",
+    "https://developer.uber.com/docs/guest-rides/guides/errors",
+    "https://developer.uber.com/docs/guest-rides/guides/sandbox",
+    "https://developer.uber.com/docs/guest-rides/guides/webhooks",
+    "https://developer.uber.com/docs/guest-rides/introduction",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-address-autocomplete-get",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-sandbox-driver_state-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-sandbox-run-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-sandbox-run_id-get",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-call-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-communication-put",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-estimates-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-get",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-guests-phone-info-get",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-request_id-delete",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-request_id-dispatch-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-request_id-get",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-request_id-message-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-request_id-put",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-request_id-receipt-get",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-trips-tip-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/guest-zones-get",
+    "https://developer.uber.com/docs/guest-rides/references/api/v1/trips-products-info-post",
+    "https://developer.uber.com/docs/guest-rides/references/api/webhooks/driver-location",
+    "https://developer.uber.com/docs/guest-rides/references/api/webhooks/receipt-ready",
+    "https://developer.uber.com/docs/guest-rides/references/api/webhooks/status-changed",
+    "https://developer.uber.com/docs/guest-rides/references/api/webhooks/trip-message",
+    "https://developer.uber.com/docs/guest-rides/widgets/booking-widget",
+    "https://developer.uber.com/docs/guest-rides/widgets/overview",
+    "https://developer.uber.com/docs/guest-rides/widgets/trip-tracking-widget",
+    "https://developer.uber.com/docs/payments/api_reference/cancel_deposit",
+    "https://developer.uber.com/docs/payments/api_reference/confirm_deposit",
+    "https://developer.uber.com/docs/payments/api_reference/deposit",
+    "https://developer.uber.com/docs/payments/api_reference/find_deposit",
+    "https://developer.uber.com/docs/payments/api_reference/read_deposit",
+    "https://developer.uber.com/docs/payments/api_reference/update_deposit",
+    "https://developer.uber.com/docs/payments/api_reference/update_refund",
+    "https://developer.uber.com/docs/payments/glossary",
+    "https://developer.uber.com/docs/payments/guides/integration/authentication",
+    "https://developer.uber.com/docs/payments/guides/integration/error-codes",
+    "https://developer.uber.com/docs/payments/guides/integration/errors",
+    "https://developer.uber.com/docs/payments/guides/integration/onboard",
+    "https://developer.uber.com/docs/payments/guides/integration/testing",
+    "https://developer.uber.com/docs/payments/introduction",
+    "https://developer.uber.com/docs/payments/introduction/deposit-flow",
+    "https://developer.uber.com/docs/payments/introduction/uber-pay-for-consumers",
+    "https://developer.uber.com/docs/payments/introduction/uber-pay-for-earners",
+    "https://developer.uber.com/docs/payments/introduction/use-cases",
+    "https://developer.uber.com/docs/riders/change-log",
+    "https://developer.uber.com/docs/riders/faq",
+    "https://developer.uber.com/docs/riders/faq#im-a-developer-signing-up-an-account-for-my-companyorganization-what-account-details-should-i-use",
+    "https://developer.uber.com/docs/riders/guides/authentication/introduction",
+    "https://developer.uber.com/docs/riders/guides/authentication/server-token",
+    "https://developer.uber.com/docs/riders/guides/authentication/single-sign-on",
+    "https://developer.uber.com/docs/riders/guides/authentication/user-access-token",
+    "https://developer.uber.com/docs/riders/guides/client-libraries",
+    "https://developer.uber.com/docs/riders/guides/design-guidelines",
+    "https://developer.uber.com/docs/riders/guides/errors",
+    "https://developer.uber.com/docs/riders/guides/localization",
+    "https://developer.uber.com/docs/riders/guides/rate-limiting",
+    "https://developer.uber.com/docs/riders/guides/sandbox",
+    "https://developer.uber.com/docs/riders/guides/scopes",
+    "https://developer.uber.com/docs/riders/guides/versioning",
+    "https://developer.uber.com/docs/riders/guides/webhooks",
+    "https://developer.uber.com/docs/riders/introduction",
+    "https://developer.uber.com/docs/riders/references/api",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/estimates-price-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/estimates-time-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/history-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/me-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/me-patch",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/payment-methods-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/places-place_id-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/places-place_id-put",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/products-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/products-product_id-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/requests-estimate-post",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/requests-post",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/requests-request_id-delete",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/requests-request_id-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/requests-request_id-map-get",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/requests-request_id-patch",
+    "https://developer.uber.com/docs/riders/references/api/v1.2/requests-request_id-receipt-get",
+    "https://developer.uber.com/docs/riders/references/api/v1/products-get",
+    "https://developer.uber.com/docs/riders/references/api/v1/requests-request_id-receipt-get",
+    "https://developer.uber.com/docs/riders/references/api/v2/authorize-get",
+    "https://developer.uber.com/docs/riders/references/api/v2/token-post",
+    "https://developer.uber.com/docs/riders/references/api/v2/token-post#example-request-access-token-client-credentials",
+    "https://developer.uber.com/docs/riders/ride-promotions/faq",
+    "https://developer.uber.com/docs/riders/ride-promotions/introduction",
+    "https://developer.uber.com/docs/riders/ride-requests/introduction",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/api/android",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/api/best-practices",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/api/curl",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/api/faq",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/api/introduction",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/api/ios",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/api/java",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/api/python",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/button/android",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/button/faq",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/button/introduction",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/button/ios",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/deep-links/faq",
+    "https://developer.uber.com/docs/riders/ride-requests/tutorials/deep-links/introduction",
+    "https://developer.uber.com/docs/riders/terms-of-use",
+    "https://developer.uber.com/docs/scim/introduction",
+    "https://developer.uber.com/docs/sso/introduction",
+    "https://developer.uber.com/docs/vehicles/getting-started",
+    "https://developer.uber.com/docs/vehicles/guides/authorization",
+    "https://developer.uber.com/docs/vehicles/guides/developer-application-setup",
+    "https://developer.uber.com/docs/vehicles/guides/sample-journey",
+    "https://developer.uber.com/docs/vehicles/guides/sandbox-experience",
+    "https://developer.uber.com/docs/vehicles/guides/webhooks",
+    "https://developer.uber.com/docs/vehicles/introduction",
+    "https://developer.uber.com/docs/vehicles/platform-components/driver-risk",
+    "https://developer.uber.com/docs/vehicles/platform-components/vehicle-management",
+    "https://developer.uber.com/docs/vehicles/platform-components/vehicle-onboarding",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/driver-management/cash-block-action",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/driver-management/driver-status-change",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/driver-management/get-compliance-info",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/driver-management/get-driver-info",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/driver-management/query-cash-block-actions",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/driver-management/search-drivers",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/org-management/get-orgs",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/org-management/overview",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/get-driver-payments",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/get-driver-realtime-status",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/get-driver-timeline-info",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/get-drivers-information",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/get-drivers-live-location",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/get-performance-data",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/get-realtime-transactions",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/overview",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/quick-apply-open-to-work-fleets",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/realtime-driver-actioning-event",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/supplier-performance-data/realtime-driver-status-change",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/terms-management/adjust-terms",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/terms-management/create-terms",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/terms-management/terminate-terms",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/assign-vehicle",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/create-vehicle",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/delete-vehicle",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/get-vehicle",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/get-vehicles-by-owner",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/search-vehicles",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/transfer-vehicle",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/unassign-vehicle",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-management/update-vehicle",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-onboarding/document-status-change",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-onboarding/overview",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-onboarding/upload-document",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-onboarding/vehicle-status-change",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-suppliers/suppliers/create-report-url",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-suppliers/suppliers/generate-report",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-suppliers/suppliers/get-report-by-report-id",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-suppliers/suppliers/list-reports",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-suppliers/suppliers/overview",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-suppliers/suppliers/payment-based-reports-fleet",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-suppliers/suppliers/payment-based-reports-rental",
+    "https://developer.uber.com/docs/vehicles/references/api/v1/vehicle-suppliers/suppliers/performance-based-reports-fleet",
+    "https://developer.uber.com/docs/vehicles/references/api/v2/supplier-performance-data/get-vehicles-information",
+    "https://developer.uber.com/docs/vehicles/references/api/v3/driver-management/get-partner-risk-profile",
+    "https://developer.uber.com/docs/vouchers/about/u4b-api-introduction",
+    "https://developer.uber.com/docs/vouchers/changelog",
+    "https://developer.uber.com/docs/vouchers/guides/3pauthentication",
+    "https://developer.uber.com/docs/vouchers/guides/authentication",
+    "https://developer.uber.com/docs/vouchers/guides/code-samples",
+    "https://developer.uber.com/docs/vouchers/guides/sandbox",
+    "https://developer.uber.com/docs/vouchers/guides/webhooks",
+    "https://developer.uber.com/docs/vouchers/introduction",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/me-vouchers-redeem-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-individual_voucher_program-create-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-program-templates-get",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-program-templates-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-program-templates-template_id-get",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-program-templates-template_id-patch",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-create-from-template-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-search-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-add-guests-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-cancel-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-codes-cancel-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-codes-distribute-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-codes-generate-post",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-codes-get",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-get",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-guests-get",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/organizations-organization_id-voucher-programs-voucher_program_id-patch",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/sandbox-run-get",
+    "https://developer.uber.com/docs/vouchers/references/api/v1/sandbox-terminal_state_trip_run-post",
+    "https://developer.uber.com/docs/vouchers/voucher-api-build-guide/administrative-admin-workflows",
+    "https://developer.uber.com/docs/vouchers/voucher-api-build-guide/frequently-asked-questions",
+    "https://developer.uber.com/docs/vouchers/voucher-api-build-guide/managing-voucher-programs",
+    "https://developer.uber.com/docs/vouchers/voucher-api-build-guide/non-template-based-programs",
+    "https://developer.uber.com/docs/vouchers/voucher-api-build-guide/overview",
+    "https://developer.uber.com/docs/vouchers/voucher-api-build-guide/template-based-programs",
+    "https://developer.uber.com/drivers/references/api/v2/token-post#example-request-access-token-authorization-code",
+    "https://developer.uber.com/faq",
+    "https://developer.uber.com/guides/authentication",
+    "https://developer.uber.com/guides/getting-started",
+    "https://developer.uber.com/guides/going-live",
+    "https://developer.uber.com/guides/item-customizations",
+    "https://developer.uber.com/guides/menu-integration",
+    "https://developer.uber.com/guides/order-integration",
+    "https://developer.uber.com/guides/order-states",
+    "https://developer.uber.com/guides/store-integration",
+    "https://developer.uber.com/guides/webhooks",
+    "https://developer.uber.com/integration-activation-flows",
+    "https://developer.uber.com/platform-components/driver-management",
+    "https://developer.uber.com/platform-components/vehicle-management",
+    "https://developer.uber.com/platform-components/vehicle-onboarding",
+    "https://developer.uber.com/products/drivers",
+    "https://developer.uber.com/quality-and-performance",
+    "https://developer.uber.com/references/api/v1/supplier-performance-data/overview",
+    "https://developer.uber.com/references/api/v1/vehicle-suppliers/suppliers/overview",
+    "https://developer.uber.com/versioning",
+    "https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3",
+    "https://github.com/199-mcp/mcp-uber",
+    "https://github.com/uber/rides-android-sdk",
+    "https://github.com/uber/rides-ios-sdk",
+    "https://github.com/uber/uber-pay-reference-app",
+    "https://login.uber.com/oauth/v2/token",
+    "https://mcp.uber.com/claude/rides-3p/mcp",
+    "https://oauth.net/2/",
+    "https://redocly.com/redoc/",
+    "https://riders.uber.com/profile",
+    "https://sandbox-api.uber.com/",
+    "https://sandbox-api.uber.com/v1/guests/",
+    "https://tools.ietf.org/html/rfc6749",
+    "https://uberpay.uber.com",
+    "https://www.postman.com/",
+    "https://www.postman.com/uber/uber-for-business-api/folder/uvvcrm6/scenarios",
+    "https://www.postman.com/uber/workspace/uber-for-business-api/collection/20928853-6a4440df-49f8-4115-91d3-362a5478d140?action=share&creator=33770699&active-environment=20928853-315d35cc-dd58-4246-a726-3e4528a78b65",
+    "https://www.postman.com/uber/workspace/uber-for-business-api/collection/20928853-ce28a0a7-e703-451b-9d47-ddf40e11bd9a",
+    "https://www.postman.com/uber/workspace/uber-for-business-api/collection/20928853-dc7b4734-52e7-4d56-978a-071c18f7c7a9",
+    "https://www.postman.com/uber/workspace/uber-for-business-api/collection/20928853-e1a2df5e-e04c-4c51-9405-0a561e57764a?action=share&creator=33770699&active-environment=20928853-315d35cc-dd58-4246-a726-3e4528a78b65",
+    "https://www.uber.com/gb/en/about/accessibility/?uclick_id=df42c37d-25d9-41ca-930e-8e06976d1d88",
+    "https://www.uber.com/legal/document/?name=general-terms-of-use&uclick_id=df42c37d-25d9-41ca-930e-8e06976d1d88",
+    "https://www.uber.com/legal/en/document/?name=privacy-notice&country=great-britain&lang=en",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://your-redirect-uri/?code=",
+    "https://your-redirect-uri/?code=AUTHORIZATION_CODE"
+  ]
+}

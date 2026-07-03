@@ -8,12 +8,28 @@ import { getDomain as tldGetDomain } from "tldts";
 // (app.vercel.app, user.github.io) instead of collapsing onto the platform.
 const getDomain = (url: string) => tldGetDomain(url, { allowPrivateDomains: true });
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
-import { faviconUrl } from "../src/lib/favicon.ts";
+import { faviconUrl, isJunkDomain } from "../src/lib/favicon.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCES = join(ROOT, "sources");
 const OVERRIDES = join(ROOT, "overrides");
 const OUTPUT = join(ROOT, "output");
+
+// Curated developer-tool domains (scripts/batch/seed-domains*.txt) float to
+// the top of the registry list — they're the audience's daily drivers.
+const DEVTOOL_DOMAINS: Set<string> = (() => {
+  const out = new Set<string>();
+  const dir = join(ROOT, "scripts", "batch");
+  if (!existsSync(dir)) return out;
+  for (const name of readdirSync(dir)) {
+    if (!/^seed-domains.*\.txt$/.test(name)) continue;
+    for (const line of readFileSync(join(dir, name), "utf8").split("\n")) {
+      const d = line.trim().toLowerCase();
+      if (d && !d.startsWith("#")) out.add(d);
+    }
+  }
+  return out;
+})();
 
 mkdirSync(OUTPUT, { recursive: true });
 
@@ -208,6 +224,22 @@ interface ApiGuruSpec {
   raw?: { info?: { "x-logo"?: { url?: string } } };
 }
 
+function isHttpUrl(url: string | undefined): url is string {
+  if (!url) return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isPlausibleSpecUrl(url: string | undefined): url is string {
+  if (!isHttpUrl(url)) return false;
+  const path = new URL(url).pathname;
+  return /\.(json|ya?ml)$/i.test(path) || /openapi|swagger/i.test(path);
+}
+
 function buildOpenapi(): Integration[] {
   const data = readJson<{ specs: ApiGuruSpec[] }>(join(SOURCES, "api-guru-openapi.json"));
   // Hand-curated specs (sources/openapi-manual.json) — kept separate so they
@@ -233,6 +265,12 @@ function buildOpenapi(): Integration[] {
   for (const [key, s] of byKey) {
     const slug = slugify(key);
     const feed: Feed = manualKeys.has(key) ? "override" : "apis-guru";
+    // Always link the apis.guru mirror: origin URLs are provider-reported and
+    // frequently dead or redirecting to an HTML portal (even spec-looking ones
+    // like walmart's /v1/swaggerProxy). Origin survives as the docs link when
+    // it isn't itself a spec document.
+    const specUrl = s.swaggerUrl ?? s.link ?? (isPlausibleSpecUrl(s.origin) ? s.origin : undefined);
+    const docsUrl = !isPlausibleSpecUrl(s.origin) && isHttpUrl(s.origin) ? s.origin : undefined;
     recs.push({
       id: `openapi/${slug}`,
       kind: "openapi",
@@ -247,7 +285,8 @@ function buildOpenapi(): Integration[] {
         provider: s.provider,
         service: s.service ?? undefined,
         version: s.versionKey,
-        specUrl: s.origin, // the provider's own canonical spec, not the apis.guru mirror
+        specUrl,
+        docsUrl,
         openapiVer: s.openapiVer,
         updated: s.updated,
         added: s.added,
@@ -330,6 +369,97 @@ function buildCli(): Integration[] {
       raw: { "cli-seed": c } as never,
     };
   });
+  return dedupeSlugs(recs);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Discovered: compact overnight batch results -> one record per domain+format
+// ─────────────────────────────────────────────────────────────────────────────
+
+type DiscoveredSurfaceType = "http" | "graphql" | "mcp" | "cli";
+
+interface DiscoveredSurface {
+  slug: string;
+  name: string;
+  type: DiscoveredSurfaceType;
+  url?: string;
+  spec?: string;
+  command?: string;
+  authStatus: "none" | "required" | "unknown";
+}
+
+interface DiscoveredDomain {
+  domain: string;
+  description?: string;
+  summary?: string;
+  surfaces?: DiscoveredSurface[];
+}
+
+const DISCOVERED_KIND_PRIORITY: Kind[] = ["mcp", "openapi", "graphql", "cli"];
+
+const discoveredKind = (type: DiscoveredSurfaceType): Kind => (type === "http" ? "openapi" : type);
+
+function buildDiscovered(knownDomains: Set<string>): Integration[] {
+  const path = join(SOURCES, "discovered.json");
+  if (!existsSync(path)) return [];
+  const data = readJson<{ domains: DiscoveredDomain[] }>(path);
+  const recs: Integration[] = [];
+
+  for (const d of data.domains ?? []) {
+    const domain = d.domain.trim().toLowerCase();
+    if (!domain || knownDomains.has(domain)) continue;
+    const surfaces = d.surfaces ?? [];
+    const byKind = new Map<Kind, DiscoveredSurface>();
+    for (const surface of surfaces) {
+      const kind = discoveredKind(surface.type);
+      if (!byKind.has(kind)) byKind.set(kind, surface);
+    }
+    const kinds = DISCOVERED_KIND_PRIORITY.filter((kind) => byKind.has(kind));
+    if (kinds.length === 0) continue;
+
+    const domainSlug = slugify(domain);
+    const description = (d.description || d.summary || "").replace(/\s+/g, " ").trim().slice(0, 240);
+    kinds.forEach((kind, i) => {
+      const surface = byKind.get(kind)!;
+      const slug = i === 0 ? domainSlug : `${domainSlug}-${kind}`;
+      const rec: Integration = {
+        id: `discovered/${domainSlug}-${kind}`,
+        kind,
+        slug,
+        name: domain,
+        description,
+        url: undefined,
+        icon: faviconUrl(domain) ?? undefined,
+        categories: [],
+        feeds: ["discovered"],
+        raw: { discovered: { domain, surface } },
+      };
+      if (kind === "mcp") {
+        rec.mcp = { remoteUrl: surface.url };
+      } else if (kind === "openapi") {
+        rec.openapi = {
+          provider: domain,
+          version: "discovered",
+          specUrl: surface.spec,
+          docsUrl: surface.url,
+          openapiVer: "",
+        };
+      } else if (kind === "graphql") {
+        rec.graphql = {
+          endpoint: surface.url ?? "",
+          hasSecurity: surface.authStatus === "required",
+          docs: [],
+        };
+      } else {
+        rec.cli = {
+          install: surface.command ?? "",
+          domain,
+        };
+      }
+      recs.push(rec);
+    });
+  }
+
   return dedupeSlugs(recs);
 }
 
@@ -468,7 +598,12 @@ function applyOverrides(kind: Kind, recs: Integration[]): Integration[] {
       ...patch,
     } as Integration);
   }
-  return updated;
+  if (kind !== "openapi") return updated;
+  return updated.map((r) => {
+    const swaggerUrl = (r.openapi as (typeof r.openapi & { swaggerUrl?: string }) | undefined)?.swaggerUrl;
+    if (!r.openapi || r.openapi.specUrl || !swaggerUrl) return r;
+    return { ...r, openapi: { ...r.openapi, specUrl: swaggerUrl } };
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -491,6 +626,8 @@ function dedupeSlugs(recs: Integration[]): Integration[] {
 // ─────────────────────────────────────────────────────────────────────────────
 // Index: slim record for search
 // ─────────────────────────────────────────────────────────────────────────────
+
+const KIND_ORDER: Kind[] = ["mcp", "openapi", "graphql", "cli"];
 
 // The registrable domain a record belongs to — the grouping key for the
 // domain-grouped homepage. OpenAPI carries an eTLD+1 provider already; for MCP
@@ -519,7 +656,7 @@ function recordDomain(r: Integration): string {
     if (DOMAIN_REMAP[provider]) return DOMAIN_REMAP[provider];
     const d = provider.split(":")[0].toLowerCase();
     if (d) return d;
-    url = r.openapi?.swaggerUrl ?? r.url;
+    url = r.openapi?.specUrl ?? r.url;
   } else if (r.kind === "mcp") {
     url = r.mcp?.remoteUrl ?? r.url;
   } else if (r.kind === "cli") {
@@ -527,6 +664,8 @@ function recordDomain(r: Integration): string {
   } else {
     url = r.graphql?.endpoint ?? r.url;
   }
+  const discoveredDomain = (r.raw.discovered as { domain?: string } | undefined)?.domain;
+  if (discoveredDomain) return discoveredDomain;
   return (url ? getDomain(url) : null) ?? (r.url ? getDomain(r.url) ?? "" : "");
 }
 
@@ -549,8 +688,104 @@ function buildIndex(all: Integration[]) {
       categories: r.categories,
       feeds: r.feeds,
       popularity: r.popularity,
+      devtool: DEVTOOL_DOMAINS.has(domain) || undefined,
     };
   });
+}
+
+type IndexEntry = ReturnType<typeof buildIndex>[number];
+
+interface SearchIndexEntry {
+  domain: string;
+  description: string;
+  kinds: Kind[];
+  devtool: boolean;
+  popularity: number;
+  total: number;
+}
+
+function buildSearchIndex(index: IndexEntry[]): SearchIndexEntry[] {
+  const map = new Map<string, { domain: string; description: string; kinds: Set<Kind>; devtool: boolean; popularity: number; total: number }>();
+  for (const r of index) {
+    const domain = r.domain || r.slug;
+    if (!domain) continue;
+    if (isJunkDomain(domain)) continue;
+    let group = map.get(domain);
+    if (!group) {
+      group = { domain, description: "", kinds: new Set(), devtool: false, popularity: 0, total: 0 };
+      map.set(domain, group);
+    }
+    group.total++;
+    group.kinds.add(r.kind);
+    group.popularity = Math.max(group.popularity, r.popularity ?? 0);
+    group.devtool ||= r.devtool === true;
+    if (!group.description && r.description) group.description = r.description.replace(/\s+/g, " ").slice(0, 110);
+  }
+
+  return [...map.values()]
+    .map((group) => ({
+      domain: group.domain,
+      description: group.description,
+      kinds: KIND_ORDER.filter((kind) => group.kinds.has(kind)),
+      devtool: group.devtool,
+      popularity: group.popularity,
+      total: group.total,
+    }))
+    .sort(
+      (a, b) => Number(b.devtool) - Number(a.devtool) || b.popularity - a.popularity || b.total - a.total || a.domain.localeCompare(b.domain),
+    );
+}
+
+interface CatalogSeedEntry {
+  kind: Kind;
+  name: string;
+  feeds: Feed[];
+  remoteUrl?: string;
+  transport?: string;
+  authTypes?: string[];
+  specUrl?: string;
+  docsUrl?: string;
+  endpoint?: string;
+  docs?: string;
+  command?: string;
+  install?: string;
+  repo?: string;
+}
+
+function catalogSeedEntry(r: Integration): { domain: string; entry: CatalogSeedEntry } | null {
+  if (r.feeds.includes("discovered")) return null;
+
+  const domain = recordDomain(r);
+  if (!domain) return null;
+
+  const base = { kind: r.kind, name: r.name, feeds: r.feeds };
+  if (r.kind === "mcp") {
+    if (!r.mcp?.remoteUrl) return null;
+    return { domain, entry: { ...base, remoteUrl: r.mcp.remoteUrl, transport: r.mcp.transport, authTypes: r.mcp.authTypes } };
+  }
+  if (r.kind === "openapi") {
+    if (!r.openapi?.specUrl) return null;
+    return { domain, entry: { ...base, specUrl: r.openapi.specUrl, docsUrl: r.openapi.docsUrl } };
+  }
+  if (r.kind === "graphql") {
+    if (!r.graphql?.endpoint) return null;
+    return { domain, entry: { ...base, endpoint: r.graphql.endpoint, docs: r.graphql.docs[0]?.url } };
+  }
+  if (r.kind === "cli") {
+    if (!r.cli || !r.slug) return null;
+    return { domain, entry: { ...base, command: r.slug, install: r.cli.install, docs: r.cli.docs, repo: r.cli.repo } };
+  }
+  return null;
+}
+
+function buildCatalogSeedData(all: Integration[]): Record<string, CatalogSeedEntry[]> {
+  const out: Record<string, CatalogSeedEntry[]> = {};
+  for (const r of all) {
+    const seeded = catalogSeedEntry(r);
+    if (!seeded) continue;
+    (out[seeded.domain] ??= []).push(seeded.entry);
+  }
+  return out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -591,10 +826,21 @@ function main() {
   // Order: build feed records → apply overrides (may add new records) → fill
   // tools from cache → swap broken icons for domain-based fallbacks → keep only
   // publicly-accessible records.
-  const mcp = applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp()))).filter(isPublic);
-  const openapi = applyFavicons(applyToolsCache("openapi", applyOverrides("openapi", buildOpenapi()))).filter(isPublic);
-  const graphql = applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql()))).filter(isPublic);
-  const cli = buildCli().filter(isPublic);
+  const baseMcp = applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp()))).filter(isPublic);
+  const baseOpenapi = applyFavicons(applyToolsCache("openapi", applyOverrides("openapi", buildOpenapi()))).filter(isPublic);
+  const baseGraphql = applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql()))).filter(isPublic);
+  const baseCli = buildCli().filter(isPublic);
+
+  const knownDomains = new Set(
+    [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
+      .map(recordDomain)
+      .filter(Boolean),
+  );
+  const discovered = buildDiscovered(knownDomains).filter(isPublic);
+  const mcp = [...baseMcp, ...discovered.filter((r) => r.kind === "mcp")];
+  const openapi = [...baseOpenapi, ...discovered.filter((r) => r.kind === "openapi")];
+  const graphql = [...baseGraphql, ...discovered.filter((r) => r.kind === "graphql")];
+  const cli = [...baseCli, ...discovered.filter((r) => r.kind === "cli")];
 
   writeFileSync(join(OUTPUT, "mcp.json"), JSON.stringify(mcp, null, 2));
   writeFileSync(join(OUTPUT, "openapi.json"), JSON.stringify(openapi, null, 2));
@@ -602,7 +848,10 @@ function main() {
   writeFileSync(join(OUTPUT, "cli.json"), JSON.stringify(cli, null, 2));
 
   const all = [...mcp, ...openapi, ...graphql, ...cli];
-  writeFileSync(join(OUTPUT, "index.json"), JSON.stringify(buildIndex(all)));
+  const index = buildIndex(all);
+  writeFileSync(join(OUTPUT, "index.json"), JSON.stringify(index));
+  writeFileSync(join(OUTPUT, "catalog-seeds.json"), JSON.stringify(buildCatalogSeedData(all)));
+  writeFileSync(join(OUTPUT, "search-index.json"), JSON.stringify(buildSearchIndex(index)));
 
   const mergedMcp = mcp.filter((r) => r.feeds.length > 1).length;
   const withTools = (rs: Integration[]) =>
@@ -613,6 +862,7 @@ function main() {
   console.log(`openapi: ${openapi.length.toString().padStart(5)}  (${withTools(openapi)} with tools)`);
   console.log(`graphql: ${graphql.length.toString().padStart(5)}  (${withTools(graphql)} with tools)`);
   console.log(`cli:     ${cli.length.toString().padStart(5)}`);
+  console.log(`discovered: ${discovered.length.toString().padStart(5)}`);
   console.log(`total:   ${all.length.toString().padStart(5)}`);
 
   const validatedIcons = Object.keys(faviconCache).length;

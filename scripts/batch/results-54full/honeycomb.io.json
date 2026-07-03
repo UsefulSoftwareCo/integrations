@@ -1,0 +1,475 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "honeycomb.io",
+    "detect": {
+      "domain": "honeycomb.io",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:28:34.559Z",
+    "summary": "Honeycomb exposes a region-specific REST API with an OpenAPI spec and a streamable-HTTP MCP server; both require Honeycomb-issued credentials, with MCP supporting either OAuth or API-key authentication.",
+    "description": "Honeycomb is an observability platform for exploring telemetry from distributed systems and applications. It helps teams investigate performance, reliability, and behavior using high-cardinality event, trace, and related operational data.",
+    "credentials": {
+      "hc_api_key": {
+        "type": "compound",
+        "label": "Honeycomb API key",
+        "generateUrl": "https://ui.honeycomb.io/",
+        "setup": "In Honeycomb, go to **Account** → **Team Settings** → **API Keys** to create or manage API keys. Honeycomb issues three key types documented at [Authentication](https://docs.honeycomb.io/api/authentication): **Ingest Keys**, **Configuration Keys**, and **Management Keys**. For REST API use, send either an Ingest/Configuration key in `X-Honeycomb-Team`, or a Management Key as `Authorization: Bearer <key ID>:<secret>`, depending on endpoint permissions. For MCP API-key auth, the troubleshooting guide says to use the API key in the form `<Key ID>:<Secret Key>` and some clients may pass that directly as the `Authorization` header. Store the secret at creation time; Honeycomb only returns some secrets once.",
+        "acquisition": "manual"
+      },
+      "hc_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Honeycomb MCP OAuth connection",
+        "generateUrl": "https://docs.honeycomb.io/integrations/mcp/configuration-guide",
+        "setup": "Use an MCP host with built-in OAuth support and add the Honeycomb MCP server from [Connecting AI Agents to Honeycomb MCP](https://docs.honeycomb.io/integrations/mcp/configuration-guide). Honeycomb recommends OAuth for interactive agents. For example, add the remote MCP endpoint `https://mcp.honeycomb.io/mcp` (or EU `https://mcp.eu1.honeycomb.io/mcp`) in a compatible host such as Cursor, VS Code, Claude, Claude Code, or Amazon Q Developer, then complete the sign-in flow when prompted.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "honeycomb-api",
+        "name": "Honeycomb API",
+        "type": "http",
+        "docs": "https://docs.honeycomb.io/api/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.honeycomb.io/api/introduction",
+            "https://docs.honeycomb.io/api/authentication",
+            "https://docs.honeycomb.io/api/openapi-public.yaml"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hc_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "ApiKeyAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.honeycomb.io/api/openapi-public.yaml",
+                  "https://docs.honeycomb.io/api/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "hc_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "ManagementKeyAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.honeycomb.io/api/openapi-public.yaml",
+                  "https://docs.honeycomb.io/api/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://docs.honeycomb.io/api/openapi-public.yaml",
+        "url": "https://api.honeycomb.io",
+        "variables": [
+          {
+            "name": "region",
+            "resolveFrom": "Use the EU base URL `https://api.eu1.honeycomb.io` instead of US if the account is in Honeycomb's EU region.",
+            "description": "Honeycomb accounts are hosted in US or EU regions with different API base URLs."
+          }
+        ]
+      },
+      {
+        "slug": "honeycomb-mcp",
+        "name": "Honeycomb MCP",
+        "type": "mcp",
+        "docs": "https://docs.honeycomb.io/integrations/mcp/configuration-guide",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.honeycomb.io/integrations/mcp/configuration-guide",
+            "https://docs.honeycomb.io/integrations/mcp/concepts",
+            "https://docs.honeycomb.io/integrations/mcp/troubleshooting"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hc_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.honeycomb.io/integrations/mcp/configuration-guide"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "hc_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.honeycomb.io/integrations/mcp/configuration-guide",
+                  "https://docs.honeycomb.io/integrations/mcp/troubleshooting"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.honeycomb.io/mcp",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "region",
+            "resolveFrom": "Use the EU endpoint `https://mcp.eu1.honeycomb.io/mcp` instead of US if the account is in Honeycomb's EU region.",
+            "description": "Honeycomb publishes separate US and EU MCP endpoints."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:28:34.559Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 127970,
+    "completion_tokens": 1346,
+    "total_tokens": 129316
+  },
+  "visited": [
+    "https://docs.honeycomb.io/api/authentication",
+    "https://docs.honeycomb.io/api/introduction",
+    "https://docs.honeycomb.io/api/openapi-public.yaml",
+    "https://docs.honeycomb.io/integrations/mcp/concepts",
+    "https://docs.honeycomb.io/integrations/mcp/configuration-guide",
+    "https://docs.honeycomb.io/integrations/mcp/tools",
+    "https://docs.honeycomb.io/integrations/mcp/troubleshooting",
+    "https://github.com/honeycombio/honeycomb-mcp",
+    "https://honeycomb.io/llms.txt",
+    "https://mcpservers.org/servers/elifuzz/api-docs-mcp",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "https://academy.honeycomb.io/",
+    "https://api-changelog.honeycomb.io/",
+    "https://api-docs.honeycomb.io/api/reporting/getslohistory",
+    "https://api.eu1.honeycomb.io",
+    "https://api.honeycomb.io",
+    "https://archiveprogram.github.com",
+    "https://bsky.app/profile/honeycomb.io",
+    "https://changelog.honeycomb.io/",
+    "https://claude.ai/code",
+    "https://docs.anthropic.com/en/docs/claude-code/overview",
+    "https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/what-is.html",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.honeycomb.io",
+    "https://docs.honeycomb.io/",
+    "https://docs.honeycomb.io/#%E2%80%9Drate-limit-exceeded%E2%80%9D-error",
+    "https://docs.honeycomb.io/#%E2%80%9Dunauthorized%E2%80%9D-errors",
+    "https://docs.honeycomb.io/#agent-can%E2%80%99t-create-or-update-boards-triggers-or-slos",
+    "https://docs.honeycomb.io/#agent-can’t-create-or-update-boards-triggers-or-slos",
+    "https://docs.honeycomb.io/#ai-conversation-analysis",
+    "https://docs.honeycomb.io/#api-key-authentication-failures",
+    "https://docs.honeycomb.io/#api-key-format",
+    "https://docs.honeycomb.io/#api-key-types",
+    "https://docs.honeycomb.io/#api-versions",
+    "https://docs.honeycomb.io/#authentication-and-setup-issues",
+    "https://docs.honeycomb.io/#base-urls",
+    "https://docs.honeycomb.io/#before-you-begin",
+    "https://docs.honeycomb.io/#best-practices",
+    "https://docs.honeycomb.io/#boards",
+    "https://docs.honeycomb.io/#canvas-investigations",
+    "https://docs.honeycomb.io/#capture-findings-with-boards",
+    "https://docs.honeycomb.io/#choose-a-connection-method",
+    "https://docs.honeycomb.io/#configuration-keys",
+    "https://docs.honeycomb.io/#connection-issues",
+    "https://docs.honeycomb.io/#content-area",
+    "https://docs.honeycomb.io/#content-types",
+    "https://docs.honeycomb.io/#customize-attribute-descriptions",
+    "https://docs.honeycomb.io/#environment-dataset-or-column-not-found",
+    "https://docs.honeycomb.io/#honeycomb-mcp-server",
+    "https://docs.honeycomb.io/#honeycomb-resource-hierarchy",
+    "https://docs.honeycomb.io/#how-mcp-servers-fit-in",
+    "https://docs.honeycomb.io/#how-tools-are-used",
+    "https://docs.honeycomb.io/#ingest-keys",
+    "https://docs.honeycomb.io/#key-concepts",
+    "https://docs.honeycomb.io/#management-keys",
+    "https://docs.honeycomb.io/#managing-api-keys",
+    "https://docs.honeycomb.io/#next-steps",
+    "https://docs.honeycomb.io/#no-tools-found-or-access-denied",
+    "https://docs.honeycomb.io/#notification-recipients",
+    "https://docs.honeycomb.io/#oauth-errors-or-failures",
+    "https://docs.honeycomb.io/#other-tools",
+    "https://docs.honeycomb.io/#overview",
+    "https://docs.honeycomb.io/#param-create-board",
+    "https://docs.honeycomb.io/#param-find-columns",
+    "https://docs.honeycomb.io/#param-find-queries",
+    "https://docs.honeycomb.io/#param-get-anomaly-service-profiles",
+    "https://docs.honeycomb.io/#param-get-dataset",
+    "https://docs.honeycomb.io/#param-get-dataset-columns",
+    "https://docs.honeycomb.io/#param-get-environment",
+    "https://docs.honeycomb.io/#param-get-query-results",
+    "https://docs.honeycomb.io/#param-get-semconv-attribute",
+    "https://docs.honeycomb.io/#param-get-service-map",
+    "https://docs.honeycomb.io/#param-get-span-details",
+    "https://docs.honeycomb.io/#param-get-trace",
+    "https://docs.honeycomb.io/#param-get-workspace-context",
+    "https://docs.honeycomb.io/#param-list-boards",
+    "https://docs.honeycomb.io/#param-list-semconv-namespaces",
+    "https://docs.honeycomb.io/#param-list-spans",
+    "https://docs.honeycomb.io/#param-run-bubbleup",
+    "https://docs.honeycomb.io/#param-run-query",
+    "https://docs.honeycomb.io/#param-search-semconv",
+    "https://docs.honeycomb.io/#query-and-analysis",
+    "https://docs.honeycomb.io/#rate-limits",
+    "https://docs.honeycomb.io/#rate-limits-and-scopes",
+    "https://docs.honeycomb.io/#required-scopes-for-write-tools",
+    "https://docs.honeycomb.io/#security-model",
+    "https://docs.honeycomb.io/#semantic-conventions",
+    "https://docs.honeycomb.io/#server-connection-problems",
+    "https://docs.honeycomb.io/#service-level-objectives-slos",
+    "https://docs.honeycomb.io/#service-map-and-anomalies",
+    "https://docs.honeycomb.io/#session-timeouts",
+    "https://docs.honeycomb.io/#setting-up-an-api-key",
+    "https://docs.honeycomb.io/#setting-up-manually-generic-mcp-hosts",
+    "https://docs.honeycomb.io/#setting-up-oauth",
+    "https://docs.honeycomb.io/#submitting-feedback",
+    "https://docs.honeycomb.io/#support",
+    "https://docs.honeycomb.io/#tips-for-prompting",
+    "https://docs.honeycomb.io/#tool-issues",
+    "https://docs.honeycomb.io/#tool-surface-at-a-glance",
+    "https://docs.honeycomb.io/#tools",
+    "https://docs.honeycomb.io/#traces-and-spans",
+    "https://docs.honeycomb.io/#triggers",
+    "https://docs.honeycomb.io/#using-built-in-support",
+    "https://docs.honeycomb.io/#using-the-command-line",
+    "https://docs.honeycomb.io/#validating-a-key",
+    "https://docs.honeycomb.io/#what-is-model-context-protocol",
+    "https://docs.honeycomb.io/#why-does-it-matter",
+    "https://docs.honeycomb.io/#workspace-discovery",
+    "https://docs.honeycomb.io/#write-effective-prompts",
+    "https://docs.honeycomb.io/#”rate-limit-exceeded”-error",
+    "https://docs.honeycomb.io/#”unauthorized”-errors",
+    "https://docs.honeycomb.io/api/auth",
+    "https://docs.honeycomb.io/api/auth/list-authorizations",
+    "https://docs.honeycomb.io/api/authentication",
+    "https://docs.honeycomb.io/api/errors",
+    "https://docs.honeycomb.io/api/introduction",
+    "https://docs.honeycomb.io/api/key-management",
+    "https://docs.honeycomb.io/api/key-management/create-an-api-key",
+    "https://docs.honeycomb.io/api/openapi-public.yaml",
+    "https://docs.honeycomb.io/api/pagination",
+    "https://docs.honeycomb.io/api/permissions",
+    "https://docs.honeycomb.io/api/rate-limit",
+    "https://docs.honeycomb.io/configure",
+    "https://docs.honeycomb.io/configure/datasets/definitions/",
+    "https://docs.honeycomb.io/configure/environments/manage-api-keys/",
+    "https://docs.honeycomb.io/configure/teams/customize-attributes",
+    "https://docs.honeycomb.io/configure/teams/customize-telemetry-schema",
+    "https://docs.honeycomb.io/configure/teams/investigate-activity#investigate-team-activity-using-activity-log-datasets",
+    "https://docs.honeycomb.io/configure/teams/manage-permissions",
+    "https://docs.honeycomb.io/cursor://anysphere.cursor-deeplink/mcp/install?name=honeycomb&config=eyJ0cmFuc3BvcnQiOiJodHRwIiwidXJsIjoiaHR0cHM6Ly9tY3AuaG9uZXljb21iLmlvL21jcCJ9",
+    "https://docs.honeycomb.io/get-started",
+    "https://docs.honeycomb.io/get-started/best-practices/api-keys",
+    "https://docs.honeycomb.io/integrations",
+    "https://docs.honeycomb.io/integrations/agent-skills",
+    "https://docs.honeycomb.io/integrations/aws/how-aws-integrations-work/",
+    "https://docs.honeycomb.io/integrations/mcp",
+    "https://docs.honeycomb.io/integrations/mcp/concepts",
+    "https://docs.honeycomb.io/integrations/mcp/configuration-guide",
+    "https://docs.honeycomb.io/integrations/mcp/tools",
+    "https://docs.honeycomb.io/integrations/mcp/tools#rate-limits",
+    "https://docs.honeycomb.io/integrations/mcp/tools#required-scopes-for-write-tools",
+    "https://docs.honeycomb.io/integrations/mcp/troubleshooting",
+    "https://docs.honeycomb.io/integrations/mcp/use-cases",
+    "https://docs.honeycomb.io/investigate",
+    "https://docs.honeycomb.io/investigate/analyze/identify-outliers",
+    "https://docs.honeycomb.io/investigate/canvas",
+    "https://docs.honeycomb.io/investigate/canvas/alert-investigation",
+    "https://docs.honeycomb.io/investigate/canvas/auto-investigate",
+    "https://docs.honeycomb.io/investigate/canvas/chat-about-a-page",
+    "https://docs.honeycomb.io/investigate/canvas/github",
+    "https://docs.honeycomb.io/investigate/canvas/keyboard-shortcuts",
+    "https://docs.honeycomb.io/investigate/canvas/skills",
+    "https://docs.honeycomb.io/investigate/canvas/slack-app",
+    "https://docs.honeycomb.io/investigate/collaborate/explore-team-query-history",
+    "https://docs.honeycomb.io/investigate/collaborate/share-query",
+    "https://docs.honeycomb.io/investigate/collaborate/share-trace",
+    "https://docs.honeycomb.io/investigate/debug/application-data-in-honeycomb",
+    "https://docs.honeycomb.io/investigate/debug/aws-data-in-honeycomb",
+    "https://docs.honeycomb.io/investigate/debug/kubernetes-data-in-honeycomb",
+    "https://docs.honeycomb.io/investigate/debug/log-data-in-honeycomb",
+    "https://docs.honeycomb.io/investigate/observe/agent-timeline",
+    "https://docs.honeycomb.io/investigate/observe/boards/manage",
+    "https://docs.honeycomb.io/investigate/observe/honeycomb-home",
+    "https://docs.honeycomb.io/investigate/observe/service-map",
+    "https://docs.honeycomb.io/investigate/query/archive",
+    "https://docs.honeycomb.io/investigate/query/build#relational-fields",
+    "https://docs.honeycomb.io/investigate/query/build/calculated-fields",
+    "https://docs.honeycomb.io/investigate/query/math",
+    "https://docs.honeycomb.io/llms.txt",
+    "https://docs.honeycomb.io/notify",
+    "https://docs.honeycomb.io/notify/alert/slos/monitor/",
+    "https://docs.honeycomb.io/notify/alert/triggers/",
+    "https://docs.honeycomb.io/reference/query-specification",
+    "https://docs.honeycomb.io/security-compliance/honeycomb-intelligence",
+    "https://docs.honeycomb.io/send-data",
+    "https://docs.honeycomb.io/send-data/",
+    "https://docs.honeycomb.io/send-data/opentelemetry/",
+    "https://docs.honeycomb.io/teams/manage-behavior#enable-honeycomb-intelligence",
+    "https://docs.honeycomb.io/troubleshoot",
+    "https://docs.honeycomb.io/troubleshoot/community",
+    "https://docs.honeycomb.io/troubleshoot/community#join-pollinators-community-slack",
+    "https://docs.honeycomb.io/troubleshoot/community/",
+    "https://docs.honeycomb.io/vscode:mcp/install?%7B%22name%22%3A%22honeycomb%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22mcp-remote%22%2C%22https%3A%2F%2Fmcp.honeycomb.io%2Fmcp%22%5D%7D",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/honeycombio",
+    "https://github.com/honeycombio/honeycomb-mcp",
+    "https://github.com/honeycombio/honeycomb-mcp/actions",
+    "https://github.com/honeycombio/honeycomb-mcp/branches",
+    "https://github.com/honeycombio/honeycomb-mcp/commit/58a57efa44b8d04bbf26c9bac7292ac6e832146e",
+    "https://github.com/honeycombio/honeycomb-mcp/commit/c68ac2a66381400053ab46dc7325d8a69e61a835",
+    "https://github.com/honeycombio/honeycomb-mcp/commit/cb3a233634eaa55111765b6ebfed074388555f77",
+    "https://github.com/honeycombio/honeycomb-mcp/commit/fe10acc592544bb57d4a9ace7f75b7c9014b6a47",
+    "https://github.com/honeycombio/honeycomb-mcp/commits/main/",
+    "https://github.com/honeycombio/honeycomb-mcp/commits?author=austinlparker",
+    "https://github.com/honeycombio/honeycomb-mcp/commits?author=claude",
+    "https://github.com/honeycombio/honeycomb-mcp/issues",
+    "https://github.com/honeycombio/honeycomb-mcp/projects",
+    "https://github.com/honeycombio/honeycomb-mcp/pull/54",
+    "https://github.com/honeycombio/honeycomb-mcp/pull/56",
+    "https://github.com/honeycombio/honeycomb-mcp/pulls",
+    "https://github.com/honeycombio/honeycomb-mcp/pulse",
+    "https://github.com/honeycombio/honeycomb-mcp/security",
+    "https://github.com/honeycombio/honeycomb-mcp/tags",
+    "https://github.com/honeycombio/honeycomb-mcp/tree/main/.github/workflows",
+    "https://github.com/honeycombio/honeycomb-mcp/tree/main/docs",
+    "https://github.com/honeycombio/honeycomb-mcp/tree/main/eval",
+    "https://github.com/login?return_to=%2Fhoneycombio%2Fhoneycomb-mcp",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fhoneycombio%2Fhoneycomb-mcp",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=honeycombio%2Fhoneycomb-mcp",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://honeycomb.io/llms.txt",
+    "https://linkedin.com/company/honeycomb.io",
+    "https://maintainers.github.com",
+    "https://mcp.eu1.honeycomb.io/mcp",
+    "https://mcp.honeycomb.io/mcp",
+    "https://mcpservers.org/servers/elifuzz/api-docs-mcp",
+    "https://play.honeycomb.io/",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://status.honeycomb.io/",
+    "https://support.anthropic.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp",
+    "https://support.github.com",
+    "https://support.honeycomb.io",
+    "https://support.honeycomb.io/",
+    "https://ui.eu1.honeycomb.io",
+    "https://ui.eu1.honeycomb.io/account#integrations",
+    "https://ui.honeycomb.io",
+    "https://ui.honeycomb.io/",
+    "https://ui.honeycomb.io/account#integrations",
+    "https://www.apache.org/licenses/LICENSE-2.0.html",
+    "https://www.honeycomb.io",
+    "https://www.honeycomb.io/blog",
+    "https://www.honeycomb.io/platform",
+    "https://www.honeycomb.io/pricing",
+    "https://www.honeycomb.io/pricing/",
+    "https://www.honeycomb.io/resources",
+    "https://www.honeycomb.io/resources/getting-started",
+    "https://www.honeycomb.io/resources/getting-started/getting-started-with-opentelemetry",
+    "https://www.honeycomb.io/resources/getting-started/what-is-ai-observability",
+    "https://www.honeycomb.io/resources/getting-started/what-is-llm-observability",
+    "https://www.honeycomb.io/technologies/ai-agents",
+    "https://www.honeycomb.io/why-honeycomb/comparisons",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=honeycomb",
+    "https://www.youtube.com/channel/UCty8KGQ3oAP0MQQmLIv7k0Q",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

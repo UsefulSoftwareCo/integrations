@@ -3,7 +3,7 @@ export type Kind = "mcp" | "openapi" | "graphql" | "cli";
 /** Display formats. Superset of Kind: curated providers can also expose CLIs. */
 export type Format = "mcp" | "openapi" | "graphql" | "cli";
 
-export type Feed = "claude" | "openai" | "apis-guru" | "graphql-apis" | "override" | "cli-seed";
+export type Feed = "claude" | "openai" | "apis-guru" | "graphql-apis" | "override" | "cli-seed" | "discovered";
 
 export interface Integration {
   id: string;
@@ -23,13 +23,16 @@ export interface Integration {
     toolNames?: string[];
     authTypes?: string[];
     worksWith?: string[];
+    install?: string;
   };
   openapi?: {
     provider: string;
     service?: string;
     version: string;
-    /** The provider's own canonical spec URL (apis.guru `origin`), not the mirror. */
+    /** Machine-readable OpenAPI spec URL. */
     specUrl?: string;
+    /** Human-facing docs or developer portal URL. */
+    docsUrl?: string;
     openapiVer: string;
     updated?: string;
     added?: string;

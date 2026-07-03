@@ -1,0 +1,364 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "blazesql.com",
+    "detect": {
+      "domain": "blazesql.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:20:51.503Z",
+    "summary": "BlazeSQL exposes one documented HTTP API at https://api.blazesql.com for natural-language querying and white-label/user-management flows, plus MCP servers for general clients at https://mcp.blazesql.com and a ChatGPT-specific endpoint at https://chatgpt.blazesql.com; all require authentication.",
+    "description": "BlazeSQL is an AI-powered SQL analytics product that connects to customers' databases and answers natural-language questions with SQL, tables, charts, and dashboards. It offers web, desktop, embedded, and MCP-based ways to access those analytics capabilities.",
+    "credentials": {
+      "blaze_api_key": {
+        "type": "api_key",
+        "label": "BlazeSQL API key",
+        "generateUrl": "https://www.blazesql.com/app",
+        "setup": "Sign in to the [BlazeSQL app](https://www.blazesql.com/app) with a team admin account on a qualifying plan, then open Settings → `White-labeling` to find your API key. BlazeSQL's docs say this requires an active Blaze Team Advanced, Enterprise, or White Labeling subscription for white-labeling features, and Team Advanced for the query API. Keep the key server-side and never expose it in client code.",
+        "acquisition": "manual"
+      },
+      "blaze_account": {
+        "type": "oauth2",
+        "label": "BlazeSQL account via OAuth 2.0 login",
+        "generateUrl": "https://www.blazesql.com/app",
+        "setup": "Create or use a [BlazeSQL app account](https://www.blazesql.com/app) with at least one connected database. For MCP/ChatGPT/Claude connections, add the BlazeSQL connector/server in the client and sign in with your BlazeSQL email/password or Google SSO when prompted; BlazeSQL's MCP docs say the server uses OAuth 2.0 with Dynamic Client Registration.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "blazesql-query-user-management-api",
+        "name": "BlazeSQL Query & User Management API",
+        "type": "http",
+        "docs": "https://help.blazesql.com/en/collections/18231549-mcp-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.blazesql.com/en/articles/13585561-natural-language-query-api",
+            "https://help.blazesql.com/en/articles/13585560-user-management",
+            "https://help.blazesql.com/en/articles/13585562-embedding-white-labeling",
+            "https://www.blazesql.com/white-label-embedded-analytics",
+            "https://www.blazesql.com/conversational-data-querying"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "blaze_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "api_key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.blazesql.com/en/articles/13585561-natural-language-query-api",
+                  "https://help.blazesql.com/en/articles/13585560-user-management",
+                  "https://help.blazesql.com/en/articles/13585562-embedding-white-labeling"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.blazesql.com",
+        "notes": "Documented endpoints include `POST /natural_language_query_api`, `/user_authentication_api`, `/user_creation_api`, `/user_update_api`, `/user_deletion_api`, and `/user_retrieval_api`. Docs state requests can use GET or POST; parameters may be passed as URL parameters for both methods, or as a JSON body for POST requests. The white-label flow returns a per-user authenticated URL for iframe embedding."
+      },
+      {
+        "slug": "blazesql-mcp-server",
+        "name": "BlazeSQL MCP Server",
+        "type": "mcp",
+        "docs": "https://help.blazesql.com/en/articles/13901955-blazesql-mcp-server-documentation",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.blazesql.com/en/articles/13901955-blazesql-mcp-server-documentation",
+            "https://help.blazesql.com/en/articles/13589469-claude-connector",
+            "https://chatgpt.blazesql.com"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "blaze_account",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.blazesql.com/en/articles/13901955-blazesql-mcp-server-documentation",
+                  "https://help.blazesql.com/en/articles/13589469-claude-connector"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.blazesql.com",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ],
+        "notes": "Docs state the general MCP server URL is `https://mcp.blazesql.com` for Claude, Cursor, Windsurf, and other MCP clients, using OAuth 2.0 with Dynamic Client Registration. The endpoint supports Streamable HTTP and legacy SSE + messages. The catalog also reports a ChatGPT BlazeSQL MCP/connector surface at `https://chatgpt.blazesql.com`; scraping that URL returned `{\"error\":\"unauthorized\"}`, which indicates authentication is enforced, but BlazeSQL's own docs describe ChatGPT as using a dedicated endpoint without naming its URL."
+      },
+      {
+        "slug": "blazesql-chatgpt-connector-endpoint",
+        "name": "BlazeSQL ChatGPT connector endpoint",
+        "type": "mcp",
+        "docs": "https://help.blazesql.com/en/articles/13589465-blazesql-s-chatgpt-integration",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.blazesql.com/en/articles/13589465-blazesql-s-chatgpt-integration",
+            "https://help.blazesql.com/en/articles/13901955-blazesql-mcp-server-documentation",
+            "https://chatgpt.blazesql.com"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "blaze_account",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.blazesql.com/en/articles/13589465-blazesql-s-chatgpt-integration",
+                  "https://help.blazesql.com/en/articles/13901955-blazesql-mcp-server-documentation",
+                  "https://chatgpt.blazesql.com"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://chatgpt.blazesql.com",
+        "notes": "Included per catalog fact. BlazeSQL's docs say ChatGPT uses a dedicated endpoint and users connect by opening the BlazeSQL app in ChatGPT and logging in to their BlazeSQL account, but the docs do not disclose the OAuth metadata or transport details for this dedicated endpoint. Direct access to `https://chatgpt.blazesql.com` returned `{\"error\":\"unauthorized\"}`."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:20:51.504Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 232679,
+    "completion_tokens": 2131,
+    "total_tokens": 234810
+  },
+  "visited": [
+    "https://blazesql.com",
+    "https://chatgpt.blazesql.com",
+    "https://developers.google.com/knowledge/mcp",
+    "https://docs.domaintools.com/mcp/oauth/",
+    "https://docs.firecrawl.dev/developer-guides/mcp-setup-guides/oauth",
+    "https://docs.omni.co/ai/mcp/authentication",
+    "https://help.blazesql.com",
+    "https://help.blazesql.com/en/articles/13585560-user-management",
+    "https://help.blazesql.com/en/articles/13585561-natural-language-query-api",
+    "https://help.blazesql.com/en/articles/13585562-embedding-white-labeling",
+    "https://help.blazesql.com/en/articles/13589465-blazesql-s-chatgpt-integration",
+    "https://help.blazesql.com/en/articles/13589469-claude-connector",
+    "https://help.blazesql.com/en/articles/13673928-security-overview",
+    "https://help.blazesql.com/en/articles/13901955-blazesql-mcp-server-documentation",
+    "https://help.blazesql.com/en/articles/14503124-row-level-access-controls",
+    "https://help.blazesql.com/en/collections/18231548-integrations",
+    "https://help.blazesql.com/en/collections/18231549-mcp-api",
+    "https://help.blazesql.com/en/collections/18231550-white-labeling-embedding",
+    "https://www.blazesql.com/",
+    "https://www.blazesql.com/conversational-data-querying",
+    "https://www.blazesql.com/privacy",
+    "https://www.blazesql.com/self-service-analytics-platform",
+    "https://www.blazesql.com/terms.html",
+    "https://www.blazesql.com/white-label-embedded-analytics",
+    "https://www.scalekit.com/blog/migrating-from-api-keys-to-oauth-mcp-servers",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers"
+  ],
+  "grounding": [
+    "https://api.blazesql.com",
+    "https://api.blazesql.com/natural",
+    "https://api.blazesql.com/user",
+    "https://blazesql.com",
+    "https://blazesql.com/",
+    "https://blazesql.com/#",
+    "https://blazesql.com/#dashboards",
+    "https://blazesql.com/#knowledge-base",
+    "https://blazesql.com/#reporting",
+    "https://blazesql.com/ai-dashboard-builder",
+    "https://blazesql.com/app",
+    "https://blazesql.com/app/",
+    "https://blazesql.com/blaze-pricing",
+    "https://blazesql.com/blog",
+    "https://blazesql.com/blog/ai-business-intelligence-tools",
+    "https://blazesql.com/blog/ai-tools-for-sql-server",
+    "https://blazesql.com/blog/best-snowflake-data-visualization-tools",
+    "https://blazesql.com/blog/connect-ai-chatgpt-to-snowflake",
+    "https://blazesql.com/blog/metabase-alternatives",
+    "https://blazesql.com/blog/tableau-alternatives",
+    "https://blazesql.com/conversational-data-querying",
+    "https://blazesql.com/demo-request",
+    "https://blazesql.com/no-code-report-builder",
+    "https://blazesql.com/pricing",
+    "https://blazesql.com/privacy",
+    "https://blazesql.com/self-service-analytics-platform",
+    "https://blazesql.com/ssrs-replacement",
+    "https://blazesql.com/team-pricing",
+    "https://blazesql.com/terms",
+    "https://blazesql.com/white-label-embedded-analytics",
+    "https://chatgpt.blazesql.com",
+    "https://chatgpt.com",
+    "https://claude.ai",
+    "https://cloud.google.com/vertex-ai/generative-ai/docs/data-governance",
+    "https://developers.google.com/knowledge/mcp",
+    "https://developers.google.com/terms/api-services-user-data-policy",
+    "https://docs.domaintools.com/mcp/oauth/",
+    "https://docs.firecrawl.dev/developer-guides/mcp-setup-guides/oauth",
+    "https://docs.omni.co/ai/mcp/authentication",
+    "https://help.blazesql.com",
+    "https://help.blazesql.com/#h_001af52ec3",
+    "https://help.blazesql.com/#h_08a087093f",
+    "https://help.blazesql.com/#h_109b22c0b1",
+    "https://help.blazesql.com/#h_141cabfa67",
+    "https://help.blazesql.com/#h_15093d79f8",
+    "https://help.blazesql.com/#h_21c8b97293",
+    "https://help.blazesql.com/#h_23d9dc8ffb",
+    "https://help.blazesql.com/#h_3842922b47",
+    "https://help.blazesql.com/#h_39cac09d7b",
+    "https://help.blazesql.com/#h_3a5cbcbf08",
+    "https://help.blazesql.com/#h_3d699ab785",
+    "https://help.blazesql.com/#h_3f399d5d62",
+    "https://help.blazesql.com/#h_47ca54e68d",
+    "https://help.blazesql.com/#h_4efb3aa1f3",
+    "https://help.blazesql.com/#h_5357ca714d",
+    "https://help.blazesql.com/#h_551f9c2d6b",
+    "https://help.blazesql.com/#h_5763250b4a",
+    "https://help.blazesql.com/#h_64c369cf7b",
+    "https://help.blazesql.com/#h_664bfa8534",
+    "https://help.blazesql.com/#h_6754d570a5",
+    "https://help.blazesql.com/#h_69244b03de",
+    "https://help.blazesql.com/#h_6b6faf4760",
+    "https://help.blazesql.com/#h_70707df531",
+    "https://help.blazesql.com/#h_72c981ee5a",
+    "https://help.blazesql.com/#h_7d0e40cdd4",
+    "https://help.blazesql.com/#h_829a7c398f",
+    "https://help.blazesql.com/#h_831507d008",
+    "https://help.blazesql.com/#h_86d4e5f621",
+    "https://help.blazesql.com/#h_88d923ba0e",
+    "https://help.blazesql.com/#h_8bee61eee0",
+    "https://help.blazesql.com/#h_8f46efb2b6",
+    "https://help.blazesql.com/#h_97180ac0fe",
+    "https://help.blazesql.com/#h_9bd8a1195e",
+    "https://help.blazesql.com/#h_a25f56cdb7",
+    "https://help.blazesql.com/#h_a5f18eefae",
+    "https://help.blazesql.com/#h_b7475f0610",
+    "https://help.blazesql.com/#h_bfa622f5ad",
+    "https://help.blazesql.com/#h_c6cdcf50cd",
+    "https://help.blazesql.com/#h_c94e81ac22",
+    "https://help.blazesql.com/#h_ca20434ede",
+    "https://help.blazesql.com/#h_cd032d4790",
+    "https://help.blazesql.com/#h_ce985cfb48",
+    "https://help.blazesql.com/#h_d1a94adcda",
+    "https://help.blazesql.com/#h_d644747621",
+    "https://help.blazesql.com/#h_dc6109cf28",
+    "https://help.blazesql.com/#h_e044",
+    "https://help.blazesql.com/#h_e0442c0166",
+    "https://help.blazesql.com/#h_e0bde03108",
+    "https://help.blazesql.com/#h_e1293d32de",
+    "https://help.blazesql.com/#h_e6e052fa41",
+    "https://help.blazesql.com/#h_e9ebb3a656",
+    "https://help.blazesql.com/#h_fd6dd37a3d",
+    "https://help.blazesql.com/#h_fea79e0a90",
+    "https://help.blazesql.com/#main-content",
+    "https://help.blazesql.com/en/",
+    "https://help.blazesql.com/en/articles/13585559-custom-functions",
+    "https://help.blazesql.com/en/articles/13585560-user-management",
+    "https://help.blazesql.com/en/articles/13585561-natural-language-query-api",
+    "https://help.blazesql.com/en/articles/13585562-embedding-white-labeling",
+    "https://help.blazesql.com/en/articles/13589465-blazesql-s-chatgpt-integration",
+    "https://help.blazesql.com/en/articles/13589465-chatgpt-mcp",
+    "https://help.blazesql.com/en/articles/13589469-claude-connector",
+    "https://help.blazesql.com/en/articles/13589469-claude-mcp",
+    "https://help.blazesql.com/en/articles/13673928-security-overview",
+    "https://help.blazesql.com/en/articles/13802512-dynamic-integrations",
+    "https://help.blazesql.com/en/articles/13901955-blazesql-mcp-server-documentation",
+    "https://help.blazesql.com/en/articles/14175981-agent-reports",
+    "https://help.blazesql.com/en/articles/14176243-slack-integration",
+    "https://help.blazesql.com/en/articles/14176271-microsoft-teams-integration",
+    "https://help.blazesql.com/en/articles/14503124-row-level-access-controls",
+    "https://help.blazesql.com/en/collections/18211093-getting-started",
+    "https://help.blazesql.com/en/collections/18231543-blaze-chat",
+    "https://help.blazesql.com/en/collections/18231544-graphs-dashboards-reports",
+    "https://help.blazesql.com/en/collections/18231547-data-privacy-security",
+    "https://help.blazesql.com/en/collections/18231548-integrations",
+    "https://help.blazesql.com/en/collections/18231549-mcp-api",
+    "https://help.blazesql.com/en/collections/18231550-white-labeling-embedding",
+    "https://help.blazesql.com/en/collections/18238677-database-connections",
+    "https://help.blazesql.com/en/collections/18246562-team-access-management",
+    "https://intercom.help/blazesql/en/articles/13585549-help-your-ai-assistant-learn",
+    "https://intercom.help/blazesql/en/articles/13585560-user-management",
+    "https://mcp.blazesql.com",
+    "https://mcp.blazesql.com/authorize",
+    "https://mcp.blazesql.com/register",
+    "https://mcp.blazesql.com/token",
+    "https://modelcontextprotocol.io/",
+    "https://www.blazesql.com/",
+    "https://www.blazesql.com/#",
+    "https://www.blazesql.com/#dashboards",
+    "https://www.blazesql.com/#knowledge-base",
+    "https://www.blazesql.com/#reporting",
+    "https://www.blazesql.com/ai-dashboard-builder",
+    "https://www.blazesql.com/app",
+    "https://www.blazesql.com/app/",
+    "https://www.blazesql.com/blaze-pricing",
+    "https://www.blazesql.com/blog",
+    "https://www.blazesql.com/blog/ai-business-intelligence-tools",
+    "https://www.blazesql.com/blog/ai-tools-for-sql-server",
+    "https://www.blazesql.com/blog/best-snowflake-data-visualization-tools",
+    "https://www.blazesql.com/blog/connect-ai-chatgpt-to-snowflake",
+    "https://www.blazesql.com/blog/metabase-alternatives",
+    "https://www.blazesql.com/blog/tableau-alternatives",
+    "https://www.blazesql.com/conversational-data-querying",
+    "https://www.blazesql.com/demo-request",
+    "https://www.blazesql.com/no-code-report-builder",
+    "https://www.blazesql.com/privacy",
+    "https://www.blazesql.com/self-service-analytics-platform",
+    "https://www.blazesql.com/ssrs-replacement",
+    "https://www.blazesql.com/team-pricing",
+    "https://www.blazesql.com/terms",
+    "https://www.blazesql.com/terms.html",
+    "https://www.blazesql.com/white-label-embedded-analytics",
+    "https://www.blazesql.com/white-label-embedding",
+    "https://www.linkedin.com/company/blaze-sql",
+    "https://www.scalekit.com/blog/migrating-from-api-keys-to-oauth-mcp-servers",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
+    "https://x.com/blazesql"
+  ]
+}

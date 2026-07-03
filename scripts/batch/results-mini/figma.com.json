@@ -1,0 +1,203 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "figma.com",
+    "detect": {
+      "domain": "figma.com",
+      "found": [
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://figma.com"
+          ],
+          "authorizationEndpoint": "https://www.figma.com/oauth/mcp",
+          "tokenEndpoint": "https://api.figma.com/v1/oauth/token",
+          "scopes": [
+            "mcp:connect"
+          ],
+          "registrationEndpoint": "https://api.figma.com/v1/oauth/mcp/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token",
+            "urn:ietf:params:oauth:grant-type:jwt-bearer"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T09:52:56.523Z",
+    "summary": "Figma exposes one public REST API (OAuth/personal/plan token auth), plus a remote MCP server using Figma OAuth (`mcp:connect`); no CLI or GraphQL surface confirmed.",
+    "credentials": {
+      "figma_oauth_app": {
+        "type": "oauth2",
+        "label": "Figma OAuth app",
+        "generateUrl": "https://www.figma.com/developers/apps",
+        "setup": "Go to [My Apps](https://www.figma.com/developers/apps), create a new OAuth app, choose the team/org, then copy the `Client ID` and `Client Secret`. Configure your redirect/callback URL, select the needed scopes such as `mcp:connect`, and publish the app if you need access beyond draft/testing."
+      },
+      "figma_personal_token": {
+        "type": "bearer",
+        "label": "Figma personal access token",
+        "generateUrl": "https://www.figma.com/developers/apps",
+        "setup": "Log in to Figma, open your account menu in the file browser, choose **Settings** → **Security**, then under **Personal access tokens** click **Generate new token**. Choose the expiration and scopes, then copy the token immediately."
+      },
+      "figma_plan_token": {
+        "type": "bearer",
+        "label": "Figma plan access token",
+        "generateUrl": "https://www.figma.com/developers/tokens",
+        "setup": "An organization admin goes to [Developer Tokens](https://www.figma.com/developers/tokens), switches to the **REST API** tab, clicks **Generate REST API token**, then sets the token name, expiration, scopes, and allowed resources. Copy the token immediately after creation; it is shown only once."
+      },
+      "figma_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Figma MCP OAuth authorization",
+        "generateUrl": "https://www.figma.com/oauth/mcp",
+        "setup": "Use the Figma remote MCP flow and sign in with Figma's OAuth flow. Grant the `mcp:connect` scope so the MCP client can obtain an access token for the remote server. The actual authorization and token handling are managed by the MCP client/registration flow."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "figma-rest-api",
+        "name": "Figma REST API",
+        "type": "http",
+        "docs": "https://developers.figma.com/docs/rest-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.figma.com/docs/rest-api/",
+            "https://developers.figma.com/docs/rest-api/authentication/",
+            "https://developers.figma.com/docs/rest-api/oauth-apps/",
+            "https://developers.figma.com/docs/rest-api/personal-access-tokens/",
+            "https://developers.figma.com/docs/rest-api/plan-access-tokens/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "figma_oauth_app",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.figma.com/docs/rest-api/authentication/",
+                  "https://developers.figma.com/docs/rest-api/oauth-apps/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "figma_plan_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Figma-Token",
+                    "scheme": "X-Figma-Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.figma.com/docs/rest-api/personal-access-tokens/",
+                  "https://developers.figma.com/docs/rest-api/plan-access-tokens/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "figma_personal_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Figma-Token",
+                    "scheme": "X-Figma-Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.figma.com/docs/rest-api/personal-access-tokens/"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "figma-remote-mcp-server",
+        "name": "Figma Remote MCP Server",
+        "type": "mcp",
+        "docs": "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.figma.com/docs/figma-mcp-server/",
+            "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
+            "https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "figma_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.figma.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T09:52:56.524Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 157164,
+    "completion_tokens": 1757,
+    "total_tokens": 158921
+  },
+  "visited": [
+    "https://developers.figma.com/docs/figma-mcp-server/",
+    "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
+    "https://developers.figma.com/docs/rest-api/",
+    "https://developers.figma.com/docs/rest-api/authentication/",
+    "https://developers.figma.com/docs/rest-api/oauth-apps/",
+    "https://developers.figma.com/docs/rest-api/personal-access-tokens/",
+    "https://developers.figma.com/docs/rest-api/plan-access-tokens/",
+    "https://github.com/figma/rest-api-spec",
+    "https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server",
+    "https://help.figma.com/hc/en-us/articles/35281350665623-Figma-MCP-collection-How-to-set-up-the-Figma-remote-MCP-server",
+    "https://stackoverflow.com/questions/79792727/how-to-implement-oauth-with-figma-in-fastmcp"
+  ]
+}

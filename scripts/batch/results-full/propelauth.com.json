@@ -1,0 +1,456 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "propelauth.com",
+    "detect": {
+      "domain": "propelauth.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:18:46.445Z",
+    "summary": "PropelAuth exposes a backend HTTP API, OAuth2/MCP auth endpoints, and a CLI; backend API and CLI use PropelAuth-issued API keys, while OAuth2/MCP use OAuth client credentials/PKCE flows.",
+    "credentials": {
+      "propelauth_backend_api_key": {
+        "type": "bearer",
+        "label": "PropelAuth backend API key",
+        "generateUrl": "https://auth.propelauth.com/en/login",
+        "setup": "Log into the PropelAuth dashboard and open **Backend Integration**. Choose the environment (`test`, `staging`, or `prod`) and click **Create New API Key**. Copy the key and send it as `Authorization: Bearer <API_KEY>` to backend API calls. Each environment has its own key.",
+        "acquisition": "manual"
+      },
+      "propelauth_personal_api_key": {
+        "type": "api_key",
+        "label": "PropelAuth personal API key",
+        "generateUrl": "https://auth.propelauth.com/api_keys/personal",
+        "setup": "Visit the [Personal API Key page](https://auth.propelauth.com/api_keys/personal) in the PropelAuth dashboard, click **+ New API Key**, and copy the personal key. This key is used to log into the PropelAuth CLI.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "propelauth-backend-api",
+        "name": "PropelAuth Backend API",
+        "type": "http",
+        "docs": "https://docs.propelauth.com/reference/api/getting-started",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.propelauth.com/reference/api/getting-started",
+            "https://docs.propelauth.com/reference/api/user",
+            "https://docs.propelauth.com/reference/api/org",
+            "https://docs.propelauth.com/reference/api/apikey",
+            "https://docs.propelauth.com/reference/api/enterprise-sso",
+            "https://docs.propelauth.com/reference/api/oauth2",
+            "https://docs.propelauth.com/reference/api/mfa",
+            "https://docs.propelauth.com/reference/api/insights"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "propelauth_backend_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.propelauth.com/reference/api/getting-started"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://auth.propelauth.com"
+      },
+      {
+        "slug": "propelauth-oauth2-endpoints",
+        "name": "PropelAuth OAuth2 endpoints",
+        "type": "http",
+        "docs": "https://docs.propelauth.com/reference/api/oauth2",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.propelauth.com/reference/api/oauth2"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "propelauth_personal_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.propelauth.com/reference/api/oauth2"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "{AUTH_URL}/propelauth/oauth"
+      },
+      {
+        "slug": "propelauth-mcp-authentication-endpoints",
+        "name": "PropelAuth MCP authentication endpoints",
+        "type": "http",
+        "docs": "https://docs.propelauth.com/mcp-authentication/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.propelauth.com/reference/api/mcp",
+            "https://docs.propelauth.com/mcp-authentication/overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "propelauth_personal_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.propelauth.com/reference/api/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "{AUTH_URL}/oauth/2.1"
+      },
+      {
+        "slug": "propelauth-cli",
+        "name": "PropelAuth CLI",
+        "type": "cli",
+        "docs": "https://docs.propelauth.com/reference/api/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.propelauth.com/reference/api/cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "propelauth_personal_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "propelauth login",
+                    "env": [
+                      "PROPELAUTH_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.propelauth.com/reference/api/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@propelauth/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "propelauth"
+      },
+      {
+        "slug": "propelauth-mcp-server",
+        "name": "PropelAuth MCP server",
+        "type": "mcp",
+        "docs": "https://docs.propelauth.com/mcp-authentication/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.propelauth.com/mcp-authentication/overview",
+            "https://docs.propelauth.com/reference/api/mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "unknown",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:18:46.446Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 242056,
+    "completion_tokens": 1355,
+    "total_tokens": 243411
+  },
+  "visited": [
+    "https://docs.propelauth.com/mcp-authentication/overview",
+    "https://docs.propelauth.com/reference",
+    "https://docs.propelauth.com/reference/api/apikey",
+    "https://docs.propelauth.com/reference/api/cli",
+    "https://docs.propelauth.com/reference/api/enterprise-sso",
+    "https://docs.propelauth.com/reference/api/getting-started",
+    "https://docs.propelauth.com/reference/api/insights",
+    "https://docs.propelauth.com/reference/api/mcp",
+    "https://docs.propelauth.com/reference/api/mfa",
+    "https://docs.propelauth.com/reference/api/oauth2",
+    "https://docs.propelauth.com/reference/api/org",
+    "https://docs.propelauth.com/reference/api/user",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration"
+  ],
+  "grounding": [
+    "http://localhost:3000/callback",
+    "http://localhost:8000/callback",
+    "http://localhost:8000/oauth/authorize",
+    "https://1581439057.propelauthtest.com",
+    "https://acme.com",
+    "https://auth.acme.com",
+    "https://auth.propelauth.com",
+    "https://auth.propelauth.com/api",
+    "https://auth.propelauth.com/api_keys/personal",
+    "https://auth.propelauth.com/en/login",
+    "https://auth.propelauth.com/en/signup",
+    "https://auth.your.domain/saml/ORGS-URL-SLUG/acs",
+    "https://auth.your.domain/saml/ORGS-URL-SLUG/logout",
+    "https://auth.your.domain/saml/ORGS-URL-SLUG/metadata",
+    "https://docs.propelauth.com/",
+    "https://docs.propelauth.com/#allow-org-to-setup-saml",
+    "https://docs.propelauth.com/#allowed-mcp-clients",
+    "https://docs.propelauth.com/#authentication",
+    "https://docs.propelauth.com/#authorization-server-discovery-endpoint",
+    "https://docs.propelauth.com/#authorize-endpoint",
+    "https://docs.propelauth.com/#base-url",
+    "https://docs.propelauth.com/#cli-commands",
+    "https://docs.propelauth.com/#cli-framework-support",
+    "https://docs.propelauth.com/#cli-installation",
+    "https://docs.propelauth.com/#cli-options",
+    "https://docs.propelauth.com/#configuring-mcp-client-scopes",
+    "https://docs.propelauth.com/#configuring-mcp-session-duration",
+    "https://docs.propelauth.com/#create-saml-connection-link",
+    "https://docs.propelauth.com/#create-user",
+    "https://docs.propelauth.com/#creating-an-mcp-o-auth-client",
+    "https://docs.propelauth.com/#disallow-org-to-setup-saml",
+    "https://docs.propelauth.com/#download-the-postman-collection",
+    "https://docs.propelauth.com/#enabling-mcp-authentication",
+    "https://docs.propelauth.com/#fetch-org",
+    "https://docs.propelauth.com/#fetch-orgs",
+    "https://docs.propelauth.com/#fetch-saml-sp-metadata",
+    "https://docs.propelauth.com/#fetch-user-by-user-id",
+    "https://docs.propelauth.com/#fetch-user-champion-report",
+    "https://docs.propelauth.com/#fetch-user-mfa-methods",
+    "https://docs.propelauth.com/#fetch-user-signup-query-parameters",
+    "https://docs.propelauth.com/#fetch-user-top-inviter-report",
+    "https://docs.propelauth.com/#fetch-users-in-org",
+    "https://docs.propelauth.com/#introspection-endpoint",
+    "https://docs.propelauth.com/#logging-into-the-propel-auth-cli",
+    "https://docs.propelauth.com/#logout-endpoint",
+    "https://docs.propelauth.com/#mcp-audit-logs",
+    "https://docs.propelauth.com/#open-id-connect-discovery-endpoint",
+    "https://docs.propelauth.com/#refresh-token-endpoint",
+    "https://docs.propelauth.com/#registration-endpoint",
+    "https://docs.propelauth.com/#send-sms-mfa-code",
+    "https://docs.propelauth.com/#set-oidc-id-p-metadata",
+    "https://docs.propelauth.com/#set-saml-id-p-metadata",
+    "https://docs.propelauth.com/#setup-options",
+    "https://docs.propelauth.com/#token-endpoint",
+    "https://docs.propelauth.com/#troubleshooting",
+    "https://docs.propelauth.com/#user-api-keys",
+    "https://docs.propelauth.com/#user-info-endpoint",
+    "https://docs.propelauth.com/#validate-api-key",
+    "https://docs.propelauth.com/#validate-org-api-key",
+    "https://docs.propelauth.com/#validate-personal-api-key",
+    "https://docs.propelauth.com/#validating-user-access-tokens",
+    "https://docs.propelauth.com/#verify-sms-challenge",
+    "https://docs.propelauth.com/#verify-step-up-grant",
+    "https://docs.propelauth.com/#verify-totp-challenge",
+    "https://docs.propelauth.com/api-key-authentication",
+    "https://docs.propelauth.com/changelog",
+    "https://docs.propelauth.com/files/PropelAuth.postman_collection.json",
+    "https://docs.propelauth.com/getting-started",
+    "https://docs.propelauth.com/integrations",
+    "https://docs.propelauth.com/mcp-authentication/examples/python",
+    "https://docs.propelauth.com/mcp-authentication/overview",
+    "https://docs.propelauth.com/mcp-authentication/overview#allowed-mcp-clients",
+    "https://docs.propelauth.com/mcp-authentication/overview#configuring-mcp-client-scopes",
+    "https://docs.propelauth.com/mcp-authentication/overview#configuring-mcp-session-duration",
+    "https://docs.propelauth.com/mcp-authentication/overview#creating-an-mcp-o-auth-client",
+    "https://docs.propelauth.com/mcp-authentication/overview#enabling-mcp-authentication",
+    "https://docs.propelauth.com/mcp-authentication/overview#mcp-audit-logs",
+    "https://docs.propelauth.com/mcp-authentication/overview#troubleshooting",
+    "https://docs.propelauth.com/mcp-authentication/overview#validating-user-access-tokens",
+    "https://docs.propelauth.com/migrations",
+    "https://docs.propelauth.com/overview/authentication/login-methods#passwordless-magic-links",
+    "https://docs.propelauth.com/overview/authentication/mfa",
+    "https://docs.propelauth.com/overview/authentication/mfa#sms-mfa",
+    "https://docs.propelauth.com/overview/authentication/oauth2",
+    "https://docs.propelauth.com/overview/authentication/saml",
+    "https://docs.propelauth.com/overview/authentication/step-up-mfa",
+    "https://docs.propelauth.com/overview/authorization/managing-roles-permissions",
+    "https://docs.propelauth.com/overview/basics/environments",
+    "https://docs.propelauth.com/overview/basics/hosted-pages#mcp-pages",
+    "https://docs.propelauth.com/overview/user-management/user-insights",
+    "https://docs.propelauth.com/overview/user-management/user-insights#user-signup-query-parameters",
+    "https://docs.propelauth.com/overview/user-management/user-properties",
+    "https://docs.propelauth.com/recipes",
+    "https://docs.propelauth.com/reference",
+    "https://docs.propelauth.com/reference/api/apikey",
+    "https://docs.propelauth.com/reference/api/apikey#create-api-key",
+    "https://docs.propelauth.com/reference/api/apikey#delete-api-key",
+    "https://docs.propelauth.com/reference/api/apikey#fetch-active-api-keys",
+    "https://docs.propelauth.com/reference/api/apikey#fetch-api-key",
+    "https://docs.propelauth.com/reference/api/apikey#fetch-api-key-usage",
+    "https://docs.propelauth.com/reference/api/apikey#fetch-expired-api-keys",
+    "https://docs.propelauth.com/reference/api/apikey#import-api-key",
+    "https://docs.propelauth.com/reference/api/apikey#update-api-key",
+    "https://docs.propelauth.com/reference/api/apikey#validate-api-key",
+    "https://docs.propelauth.com/reference/api/apikey#validate-imported-api-key",
+    "https://docs.propelauth.com/reference/api/apikey#validate-org-api-key",
+    "https://docs.propelauth.com/reference/api/apikey#validate-personal-api-key",
+    "https://docs.propelauth.com/reference/api/cli",
+    "https://docs.propelauth.com/reference/api/cli#cli-commands",
+    "https://docs.propelauth.com/reference/api/cli#cli-framework-support",
+    "https://docs.propelauth.com/reference/api/cli#cli-installation",
+    "https://docs.propelauth.com/reference/api/cli#cli-options",
+    "https://docs.propelauth.com/reference/api/cli#logging-into-the-propel-auth-cli",
+    "https://docs.propelauth.com/reference/api/cli#setup-options",
+    "https://docs.propelauth.com/reference/api/enterprise-sso",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#allow-org-to-setup-saml",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#create-saml-connection-link",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#delete-saml-connection",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#disallow-org-to-setup-saml",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#enable-saml-connection",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#fetch-org-scim-groups",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#fetch-saml-sp-metadata",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#fetch-scim-group",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#migrate-org-to-isolated",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#set-oidc-id-p-metadata",
+    "https://docs.propelauth.com/reference/api/enterprise-sso#set-saml-id-p-metadata",
+    "https://docs.propelauth.com/reference/api/getting-started",
+    "https://docs.propelauth.com/reference/api/getting-started#authentication",
+    "https://docs.propelauth.com/reference/api/getting-started#base-url",
+    "https://docs.propelauth.com/reference/api/getting-started#download-the-postman-collection",
+    "https://docs.propelauth.com/reference/api/getting-started#user-api-keys",
+    "https://docs.propelauth.com/reference/api/insights",
+    "https://docs.propelauth.com/reference/api/insights#fetch-chart-metric-data",
+    "https://docs.propelauth.com/reference/api/insights#fetch-org-attrition-report",
+    "https://docs.propelauth.com/reference/api/insights#fetch-org-churn-report",
+    "https://docs.propelauth.com/reference/api/insights#fetch-org-growth-report",
+    "https://docs.propelauth.com/reference/api/insights#fetch-org-reengagement-report",
+    "https://docs.propelauth.com/reference/api/insights#fetch-user-champion-report",
+    "https://docs.propelauth.com/reference/api/insights#fetch-user-churn-report",
+    "https://docs.propelauth.com/reference/api/insights#fetch-user-reengagement-report",
+    "https://docs.propelauth.com/reference/api/insights#fetch-user-signup-query-parameters",
+    "https://docs.propelauth.com/reference/api/insights#fetch-user-top-inviter-report",
+    "https://docs.propelauth.com/reference/api/mcp",
+    "https://docs.propelauth.com/reference/api/mcp#authorization-server-discovery-endpoint",
+    "https://docs.propelauth.com/reference/api/mcp#authorize-endpoint",
+    "https://docs.propelauth.com/reference/api/mcp#introspection-endpoint",
+    "https://docs.propelauth.com/reference/api/mcp#refresh-token-endpoint",
+    "https://docs.propelauth.com/reference/api/mcp#registration-endpoint",
+    "https://docs.propelauth.com/reference/api/mcp#token-endpoint",
+    "https://docs.propelauth.com/reference/api/mfa",
+    "https://docs.propelauth.com/reference/api/mfa#fetch-user-mfa-methods",
+    "https://docs.propelauth.com/reference/api/mfa#send-sms-mfa-code",
+    "https://docs.propelauth.com/reference/api/mfa#verify-sms-challenge",
+    "https://docs.propelauth.com/reference/api/mfa#verify-step-up-grant",
+    "https://docs.propelauth.com/reference/api/mfa#verify-totp-challenge",
+    "https://docs.propelauth.com/reference/api/oauth2",
+    "https://docs.propelauth.com/reference/api/oauth2#authorize-endpoint",
+    "https://docs.propelauth.com/reference/api/oauth2#logout-endpoint",
+    "https://docs.propelauth.com/reference/api/oauth2#open-id-connect-discovery-endpoint",
+    "https://docs.propelauth.com/reference/api/oauth2#refresh-token-endpoint",
+    "https://docs.propelauth.com/reference/api/oauth2#token-endpoint",
+    "https://docs.propelauth.com/reference/api/oauth2#user-info-endpoint",
+    "https://docs.propelauth.com/reference/api/org",
+    "https://docs.propelauth.com/reference/api/org#add-user-to-org",
+    "https://docs.propelauth.com/reference/api/org#change-role",
+    "https://docs.propelauth.com/reference/api/org#create-org",
+    "https://docs.propelauth.com/reference/api/org#delete-org",
+    "https://docs.propelauth.com/reference/api/org#fetch-org",
+    "https://docs.propelauth.com/reference/api/org#fetch-orgs",
+    "https://docs.propelauth.com/reference/api/org#fetch-pending-invites",
+    "https://docs.propelauth.com/reference/api/org#fetch-role-mappings",
+    "https://docs.propelauth.com/reference/api/org#fetch-users-in-org",
+    "https://docs.propelauth.com/reference/api/org#invite-user-to-org",
+    "https://docs.propelauth.com/reference/api/org#invite-user-to-org-by-user-id",
+    "https://docs.propelauth.com/reference/api/org#remove-user-from-org",
+    "https://docs.propelauth.com/reference/api/org#revoke-pending-org-invite",
+    "https://docs.propelauth.com/reference/api/org#subscribe-org-to-role-mapping",
+    "https://docs.propelauth.com/reference/api/org#update-org",
+    "https://docs.propelauth.com/reference/api/social-login",
+    "https://docs.propelauth.com/reference/api/user",
+    "https://docs.propelauth.com/reference/api/user#clear-user-password",
+    "https://docs.propelauth.com/reference/api/user#create-access-token",
+    "https://docs.propelauth.com/reference/api/user#create-magic-link",
+    "https://docs.propelauth.com/reference/api/user#create-user",
+    "https://docs.propelauth.com/reference/api/user#delete-user",
+    "https://docs.propelauth.com/reference/api/user#disable-block-user",
+    "https://docs.propelauth.com/reference/api/user#disable-user-2-fa",
+    "https://docs.propelauth.com/reference/api/user#enable-unblock-user",
+    "https://docs.propelauth.com/reference/api/user#fetch-employee-by-id",
+    "https://docs.propelauth.com/reference/api/user#fetch-user-by-email",
+    "https://docs.propelauth.com/reference/api/user#fetch-user-by-user-id",
+    "https://docs.propelauth.com/reference/api/user#fetch-user-by-username",
+    "https://docs.propelauth.com/reference/api/user#logout-all-user-sessions",
+    "https://docs.propelauth.com/reference/api/user#migrate-user-from-external-source",
+    "https://docs.propelauth.com/reference/api/user#migrate-user-password",
+    "https://docs.propelauth.com/reference/api/user#query-for-users",
+    "https://docs.propelauth.com/reference/api/user#resend-email-confirmation",
+    "https://docs.propelauth.com/reference/api/user#update-user",
+    "https://docs.propelauth.com/reference/api/user#update-user-email",
+    "https://docs.propelauth.com/reference/api/user#update-user-password",
+    "https://docs.propelauth.com/reference/frontend-apis/js",
+    "https://docs.propelauth.com/sso",
+    "https://docs.propelauth.com/sso/social-login",
+    "https://example.com",
+    "https://example.com/picture.jpg",
+    "https://github.com/PropelAuth",
+    "https://img.propelauth.com/2a27",
+    "https://login.microsoftonline.com/SOME-UUID/saml2",
+    "https://myserver.com/mcp",
+    "https://sts.windows.net/SOME-UUID/",
+    "https://twitter.com/PropelAuth",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.linkedin.com/company/propelauth/",
+    "https://www.propelauth.com"
+  ]
+}

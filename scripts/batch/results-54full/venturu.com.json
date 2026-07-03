@@ -1,0 +1,440 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "venturu.com",
+    "detect": {
+      "domain": "venturu.com",
+      "found": [
+        "mcp",
+        "oauth-protected-resource",
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://www.venturu.com"
+          ],
+          "authorizationEndpoint": "https://www.venturu.com/api/oauth/mcp/authorize",
+          "tokenEndpoint": "https://www.venturu.com/api/oauth/mcp/token",
+          "protectedResourceUrl": "https://venturu.com/.well-known/oauth-protected-resource",
+          "scopes": [
+            "mcp:access"
+          ],
+          "registrationEndpoint": "https://www.venturu.com/api/oauth/mcp/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [
+        {
+          "url": "https://venturu.com/mcp",
+          "source": "probe",
+          "auth": "none"
+        }
+      ],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:41:01.134Z",
+    "summary": "Venturu exposes a public Streamable HTTP MCP server at `https://www.venturu.com/mcp` with optional OAuth for account-backed tools, plus a separate partner REST API at `https://www.venturu.com/api` documented by an OpenAPI spec and authenticated with a Venturu-issued bearer API key.",
+    "description": "Venturu is a marketplace for buying and selling small businesses and connecting with business brokers. It offers searchable listings, broker profiles, and lead/contact workflows for marketplace participants and partners.",
+    "credentials": {
+      "partner_api_key": {
+        "type": "bearer",
+        "label": "Venturu partner API key",
+        "generateUrl": "https://developers.venturu.com/introduction/onboarding.md",
+        "setup": "Request access by emailing [Joel at Venturu Partnerships](mailto:joel@venturu.com) with your company name, website, and intended use case, following the [Getting an API Key](https://developers.venturu.com/introduction/onboarding.md) guide. After approval, Venturu provides a unique API key; send it as `Authorization: Bearer YOUR_API_KEY`.",
+        "acquisition": "manual"
+      },
+      "mcp_oauth_account": {
+        "type": "oauth2",
+        "label": "Venturu MCP OAuth access via a Venturu account",
+        "generateUrl": "https://www.venturu.com/api/oauth/mcp/register",
+        "setup": "For MCP clients, connect to the Venturu MCP server and let the client perform OAuth 2.0 Authorization Code + PKCE using Venturu's discovery metadata at [OAuth Authorization Server Metadata](https://www.venturu.com/.well-known/oauth-authorization-server) and [Protected Resource Metadata](https://www.venturu.com/.well-known/oauth-protected-resource). If your client supports dynamic client registration, it can self-register at `https://www.venturu.com/api/oauth/mcp/register`; then sign in with your Venturu account and approve scope `mcp:access`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "mcp-server",
+        "name": "MCP server",
+        "type": "mcp",
+        "url": "https://venturu.com/mcp",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T22:41:01.134Z"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mcp_oauth_account",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "detected",
+                "signal": "oauth-protected-resource",
+                "verifiedAt": "2026-07-02T22:41:01.134Z"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "venturu-mcp-server",
+        "name": "Venturu MCP server",
+        "type": "mcp",
+        "docs": "https://venturu-47c7c86f.mintlify.app/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.venturu.com/venturu-mcp",
+            "https://venturu-47c7c86f.mintlify.app/mcp-server/quickstart",
+            "https://venturu-47c7c86f.mintlify.app/mcp-server/authentication",
+            "https://venturu-47c7c86f.mintlify.app/mcp-server/compatible-clients",
+            "https://www.venturu.com/.well-known/oauth-protected-resource"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://www.venturu.com/venturu-mcp",
+              "https://venturu-47c7c86f.mintlify.app/mcp-server/quickstart",
+              "https://venturu-47c7c86f.mintlify.app/mcp-server/authentication"
+            ]
+          }
+        },
+        "url": "https://www.venturu.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "venturu-partner-api",
+        "name": "Venturu Partner API",
+        "type": "http",
+        "docs": "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-health",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-health",
+            "https://venturu-47c7c86f.mintlify.app/api-reference/partner/create-or-update-broker",
+            "https://venturu-47c7c86f.mintlify.app/api-reference/partner/create-or-update-listing",
+            "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-leads-for-office",
+            "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-leads-for-organization",
+            "https://developers.venturu.com/openapi.json",
+            "https://developers.venturu.com/getting-started/authentication.md",
+            "https://developers.venturu.com/introduction/onboarding.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "partner_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "BearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.venturu.com/openapi.json",
+                  "https://developers.venturu.com/getting-started/authentication.md",
+                  "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-health"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://developers.venturu.com/openapi.json",
+        "url": "https://www.venturu.com/api"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:41:01.134Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 220233,
+    "completion_tokens": 1679,
+    "total_tokens": 221912
+  },
+  "visited": [
+    "https://curity.io/resources/learn/implementing-mcp-authorization-apis/",
+    "https://developers.make.com/mcp-server/connect-using-oauth",
+    "https://developers.venturu.com/getting-started/authentication.md",
+    "https://developers.venturu.com/introduction/onboarding.md",
+    "https://developers.venturu.com/openapi.json",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/create-or-update-broker",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/create-or-update-listing",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-health",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-leads-for-office",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-leads-for-organization",
+    "https://venturu-47c7c86f.mintlify.app/llms.txt",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/authentication",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/compatible-clients",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/quickstart",
+    "https://www.venturu.com/",
+    "https://www.venturu.com/.well-known/oauth-authorization-server",
+    "https://www.venturu.com/.well-known/oauth-protected-resource",
+    "https://www.venturu.com/about",
+    "https://www.venturu.com/blog/category/product",
+    "https://www.venturu.com/blog/introducing-venturu-mcp-server",
+    "https://www.venturu.com/sell-your-business",
+    "https://www.venturu.com/terms",
+    "https://www.venturu.com/venturu-mcp",
+    "https://zuplo.com/blog/building-secure-mcp-servers-with-oauth"
+  ],
+  "grounding": [
+    "http://localhost:3000/api",
+    "https://curity.io/resources/learn/implementing-mcp-authorization-apis/",
+    "https://developers.make.com/mcp-server/connect-using-oauth",
+    "https://developers.venturu.com",
+    "https://developers.venturu.com/api-reference/partner/create-or-update-broker.md",
+    "https://developers.venturu.com/api-reference/partner/create-or-update-listing.md",
+    "https://developers.venturu.com/api-reference/partner/get-health.md",
+    "https://developers.venturu.com/api-reference/partner/get-leads-for-office.md",
+    "https://developers.venturu.com/api-reference/partner/get-leads-for-organization.md",
+    "https://developers.venturu.com/getting-started/authentication.md",
+    "https://developers.venturu.com/getting-started/core-concepts.md",
+    "https://developers.venturu.com/getting-started/making-your-first-call.md",
+    "https://developers.venturu.com/getting-started/rate-limiting.md",
+    "https://developers.venturu.com/guides/creating-a-broker.md",
+    "https://developers.venturu.com/guides/creating-a-listing.md",
+    "https://developers.venturu.com/guides/managing-listing-status.md",
+    "https://developers.venturu.com/guides/tracking-leads.md",
+    "https://developers.venturu.com/guides/updating-a-broker.md",
+    "https://developers.venturu.com/guides/updating-a-listing.md",
+    "https://developers.venturu.com/introduction/index.md",
+    "https://developers.venturu.com/introduction/onboarding.md",
+    "https://developers.venturu.com/llms.txt",
+    "https://developers.venturu.com/mcp-server/authentication.md",
+    "https://developers.venturu.com/mcp-server/compatible-clients.md",
+    "https://developers.venturu.com/mcp-server/index.md",
+    "https://developers.venturu.com/mcp-server/quickstart.md",
+    "https://developers.venturu.com/mcp-server/rate-limiting.md",
+    "https://developers.venturu.com/mcp-server/tools/contact-broker.md",
+    "https://developers.venturu.com/mcp-server/tools/contact-seller.md",
+    "https://developers.venturu.com/mcp-server/tools/get-broker.md",
+    "https://developers.venturu.com/mcp-server/tools/get-business.md",
+    "https://developers.venturu.com/mcp-server/tools/index.md",
+    "https://developers.venturu.com/mcp-server/tools/list-business-categories.md",
+    "https://developers.venturu.com/mcp-server/tools/list-languages.md",
+    "https://developers.venturu.com/mcp-server/tools/search-brokers.md",
+    "https://developers.venturu.com/mcp-server/tools/search-businesses.md",
+    "https://developers.venturu.com/mcp-server/tools/who-am-i.md",
+    "https://developers.venturu.com/openapi.json",
+    "https://github.com/Venturu",
+    "https://modelcontextprotocol.io",
+    "https://support.venturu.com",
+    "https://support.venturu.com/en/articles/11888583-how-do-i-contact-the-venturu-support-team",
+    "https://tools.ietf.org/html/rfc7591",
+    "https://venturu-47c7c86f.mintlify.app/",
+    "https://venturu-47c7c86f.mintlify.app/#ai-assistants",
+    "https://venturu-47c7c86f.mintlify.app/#authentication-flow",
+    "https://venturu-47c7c86f.mintlify.app/#authentication-is-optional",
+    "https://venturu-47c7c86f.mintlify.app/#authorization-authorization",
+    "https://venturu-47c7c86f.mintlify.app/#body-avatar-url-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-broker",
+    "https://venturu-47c7c86f.mintlify.app/#body-broker-external-id-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-business-type",
+    "https://venturu-47c7c86f.mintlify.app/#body-description-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-email",
+    "https://venturu-47c7c86f.mintlify.app/#body-established-at-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-financials-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-financing-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-forwarding-email-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-licenses-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-location",
+    "https://venturu-47c7c86f.mintlify.app/#body-name",
+    "https://venturu-47c7c86f.mintlify.app/#body-phone-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-photos-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-profile-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-property-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-service-areas-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-status",
+    "https://venturu-47c7c86f.mintlify.app/#body-title-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#body-training-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#building-a-custom-client",
+    "https://venturu-47c7c86f.mintlify.app/#chatgpt-apps-sdk-widgets",
+    "https://venturu-47c7c86f.mintlify.app/#client-specific-features",
+    "https://venturu-47c7c86f.mintlify.app/#connect-in-seconds",
+    "https://venturu-47c7c86f.mintlify.app/#content-area",
+    "https://venturu-47c7c86f.mintlify.app/#development-tools",
+    "https://venturu-47c7c86f.mintlify.app/#discovery-endpoints",
+    "https://venturu-47c7c86f.mintlify.app/#dynamic-client-registration",
+    "https://venturu-47c7c86f.mintlify.app/#frameworks-%26-libraries",
+    "https://venturu-47c7c86f.mintlify.app/#frameworks-&-libraries",
+    "https://venturu-47c7c86f.mintlify.app/#how-it-works",
+    "https://venturu-47c7c86f.mintlify.app/#next-steps",
+    "https://venturu-47c7c86f.mintlify.app/#oauth-endpoints",
+    "https://venturu-47c7c86f.mintlify.app/#optional-authenticate-for-full-access",
+    "https://venturu-47c7c86f.mintlify.app/#parameter-external-broker-id",
+    "https://venturu-47c7c86f.mintlify.app/#parameter-external-listing-id",
+    "https://venturu-47c7c86f.mintlify.app/#parameter-office-id",
+    "https://venturu-47c7c86f.mintlify.app/#parameter-organization-id",
+    "https://venturu-47c7c86f.mintlify.app/#response-message",
+    "https://venturu-47c7c86f.mintlify.app/#response-office-breakdown",
+    "https://venturu-47c7c86f.mintlify.app/#response-office-id",
+    "https://venturu-47c7c86f.mintlify.app/#response-office-name",
+    "https://venturu-47c7c86f.mintlify.app/#response-organization-id",
+    "https://venturu-47c7c86f.mintlify.app/#response-organization-name",
+    "https://venturu-47c7c86f.mintlify.app/#response-permissions",
+    "https://venturu-47c7c86f.mintlify.app/#response-status",
+    "https://venturu-47c7c86f.mintlify.app/#response-timestamp",
+    "https://venturu-47c7c86f.mintlify.app/#response-total-leads",
+    "https://venturu-47c7c86f.mintlify.app/#response-venturu-broker-id-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#response-venturu-listing-id-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#response-venturu-listing-url-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#response-venturu-profile-url-one-of-0",
+    "https://venturu-47c7c86f.mintlify.app/#scopes",
+    "https://venturu-47c7c86f.mintlify.app/#setup-by-client",
+    "https://venturu-47c7c86f.mintlify.app/#supported-mcp-clients",
+    "https://venturu-47c7c86f.mintlify.app/#token-lifetimes",
+    "https://venturu-47c7c86f.mintlify.app/#troubleshooting",
+    "https://venturu-47c7c86f.mintlify.app/#verify-the-connection",
+    "https://venturu-47c7c86f.mintlify.app/#voice-agent-integration",
+    "https://venturu-47c7c86f.mintlify.app/#what-happens-in-practice",
+    "https://venturu-47c7c86f.mintlify.app/./authentication",
+    "https://venturu-47c7c86f.mintlify.app/./rate-limiting",
+    "https://venturu-47c7c86f.mintlify.app/./tools/index",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/create-or-update-broker",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/create-or-update-listing",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-health",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-leads-for-office",
+    "https://venturu-47c7c86f.mintlify.app/api-reference/partner/get-leads-for-organization",
+    "https://venturu-47c7c86f.mintlify.app/introduction",
+    "https://venturu-47c7c86f.mintlify.app/llms.txt",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/authentication",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/compatible-clients",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/quickstart",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/rate-limiting",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/contact-broker",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/contact-seller",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/get-broker",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/get-business",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/list-business-categories",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/list-languages",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/search-brokers",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/search-businesses",
+    "https://venturu-47c7c86f.mintlify.app/mcp-server/tools/who-am-i",
+    "https://venturu-47c7c86f.mintlify.app/mcp/authentication",
+    "https://venturu.com/mcp",
+    "https://venturu.com/venturu-mcp",
+    "https://www.dropbox.com/scl/fo/660gwivts7l0db3kqu21e/AJE5UV14TahF3j_gP3jbrhA?rlkey=pb41bck04ghpbziypweh76523&st=kgafktol&dl=0",
+    "https://www.linkedin.com/company/venturu",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=venturu-47c7c86f",
+    "https://www.venturu.com",
+    "https://www.venturu.com/",
+    "https://www.venturu.com/#",
+    "https://www.venturu.com/#built-for-security-built-for-scale",
+    "https://www.venturu.com/#compatible-with-the-tools-you-already-use",
+    "https://www.venturu.com/#faq",
+    "https://www.venturu.com/#get-started-now",
+    "https://www.venturu.com/#how-it-works-connected-in-under-a-minute",
+    "https://www.venturu.com/#how-it-works-connected-in-under-a-minute-1",
+    "https://www.venturu.com/#setup",
+    "https://www.venturu.com/#the-numbers",
+    "https://www.venturu.com/#what-is-mcp",
+    "https://www.venturu.com/#what-is-mcp-1",
+    "https://www.venturu.com/#what-your-ai-can-do",
+    "https://www.venturu.com/#what-your-ai-can-do-1",
+    "https://www.venturu.com/#why-we-built-this",
+    "https://www.venturu.com/#your-ai-already-knows-the-market-now-it-can-search-it",
+    "https://www.venturu.com/#your-ai-already-knows-the-market-now-it-can-search-it-1",
+    "https://www.venturu.com/.well-known/oauth-authorization-server",
+    "https://www.venturu.com/.well-known/oauth-protected-resource",
+    "https://www.venturu.com/about",
+    "https://www.venturu.com/advertise",
+    "https://www.venturu.com/api",
+    "https://www.venturu.com/api/oauth/mcp/authorize",
+    "https://www.venturu.com/api/oauth/mcp/register",
+    "https://www.venturu.com/api/oauth/mcp/token",
+    "https://www.venturu.com/api/partner/v1/brokers/{externalBrokerId}",
+    "https://www.venturu.com/api/partner/v1/health",
+    "https://www.venturu.com/api/partner/v1/listings/{externalListingId}",
+    "https://www.venturu.com/api/partner/v1/offices/{officeId}/leads/count",
+    "https://www.venturu.com/api/partner/v1/organizations/{organizationId}/leads/count",
+    "https://www.venturu.com/apihttp://localhost:3000/api",
+    "https://www.venturu.com/auth/home",
+    "https://www.venturu.com/auth/home?redirect=/chat",
+    "https://www.venturu.com/auth/home?redirect=/my-searches",
+    "https://www.venturu.com/blog",
+    "https://www.venturu.com/blog/author/joel-hernandez",
+    "https://www.venturu.com/blog/businesses-for-sale-all-50-states",
+    "https://www.venturu.com/blog/category/product",
+    "https://www.venturu.com/blog/introducing-venturu-mcp-server",
+    "https://www.venturu.com/blog/the-new-venturu",
+    "https://www.venturu.com/business-brokers",
+    "https://www.venturu.com/business/established-accounting-firm-with-strong-recurring-clientele-in-402-27-ave-miami-florida-6095",
+    "https://www.venturu.com/business/established-flower-shop-with-strong-forward-bookings-in-miami-florida-4895",
+    "https://www.venturu.com/business/established-full-servi",
+    "https://www.venturu.com/business/established-full-service-hair-salon-with-turnkey-operations-in-pembroke-pines-florida-3891",
+    "https://www.venturu.com/business/established-full-service-maintenance-business-with-diverse-revenue-streams-in-ontario-3998",
+    "https://www.venturu.com/business/established-residential-plumbing-company-with-recurring-revenue-in-ottawa-ontario-4402",
+    "https://www.venturu.com/business/established-window-and-door-company-with-strong-reputation-in-ontario-5928",
+    "https://www.venturu.com/business/leading-canadian-solar-e-commerce-with-custom-system-specialization-in-ontario-3980",
+    "https://www.venturu.com/business/profitable-painting-and-flooring-contractor-with-growth-potential-in-ontario-3996",
+    "https://www.venturu.com/businesses",
+    "https://www.venturu.com/businesses-for-sale-near-me",
+    "https://www.venturu.com/businesses/us/california",
+    "https://www.venturu.com/businesses/us/florida",
+    "https://www.venturu.com/businesses/us/georgia",
+    "https://www.venturu.com/businesses/us/illinois",
+    "https://www.venturu.com/businesses/us/michigan",
+    "https://www.venturu.com/businesses/us/minnesota",
+    "https://www.venturu.com/businesses/us/nevada",
+    "https://www.venturu.com/businesses/us/new-york",
+    "https://www.venturu.com/businesses/us/north-carolina",
+    "https://www.venturu.com/businesses/us/ohio",
+    "https://www.venturu.com/businesses/us/pennsylvania",
+    "https://www.venturu.com/businesses/us/texas",
+    "https://www.venturu.com/chatgpt",
+    "https://www.venturu.com/dictionary",
+    "https://www.venturu.com/dictionary/owner-benefit",
+    "https://www.venturu.com/for-brokers",
+    "https://www.venturu.com/for-brokers/venturu-one",
+    "https://www.venturu.com/free-business-valuation",
+    "https://www.venturu.com/free-tools/buyers",
+    "https://www.venturu.com/free-tools/sellers",
+    "https://www.venturu.com/mcp",
+    "https://www.venturu.com/partners",
+    "https://www.venturu.com/privacy",
+    "https://www.venturu.com/sell-your-business",
+    "https://www.venturu.com/sitemap.xml",
+    "https://www.venturu.com/terms",
+    "https://www.venturu.com/venturu-mcp",
+    "https://www.venturu.com/venturu-mcp#setup",
+    "https://zuplo.com/blog/building-secure-mcp-servers-with-oauth"
+  ]
+}

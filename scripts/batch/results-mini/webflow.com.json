@@ -1,0 +1,202 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "webflow.com",
+    "detect": {
+      "domain": "webflow.com",
+      "found": [
+        "agent-skills",
+        "llms.txt"
+      ],
+      "mcp": [],
+      "agentSkills": {
+        "count": 24,
+        "names": [
+          "webflow-cli:cloud",
+          "webflow-cli:code-component",
+          "webflow-cli:designer-extension",
+          "webflow-cli:devlink",
+          "webflow-cli:troubleshooter",
+          "webflow-code-component:component-audit",
+          "webflow-code-component:component-scaffold",
+          "webflow-code-component:convert-component",
+          "webflow-code-component:deploy-guide",
+          "webflow-code-component:local-dev-setup",
+          "webflow-code-component:pre-deploy-check",
+          "webflow-code-component:troubleshoot-deploy",
+          "webflow-mcp:accessibility-audit",
+          "webflow-mcp:asset-audit",
+          "webflow-mcp:bulk-cms-update",
+          "webflow-mcp:cms-best-practices",
+          "webflow-mcp:cms-collection-setup",
+          "webflow-mcp:custom-code-management",
+          "webflow-mcp:designer-tools",
+          "webflow-mcp:flowkit-naming",
+          "webflow-mcp:link-checker",
+          "webflow-mcp:safe-publish",
+          "webflow-mcp:site-activity",
+          "webflow-mcp:site-audit"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T10:05:03.447Z",
+    "summary": "Webflow exposes the Data API, MCP server, and Webflow CLI; Data API auth supports OAuth app tokens, site API tokens, and enterprise workspace API tokens, while the MCP server and CLI use Webflow OAuth/login flows or workspace tokens.",
+    "credentials": {
+      "wf_oauth_app": {
+        "type": "oauth2",
+        "label": "Webflow App OAuth client",
+        "generateUrl": "https://developers.webflow.com/data/docs/register-an-app.md",
+        "setup": "Create a Webflow App in your Workspace’s **Apps & Integrations → App Development** section. Choose the **Data Client** building block, add your HTTPS redirect URI, and enable the scopes your integration needs. Webflow shows the `Client ID` and `Client Secret` after registration. Use the client credentials to run the Authorization Code flow and obtain an access token for the user/workspace.",
+        "acquisition": "manual"
+      },
+      "wf_site_token": {
+        "type": "bearer",
+        "label": "Webflow Site API token",
+        "generateUrl": "https://developers.webflow.com/data/v2.0.0/reference/authentication/site-token.md",
+        "setup": "In the target site’s **Site settings → Apps & integrations → API access**, click **Generate API token**, name it, choose the needed scopes, and copy the token. Send it as `Authorization: Bearer <token>` when calling the Data API. Site admins create these tokens; they are per-site and can be revoked from the same page.",
+        "acquisition": "manual"
+      },
+      "wf_workspace_token": {
+        "type": "bearer",
+        "label": "Webflow Workspace API token",
+        "generateUrl": "https://developers.webflow.com/data/v2.0.0/reference/authentication/workspace-token.md",
+        "setup": "In an Enterprise workspace, go to **Apps & integrations → Manage → Workspace API access**, click **Generate API token**, name it, choose the needed permissions, and copy the token. Send it as `Authorization: Bearer <token>` for workspace-level Data API requests and as `--api-token <token>` or `WEBFLOW_API_TOKEN` for the CLI. Workspace admins create and revoke these tokens.",
+        "acquisition": "manual"
+      },
+      "wf_cli_login": {
+        "type": "oauth2",
+        "label": "Webflow CLI workspace login",
+        "generateUrl": "https://developers.webflow.com/cli/authentication.md",
+        "setup": "Run `webflow auth login`. The CLI opens a browser, you pick a workspace, and it writes a fresh `WEBFLOW_API_TOKEN` into your project’s `.env` file. This is the easiest way to authenticate the CLI for interactive use.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "webflow-mcp-server",
+        "name": "Webflow MCP server",
+        "type": "mcp",
+        "docs": "https://developers.webflow.com/mcp/reference/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.webflow.com/mcp/reference/getting-started",
+            "https://developers.webflow.com/mcp/reference/overview.md",
+            "https://developers.webflow.com/mcp/installing/claude-code.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "wf_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.webflow.com/mcp/reference/getting-started",
+                  "https://developers.webflow.com/mcp/reference/overview.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.webflow.com/mcp",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ]
+      },
+      {
+        "slug": "webflow-cli",
+        "name": "Webflow CLI",
+        "type": "cli",
+        "docs": "https://developers.webflow.com/cli/command-reference.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.webflow.com/",
+            "https://developers.webflow.com/cli/authentication.md",
+            "https://developers.webflow.com/cli/command-reference.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "wf_cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "webflow auth login"
+                  }
+                },
+                {
+                  "id": "wf_workspace_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "webflow --api-token <WORKSPACE_API_TOKEN>",
+                    "env": [
+                      "WEBFLOW_API_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.webflow.com/cli/authentication.md",
+                  "https://developers.webflow.com/cli/command-reference.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@webflow/webflow-cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "webflow"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T10:05:03.448Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 212745,
+    "completion_tokens": 1793,
+    "total_tokens": 214538
+  },
+  "visited": [
+    "https://developers.webflow.com/",
+    "https://developers.webflow.com/cli/authentication.md",
+    "https://developers.webflow.com/cli/command-reference.md",
+    "https://developers.webflow.com/data/docs/register-an-app.md",
+    "https://developers.webflow.com/data/llms.txt",
+    "https://developers.webflow.com/data/v2.0.0/reference/authentication/site-token.md",
+    "https://developers.webflow.com/data/v2.0.0/reference/authentication/workspace-token.md",
+    "https://developers.webflow.com/data/v2.0.0/reference/oauth-app.md",
+    "https://developers.webflow.com/data/v2.0.0/reference/rest-introduction/quick-start.md",
+    "https://developers.webflow.com/llms.txt",
+    "https://developers.webflow.com/mcp/installing/claude-code.md",
+    "https://developers.webflow.com/mcp/reference/getting-started",
+    "https://developers.webflow.com/mcp/reference/overview.md",
+    "https://discourse.webflow.com/t/common-issues-and-solutions-for-webflow-mcp-server-integrations/318358",
+    "https://github.com/webflow/mcp-server",
+    "https://www.scalekit.com/blog/webflow-mcp-vs-api",
+    "https://www.youtube.com/watch?v=h3ugH8qqKpA&vl=en"
+  ]
+}

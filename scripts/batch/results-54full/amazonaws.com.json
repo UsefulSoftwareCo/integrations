@@ -1,0 +1,323 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "amazonaws.com",
+    "detect": {
+      "domain": "amazonaws.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:10:48.462Z",
+    "summary": "Amazon Web Services exposes a large set of service-specific HTTP APIs on amazonaws.com authenticated with AWS Signature Version 4 / temporary session credentials, plus the `aws` CLI for programmatic access and credential management.",
+    "description": "Amazon Web Services is a cloud computing platform that provides infrastructure, storage, databases, analytics, developer tools, and many managed application services. The `amazonaws.com` domain is used for many AWS service endpoints and related APIs.",
+    "credentials": {
+      "aws_access_keys": {
+        "type": "compound",
+        "label": "AWS programmatic credentials (access key ID + secret access key, optionally session token)",
+        "generateUrl": "https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html",
+        "setup": "For the simplest path, set up programmatic credentials through the AWS CLI docs at [Authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html). For long-term IAM user keys, run `aws configure` and enter your `AWS Access Key ID` and `AWS Secret Access Key`; the CLI stores them in `~/.aws/credentials` as `aws_access_key_id` and `aws_secret_access_key` ([configure command](https://docs.aws.amazon.com/cli/latest/reference/configure/), [quickstart](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)). If you use temporary credentials, include `aws_session_token` / `X-Amz-Security-Token` as documented in [Create a signed AWS API request](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html).",
+        "acquisition": "manual"
+      },
+      "aws_cli_login_session": {
+        "type": "oauth2",
+        "label": "AWS CLI login session / short-term console credentials",
+        "generateUrl": "https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html",
+        "setup": "Use the AWS CLI browser login flow described in [Setting up the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html): run `aws login` to sign in with your AWS console credentials and create a short-term local session for the CLI. AWS documents this as a recommended way to use short-term credentials for local development.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "aws-service-apis",
+        "name": "AWS service APIs",
+        "type": "http",
+        "docs": "https://docs.aws.amazon.com/index.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html",
+            "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html",
+            "https://api.apis.guru/v2/specs/amazonaws.com/AWSMigrationHub/2017-05-31/openapi.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "aws_access_keys",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "AWS4-HMAC-SHA256"
+                  }
+                },
+                {
+                  "id": "aws_access_keys",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Amz-Security-Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html",
+                  "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html"
+                ]
+              }
+            }
+          ]
+        },
+        "variables": [
+          {
+            "name": "service_endpoint",
+            "in": "url",
+            "resolveFrom": "per AWS service and often region-specific endpoint documentation",
+            "description": "AWS APIs use service-specific endpoints, typically on `amazonaws.com`; the exact base URL varies by service and region."
+          }
+        ]
+      },
+      {
+        "slug": "aws-cli",
+        "name": "AWS CLI",
+        "type": "cli",
+        "docs": "https://docs.aws.amazon.com/cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html",
+            "https://docs.aws.amazon.com/cli/latest/reference/configure/",
+            "https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html",
+            "https://docs.aws.amazon.com/cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "aws_access_keys",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "aws configure",
+                    "env": [
+                      "AWS_ACCESS_KEY_ID",
+                      "AWS_SECRET_ACCESS_KEY",
+                      "AWS_SESSION_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/cli/latest/reference/configure/",
+                  "https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "aws_cli_login_session",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "aws login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html",
+                  "https://docs.aws.amazon.com/cli/latest/reference/configure/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "awscli"
+          }
+        ],
+        "command": "aws"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:10:48.462Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 266646,
+    "completion_tokens": 17646,
+    "total_tokens": 284292
+  },
+  "visited": [
+    "https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-authentication-methods.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-signing-elements.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-troubleshooting.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/configure/",
+    "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html",
+    "https://docs.aws.amazon.com/cli/v1/userguide/cli-authentication-user.html",
+    "https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html",
+    "https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html",
+    "https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html",
+    "https://docs.aws.amazon.com/mediatailor/latest/ug/channel-assembly-access-configuration-sigv4.html"
+  ],
+  "grounding": [
+    "http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html",
+    "http://localhost:8000",
+    "http://s3.amazonaws.com/amzn-s3-demo-bucket/myphoto.jpg",
+    "http://s3.amazonaws.com/amzn-s3-demo-bucket?acl",
+    "http://s3.amazonaws.com/amzn-s3-demo-bucket?prefix=somePrefix&marker=someMarker&max-keys=2",
+    "https://aws.amazon.com/blogs/developer/cli-v1-maintenance-mode-announcement/",
+    "https://aws.amazon.com/developer/",
+    "https://csrc.nist.gov/glossary/term/ecdsa",
+    "https://docs.aws.amazon.com/#",
+    "https://docs.aws.amazon.com/#add-signature-to-request",
+    "https://docs.aws.amazon.com/#available-commands",
+    "https://docs.aws.amazon.com/#calculate-signature",
+    "https://docs.aws.amazon.com/#cli-configure-files-examples",
+    "https://docs.aws.amazon.com/#cli-configure-files-format",
+    "https://docs.aws.amazon.com/#cli-configure-files-format-profile",
+    "https://docs.aws.amazon.com/#cli-configure-files-format-services",
+    "https://docs.aws.amazon.com/#cli-configure-files-methods",
+    "https://docs.aws.amazon.com/#cli-configure-files-settings",
+    "https://docs.aws.amazon.com/#cli-configure-files-using-profiles",
+    "https://docs.aws.amazon.com/#cli-configure-files-where",
+    "https://docs.aws.amazon.com/#configuration-variables",
+    "https://docs.aws.amazon.com/#configure",
+    "https://docs.aws.amazon.com/#create-canonical-request",
+    "https://docs.aws.amazon.com/#create-canonical-request-hash",
+    "https://docs.aws.amazon.com/#create-signed-request-steps",
+    "https://docs.aws.amazon.com/#create-string-to-sign",
+    "https://docs.aws.amazon.com/#derive-signing-key",
+    "https://docs.aws.amazon.com/#description",
+    "https://docs.aws.amazon.com/#examples",
+    "https://docs.aws.amazon.com/#getting-started-prereqs-keys",
+    "https://docs.aws.amazon.com/#getting-started-quickstart-existing",
+    "https://docs.aws.amazon.com/#getting-started-quickstart-new",
+    "https://docs.aws.amazon.com/#getting-started-quickstart-new-command",
+    "https://docs.aws.amazon.com/#getting-started-quickstart-new-file",
+    "https://docs.aws.amazon.com/#how-aws-signing-works",
+    "https://docs.aws.amazon.com/#how-sigv4a-works",
+    "https://docs.aws.amazon.com/#options",
+    "https://docs.aws.amazon.com/#reference_aws-signing-resources",
+    "https://docs.aws.amazon.com/#synopsis",
+    "https://docs.aws.amazon.com/#temporary-security-credentials",
+    "https://docs.aws.amazon.com/#when-do-you-need-to-sign",
+    "https://docs.aws.amazon.com/#why-requests-are-signed",
+    "https://docs.aws.amazon.com/../../genindex.html",
+    "https://docs.aws.amazon.com/../../index.html",
+    "https://docs.aws.amazon.com/../configservice/untag-resource.html",
+    "https://docs.aws.amazon.com/../index.html",
+    "https://docs.aws.amazon.com/../index.html#cli-aws",
+    "https://docs.aws.amazon.com/./cli-authentication-short-term.html",
+    "https://docs.aws.amazon.com/./cli-authentication-user.html",
+    "https://docs.aws.amazon.com/./cli-chap-authentication.html",
+    "https://docs.aws.amazon.com/./cli-chap-configure.html",
+    "https://docs.aws.amazon.com/./cli-configure-endpoints.html",
+    "https://docs.aws.amazon.com/./cli-configure-envvars.html",
+    "https://docs.aws.amazon.com/./cli-configure-files.html",
+    "https://docs.aws.amazon.com/./cli-configure-files.html#cli-configure-files-where",
+    "https://docs.aws.amazon.com/./cli-configure-metadata.html",
+    "https://docs.aws.amazon.com/./cli-configure-role.html",
+    "https://docs.aws.amazon.com/./cli-configure-sign-in.html",
+    "https://docs.aws.amazon.com/./cli-configure-sourcing-external.html",
+    "https://docs.aws.amazon.com/./cli-configure-sso.html",
+    "https://docs.aws.amazon.com/./reference_sigv-authentication-methods.html",
+    "https://docs.aws.amazon.com/./reference_sigv-examples.html",
+    "https://docs.aws.amazon.com/./reference_sigv-examples.html#signature-v4-examples-sdk",
+    "https://docs.aws.amazon.com/./reference_sigv-signing-elements.html",
+    "https://docs.aws.amazon.com/./reference_sigv.html#reference_aws-signing-resources",
+    "https://docs.aws.amazon.com/./security-creds-programmatic-access.html",
+    "https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-authentication-methods.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-signing-elements.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-troubleshooting.html",
+    "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html",
+    "https://docs.aws.amazon.com/add-model.html",
+    "https://docs.aws.amazon.com/agent-toolkit.html",
+    "https://docs.aws.amazon.com/cli-chap-welcome.html",
+    "https://docs.aws.amazon.com/cli-configure-files.md",
+    "https://docs.aws.amazon.com/cli/index.html",
+    "https://docs.aws.amazon.com/cli/latest/reference/configure/",
+    "https://docs.aws.amazon.com/cli/latest/userguide/",
+    "https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html",
+    "https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html",
+    "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html",
+    "https://docs.aws.amazon.com/cli/v1/reference/configure/get.html",
+    "https://docs.aws.amazon.com/cli/v1/reference/configure/index.html",
+    "https://docs.aws.amazon.com/cli/v1/reference/configure/set.html",
+    "https://docs.aws.amazon.com/cli/v1/userguide/cli-authentication-user.html",
+    "https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html",
+    "https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html",
+    "https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html",
+    "https://docs.aws.amazon.com/export-credentials.html",
+    "https://docs.aws.amazon.com/forms/aws-doc-feedback?hidden_service_name=AWS%20Command%20Line%20Interface&hidden_guide_name=Reference&topic_url=https%3A%2F%2Fdocs.aws.amazon.com%2Fcli%2Flatest%2Freference/configure/index.html",
+    "https://docs.aws.amazon.com/general/latest/gr/docconventions.html",
+    "https://docs.aws.amazon.com/get.html",
+    "https://docs.aws.amazon.com/getting-started-quickstart.md",
+    "https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html",
+    "https://docs.aws.amazon.com/iam/index.html",
+    "https://docs.aws.amazon.com/import.html",
+    "https://docs.aws.amazon.com/index.html",
+    "https://docs.aws.amazon.com/introduction.html",
+    "https://docs.aws.amazon.com/list-profiles.html",
+    "https://docs.aws.amazon.com/list.html",
+    "https://docs.aws.amazon.com/mediatailor/latest/ug/channel-assembly-access-configuration-sigv4.html",
+    "https://docs.aws.amazon.com/mfa-login.html",
+    "https://docs.aws.amazon.com/reference_sigv-create-signed-request.md",
+    "https://docs.aws.amazon.com/reference_sigv.md",
+    "https://docs.aws.amazon.com/set.html",
+    "https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html",
+    "https://docs.aws.amazon.com/sso-session.html",
+    "https://docs.aws.amazon.com/sso.html",
+    "https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/set_1",
+    "https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/setx",
+    "https://doi.org/10.6028/NIST.SP.800-108r1-upd1",
+    "https://forums.aws.amazon.com/forum.jspa?forumID=150",
+    "https://github.com/aws-samples/sigv4a-signing-examples",
+    "https://github.com/aws/aws-cli",
+    "https://github.com/aws/aws-cli/blob/develop/CONTRIBUTING.md",
+    "https://github.com/aws/aws-sdk-cpp/blob/main/src/aws-cpp-sdk-core/source/auth/signer/AWSAuthV4Signer.cpp",
+    "https://github.com/aws/aws-sdk-java-v2/blob/master/core/auth/src/main/java/software/amazon/awssdk/auth/signer/internal/BaseAws4Signer.java",
+    "https://github.com/aws/aws-sdk-java/blob/master/aws-java-sdk-core/src/main/java/com/amazonaws/util/SdkHttpUtils.java#L66",
+    "https://github.com/aws/aws-sdk-net/blob/master/sdk/src/Core/Amazon.Runtime/Internal/Auth/AWS4Signer.cs",
+    "https://github.com/aws/aws-sdk-php/blob/master/src/Signature/SignatureV4.php",
+    "https://github.com/aws/aws-sdk-ruby/blob/version-3/gems/aws-sigv4/lib/aws-sigv4/signer.rb",
+    "https://github.com/aws/smithy-go/blob/a4c9efcda6aa54c75d1a130d1320a2709eebf51d/aws-http-auth/sigv4/sigv4.go",
+    "https://github.com/boto/botocore/blob/develop/botocore/signers.py",
+    "https://github.com/smithy-lang/smithy-typescript/tree/main/packages/signature-v4",
+    "https://my-sso-portal.awsapps.com/start",
+    "https://profile-a-endpoint.aws/",
+    "https://profile-b-ec2-endpoint.aws",
+    "https://us-east-1.signin.aws.amazon.com/v1/authorize",
+    "https://www.sphinx-doc.org/"
+  ]
+}

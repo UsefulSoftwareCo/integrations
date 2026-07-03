@@ -1,0 +1,362 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "windows.net",
+    "detect": {
+      "domain": "windows.net",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:43:17.973Z",
+    "summary": "windows.net exposes two documented HTTP API surfaces: the Azure Batch Service REST API and the Azure AD Graph RBAC REST API; both require authentication, with Batch accepting either Shared Key or Microsoft Entra bearer tokens and Graph RBAC using Microsoft Entra OAuth.",
+    "description": "windows.net is used by Microsoft Azure service endpoints, including Azure Batch and the legacy Azure AD Graph RBAC API. These endpoints support cloud workload scheduling/management and directory object management for Azure tenants.",
+    "credentials": {
+      "azure_batch_shared_key": {
+        "type": "api_key",
+        "label": "Azure Batch account access key",
+        "generateUrl": "https://learn.microsoft.com/en-us/azure/batch/accounts",
+        "setup": "In the Azure portal, open your Batch account and retrieve one of the account access keys from the account settings described in [Manage Batch accounts](https://learn.microsoft.com/en-us/azure/batch/accounts). The Batch REST auth doc states the Batch service supports authentication via Shared Key; use your Batch account name together with one of its access keys to sign requests.",
+        "acquisition": "manual"
+      },
+      "microsoft_entra_access_token": {
+        "type": "oauth2",
+        "label": "Microsoft Entra ID access token",
+        "generateUrl": "https://portal.azure.com/",
+        "setup": "Register an application in Microsoft Entra ID from the Azure portal as described in [Authenticate Azure Batch services with Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/batch/batch-aad-auth) and standard Azure app registration flows. Then acquire an OAuth access token for the target resource/audience required by the API: Batch uses `https://batch.core.windows.net/`, and Azure AD Graph / Graph RBAC uses a token for `https://graph.windows.net/`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "azure-batch-service-rest-api",
+        "name": "Azure Batch Service REST API",
+        "type": "http",
+        "docs": "https://learn.microsoft.com/en-us/rest/api/batchservice/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.apis.guru/v2/specs/windows.net/batch-BatchService/2017-06-01.5.1/swagger.json",
+            "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/batch/data-plane/Microsoft.Batch/stable/2017-06-01.5.1/BatchService.json",
+            "https://learn.microsoft.com/en-us/rest/api/batchservice/authenticate-requests-to-the-azure-batch-service",
+            "https://learn.microsoft.com/en-us/rest/api/batchservice/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "azure_batch_shared_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "SharedKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://learn.microsoft.com/en-us/rest/api/batchservice/authenticate-requests-to-the-azure-batch-service"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "microsoft_entra_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://learn.microsoft.com/en-us/rest/api/batchservice/authenticate-requests-to-the-azure-batch-service",
+                  "https://learn.microsoft.com/en-us/azure/batch/batch-aad-auth"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://batch.core.windows.net",
+        "requiredHeaders": [
+          {
+            "name": "api-version",
+            "source": {
+              "kind": "static",
+              "value": "2017-06-01.5.1"
+            },
+            "description": "Required query parameter in the published spec."
+          }
+        ]
+      },
+      {
+        "slug": "azure-ad-graph-rbac-rest-api",
+        "name": "Azure AD Graph RBAC REST API",
+        "type": "http",
+        "docs": "https://learn.microsoft.com/en-us/graph/migrate-azure-ad-graph-overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.apis.guru/v2/specs/windows.net/graphrbac/1.6/openapi.json",
+            "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/graphrbac/data-plane/Microsoft.GraphRbac/stable/1.6/graphrbac.json",
+            "https://learn.microsoft.com/en-us/graph/migrate-azure-ad-graph-overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "microsoft_entra_access_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "azure_auth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.apis.guru/v2/specs/windows.net/graphrbac/1.6/openapi.json",
+                  "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/graphrbac/data-plane/Microsoft.GraphRbac/stable/1.6/graphrbac.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://graph.windows.net",
+        "requiredHeaders": [
+          {
+            "name": "api-version",
+            "source": {
+              "kind": "static",
+              "value": "1.6"
+            },
+            "description": "Required query parameter in the published spec."
+          }
+        ],
+        "variables": [
+          {
+            "name": "tenantID",
+            "description": "Azure AD tenant ID required in the API path, e.g. `/{tenantID}/applications`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:43:17.973Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 181015,
+    "completion_tokens": 2395,
+    "total_tokens": 183410
+  },
+  "visited": [
+    "https://api.apis.guru/v2/specs/windows.net/batch-BatchService/2017-06-01.5.1/swagger.json",
+    "https://api.apis.guru/v2/specs/windows.net/graphrbac/1.6/openapi.json",
+    "https://docs.azure.cn/en-us/batch/batch-apis-tools",
+    "https://github.com/azure/azure-docs-sdk-dotnet/blob/main/api/overview/azure/latest/microsoft.azure.batch-readme.md",
+    "https://javadoc.io/doc/com.microsoft.azure/azure-batch/latest/index.html",
+    "https://learn.microsoft.com/en-ie/answers/questions/2086266/azure-batch-transcription-rest-api-with-entra-id-a",
+    "https://learn.microsoft.com/en-my/answers/questions/2262219/getting-resources-ids-by-resource-groups-and-subsc",
+    "https://learn.microsoft.com/en-us/answers/questions/2142904/azure-ad-graph-retirement",
+    "https://learn.microsoft.com/en-us/answers/questions/674765/how-to-create-azure-ad-app-using-service-principal",
+    "https://learn.microsoft.com/en-us/answers/questions/694618/unable-to-call-graph-api-on-behalf-of-user",
+    "https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-access-microsoft-graph-as-app",
+    "https://learn.microsoft.com/en-us/azure/batch/accounts#authenticate-with-batch-service",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-aad-auth",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-aad-auth-management",
+    "https://learn.microsoft.com/en-us/dotnet/api/microsoft.azure.batch.auth.batchsharedkeycredentials?view=azure-dotnet",
+    "https://learn.microsoft.com/en-us/graph/auth/auth-concepts",
+    "https://learn.microsoft.com/en-us/graph/json-batching",
+    "https://learn.microsoft.com/en-us/graph/migrate-azure-ad-graph-overview",
+    "https://learn.microsoft.com/en-us/graph/permissions-reference",
+    "https://learn.microsoft.com/en-us/graph/security-authorization",
+    "https://learn.microsoft.com/en-us/graph/use-the-api",
+    "https://learn.microsoft.com/en-us/partner-center/developer/deprecate-azure-active-directory-graph-token",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/authenticate-requests-to-the-azure-batch-service",
+    "https://learn.microsoft.com/en-us/rest/api/graphrbac/",
+    "https://learn.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key",
+    "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/batch/data-plane/Microsoft.Batch/stable/2017-06-01.5.1/BatchService.json",
+    "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/graphrbac/data-plane/Microsoft.GraphRbac/stable/1.6/graphrbac.json",
+    "https://svrooij.io/2023/03/03/batching-in-microsoft-graph/"
+  ],
+  "grounding": [
+    "https://api.apis.guru/v2/cache/logo/https_assets.onestore.ms_cdnfiles_onestorerolling-1606-01000_shell_v3_images_logo_microsoft.png",
+    "https://api.apis.guru/v2/specs/windows.net/batch-BatchService/2017-06-01.5.1/swagger.json",
+    "https://api.apis.guru/v2/specs/windows.net/graphrbac/1.6/openapi.json",
+    "https://azure.microsoft.com/blog/",
+    "https://azure.microsoft.com/get-started",
+    "https://azure.microsoft.com/pricing/",
+    "https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn_nav_23ebc6c2-a530-4843-0a2b-69dd02f35c5c",
+    "https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn_nav_8ccc441a-b6b3-1e21-f1f3-1281275e7e5a",
+    "https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn_nav_b7e86864-633d-8179-4843-b3f238c1fae7",
+    "https://azure.microsoft.com/support/options/",
+    "https://azure.microsoft.com/updates",
+    "https://build.microsoft.com/home?wt.mc_ID=msbuild26_ciarmar_corp_np_oo_MSL_reg",
+    "https://docs.azure.cn/en-us/batch/batch-apis-tools",
+    "https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/batch/accounts.md",
+    "https://github.com/azure/azure-docs-sdk-dotnet/blob/main/api/overview/azure/latest/microsoft.azure.batch-readme.md",
+    "https://go.microsoft.com/fwlink/p/?LinkID=2092881",
+    "https://graph.windows.net",
+    "https://graph.windows.net/0b1f9851-1bf0-433f-aec3-cb9272f093dc/directoryObjects/f260bbc4-c254-447b-94cf-293b5ec434dd",
+    "https://javadoc.io/doc/com.microsoft.azure/azure-batch/latest/index.html",
+    "https://learn.microsoft.com/#",
+    "https://learn.microsoft.com/#main",
+    "https://learn.microsoft.com/en-ie/answers/questions/2086266/azure-batch-transcription-rest-api-with-entra-id-a",
+    "https://learn.microsoft.com/en-my/answers/questions/2262219/getting-resources-ids-by-resource-groups-and-subsc",
+    "https://learn.microsoft.com/en-us/",
+    "https://learn.microsoft.com/en-us/agents/",
+    "https://learn.microsoft.com/en-us/ai/",
+    "https://learn.microsoft.com/en-us/answers/questions/",
+    "https://learn.microsoft.com/en-us/answers/questions/2142904/azure-ad-graph-retirement",
+    "https://learn.microsoft.com/en-us/answers/questions/674765/how-to-create-azure-ad-app-using-service-principal",
+    "https://learn.microsoft.com/en-us/answers/questions/694618/unable-to-call-graph-api-on-behalf-of-user",
+    "https://learn.microsoft.com/en-us/answers/questions/ask/",
+    "https://learn.microsoft.com/en-us/answers/tags/",
+    "https://learn.microsoft.com/en-us/answers/tags/108/office-teams/",
+    "https://learn.microsoft.com/en-us/answers/tags/131/office-outlook/",
+    "https://learn.microsoft.com/en-us/answers/tags/133/azure/",
+    "https://learn.microsoft.com/en-us/answers/tags/60/windows/",
+    "https://learn.microsoft.com/en-us/answers/tags/9/m365/",
+    "https://learn.microsoft.com/en-us/assessments/",
+    "https://learn.microsoft.com/en-us/assessments/1c032171-8ca0-4032-8962-a38a5cc424a8/",
+    "https://learn.microsoft.com/en-us/azure/",
+    "https://learn.microsoft.com/en-us/azure/?product=ai-machine-learning",
+    "https://learn.microsoft.com/en-us/azure/?product=analytics",
+    "https://learn.microsoft.com/en-us/azure/?product=compute",
+    "https://learn.microsoft.com/en-us/azure/?product=databases",
+    "https://learn.microsoft.com/en-us/azure/?product=networking",
+    "https://learn.microsoft.com/en-us/azure/?product=popular",
+    "https://learn.microsoft.com/en-us/azure/?product=security",
+    "https://learn.microsoft.com/en-us/azure/?product=storage",
+    "https://learn.microsoft.com/en-us/azure/ai-foundry/",
+    "https://learn.microsoft.com/en-us/azure/app-service/",
+    "https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-access-microsoft-graph-as-app",
+    "https://learn.microsoft.com/en-us/azure/architecture/",
+    "https://learn.microsoft.com/en-us/azure/azure-functions/",
+    "https://learn.microsoft.com/en-us/azure/azure-monitor/",
+    "https://learn.microsoft.com/en-us/azure/batch/",
+    "https://learn.microsoft.com/en-us/azure/batch/accounts",
+    "https://learn.microsoft.com/en-us/azure/batch/accounts#authenticate-with-batch-service",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-aad-auth",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-aad-auth-management",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-apis-tools",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-capacity-planning",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-compute-node-environment-variables",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-pool-vm-sizes",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-quota-limit",
+    "https://learn.microsoft.com/en-us/azure/batch/batch-service-workflow-features",
+    "https://learn.microsoft.com/en-us/azure/batch/best-practices",
+    "https://learn.microsoft.com/en-us/azure/batch/error-handling",
+    "https://learn.microsoft.com/en-us/azure/batch/files-and-directories",
+    "https://learn.microsoft.com/en-us/azure/batch/jobs-and-tasks",
+    "https://learn.microsoft.com/en-us/azure/batch/nodes-and-pools",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-create-bicep",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-create-cli",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-create-portal",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-create-template",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-create-terraform",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-deploy-batch-account-two-pools-start-task-terraform",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-deploy-batch-account-two-pools-terraform",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-run-dotnet",
+    "https://learn.microsoft.com/en-us/azure/batch/quick-run-python",
+    "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/",
+    "https://learn.microsoft.com/en-us/azure/cost-management-billing/",
+    "https://learn.microsoft.com/en-us/azure/databricks/",
+    "https://learn.microsoft.com/en-us/azure/developer/",
+    "https://learn.microsoft.com/en-us/azure/developer/java/",
+    "https://learn.microsoft.com/en-us/azure/developer/javascript/",
+    "https://learn.microsoft.com/en-us/azure/developer/python/",
+    "https://learn.microsoft.com/en-us/azure/devops/",
+    "https://learn.microsoft.com/en-us/azure/migration/",
+    "https://learn.microsoft.com/en-us/azure/reliability/reliability-batch?toc=/azure/batch/toc.json&bc=/azure/batch/breadcrumb/toc.json",
+    "https://learn.microsoft.com/en-us/azure/virtual-machines/",
+    "https://learn.microsoft.com/en-us/azure/well-architected/",
+    "https://learn.microsoft.com/en-us/cli/azure/",
+    "https://learn.microsoft.com/en-us/copilot/",
+    "https://learn.microsoft.com/en-us/credentials/",
+    "https://learn.microsoft.com/en-us/credentials/browse/?products=azure",
+    "https://learn.microsoft.com/en-us/devops/",
+    "https://learn.microsoft.com/en-us/docs/",
+    "https://learn.microsoft.com/en-us/dotnet/api/microsoft.azure.batch.auth.batchsharedkeycredentials?view=azure-dotnet",
+    "https://learn.microsoft.com/en-us/dotnet/azure/",
+    "https://learn.microsoft.com/en-us/dynamics365/",
+    "https://learn.microsoft.com/en-us/graph/auth/auth-concepts",
+    "https://learn.microsoft.com/en-us/graph/json-batching",
+    "https://learn.microsoft.com/en-us/graph/migrate-azure-ad-graph-overview",
+    "https://learn.microsoft.com/en-us/graph/permissions-reference",
+    "https://learn.microsoft.com/en-us/graph/security-authorization",
+    "https://learn.microsoft.com/en-us/graph/use-the-api",
+    "https://learn.microsoft.com/en-us/labs/",
+    "https://learn.microsoft.com/en-us/lifecycle/faq/internet-explorer-microsoft-edge",
+    "https://learn.microsoft.com/en-us/microsoft-365/",
+    "https://learn.microsoft.com/en-us/partner-center/developer/deprecate-azure-active-directory-graph-token",
+    "https://learn.microsoft.com/en-us/power-platform/",
+    "https://learn.microsoft.com/en-us/powershell/azure/",
+    "https://learn.microsoft.com/en-us/rest/api/azure/",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/authenticate-requests-to-the-azure-batch-service",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/batch-api-status",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/batch-service-rest-api-versioning",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/batch-status-and-error-codes",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/common-parameters-and-headers",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/odata-filters-in-batch",
+    "https://learn.microsoft.com/en-us/rest/api/batchservice/specifying-conditional-headers",
+    "https://learn.microsoft.com/en-us/rest/api/graphrbac/",
+    "https://learn.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key",
+    "https://learn.microsoft.com/en-us/samples/",
+    "https://learn.microsoft.com/en-us/security/",
+    "https://learn.microsoft.com/en-us/startups/",
+    "https://learn.microsoft.com/en-us/training/",
+    "https://learn.microsoft.com/en-us/training/azure/",
+    "https://learn.microsoft.com/en-us/training/browse/?products=azure",
+    "https://learn.microsoft.com/en-us/training/browse/?products=azure&resource_type=course",
+    "https://learn.microsoft.com/en-us/training/browse/?products=dynamics-365",
+    "https://learn.microsoft.com/en-us/training/browse/?products=m365",
+    "https://learn.microsoft.com/en-us/training/browse/?products=ms-copilot",
+    "https://learn.microsoft.com/en-us/training/browse/?products=power-platform",
+    "https://learn.microsoft.com/en-us/training/career-paths/",
+    "https://learn.microsoft.com/en-us/training/educator-center/",
+    "https://learn.microsoft.com/en-us/training/organizations/",
+    "https://learn.microsoft.com/en-us/training/paths/azure-fundamentals-describe-azure-architecture-services/",
+    "https://learn.microsoft.com/en-us/training/paths/get-started-with-artificial-intelligence-on-azure/",
+    "https://learn.microsoft.com/en-us/training/paths/introduction-generative-ai/",
+    "https://learn.microsoft.com/en-us/training/paths/microsoft-azure-fundamentals-describe-cloud-concepts/",
+    "https://learn.microsoft.com/en-us/training/student-hub/",
+    "https://learn.microsoft.com/en-us/troubleshoot/",
+    "https://learn.microsoft.com/en-us/troubleshoot/azure/",
+    "https://learn.microsoft.com/en-us/users/me/activity/",
+    "https://learn.microsoft.com/en-us/users/me/analytics/",
+    "https://learn.microsoft.com/en-us/users/me/settings/",
+    "https://login.microsoftonline.com/common/oauth2/authorize",
+    "https://portal.azure.com",
+    "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/batch/data-plane/Microsoft.Batch/stable/2017-06-01.5.1/BatchService.json",
+    "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/graphrbac/data-plane/Microsoft.GraphRbac/stable/1.6/graphrbac.json",
+    "https://svrooij.io/2023/03/03/batching-in-microsoft-graph/"
+  ]
+}

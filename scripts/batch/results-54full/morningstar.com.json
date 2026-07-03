@@ -1,0 +1,419 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "morningstar.com",
+    "detect": {
+      "domain": "morningstar.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:06:58.412Z",
+    "summary": "Morningstar exposes REST APIs for Direct Web Services and Morningstar DBRS, plus an OAuth-protected Morningstar MCP server at `https://mcp.morningstar.com/mcp`.",
+    "description": "Morningstar provides investment data, research, analytics, and credit ratings products for financial institutions and developers. Its offerings include Direct Web Services for market and portfolio data, a DBRS credit ratings data API, and AI integrations through an MCP server.",
+    "credentials": {
+      "ms_dws_account": {
+        "type": "basic",
+        "label": "Morningstar Direct Web Services account credentials",
+        "generateUrl": "https://www.morningstar.com/business/products/direct-web-services/contact",
+        "setup": "Request access to Direct Web Services via [Morningstar Contact Us](https://www.morningstar.com/business/products/direct-web-services/contact) or through your Morningstar account representative. Once your licensed account is provisioned, use the issued `username` and `password` to call the Authentication API and mint bearer tokens.",
+        "acquisition": "manual"
+      },
+      "ms_dws_bearer": {
+        "type": "bearer",
+        "label": "Morningstar Direct Web Services bearer token",
+        "generateUrl": "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/overview",
+        "setup": "Use your Direct Web Services account credentials to `POST` to `/token/oauth` on your regional base URL (for example `https://www.us-api.morningstar.com/token/oauth`) with `Authorization: Basic {Base64(username:password)}` as described in the [Authentication API overview](https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/overview). The response contains `access_token`, which you send as `Authorization: Bearer {access_token}` on subsequent API calls. Tokens are valid for 60 minutes.",
+        "acquisition": "manual"
+      },
+      "ms_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Morningstar MCP OAuth access",
+        "generateUrl": "https://www.morningstar.com/business/products/direct-ai-solutions",
+        "setup": "You need a licensed Morningstar account to use the MCP server. Start from the [Morningstar MCP Server overview](https://developer.morningstar.com/direct-web-services/documentation/morningstar-mcp-server/about) or request licensing via the [Direct AI Solutions contact form](https://www.morningstar.com/business/products/direct-ai-solutions). Clients such as Copilot Studio are documented to configure authentication using `OAuth 2.0 with dynamic discovery`, then complete the prompted sign-in flow with your Morningstar account.",
+        "acquisition": "manual"
+      },
+      "dbrs_client_credentials": {
+        "type": "compound",
+        "label": "Morningstar DBRS API client ID and client secret",
+        "generateUrl": "https://dbrs.morningstar.com/dev",
+        "setup": "Request API credentials by contacting [Info-DBRS@morningstar.com](mailto:Info-DBRS@morningstar.com) as described in the [DBRS Developer Portal](https://dbrs.morningstar.com/dev). Morningstar DBRS issues a `client identifier` and `client secret`; use them in the `x-clientid` and `x-clientsecret` headers to authenticate against the auth service and obtain a JWT for API access.",
+        "acquisition": "manual"
+      },
+      "dbrs_jwt": {
+        "type": "jwt",
+        "label": "Morningstar DBRS API JWT token",
+        "generateUrl": "https://dbrs.morningstar.com/dev",
+        "setup": "After receiving your DBRS `client identifier` and `client secret`, call `GET https://api.dbrs.io/auth/v1/token` with headers `x-clientid` and `x-clientsecret` as shown in the [DBRS Developer Portal](https://dbrs.morningstar.com/dev). The auth service returns a JWT `token`, which the portal says is required for access to the vast majority of service endpoints.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "morningstar-direct-web-services-apis",
+        "name": "Morningstar Direct Web Services APIs",
+        "type": "http",
+        "docs": "https://developer.morningstar.com/direct-web-services/documentation/api-reference/about",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.morningstar.com/",
+            "https://developer.morningstar.com/direct-web-services",
+            "https://developer.morningstar.com/direct-web-services/documentation/api-reference/about",
+            "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/base-urls",
+            "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ms_dws_bearer",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/overview"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.us-api.morningstar.com/direct-web-services/v1",
+        "variables": [
+          {
+            "name": "region",
+            "resolveFrom": "Choose the documented regional host: `www.us-api.morningstar.com`, `www.apac-api.morningstar.com`, or `www.emea-api.morningstar.com`.",
+            "description": "Morningstar publishes separate base URLs by region."
+          }
+        ]
+      },
+      {
+        "slug": "morningstar-authentication-api",
+        "name": "Morningstar Authentication API",
+        "type": "http",
+        "docs": "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/overview",
+            "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/api-reference",
+            "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/base-urls"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ms_dws_account",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/overview"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.us-api.morningstar.com/token/oauth"
+      },
+      {
+        "slug": "morningstar-mcp-server",
+        "name": "Morningstar MCP Server",
+        "type": "mcp",
+        "docs": "https://developer.morningstar.com/direct-web-services/documentation/morningstar-mcp-server/about",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.morningstar.com/direct-web-services/documentation/morningstar-mcp-server/about",
+            "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/morningstar-mcp-server/agent-design-playbook"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ms_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/morningstar-mcp-server/agent-design-playbook",
+                  "https://developer.morningstar.com/direct-web-services/documentation/morningstar-mcp-server/about"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.morningstar.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "morningstar-dbrs-data-api",
+        "name": "Morningstar DBRS Data API",
+        "type": "http",
+        "docs": "https://dbrs.morningstar.com/dev",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://dbrs.morningstar.com/api",
+            "https://dbrs.morningstar.com/dev"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dbrs_jwt",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://dbrs.morningstar.com/dev"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.dbrs.io",
+        "notes": "The developer portal states the API is logically separated into services including lookup, document, and issuer services, and that a JWT is required for the vast majority of endpoints. It explicitly documents the auth-service token endpoint at `https://api.dbrs.io/auth/v1/token`, but the scraped pages did not reveal a machine-readable spec or the exact bearer header format for subsequent service calls."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:06:58.413Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 273328,
+    "completion_tokens": 2203,
+    "total_tokens": 275531
+  },
+  "visited": [
+    "https://dbrs.morningstar.com/api",
+    "https://dbrs.morningstar.com/dev",
+    "https://developer-beta.morningstar.com/direct-web-services/documentation/api-reference/documents/api-reference",
+    "https://developer.morningstar.com/",
+    "https://developer.morningstar.com/direct-web-services",
+    "https://developer.morningstar.com/direct-web-services/developer-resources/api-visualization-library/api-visualization-library/page",
+    "https://developer.morningstar.com/direct-web-services/documentation/api-reference/about",
+    "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/api-reference",
+    "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/data-and-research/research-reports",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/about",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/risk-profiler/api-reference",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/authentication",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/authorization-tokens",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/base-urls",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/quick-start",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/morningstar-mcp-server/agent-design-playbook",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-mcp-server/about"
+  ],
+  "grounding": [
+    "https://api.dbrs.io/auth/v1/token",
+    "https://api.dbrs.io/document/v1/documents/321720",
+    "https://api.dbrs.io/lookup/v1/documents?publishStartDate=2018-05-01T00%3A00%3A00Z&publishEndDate=2018-05-31T23%3A59%3A59Z&docType=RatingReport",
+    "https://cookiepedia.co.uk/giving-consent-to-cookies",
+    "https://credit.morningstar.com/",
+    "https://dbrs.morningstar.com/",
+    "https://dbrs.morningstar.com/#main-content",
+    "https://dbrs.morningstar.com/about",
+    "https://dbrs.morningstar.com/api",
+    "https://dbrs.morningstar.com/business/insights/blog",
+    "https://dbrs.morningstar.com/careers",
+    "https://dbrs.morningstar.com/complaints",
+    "https://dbrs.morningstar.com/contact",
+    "https://dbrs.morningstar.com/dev",
+    "https://dbrs.morningstar.com/dev/authService",
+    "https://dbrs.morningstar.com/dev/documentService",
+    "https://dbrs.morningstar.com/dev/lookupService",
+    "https://dbrs.morningstar.com/disclaimer",
+    "https://dbrs.morningstar.com/document/321720.pdf?Expires=1530049796&Signature=SRfiD2...jQqK0_&Key-Pair-Id=APK...KURNQ",
+    "https://dbrs.morningstar.com/esg",
+    "https://dbrs.morningstar.com/issuers",
+    "https://dbrs.morningstar.com/methodology",
+    "https://dbrs.morningstar.com/products-and-services",
+    "https://dbrs.morningstar.com/proprietary-rights",
+    "https://dbrs.morningstar.com/regulatory",
+    "https://dbrs.morningstar.com/research/225752/highlights.pdf",
+    "https://dbrs.morningstar.com/research/228896/dbrs-business-code-of-conduct",
+    "https://dbrs.morningstar.com/research/477983",
+    "https://dbrs.morningstar.com/research/highlights.pdf",
+    "https://dbrs.morningstar.com/sector",
+    "https://dbrs.morningstar.com/sector#corporate_finance",
+    "https://dbrs.morningstar.com/sector#financial_institutions",
+    "https://dbrs.morningstar.com/sector#governments",
+    "https://dbrs.morningstar.com/sector#structured_finance",
+    "https://dbrs.morningstar.com/sector/",
+    "https://dbrs.morningstar.com/terms-and-conditions",
+    "https://dbrs.morningstar.com/understanding-ratings",
+    "https://dbrs.morningstar.com/understanding-ratings#about_ratings",
+    "https://dbrs.morningstar.com/understanding-ratings#ratings_overview",
+    "https://developer-beta.morningstar.com/direct-web-services/documentation/api-reference/documents/api-reference",
+    "https://developer.morningstar.com/",
+    "https://developer.morningstar.com/#access-and-authentication",
+    "https://developer.morningstar.com/#best-practices",
+    "https://developer.morningstar.com/#choosing-a-model",
+    "https://developer.morningstar.com/#claude-integration",
+    "https://developer.morningstar.com/#designing-your-agent",
+    "https://developer.morningstar.com/#endpoints",
+    "https://developer.morningstar.com/#example-use-cases",
+    "https://developer.morningstar.com/#how-tokens-work",
+    "https://developer.morningstar.com/#mds-page-shell-content",
+    "https://developer.morningstar.com/#overview",
+    "https://developer.morningstar.com/#quick-start",
+    "https://developer.morningstar.com/#regional-availability",
+    "https://developer.morningstar.com/#related-content",
+    "https://developer.morningstar.com/#service-delivery-partners",
+    "https://developer.morningstar.com/#setting-up-the-mcp-server",
+    "https://developer.morningstar.com/#tools",
+    "https://developer.morningstar.com/#troubleshooting--faqs",
+    "https://developer.morningstar.com/direct-web-services",
+    "https://developer.morningstar.com/direct-web-services/api-visualization-library/api-visualization-library/api-visualization-library/page",
+    "https://developer.morningstar.com/direct-web-services/developer-resources/api-visualization-library/api-visualization-library/page",
+    "https://developer.morningstar.com/direct-web-services/documentation/api-reference/about",
+    "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/api-reference",
+    "https://developer.morningstar.com/direct-web-services/documentation/api-utilities/authentication-api/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/data-and-research/about",
+    "https://developer.morningstar.com/direct-web-services/documentation/data-and-research/equity-data",
+    "https://developer.morningstar.com/direct-web-services/documentation/data-and-research/equity-research",
+    "https://developer.morningstar.com/direct-web-services/documentation/data-and-research/manager-research",
+    "https://developer.morningstar.com/direct-web-services/documentation/data-and-research/research-reports",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/about",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/ai-insights/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/investment-details---equities---async/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/investment-details---managed-investments---async/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/investment-list/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/porfolio-optimizer/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/portfolio-hypothetical-performance/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/portfolio-optimizer/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/portfolio-performance/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/portfolio-reports/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/portfolio-risk-score/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/portfolio-x-ray/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/reports-americas/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/retirement-plan/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/risk-profiler/api-reference",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/risk-profiler/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/scenario-analysis/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/screener---equities/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/screener---managed-investments/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/direct-web-services/time-series---sync/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/admin-tool-user-guide",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/asynchronous-request-processing",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/authentication",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/authorization-tokens",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/base-urls",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/quick-start",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/get-started/views",
+    "https://developer.morningstar.com/direct-web-services/documentation/documentation/usage-statistics",
+    "https://developer.morningstar.com/direct-web-services/documentation/enterprise-component-apis/about",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/about",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/morningstar-mcp-server",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/morningstar-mcp-server/agent-design-playbook",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/morningstar-mcp-server/overview",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/morningstar-mcp-server/tools-and-example-questions",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-ai-integrations/morningstar-mcp-server/workflow-examples",
+    "https://developer.morningstar.com/direct-web-services/documentation/morningstar-mcp-server/about",
+    "https://developer.morningstar.com/direct-web-services/documentation/overview/about",
+    "https://developer.morningstar.com/direct-web-services/partners",
+    "https://developer.morningstar.com/direct-web-services/partners/find-a-partner",
+    "https://developer.morningstar.com/direct-web-services/use-cases",
+    "https://indexes.morningstar.com/",
+    "https://investor.morningstar.com/mm/learn",
+    "https://mcp.morningstar.com/mcp",
+    "https://newsroom.morningstar.com/newsroom/overview/default.aspx",
+    "https://pitchbook.com/products",
+    "https://policies.google.com/privacy",
+    "https://policies.google.com/terms",
+    "https://shareholders.morningstar.com/investor-relations/default.aspx",
+    "https://www.apac-api.morningstar.com",
+    "https://www.dbrsratings.eu",
+    "https://www.emea-api.morningstar.com",
+    "https://www.facebook.com/MorningstarInc/",
+    "https://www.instagram.com/morningstarinc/",
+    "https://www.linkedin.com/company/morningstar",
+    "https://www.morningstar.com/business",
+    "https://www.morningstar.com/business/brands/credit",
+    "https://www.morningstar.com/business/brands/data-analytics",
+    "https://www.morningstar.com/business/brands/retirement",
+    "https://www.morningstar.com/business/brands/wealth",
+    "https://www.morningstar.com/business/insights",
+    "https://www.morningstar.com/business/insights/client-success-stories",
+    "https://www.morningstar.com/business/insights/research",
+    "https://www.morningstar.com/business/insights/webinars",
+    "https://www.morningstar.com/business/products",
+    "https://www.morningstar.com/business/products/byallaccounts",
+    "https://www.morningstar.com/business/products/direct",
+    "https://www.morningstar.com/business/products/direct-advisory-suite",
+    "https://www.morningstar.com/business/products/direct-ai-solutions",
+    "https://www.morningstar.com/business/products/direct-web-services/contact",
+    "https://www.morningstar.com/business/products/retirement-manager",
+    "https://www.morningstar.com/business/segments/advisors-wealth-managers",
+    "https://www.morningstar.com/business/segments/asset-managers",
+    "https://www.morningstar.com/business/segments/fintechs",
+    "https://www.morningstar.com/business/segments/individual-investors",
+    "https://www.morningstar.com/business/segments/institutional-investors",
+    "https://www.morningstar.com/careers",
+    "https://www.morningstar.com/company",
+    "https://www.morningstar.com/company/accessibility",
+    "https://www.morningstar.com/company/corporate-sustainability",
+    "https://www.morningstar.com/company/culture",
+    "https://www.morningstar.com/company/leadership",
+    "https://www.morningstar.com/company/privacy-center",
+    "https://www.morningstar.com/company/privacy-policy",
+    "https://www.morningstar.com/cookie-policy",
+    "https://www.morningstar.com/fr-ca/company/accessibility",
+    "https://www.morningstar.com/products/md-python-package",
+    "https://www.perplexity.ai/help-center/en/articles/14818152-connecting-perplexity-with-morningstar",
+    "https://www.sustainalytics.com/",
+    "https://www.us-api.morningstar.com",
+    "https://www.us-api.morningstar.com/direct-web-services/v1/",
+    "https://www.us-api.morningstar.com/token/oauth",
+    "https://x.com/MorningstarInc"
+  ]
+}

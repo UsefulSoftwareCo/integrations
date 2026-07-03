@@ -1,0 +1,397 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "oysterhr.com",
+    "detect": {
+      "domain": "oysterhr.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:16:18.470Z",
+    "summary": "Oyster exposes a REST HTTP API on `api.oysterhr.com` and `api-sandbox.oysterhr.com`, authenticated via OAuth2 Bearer tokens or client-credentials app secrets; webhook registration is also via the REST API.",
+    "credentials": {
+      "oyster_developer_app": {
+        "type": "oauth2_cc",
+        "label": "Oyster Developer Application (Client ID + Client Secret)",
+        "generateUrl": "https://app.oysterhr.com/developer",
+        "setup": "Create a Developer Application in Oyster. For partners, follow the [partner guide](https://docs.oysterhr.com/docs/partner-guide-to-creating-and-authorizing-a-developer-application.md); for customers, follow the [customer guide](https://docs.oysterhr.com/docs/customer-guide-to-creating-and-authorizing-a-developer-application.md). Save the app’s `client_id` and `client_secret` shown after creation. These are used to mint OAuth access tokens at `POST https://api.oysterhr.com/oauth2/token` (or the sandbox token URL when testing).",
+        "acquisition": "manual"
+      },
+      "oyster_oauth_access_token": {
+        "type": "bearer",
+        "label": "Oyster OAuth access token",
+        "generateUrl": "https://api.oysterhr.com/oauth2/token",
+        "setup": "Mint this by exchanging your Developer Application credentials at `POST https://api.oysterhr.com/oauth2/token` for production, or `POST https://api-sandbox.oysterhr.com/oauth2/token` in the sandbox. OAuth grants supported are `authorization_code` and `client_credentials`. The returned `access_token` is a Bearer token and expires after 2 hours.",
+        "acquisition": "manual"
+      },
+      "oyster_webhook_shared_secret": {
+        "type": "bearer",
+        "label": "Oyster webhook shared secret",
+        "setup": "When creating a webhook endpoint with `POST /v1/webhooks`, provide a `sharedSecret`. Oyster sends that value back in the `Authorization` header of delivered webhooks as `Bearer <sharedSecret>`. Use it to verify incoming webhook requests.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "oyster-public-api",
+        "name": "Oyster Public API",
+        "type": "http",
+        "docs": "https://docs.oysterhr.com/docs/welcome-to-the-oyster-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.oysterhr.com/llms.txt",
+            "https://docs.oysterhr.com/docs/welcome-to-the-oyster-api",
+            "https://docs.oysterhr.com/docs/client-credentials-authorization.md",
+            "https://docs.oysterhr.com/docs/customer-guide-to-creating-and-authorizing-a-developer-application.md",
+            "https://docs.oysterhr.com/docs/partner-guide-to-creating-and-authorizing-a-developer-application.md",
+            "https://docs.oysterhr.com/docs/partner-guide-to-authorizing-access-to-developer-application.md",
+            "https://docs.oysterhr.com/reference/get_v1-company.md",
+            "https://docs.oysterhr.com/reference/get_v1-departments.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "oyster_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oysterhr.com/reference/get_v1-company.md",
+                  "https://docs.oysterhr.com/reference/get_v1-departments.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "oyster_developer_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "scheme": "client_id"
+                  }
+                },
+                {
+                  "id": "oyster_developer_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "scheme": "client_secret"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oysterhr.com/docs/client-credentials-authorization.md",
+                  "https://docs.oysterhr.com/docs/customer-guide-to-creating-and-authorizing-a-developer-application.md",
+                  "https://docs.oysterhr.com/docs/partner-guide-to-creating-and-authorizing-a-developer-application.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.oysterhr.com"
+      },
+      {
+        "slug": "oyster-public-api-sandbox",
+        "name": "Oyster Public API - Sandbox",
+        "type": "http",
+        "docs": "https://docs.oysterhr.com/docs/developer-sandbox.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.oysterhr.com/docs/developer-sandbox.md",
+            "https://docs.oysterhr.com/docs/customer-guide-to-creating-and-authorizing-a-developer-application.md",
+            "https://docs.oysterhr.com/docs/partner-guide-to-creating-and-authorizing-a-developer-application.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "oyster_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oysterhr.com/docs/developer-sandbox.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "oyster_developer_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "scheme": "client_id"
+                  }
+                },
+                {
+                  "id": "oyster_developer_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "scheme": "client_secret"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oysterhr.com/docs/developer-sandbox.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api-sandbox.oysterhr.com"
+      },
+      {
+        "slug": "oyster-webhooks-registration-api",
+        "name": "Oyster Webhooks Registration API",
+        "type": "http",
+        "docs": "https://docs.oysterhr.com/docs/getting-started-with-webhooks.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.oysterhr.com/docs/getting-started-with-webhooks.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "oyster_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oysterhr.com/docs/getting-started-with-webhooks.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.oysterhr.com/v1/webhooks"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:16:18.471Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 207029,
+    "completion_tokens": 2023,
+    "total_tokens": 209052
+  },
+  "visited": [
+    "https://arize.com/blog/text-to-graphql-mcp-server/",
+    "https://developer.appdirect.com/references-api/llms",
+    "https://docs.oysterhr.com/docs/client-credentials-authorization.md",
+    "https://docs.oysterhr.com/docs/customer-guide-to-creating-and-authorizing-a-developer-application.md",
+    "https://docs.oysterhr.com/docs/developer-sandbox.md",
+    "https://docs.oysterhr.com/docs/embeddable-web-components.md",
+    "https://docs.oysterhr.com/docs/getting-started-with-webhooks.md",
+    "https://docs.oysterhr.com/docs/partner-guide-to-authorizing-access-to-developer-application.md",
+    "https://docs.oysterhr.com/docs/partner-guide-to-creating-and-authorizing-a-developer-application.md",
+    "https://docs.oysterhr.com/docs/welcome-to-the-oyster-api",
+    "https://docs.oysterhr.com/llms.txt",
+    "https://docs.oysterhr.com/reference/get_v1-company.md",
+    "https://docs.oysterhr.com/reference/get_v1-departments.md",
+    "https://docs.oysterhr.com/reference/post_oauth2-token-1.md",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://www.apollographql.com/blog/building-mcp-tools-with-graphql-a-better-way-to-connect-llms-to-your-api",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "https://api-sandbox.oysterhr.com",
+    "https://api-sandbox.oysterhr.com/",
+    "https://api-sandbox.oysterhr.com/oauth2/token",
+    "https://api.oysterhr.com",
+    "https://api.oysterhr.com/oauth2/token",
+    "https://api.oysterhr.com/v1/webhooks",
+    "https://app.oysterhr.com/developer",
+    "https://app.oysterhr.com/oauth/authorize/a1B2c3D4?state=yourInternalId",
+    "https://app.oysterhr.com/sign_up",
+    "https://arize.com/blog/text-to-graphql-mcp-server/",
+    "https://developer.appdirect.com/references-api/llms",
+    "https://docs.oysterhr.com/#api-documentation",
+    "https://docs.oysterhr.com/#content",
+    "https://docs.oysterhr.com/#for-oyster-customers",
+    "https://docs.oysterhr.com/#for-oyster-partners",
+    "https://docs.oysterhr.com/#start-here",
+    "https://docs.oysterhr.com/#support",
+    "https://docs.oysterhr.com/changelog",
+    "https://docs.oysterhr.com/docs",
+    "https://docs.oysterhr.com/docs/async-operations",
+    "https://docs.oysterhr.com/docs/async-operations.md",
+    "https://docs.oysterhr.com/docs/client-credentials-authorization",
+    "https://docs.oysterhr.com/docs/client-credentials-authorization.md",
+    "https://docs.oysterhr.com/docs/completing-eor-employment-onboarding-via-api",
+    "https://docs.oysterhr.com/docs/completing-eor-employment-onboarding-via-api.md",
+    "https://docs.oysterhr.com/docs/creating-and-submitting-an-eor-employment",
+    "https://docs.oysterhr.com/docs/creating-and-submitting-an-eor-employment.md",
+    "https://docs.oysterhr.com/docs/creating-time-off-requests",
+    "https://docs.oysterhr.com/docs/creating-time-off-requests.md",
+    "https://docs.oysterhr.com/docs/customer-guide-to-creating-and-authorizing-a-developer-application",
+    "https://docs.oysterhr.com/docs/customer-guide-to-creating-and-authorizing-a-developer-application.md",
+    "https://docs.oysterhr.com/docs/deprecation",
+    "https://docs.oysterhr.com/docs/deprecation.md",
+    "https://docs.oysterhr.com/docs/developer-sandbox",
+    "https://docs.oysterhr.com/docs/developer-sandbox.md",
+    "https://docs.oysterhr.com/docs/embeddable-web-components",
+    "https://docs.oysterhr.com/docs/embeddable-web-components.md",
+    "https://docs.oysterhr.com/docs/errors",
+    "https://docs.oysterhr.com/docs/errors.md",
+    "https://docs.oysterhr.com/docs/getting-started-with-webhooks",
+    "https://docs.oysterhr.com/docs/getting-started-with-webhooks.md",
+    "https://docs.oysterhr.com/docs/hiring-api-country-coverage",
+    "https://docs.oysterhr.com/docs/hiring-api-country-coverage.md",
+    "https://docs.oysterhr.com/docs/integration-listing-instructions",
+    "https://docs.oysterhr.com/docs/integration-listing-instructions.md",
+    "https://docs.oysterhr.com/docs/invoicing-at-oyster",
+    "https://docs.oysterhr.com/docs/invoicing-at-oyster.md",
+    "https://docs.oysterhr.com/docs/managing-benefits",
+    "https://docs.oysterhr.com/docs/managing-benefits.md",
+    "https://docs.oysterhr.com/docs/managing-eor-employment-agreements-via-api",
+    "https://docs.oysterhr.com/docs/managing-eor-employment-agreements-via-api.md",
+    "https://docs.oysterhr.com/docs/managing-invoices",
+    "https://docs.oysterhr.com/docs/managing-invoices.md",
+    "https://docs.oysterhr.com/docs/monitoring-the-eor-hire-process",
+    "https://docs.oysterhr.com/docs/monitoring-the-eor-hire-process.md",
+    "https://docs.oysterhr.com/docs/offboarding-an-engagement",
+    "https://docs.oysterhr.com/docs/offboarding-an-engagement.md",
+    "https://docs.oysterhr.com/docs/oyster-partner-sso-requirements",
+    "https://docs.oysterhr.com/docs/oyster-partner-sso-requirements.md",
+    "https://docs.oysterhr.com/docs/partner-guide-to-authorizing-access-to-developer-application",
+    "https://docs.oysterhr.com/docs/partner-guide-to-authorizing-access-to-developer-application.md",
+    "https://docs.oysterhr.com/docs/partner-guide-to-creating-and-authorizing-a-developer-application",
+    "https://docs.oysterhr.com/docs/partner-guide-to-creating-and-authorizing-a-developer-application.md",
+    "https://docs.oysterhr.com/docs/reseller-guide-to-using-the-oyster-api",
+    "https://docs.oysterhr.com/docs/reseller-guide-to-using-the-oyster-api.md",
+    "https://docs.oysterhr.com/docs/trace-ids",
+    "https://docs.oysterhr.com/docs/trace-ids.md",
+    "https://docs.oysterhr.com/docs/understanding-rate-limiting",
+    "https://docs.oysterhr.com/docs/understanding-rate-limiting.md",
+    "https://docs.oysterhr.com/docs/understanding-rulesets",
+    "https://docs.oysterhr.com/docs/understanding-rulesets.md",
+    "https://docs.oysterhr.com/docs/welcome-to-the-oyster-api",
+    "https://docs.oysterhr.com/docs/welcome-to-the-oyster-api.md",
+    "https://docs.oysterhr.com/llms.txt",
+    "https://docs.oysterhr.com/login?redirect_uri=/docs/welcome-to-the-oyster-api",
+    "https://docs.oysterhr.com/reference",
+    "https://docs.oysterhr.com/reference/delete_v1-bank-accounts-id.md",
+    "https://docs.oysterhr.com/reference/delete_v1-expenses-id.md",
+    "https://docs.oysterhr.com/reference/delete_v1-time-tracking-time-sheets-entries-id.md",
+    "https://docs.oysterhr.com/reference/delete_v1-time-tracking-time-sheets-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-bank-accounts-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-bank-accounts.md",
+    "https://docs.oysterhr.com/reference/get_v1-benefits-engagements-engagement-id-offerings.md",
+    "https://docs.oysterhr.com/reference/get_v1-benefits-enrollments-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-benefits-ruleset.md",
+    "https://docs.oysterhr.com/reference/get_v1-company.md",
+    "https://docs.oysterhr.com/reference/get_v1-contract-changes-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-contract-changes-rulesets.md",
+    "https://docs.oysterhr.com/reference/get_v1-contract-changes.md",
+    "https://docs.oysterhr.com/reference/get_v1-credit-notes-identifier.md",
+    "https://docs.oysterhr.com/reference/get_v1-departments.md",
+    "https://docs.oysterhr.com/reference/get_v1-engagements-id-allowances.md",
+    "https://docs.oysterhr.com/reference/get_v1-engagements-id-bonuses.md",
+    "https://docs.oysterhr.com/reference/get_v1-engagements-id-documents.md",
+    "https://docs.oysterhr.com/reference/get_v1-engagements-id-payslips.md",
+    "https://docs.oysterhr.com/reference/get_v1-engagements-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-engagements.md",
+    "https://docs.oysterhr.com/reference/get_v1-expenses-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-expenses-ruleset.md",
+    "https://docs.oysterhr.com/reference/get_v1-expenses-rulesets-id-sources-categories.md",
+    "https://docs.oysterhr.com/reference/get_v1-expenses-rulesets-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-expenses.md",
+    "https://docs.oysterhr.com/reference/get_v1-public-holidays.md",
+    "https://docs.oysterhr.com/reference/get_v1-reseller-customers.md",
+    "https://docs.oysterhr.com/reference/get_v1-time-off-entitlements-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-time-off-entitlements.md",
+    "https://docs.oysterhr.com/reference/get_v1-time-off-requests-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-time-off-requests.md",
+    "https://docs.oysterhr.com/reference/get_v1-time-tracking-rulesets-engagement-id-sources-source-type.md",
+    "https://docs.oysterhr.com/reference/get_v1-time-tracking-rulesets-engagement-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-time-tracking-time-sheets-id.md",
+    "https://docs.oysterhr.com/reference/get_v1-time-tracking-time-sheets.md",
+    "https://docs.oysterhr.com/reference/patch_v1-bank-accounts-id.md",
+    "https://docs.oysterhr.com/reference/patch_v1-employments-id-personal-details.md",
+    "https://docs.oysterhr.com/reference/patch_v1-reseller-customers-id.md",
+    "https://docs.oysterhr.com/reference/patch_v1-time-tracking-time-sheets-entries-id.md",
+    "https://docs.oysterhr.com/reference/post",
+    "https://docs.oysterhr.com/reference/post_oauth2-token-1",
+    "https://docs.oysterhr.com/reference/post_oauth2-token-1.md",
+    "https://docs.oysterhr.com/reference/post_v1-bank-accounts.md",
+    "https://docs.oysterhr.com/reference/post_v1-benefits-engagements-engagement-id-enrollments.md",
+    "https://docs.oysterhr.com/reference/post_v1-contract-changes-id-cancel.md",
+    "https://docs.oysterhr.com/reference/post_v1-contract-changes.md",
+    "https://docs.oysterhr.com/reference/post_v1-expenses-id-approve.md",
+    "https://docs.oysterhr.com/reference/post_v1-expenses-id-decline.md",
+    "https://docs.oysterhr.com/reference/post_v1-expenses.md",
+    "https://docs.oysterhr.com/reference/post_v1-reseller-customers.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-off-requests-id-approve.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-off-requests-id-attachment.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-off-requests-id-cancel.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-off-requests-id-reject.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-off-requests.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-tracking-time-sheets-entries.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-tracking-time-sheets-id-confirm.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-tracking-time-sheets-id-submit.md",
+    "https://docs.oysterhr.com/reference/post_v1-time-tracking-time-sheets.md",
+    "https://docs.oysterhr.com/reference/post_v1-webhooks",
+    "https://docs.oysterhr.com/v0.1/reference/post_oauth2-token-1",
+    "https://example.com/inbound",
+    "https://files.readme.io/19fc5abd349f13ab8324aa8a61d6d4af5e4133c062f63dddf3142b519f31fe85-OAuth_credentials.png",
+    "https://files.readme.io/5dd99d8e3147ff489152fad8bc20c930db158027d1c747ef464c7a96ddfd5df7-Create_a_developer_application.png",
+    "https://files.readme.io/61ecfb2608c1233ce1447ab7e38d8914e7eb9c8f4142b2310c43412955d365f3-OAuth_credentials.png",
+    "https://files.readme.io/a71c3043cec490ceb9f6d4e43032319a62cdd362479920a3c847ae37ee56499f-Create_a_developer_application.png",
+    "https://files.readme.io/abc1bb9af50a47c068ccc67717832824858790edd208ce154e7745481debe22f-Developer_applications_page_with_arrows.png",
+    "https://files.readme.io/e60832a3f3e14cd986a532e38668028bd4657085e2aa587595852e400c2fb8dc-Developer_applications_page_with_arrows.png",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://google.com",
+    "https://partnerapp.com/dashboard/auth/oauth/return/AppXXXXXXXAPI/",
+    "https://sandbox.oysterhr.com/request_account",
+    "https://sdk.oysterhr.com",
+    "https://www.apollographql.com/blog/building-mcp-tools-with-graphql-a-better-way-to-connect-llms-to-your-api",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

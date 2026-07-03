@@ -1,0 +1,376 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "flagsmith.com",
+    "detect": {
+      "domain": "flagsmith.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:22:35.423Z",
+    "summary": "Flagsmith exposes two HTTP APIs (Admin API and Flags API), a remote MCP server, and an npm CLI; the APIs and CLI use either an organisation API key or environment key depending on surface, and the MCP server supports either interactive OAuth or an organisation API key.",
+    "description": "Flagsmith is a feature flag and remote configuration platform for managing releases, experiments, and user targeting across applications. It is available as a hosted service, private cloud, or self-hosted open source deployment.",
+    "credentials": {
+      "org_api_key": {
+        "type": "api_key",
+        "label": "Organisation API key",
+        "generateUrl": "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/authentication",
+        "setup": "In the Flagsmith dashboard, open your organisation, go to the **API Keys** tab in **Organisation Settings**, and click **Create API Key**. The auth docs are at [Admin API Authentication](https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/authentication)."
+      },
+      "environment_key": {
+        "type": "api_key",
+        "label": "Environment key",
+        "generateUrl": "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/authentication",
+        "setup": "In the Flagsmith dashboard, open your project, go to the **Environments** tab, and copy the client-side Environment Key for the environment you want to use. See [Flags API Authentication](https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/authentication)."
+      },
+      "mcp_oauth": {
+        "type": "oauth2",
+        "label": "Flagsmith MCP OAuth login",
+        "generateUrl": "https://docs.flagsmith.com/integrating-with-flagsmith/mcp-server",
+        "setup": "Connect your MCP client to `https://mcp.flagsmith.com`. On first connection, the client discovers OAuth from the MCP URL, opens your browser, and you log in to Flagsmith to authorise access. See [MCP Server](https://docs.flagsmith.com/integrating-with-flagsmith/mcp-server)."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "flagsmith-flags-api",
+        "name": "Flagsmith Flags API",
+        "type": "http",
+        "docs": "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/",
+            "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/authentication",
+            "https://docs.flagsmith.com/sdk-api/flagsmith-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "environment_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Environment-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/authentication",
+                  "https://docs.flagsmith.com/sdk-api/flagsmith-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://edge.api.flagsmith.com/"
+      },
+      {
+        "slug": "flagsmith-mcp-server",
+        "name": "Flagsmith MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.flagsmith.com/integrating-with-flagsmith/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.flagsmith.com/integrating-with-flagsmith/mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.flagsmith.com/integrating-with-flagsmith/mcp-server"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "org_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Api-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.flagsmith.com/integrating-with-flagsmith/mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.flagsmith.com",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "flagsmith-cli",
+        "name": "Flagsmith CLI",
+        "type": "cli",
+        "docs": "https://docs.flagsmith.com/integrating-with-flagsmith/CLI",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.flagsmith.com/integrating-with-flagsmith/CLI"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "environment_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "FLAGSMITH_ENVIRONMENT"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.flagsmith.com/integrating-with-flagsmith/CLI"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@flagsmith/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "flagsmith"
+      },
+      {
+        "slug": "flagsmith-admin-api",
+        "name": "Flagsmith Admin API",
+        "type": "http",
+        "docs": "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/",
+            "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "org_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Api-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.flagsmith.com/"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:22:35.423Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 118492,
+    "completion_tokens": 1879,
+    "total_tokens": 120371
+  },
+  "visited": [
+    "https://api.flagsmith.com/api/v1/swagger.json",
+    "https://api.flagsmith.com/api/v1/swagger.yaml",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/CLI",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/authentication",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/authentication",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/code-examples",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/mcp-server",
+    "https://docs.flagsmith.com/project-and-community/development",
+    "https://docs.flagsmith.com/sdk-api/",
+    "https://docs.flagsmith.com/sdk-api/flagsmith-api",
+    "https://flagsmith.com/llms.txt",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "https://api.flagsmith.com/",
+    "https://api.flagsmith.com/api/v1/docs/",
+    "https://api.flagsmith.com/api/v1/swagger.json",
+    "https://api.flagsmith.com/api/v1/swagger.yaml",
+    "https://discord.gg/hFhxNtXzgm",
+    "https://docs.astral.sh/uv/",
+    "https://docs.flagsmith.com",
+    "https://docs.flagsmith.com/",
+    "https://docs.flagsmith.com/#",
+    "https://docs.flagsmith.com/#1-the-flags-api-public-sdk-api",
+    "https://docs.flagsmith.com/#2-the-admin-api-private-admin-api",
+    "https://docs.flagsmith.com/#__docusaurus_skipToContent_fallback",
+    "https://docs.flagsmith.com/#api-explorer",
+    "https://docs.flagsmith.com/#api-key-ci-and-non-interactive-agents",
+    "https://docs.flagsmith.com/#authentication",
+    "https://docs.flagsmith.com/#available-tools",
+    "https://docs.flagsmith.com/#connecting-to-the-server",
+    "https://docs.flagsmith.com/#core-api",
+    "https://docs.flagsmith.com/#core-tools",
+    "https://docs.flagsmith.com/#endpoints",
+    "https://docs.flagsmith.com/#enterprise-tools",
+    "https://docs.flagsmith.com/#finding-your-environment-key",
+    "https://docs.flagsmith.com/#generating-an-api-token",
+    "https://docs.flagsmith.com/#installation",
+    "https://docs.flagsmith.com/#installing-in-your-client",
+    "https://docs.flagsmith.com/#oauth-interactive-clients",
+    "https://docs.flagsmith.com/#sample-usage",
+    "https://docs.flagsmith.com/#using-the-api-token",
+    "https://docs.flagsmith.com/#using-the-environment-key",
+    "https://docs.flagsmith.com/administration-and-security/",
+    "https://docs.flagsmith.com/administration-and-security/governance-and-compliance/system-limits#admin-api-rate-limit",
+    "https://docs.flagsmith.com/advanced-use/ab-testing",
+    "https://docs.flagsmith.com/basic-features/managing-identities",
+    "https://docs.flagsmith.com/basic-features/managing-segments",
+    "https://docs.flagsmith.com/best-practices/integration-approaches#client-side-sdk-flag-endpoints-are-public",
+    "https://docs.flagsmith.com/deployment-self-hosting/",
+    "https://docs.flagsmith.com/deployment-self-hosting/mcp-server",
+    "https://docs.flagsmith.com/experiment-statistics",
+    "https://docs.flagsmith.com/experimentation-ab-testing",
+    "https://docs.flagsmith.com/flagsmith-concepts/platform-architecture",
+    "https://docs.flagsmith.com/getting-started/feature-flags",
+    "https://docs.flagsmith.com/getting-started/quick-start",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/CLI",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/authentication",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/code-examples",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/admin-api/updating-flags",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/authentication",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/flagsmith-api-overview/flags-api/code-examples",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/integration-overview",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/mcp-server",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/openfeature",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/openfeature/",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/sdks/",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/sdks/client-side-sdks/",
+    "https://docs.flagsmith.com/integrating-with-flagsmith/sdks/server-side",
+    "https://docs.flagsmith.com/managing-flags/core-management",
+    "https://docs.flagsmith.com/project-and-community/development",
+    "https://docs.flagsmith.com/project-and-community/release-notes/",
+    "https://docs.flagsmith.com/sdk-api",
+    "https://docs.flagsmith.com/sdk-api/",
+    "https://docs.flagsmith.com/sdk-api/flagsmith-api",
+    "https://docs.flagsmith.com/sdk-api/sdk-v-1-environment-document",
+    "https://docs.flagsmith.com/support/",
+    "https://docs.flagsmith.com/third-party-integrations",
+    "https://docs.flagsmith.com/third-party-integrations/",
+    "https://edge.api.flagsmith.com/",
+    "https://flagsmith.com",
+    "https://flagsmith.com/",
+    "https://flagsmith.com/blog/",
+    "https://flagsmith.com/llms.txt",
+    "https://flagsmith.com/podcast/",
+    "https://flagsmith.example.com/api/v1/",
+    "https://github.com/Flagsmith",
+    "https://github.com/Flagsmith/flagsmith",
+    "https://github.com/Flagsmith/flagsmith-cli",
+    "https://github.com/Flagsmith/flagsmith.git@main#subdirectory=mcp",
+    "https://github.com/flagsmith/flagsmith",
+    "https://mcp.flagsmith.com",
+    "https://modelcontextprotocol.io",
+    "https://spec.openapis.org/oas/3.1/dialect/base",
+    "https://status.flagsmith.com/",
+    "https://www.flagsmith.com/a-b-and-multivariate-testing",
+    "https://www.flagsmith.com/blog",
+    "https://www.flagsmith.com/blog/angular-feature-flag",
+    "https://www.flagsmith.com/blog/feature-flags-android",
+    "https://www.flagsmith.com/blog/flutter-feature-flags",
+    "https://www.flagsmith.com/blog/golang-feature-flag",
+    "https://www.flagsmith.com/blog/java-feature-toggle",
+    "https://www.flagsmith.com/blog/javascript-feature-flags",
+    "https://www.flagsmith.com/blog/net-feature-flag",
+    "https://www.flagsmith.com/blog/nodejs-feature-flags",
+    "https://www.flagsmith.com/blog/php-feature-flags",
+    "https://www.flagsmith.com/blog/python-feature-flag",
+    "https://www.flagsmith.com/blog/ruby-feature-flags",
+    "https://www.flagsmith.com/blog/spring-boot-feature-flags",
+    "https://www.flagsmith.com/blog/swift-ios-feature-flags",
+    "https://www.flagsmith.com/blog/update-your-react-native-app-using-remote-config",
+    "https://www.flagsmith.com/build-vs-buy",
+    "https://www.flagsmith.com/case-studies",
+    "https://www.flagsmith.com/cloud",
+    "https://www.flagsmith.com/contact-us",
+    "https://www.flagsmith.com/demo",
+    "https://www.flagsmith.com/ebooks",
+    "https://www.flagsmith.com/edge-api",
+    "https://www.flagsmith.com/enterprise",
+    "https://www.flagsmith.com/feature-flag-bank-financial-services",
+    "https://www.flagsmith.com/feature-flag-governance",
+    "https://www.flagsmith.com/feature-flags-and-remote-config",
+    "https://www.flagsmith.com/integrations",
+    "https://www.flagsmith.com/mcp-server",
+    "https://www.flagsmith.com/open-source",
+    "https://www.flagsmith.com/podcast",
+    "https://www.flagsmith.com/pricing",
+    "https://www.flagsmith.com/private-cloud-feature-flags",
+    "https://www.flagsmith.com/real-time-feature-flags",
+    "https://www.flagsmith.com/reduce-risk-with-feature-flags",
+    "https://www.flagsmith.com/role-based-access-change-control-security",
+    "https://www.flagsmith.com/sdks",
+    "https://www.flagsmith.com/segmentation",
+    "https://www.flagsmith.com/self-hosted",
+    "https://www.flagsmith.com/ship-trustworthy-ai-powered-features",
+    "https://www.flagsmith.com/sitemap.xml",
+    "https://www.flagsmith.com/use-cases",
+    "https://www.postman.com/flagsmith/workspace/flagsmith/overview",
+    "https://x.com/getflagsmith",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

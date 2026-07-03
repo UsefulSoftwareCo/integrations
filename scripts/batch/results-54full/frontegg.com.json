@@ -1,0 +1,463 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "frontegg.com",
+    "detect": {
+      "domain": "frontegg.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:24:13.249Z",
+    "summary": "Frontegg exposes CIAM HTTP APIs plus an environment-auth token-minting HTTP endpoint, and offers a hosted MCP Gateway for Agen for SaaS.",
+    "description": "Frontegg provides customer identity and access management for B2B SaaS applications, including authentication, user management, SSO, SCIM, and entitlements. It also offers managed MCP gateway capabilities so SaaS products can expose tools securely to AI platforms and agents.",
+    "credentials": {
+      "frontegg_env_client_credentials": {
+        "type": "compound",
+        "label": "Frontegg environment client credentials (Client ID + API Key/secret)",
+        "generateUrl": "https://portal.frontegg.com/",
+        "setup": "In the [Frontegg Portal](https://portal.frontegg.com/), open your environment and go to **Keys & domains**. Copy the `Client ID` and `API Key`. Use them in `POST https://api.{region}.frontegg.com/auth/vendor` with body fields `clientId` and `secret` to mint an environment bearer token for Management and Self-Service API calls.",
+        "acquisition": "manual"
+      },
+      "frontegg_env_bearer": {
+        "type": "bearer",
+        "label": "Frontegg environment token (JWT)",
+        "generateUrl": "https://developers.frontegg.com/ciam/api/vendor-service",
+        "setup": "Mint this token from the [Environment authentication endpoint](https://developers.frontegg.com/ciam/api/vendor-service) by sending your environment `Client ID` and `API Key` to `POST https://api.{region}.frontegg.com/auth/vendor`. Use the returned JWT as `Authorization: Bearer <token>`. If you need to target a specific environment when using a portal-generated token, include `frontegg-environment-id` with the environment `clientId`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "frontegg-ciam-http-api",
+        "name": "Frontegg CIAM HTTP API",
+        "type": "http",
+        "docs": "https://developers.frontegg.com/ciam/api/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.frontegg.com/ciam/api/overview",
+            "https://developers.frontegg.com/ciam/api/vendor-service",
+            "https://raw.githubusercontent.com/frontegg/openapi-public/master/apis-combined.json",
+            "https://raw.githubusercontent.com/frontegg/openapi-public/master/scim.json",
+            "https://raw.githubusercontent.com/frontegg/openapi-public/master/tenants.json",
+            "https://raw.githubusercontent.com/frontegg/openapi-public/master/identity.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "frontegg_env_bearer",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.frontegg.com/ciam/api/overview",
+                  "https://raw.githubusercontent.com/frontegg/openapi-public/master/scim.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.{region}.frontegg.com",
+        "variables": [
+          {
+            "name": "region",
+            "in": "url",
+            "resolveFrom": "Choose the regional gateway shown in docs: EU `api.frontegg.com`, US `api.us.frontegg.com`, CA `api.ca.frontegg.com`, AU `api.au.frontegg.com`."
+          },
+          {
+            "name": "domain",
+            "in": "url",
+            "resolveFrom": "For user-token/self-service calls, use your tenant subdomain or custom domain such as `https://{your-subdomain}.frontegg.com`."
+          }
+        ]
+      },
+      {
+        "slug": "frontegg-environment-authentication-api",
+        "name": "Frontegg Environment Authentication API",
+        "type": "http",
+        "docs": "https://developers.frontegg.com/ciam/api/vendor-service",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.frontegg.com/ciam/api/vendor-service"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "frontegg_env_client_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.frontegg.com/ciam/api/vendor-service"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.{region}.frontegg.com/auth/vendor",
+        "variables": [
+          {
+            "name": "region",
+            "in": "url",
+            "resolveFrom": "Choose the regional gateway shown in docs: EU `api.frontegg.com`, US `api.us.frontegg.com`, CA `api.ca.frontegg.com`, AU `api.au.frontegg.com`."
+          }
+        ]
+      },
+      {
+        "slug": "frontegg-agen-for-saas-mcp-gateway",
+        "name": "Frontegg Agen for SaaS MCP Gateway",
+        "type": "mcp",
+        "docs": "https://developers.frontegg.com/agen-for-saas/getting-started/connect-ai-platform",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.frontegg.com/agen-for-saas/introduction/overview",
+            "https://developers.frontegg.com/agen-for-saas/getting-started/connect-ai-platform",
+            "https://developers.frontegg.com/agen-for-saas/configuration/authentication/overview",
+            "https://developers.frontegg.com/agen-for-saas/getting-started/quickstart"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "frontegg_env_bearer",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.frontegg.com/agen-for-saas/configuration/authentication/overview",
+                  "https://developers.frontegg.com/agen-for-saas/getting-started/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{gateway-id}.mcp-gw.frontegg.com",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "gateway-id",
+            "in": "url",
+            "resolveFrom": "Your unique MCP Gateway host shown in the Agen for SaaS control plane, e.g. `your-id.mcp-gw.frontegg.com`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:24:13.250Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 335779,
+    "completion_tokens": 2323,
+    "total_tokens": 338102
+  },
+  "visited": [
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/overview",
+    "https://developers.frontegg.com/agen-for-saas/configuration/backend-verification",
+    "https://developers.frontegg.com/agen-for-saas/configuration/hosting-mcp-gateway",
+    "https://developers.frontegg.com/agen-for-saas/getting-started/connect-ai-platform",
+    "https://developers.frontegg.com/agen-for-saas/getting-started/quickstart",
+    "https://developers.frontegg.com/agen-for-saas/introduction/overview",
+    "https://developers.frontegg.com/ciam/api/overview",
+    "https://developers.frontegg.com/ciam/api/vendor-service",
+    "https://developers.frontegg.com/ciam/guides/frontegg-ai/agent",
+    "https://developers.frontegg.com/ciam/guides/frontegg-ai/overview",
+    "https://developers.frontegg.com/ciam/guides/use-cases/building-ai-agents",
+    "https://developers.frontegg.com/ciam/sdks/frontend/angular/embedded-login",
+    "https://developers.frontegg.com/ciam/sdks/frontend/angular/hosted-login",
+    "https://developers.frontegg.com/platform/overview",
+    "https://frontegg.com/llms.txt",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/agent.json",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/apis-combined.json",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/apis-combined.json#L1",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/identity.json",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/scim.json",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/tenants.json",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/videos/turn-a-graphql-api-into-an-mcp-server-in-minutes"
+  ],
+  "grounding": [
+    "http://localhost:8080/health",
+    "http://localhost:8081/health",
+    "http://{host}:{port}",
+    "https://api.au.frontegg.com",
+    "https://api.au.frontegg.com/auth/vendor",
+    "https://api.au.frontegg.com/auth/vendor/",
+    "https://api.au.frontegg.com/directory",
+    "https://api.au.frontegg.com/identity",
+    "https://api.au.frontegg.com/team",
+    "https://api.au.frontegg.com/tenants",
+    "https://api.ca.frontegg.com",
+    "https://api.ca.frontegg.com/auth/vendor",
+    "https://api.ca.frontegg.com/auth/vendor/",
+    "https://api.ca.frontegg.com/directory",
+    "https://api.ca.frontegg.com/identity",
+    "https://api.ca.frontegg.com/team",
+    "https://api.ca.frontegg.com/tenants",
+    "https://api.frontegg.com",
+    "https://api.frontegg.com/auth/vendor",
+    "https://api.frontegg.com/auth/vendor/",
+    "https://api.frontegg.com/directory",
+    "https://api.frontegg.com/identity",
+    "https://api.frontegg.com/team",
+    "https://api.frontegg.com/tenants",
+    "https://api.readme.dev/docs/getting-started",
+    "https://api.us.frontegg.com",
+    "https://api.us.frontegg.com/auth/vendor",
+    "https://api.us.frontegg.com/auth/vendor/",
+    "https://api.us.frontegg.com/directory",
+    "https://api.us.frontegg.com/identity",
+    "https://api.us.frontegg.com/team",
+    "https://api.us.frontegg.com/tenants",
+    "https://api.yourcompany.com",
+    "https://api.{{region}}.frontegg.com/xxxx",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fconfiguration%2Fauthentication%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fconfiguration%2Fbackend-verification.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fconfiguration%2Fhosting-mcp-gateway.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fgetting-started%2Fconnect-ai-platform.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fgetting-started%2Fquickstart.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fintroduction%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fvendor-service%2Fother%2Fauthenticate_vendor.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fvendor-service.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fplatform%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fconfiguration%2Fauthentication%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fconfiguration%2Fbackend-verification.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fconfiguration%2Fhosting-mcp-gateway.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fgetting-started%2Fconnect-ai-platform.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fgetting-started%2Fquickstart.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fintroduction%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fvendor-service%2Fother%2Fauthenticate_vendor.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fvendor-service.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fplatform%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://datatracker.ietf.org/doc/html/rfc7644",
+    "https://developers.frontegg.com/",
+    "https://developers.frontegg.com/#agen-for-saas-overview",
+    "https://developers.frontegg.com/#anthropic-claude",
+    "https://developers.frontegg.com/#api-access",
+    "https://developers.frontegg.com/#api-categories",
+    "https://developers.frontegg.com/#api-gateway-by-region",
+    "https://developers.frontegg.com/#api-introduction",
+    "https://developers.frontegg.com/#auth-providers",
+    "https://developers.frontegg.com/#authentication",
+    "https://developers.frontegg.com/#authentication-apis",
+    "https://developers.frontegg.com/#authentication-settings",
+    "https://developers.frontegg.com/#code-examples",
+    "https://developers.frontegg.com/#configuring-your-key-secret",
+    "https://developers.frontegg.com/#connect-to-ai-platform",
+    "https://developers.frontegg.com/#content",
+    "https://developers.frontegg.com/#custom-domain-for-authentication",
+    "https://developers.frontegg.com/#designed-for-saas",
+    "https://developers.frontegg.com/#example-usage",
+    "https://developers.frontegg.com/#frontegg",
+    "https://developers.frontegg.com/#generating-and-using-a-typescript-sdk",
+    "https://developers.frontegg.com/#get-started",
+    "https://developers.frontegg.com/#how-agen-for-saas-works",
+    "https://developers.frontegg.com/#how-it-works",
+    "https://developers.frontegg.com/#install-the-sdk",
+    "https://developers.frontegg.com/#invalid-timestamp-errors",
+    "https://developers.frontegg.com/#management-apis",
+    "https://developers.frontegg.com/#next-steps",
+    "https://developers.frontegg.com/#open-id",
+    "https://developers.frontegg.com/#openai-chatgpt",
+    "https://developers.frontegg.com/#overview",
+    "https://developers.frontegg.com/#overview-of-the-setup-flow",
+    "https://developers.frontegg.com/#performing-your-first-api-call",
+    "https://developers.frontegg.com/#provider-specific-guides",
+    "https://developers.frontegg.com/#python",
+    "https://developers.frontegg.com/#quickstart",
+    "https://developers.frontegg.com/#related-topics",
+    "https://developers.frontegg.com/#routing",
+    "https://developers.frontegg.com/#security-best-practices",
+    "https://developers.frontegg.com/#self-service-apis",
+    "https://developers.frontegg.com/#signature-algorithm",
+    "https://developers.frontegg.com/#signature-components",
+    "https://developers.frontegg.com/#signature-verification-fails",
+    "https://developers.frontegg.com/#step-1-set-up-your-mcp-server",
+    "https://developers.frontegg.com/#step-2-add-a-source",
+    "https://developers.frontegg.com/#step-3-set-up-authentication",
+    "https://developers.frontegg.com/#step-4-configure-api-base-url",
+    "https://developers.frontegg.com/#step-5-test-and-verify",
+    "https://developers.frontegg.com/#troubleshooting",
+    "https://developers.frontegg.com/#troubleshooting-common-errors",
+    "https://developers.frontegg.com/#typescript",
+    "https://developers.frontegg.com/#validity-window",
+    "https://developers.frontegg.com/#verifying-signatures-on-your-backend",
+    "https://developers.frontegg.com/#what-agen-for-saas-provides",
+    "https://developers.frontegg.com/#when-and-where-to-use-headers",
+    "https://developers.frontegg.com/agen-for-saas/access-control/overview",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/auth0",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/azure",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/cognito",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/firebase",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/keycloak",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/oidc",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/overview",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/overview.md",
+    "https://developers.frontegg.com/agen-for-saas/configuration/backend-verification",
+    "https://developers.frontegg.com/agen-for-saas/configuration/backend-verification.md",
+    "https://developers.frontegg.com/agen-for-saas/configuration/custom-domain",
+    "https://developers.frontegg.com/agen-for-saas/configuration/hosting-mcp-gateway",
+    "https://developers.frontegg.com/agen-for-saas/configuration/hosting-mcp-gateway.md",
+    "https://developers.frontegg.com/agen-for-saas/configuration/overview",
+    "https://developers.frontegg.com/agen-for-saas/data-protection/masking-types",
+    "https://developers.frontegg.com/agen-for-saas/data-protection/overview",
+    "https://developers.frontegg.com/agen-for-saas/getting-started/connect-ai-platform",
+    "https://developers.frontegg.com/agen-for-saas/getting-started/connect-ai-platform.md",
+    "https://developers.frontegg.com/agen-for-saas/getting-started/quickstart",
+    "https://developers.frontegg.com/agen-for-saas/getting-started/quickstart.md",
+    "https://developers.frontegg.com/agen-for-saas/hooks/overview",
+    "https://developers.frontegg.com/agen-for-saas/introduction/core-concepts",
+    "https://developers.frontegg.com/agen-for-saas/introduction/overview",
+    "https://developers.frontegg.com/agen-for-saas/introduction/overview.md",
+    "https://developers.frontegg.com/agen-for-saas/monitoring/overview",
+    "https://developers.frontegg.com/agen-for-saas/overview/dashboard",
+    "https://developers.frontegg.com/agen-for-saas/policies/approval-flows",
+    "https://developers.frontegg.com/agen-for-saas/policies/conditional-expressions",
+    "https://developers.frontegg.com/agen-for-saas/policies/creating-policies",
+    "https://developers.frontegg.com/agen-for-saas/policies/overview",
+    "https://developers.frontegg.com/agen-for-saas/policies/tenant-level-policies",
+    "https://developers.frontegg.com/agen-for-saas/security-compliance/overview",
+    "https://developers.frontegg.com/agen-for-saas/sources/overview",
+    "https://developers.frontegg.com/agen-for-saas/tools/about-tools",
+    "https://developers.frontegg.com/agen-for-saas/tools/managing-tools",
+    "https://developers.frontegg.com/agen-for-work/introduction/overview",
+    "https://developers.frontegg.com/api/identity/general/authenticatioauthenticationcontrollerv1_authenticatelocaluser",
+    "https://developers.frontegg.com/api/vendor-service",
+    "https://developers.frontegg.com/ciam/api/agent",
+    "https://developers.frontegg.com/ciam/api/applications",
+    "https://developers.frontegg.com/ciam/api/audits",
+    "https://developers.frontegg.com/ciam/api/entitlements",
+    "https://developers.frontegg.com/ciam/api/identity",
+    "https://developers.frontegg.com/ciam/api/overview",
+    "https://developers.frontegg.com/ciam/api/overview.md",
+    "https://developers.frontegg.com/ciam/api/scim",
+    "https://developers.frontegg.com/ciam/api/team",
+    "https://developers.frontegg.com/ciam/api/tenants",
+    "https://developers.frontegg.com/ciam/api/vendor-service",
+    "https://developers.frontegg.com/ciam/api/vendor-service.md",
+    "https://developers.frontegg.com/ciam/api/vendor-service/other/authenticate_vendor",
+    "https://developers.frontegg.com/ciam/api/vendor-service/other/authenticate_vendor.md",
+    "https://developers.frontegg.com/ciam/guides/admin-portal/intro",
+    "https://developers.frontegg.com/ciam/guides/frontegg-ai/agent",
+    "https://developers.frontegg.com/ciam/guides/frontegg-ai/overview",
+    "https://developers.frontegg.com/ciam/guides/getting-started/home",
+    "https://developers.frontegg.com/ciam/guides/use-cases/building-ai-agents",
+    "https://developers.frontegg.com/ciam/sdks/frontend/angular/embedded-login",
+    "https://developers.frontegg.com/ciam/sdks/frontend/angular/hosted-login",
+    "https://developers.frontegg.com/ciam/sdks/overview",
+    "https://developers.frontegg.com/platform/overview",
+    "https://developers.frontegg.com/platform/overview.md",
+    "https://frontegg.com/",
+    "https://frontegg.com/blog",
+    "https://frontegg.com/blog/ai-agent-governance-starts-with-guardrails",
+    "https://frontegg.com/blog/category/authentication",
+    "https://frontegg.com/blog/category/saas",
+    "https://frontegg.com/blog/category/security-compliance",
+    "https://frontegg.com/blog/category/user_management",
+    "https://frontegg.com/blog/introducing-agent-analytics",
+    "https://frontegg.com/blog/introducing-agent-connector",
+    "https://frontegg.com/blog/the-role-of-ciam-in-the-age-of-ai-agents",
+    "https://frontegg.com/blog/vue-authentication",
+    "https://frontegg.com/ciam",
+    "https://frontegg.com/cluster_keyword/access-management",
+    "https://frontegg.com/cluster_keyword/auth0",
+    "https://frontegg.com/cluster_keyword/aws-cognito",
+    "https://frontegg.com/cluster_keyword/sso",
+    "https://frontegg.com/contact-sales",
+    "https://frontegg.com/guides/access-management",
+    "https://frontegg.com/guides/agentic-ai-readiness-gap",
+    "https://frontegg.com/guides/ciam",
+    "https://frontegg.com/guides/feature-flags",
+    "https://frontegg.com/guides/saas-architecture",
+    "https://frontegg.com/guides/saml",
+    "https://frontegg.com/guides/totally-unsanctioned-ciam-vendor-guide",
+    "https://frontegg.com/integration_category/customer-support",
+    "https://frontegg.com/integration_category/development",
+    "https://frontegg.com/integration_category/finance",
+    "https://frontegg.com/integration_category/marketing",
+    "https://frontegg.com/integration_category/productivity",
+    "https://frontegg.com/llms.txt",
+    "https://frontegg.com/mcp-marketplace",
+    "https://frontegg.com/mcp-marketplace/bamboohr",
+    "https://frontegg.com/mcp-marketplace/freshbooks",
+    "https://frontegg.com/mcp-marketplace/gmail",
+    "https://frontegg.com/mcp-marketplace/google-calendar",
+    "https://frontegg.com/mcp-marketplace/workday",
+    "https://frontegg.com/pricing",
+    "https://frontegg.com/resources/agentlink-feature-delegated-ai-governance",
+    "https://frontegg.com/resources/agentlink-livestream-day-one",
+    "https://frontegg.com/resources/agentlink-livestream-day-three",
+    "https://frontegg.com/resources/agentlink-livestream-day-two",
+    "https://frontegg.com/resources/case-studies",
+    "https://frontegg.com/resources/live",
+    "https://frontegg.com/resources/videos",
+    "https://frontegg.com/resources/white-papers",
+    "https://frontegg.com/sitemap_index.xml",
+    "https://frontegg.github.io/helm-charts/",
+    "https://github.com/frontegg/openapi-public/blob/master/agent.json",
+    "https://github.com/frontegg/openapi-public/blob/master/apis-combined.json",
+    "https://github.com/frontegg/openapi-public/blob/master/entitlements.json",
+    "https://github.com/frontegg/openapi-public/blob/master/identity.json",
+    "https://github.com/frontegg/openapi-public/blob/master/scim.json",
+    "https://github.com/frontegg/openapi-public/blob/master/sso.json",
+    "https://github.com/frontegg/openapi-public/blob/master/tenants.json",
+    "https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt-beta",
+    "https://hybrid-auth.customer.example.com",
+    "https://join.slack.com/t/frontegg-community/shared_invite/zt-e1oxi1vn-SZErBZcwHcbgj4vrwRIp5A",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://portal.frontegg.com/login",
+    "https://portal.frontegg.com/signup",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/agent.json",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/apis-combined.json",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/apis-combined.json#L1",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/identity.json",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/scim.json",
+    "https://raw.githubusercontent.com/frontegg/openapi-public/master/tenants.json",
+    "https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp",
+    "https://support.frontegg.com/frontegg/directories",
+    "https://tenant.mcp-gw.frontegg.com",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/videos/turn-a-graphql-api-into-an-mcp-server-in-minutes",
+    "https://{domain}.frontegg.com/directory",
+    "https://{domain}.frontegg.com/entitlements",
+    "https://{domain}.frontegg.com/identity",
+    "https://{domain}.frontegg.com/team",
+    "https://{domain}.frontegg.com/tenants"
+  ]
+}

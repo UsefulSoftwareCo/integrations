@@ -1,0 +1,294 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "goauthentik.io",
+    "detect": {
+      "domain": "goauthentik.io",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T13:39:12.168Z",
+    "summary": "authentik exposes one OpenAPI-based HTTP API plus two authenticated WebSocket surfaces; auth works with API tokens, OAuth access tokens scoped `goauthentik.io/api`, or session cookies.",
+    "credentials": {
+      "authentik_api_token": {
+        "type": "bearer",
+        "label": "authentik API token",
+        "generateUrl": "https://docs.goauthentik.io/users-sources/user-settings/#tokens",
+        "setup": "In authentik, open your user settings and create a token under the **Tokens** area. Use the resulting static token as a `Bearer` token in the `Authorization` header. The docs note tokens can optionally expire and auto-rotate.",
+        "acquisition": "manual"
+      },
+      "authentik_session_cookie": {
+        "type": "basic",
+        "label": "authentik session cookie",
+        "generateUrl": "https://docs.goauthentik.io/",
+        "setup": "Sign in through an authentik flow to obtain an authenticated session. Reuse the resulting session cookie for browser-style API and websocket calls; send the `Cookie` header, and include the required CSRF header when making state-changing HTTP requests from that session.",
+        "acquisition": "ambient"
+      },
+      "authentik_oauth_api_scope": {
+        "type": "bearer",
+        "label": "OAuth access token with `goauthentik.io/api` scope",
+        "generateUrl": "https://docs.goauthentik.io/integrations/services/oauth2/",
+        "setup": "Create an OAuth2 client in authentik, then request an access token with the `goauthentik.io/api` scope. That access token can be used as a `Bearer` token for API authentication.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "authentik-api",
+        "name": "authentik API",
+        "type": "http",
+        "docs": "https://api.goauthentik.io/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.goauthentik.io/",
+            "https://api.goauthentik.io/authentication/",
+            "https://api.goauthentik.io/reference/authentik/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "authentik_api_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.goauthentik.io/authentication/",
+                  "https://api.goauthentik.io/reference/authentik/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "authentik_oauth_api_scope",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.goauthentik.io/authentication/",
+                  "https://api.goauthentik.io/reference/authentik/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "authentik_session_cookie",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Cookie",
+                    "scheme": "Cookie"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.goauthentik.io/authentication/"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://api.goauthentik.io/schema.yml",
+        "url": "https://_authentik.company_/api/v3/"
+      },
+      {
+        "slug": "authentik-websocket-client-updates",
+        "name": "authentik WebSocket client updates",
+        "type": "mcp",
+        "docs": "https://api.goauthentik.io/websocket/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.goauthentik.io/websocket/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "authentik_session_cookie",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Cookie",
+                    "scheme": "Cookie"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.goauthentik.io/websocket/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://_authentik.company_/ws/client/"
+      },
+      {
+        "slug": "authentik-websocket-outpost",
+        "name": "authentik WebSocket outpost",
+        "type": "mcp",
+        "docs": "https://api.goauthentik.io/websocket/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.goauthentik.io/websocket/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "authentik_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.goauthentik.io/websocket/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "authentik_oauth_api_scope",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.goauthentik.io/websocket/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://_authentik.company_/ws/outpost/<outpost-uuid>/"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T13:39:12.169Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 86787,
+    "completion_tokens": 1185,
+    "total_tokens": 87972
+  },
+  "visited": [
+    "https://api.goauthentik.io/",
+    "https://api.goauthentik.io/authentication/",
+    "https://api.goauthentik.io/clients/",
+    "https://api.goauthentik.io/reference/authentik/",
+    "https://api.goauthentik.io/websocket/",
+    "https://docs.goauthentik.io/",
+    "https://docs.goauthentik.io/developer-docs/",
+    "https://docs.goauthentik.io/developer-docs/docs/writing-documentation/",
+    "https://github.com/goauthentik/authentik/discussions/7228"
+  ],
+  "grounding": [
+    "https://_authentik.company_/api/v3/",
+    "https://_authentik.company_/api/v3/schema/",
+    "https://api.goauthentik.io",
+    "https://api.goauthentik.io/",
+    "https://api.goauthentik.io/#",
+    "https://api.goauthentik.io/#__docusaurus_skipToContent_fallback",
+    "https://api.goauthentik.io/#api-token",
+    "https://api.goauthentik.io/#authentication",
+    "https://api.goauthentik.io/#generating-a-custom-api-client",
+    "https://api.goauthentik.io/#get-started",
+    "https://api.goauthentik.io/#inspecting-the-client-source-code",
+    "https://api.goauthentik.io/#installation",
+    "https://api.goauthentik.io/#jwt-token",
+    "https://api.goauthentik.io/#making-schema-changes",
+    "https://api.goauthentik.io/#message-type",
+    "https://api.goauthentik.io/#outpost-wsoutpostoutpost-uuid",
+    "https://api.goauthentik.io/#session",
+    "https://api.goauthentik.io/#usage-in-authentik",
+    "https://api.goauthentik.io/#web-wsclient",
+    "https://api.goauthentik.io/authentication/",
+    "https://api.goauthentik.io/clients/",
+    "https://api.goauthentik.io/flow-executor/",
+    "https://api.goauthentik.io/reference/admin-apps-list/",
+    "https://api.goauthentik.io/reference/authentik/",
+    "https://api.goauthentik.io/schema.yml",
+    "https://api.goauthentik.io/websocket/",
+    "https://docs.goauthentik.io",
+    "https://docs.goauthentik.io/",
+    "https://docs.goauthentik.io/#",
+    "https://docs.goauthentik.io/#__docusaurus_skipToContent_fallback",
+    "https://docs.goauthentik.io/customize/",
+    "https://docs.goauthentik.io/developer-docs/",
+    "https://docs.goauthentik.io/developer-docs/contributing/",
+    "https://docs.goauthentik.io/developer-docs/docs/writing-documentation/",
+    "https://docs.goauthentik.io/developer-docs/releases/",
+    "https://docs.goauthentik.io/developer-docs/setup/",
+    "https://docs.goauthentik.io/developer-docs/translation/",
+    "https://docs.goauthentik.io/docs/developer-docs/",
+    "https://docs.goauthentik.io/endpoint-devices/",
+    "https://docs.goauthentik.io/endpoint-devices/device-compliance/fleet-conditional-access/",
+    "https://docs.goauthentik.io/enterprise/",
+    "https://docs.goauthentik.io/install-config/",
+    "https://docs.goauthentik.io/releases/",
+    "https://docs.goauthentik.io/security/",
+    "https://docs.goauthentik.io/troubleshooting/",
+    "https://github.com/goauthentik/authentik",
+    "https://github.com/goauthentik/authentik/blob/main/LICENSE",
+    "https://github.com/goauthentik/authentik/discussions/7228",
+    "https://github.com/goauthentik/authentik/edit/main/website/docs/developer-docs/index.mdx",
+    "https://github.com/goauthentik/authentik/issues/new",
+    "https://github.com/goauthentik/client-go",
+    "https://github.com/goauthentik/client-python",
+    "https://github.com/goauthentik/client-rust",
+    "https://github.com/goauthentik/client-ts",
+    "https://goauthentik.io/blog",
+    "https://goauthentik.io/features",
+    "https://goauthentik.io/pricing/",
+    "https://integrations.goauthentik.io",
+    "https://next.goauthentik.io",
+    "https://next.goauthentik.io/developer-docs",
+    "https://openapi-generator.tech/",
+    "https://version-2025-12.goauthentik.io",
+    "https://version-2026-2.goauthentik.io",
+    "https://version-2026-5.goauthentik.io"
+  ]
+}

@@ -1,0 +1,295 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "kaggle.com",
+    "detect": {
+      "domain": "kaggle.com",
+      "found": [
+        "llms.txt",
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://www.kaggle.com/"
+          ],
+          "authorizationEndpoint": "https://www.kaggle.com/api/v1/oauth2/authorize",
+          "tokenEndpoint": "https://www.kaggle.com/api/v1/oauth2/token",
+          "scopes": [
+            "resources.admin:*"
+          ],
+          "registrationEndpoint": "https://www.kaggle.com/api/v1/oauth2/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:10:07.526Z",
+    "summary": "Kaggle exposes a public HTTP API, an OAuth 2.0 provider API, an MCP server, and the kaggle CLI; auth is via Kaggle API token, OAuth client, or org-client Basic auth for the OAuth provider.",
+    "credentials": {
+      "kaggle_api_key": {
+        "type": "api_key",
+        "label": "Kaggle API token",
+        "generateUrl": "https://www.kaggle.com/settings/api",
+        "setup": "Go to [Kaggle Settings > API](https://www.kaggle.com/settings/api) and choose **Generate New Token**. Copy the token; Kaggle notes it begins with `KGAT`. Store it where your client expects a bearer token or Kaggle API credential.",
+        "acquisition": "manual"
+      },
+      "kaggle_oauth_app": {
+        "type": "oauth2",
+        "label": "Kaggle OAuth 2.0 client",
+        "generateUrl": "https://www.kaggle.com/api/v1/oauth2/register",
+        "setup": "Register an OAuth client at [Kaggle OAuth 2.0 dynamic client registration](https://www.kaggle.com/api/v1/oauth2/register). Use the client credentials to complete the OAuth flow against Kaggle's authorization and token endpoints. The documented scope seed is `resources.admin:*`.",
+        "acquisition": "manual"
+      },
+      "kaggle_org_oauth_basic": {
+        "type": "basic",
+        "label": "Kaggle organization OAuth client authentication",
+        "generateUrl": "https://www.kaggle.com/docs/oauth-provider-api",
+        "setup": "For an organization OAuth client, use HTTP Basic at token exchange with the organization owner's Kaggle API key as the password and the org client ID as the username. Kaggle documents this for `org:<organization-slug>` clients in the OAuth provider API docs.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "kaggle-public-api",
+        "name": "Kaggle Public API",
+        "type": "http",
+        "docs": "https://www.kaggle.com/docs/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.kaggle.com/docs/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kaggle_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/docs/api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.kaggle.com/api/v1"
+      },
+      {
+        "slug": "kaggle-mcp-server",
+        "name": "Kaggle MCP Server",
+        "type": "mcp",
+        "docs": "https://www.kaggle.com/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.kaggle.com/docs/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kaggle_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/docs/mcp"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kaggle_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/docs/mcp",
+                  "https://www.kaggle.com/docs/oauth-provider-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.kaggle.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "kaggle-cli",
+        "name": "Kaggle CLI",
+        "type": "cli",
+        "docs": "https://github.com/Kaggle/kaggle-cli/blob/main/docs/README.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.kaggle.com/docs/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kaggle_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "kaggle auth login",
+                    "env": [
+                      "KAGGLE_CONFIG_DIR"
+                    ]
+                  }
+                },
+                {
+                  "id": "kaggle_oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "kaggle auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/docs/api"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "Kaggle/kaggle-cli",
+            "runtimeHint": "python"
+          }
+        ],
+        "command": "kaggle"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:10:07.526Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 104760,
+    "completion_tokens": 1538,
+    "total_tokens": 106298
+  },
+  "visited": [
+    "https://github.com/blurrah/mcp-graphql",
+    "https://heeki.medium.com/building-an-mcp-server-as-an-api-developer-cfc162d06a83",
+    "https://kaggle.com/llms.txt",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://www.kaggle.com/docs/api",
+    "https://www.kaggle.com/docs/mcp",
+    "https://www.kaggle.com/docs/oauth-provider-api",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://localhost:8080/callback?code=",
+    "https://github.com/Kaggle/kaggle-api",
+    "https://github.com/Kaggle/kaggle-cli",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/README.md",
+    "https://github.com/Kaggle/kagglehub",
+    "https://github.com/Kaggle/kagglehub/blob/main/README.md",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://heeki.medium.com/building-an-mcp-server-as-an-api-developer-cfc162d06a83",
+    "https://kaggle.com/llms.txt",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://www.kaggle.com/",
+    "https://www.kaggle.com/#",
+    "https://www.kaggle.com/#auth",
+    "https://www.kaggle.com/#oauth-authorization-flow",
+    "https://www.kaggle.com/#oauth-client-types",
+    "https://www.kaggle.com/#oauth-discovery",
+    "https://www.kaggle.com/#oauth-errors",
+    "https://www.kaggle.com/#oauth-quick-start",
+    "https://www.kaggle.com/#oauth-request-encoding",
+    "https://www.kaggle.com/#oauth-scopes",
+    "https://www.kaggle.com/#oauth-scopes-appendix",
+    "https://www.kaggle.com/#oauth-security",
+    "https://www.kaggle.com/#oauth-token-management",
+    "https://www.kaggle.com/#oauth-using-tokens",
+    "https://www.kaggle.com/#rate-limits",
+    "https://www.kaggle.com/#site-content",
+    "https://www.kaggle.com/#tools",
+    "https://www.kaggle.com/.well-known/oauth-authorization-server",
+    "https://www.kaggle.com/.well-known/oauth-protected-resource",
+    "https://www.kaggle.com/account/login?phase=startRegisterTab&returnUrl=%2Fdocs%2Fapi",
+    "https://www.kaggle.com/account/login?phase=startRegisterTab&returnUrl=%2Fdocs%2Fmcp",
+    "https://www.kaggle.com/account/login?phase=startRegisterTab&returnUrl=%2Fdocs%2Foauth-provider-api",
+    "https://www.kaggle.com/account/login?phase=startSignInTab&returnUrl=%2Fdocs%2Fapi",
+    "https://www.kaggle.com/account/login?phase=startSignInTab&returnUrl=%2Fdocs%2Fmcp",
+    "https://www.kaggle.com/account/login?phase=startSignInTab&returnUrl=%2Fdocs%2Foauth-provider-api",
+    "https://www.kaggle.com/api/v1/datasets/list",
+    "https://www.kaggle.com/api/v1/oauth2/authorize",
+    "https://www.kaggle.com/api/v1/oauth2/introspect",
+    "https://www.kaggle.com/api/v1/oauth2/token",
+    "https://www.kaggle.com/benchmarks",
+    "https://www.kaggle.com/code",
+    "https://www.kaggle.com/competitions",
+    "https://www.kaggle.com/cookies",
+    "https://www.kaggle.com/datasets",
+    "https://www.kaggle.com/discussions/product-feedback",
+    "https://www.kaggle.com/docs/api",
+    "https://www.kaggle.com/docs/benchmarks",
+    "https://www.kaggle.com/docs/competitions",
+    "https://www.kaggle.com/docs/competitions-setup",
+    "https://www.kaggle.com/docs/datasets",
+    "https://www.kaggle.com/docs/efficient-gpu-usage",
+    "https://www.kaggle.com/docs/getting-started",
+    "https://www.kaggle.com/docs/groups",
+    "https://www.kaggle.com/docs/mcp",
+    "https://www.kaggle.com/docs/models",
+    "https://www.kaggle.com/docs/notebooks",
+    "https://www.kaggle.com/docs/oauth-provider-api",
+    "https://www.kaggle.com/docs/organizations",
+    "https://www.kaggle.com/docs/packages",
+    "https://www.kaggle.com/docs/tpu",
+    "https://www.kaggle.com/game-arena",
+    "https://www.kaggle.com/learn",
+    "https://www.kaggle.com/mcp",
+    "https://www.kaggle.com/models",
+    "https://www.kaggle.com/settings",
+    "https://www.kaggle.com/settings/api",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

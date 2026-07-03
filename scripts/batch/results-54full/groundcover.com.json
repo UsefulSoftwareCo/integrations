@@ -1,0 +1,545 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "groundcover.com",
+    "detect": {
+      "domain": "groundcover.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:26:52.903Z",
+    "summary": "groundcover exposes a REST-style HTTP API for metrics, logs, and platform actions, a legacy datasource HTTP API, an MCP server, and an official CLI; documented auth uses API keys, legacy datasource keys, and MCP OAuth.",
+    "description": "groundcover is an observability platform for cloud-native and on-prem environments. It uses eBPF-based instrumentation to collect and analyze metrics, logs, traces, and related operational data.",
+    "credentials": {
+      "gc_api_key": {
+        "type": "api_key",
+        "label": "groundcover API key",
+        "generateUrl": "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-keys",
+        "setup": "Create a service account first if needed under **Settings → Access → Service Accounts** in the groundcover UI, then go to **Settings → Access → API Keys** and create a new API key bound to that service account. Admins can create and revoke keys. See [API Keys](https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-keys) and [Service Accounts](https://docs.groundcover.com/use-groundcover/remote-access-and-apis/service-accounts).",
+        "acquisition": "manual"
+      },
+      "gc_ds_api_key": {
+        "type": "api_key",
+        "label": "groundcover datasource API key (legacy)",
+        "generateUrl": "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api",
+        "setup": "Mint the legacy datasource key with the groundcover CLI by running `groundcover auth get-datasources-api-key` and selecting a tenant. This legacy key is used for direct datasource access to ClickHouse and VictoriaMetrics. See [Datasource API Keys (Legacy)](https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api).",
+        "acquisition": "manual"
+      },
+      "gc_mcp_oauth": {
+        "type": "oauth2",
+        "label": "groundcover MCP OAuth login",
+        "generateUrl": "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server",
+        "setup": "Configure your MCP client with groundcover's MCP endpoint and choose the OAuth flow. On first connection, the client opens a browser and you log in with your groundcover user account; the docs note you can also copy a ready-made config from the UI via **profile picture → \"Connect to our MCP\"**. See [Configure groundcover's MCP Server](https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "groundcover-metrics-and-logs-api",
+        "name": "groundcover Metrics and Logs API",
+        "type": "http",
+        "docs": "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/raw-prometheus-and-clickhouse",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/raw-prometheus-and-clickhouse",
+            "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples",
+            "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-logs",
+            "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-workloads"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "gc_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/raw-prometheus-and-clickhouse",
+                  "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://app.groundcover.com/api"
+      },
+      {
+        "slug": "groundcover-datasource-api-legacy-clickhouse-victoriametrics",
+        "name": "groundcover Datasource API (legacy ClickHouse/VictoriaMetrics)",
+        "type": "http",
+        "docs": "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "gc_ds_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-ClickHouse-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://ds.groundcover.com/"
+      },
+      {
+        "slug": "groundcover-mcp-server",
+        "name": "groundcover MCP server",
+        "type": "mcp",
+        "docs": "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.groundcover.com/getting-started/groundcover-mcp",
+            "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "gc_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gc_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.groundcover.com/api/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "groundcover-cli",
+        "name": "groundcover CLI",
+        "type": "cli",
+        "docs": "https://github.com/groundcover-com/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://github.com/groundcover-com/cli",
+            "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "groundcover-com/cli"
+          }
+        ],
+        "command": "groundcover"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:26:52.903Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 293663,
+    "completion_tokens": 1860,
+    "total_tokens": 295523
+  },
+  "visited": [
+    "https://docs.groundcover.com/getting-started/groundcover-mcp",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/create-ingestion-key",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-workloads",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-logs",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-keys",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/ingestion-keys",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/raw-prometheus-and-clickhouse",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/service-accounts",
+    "https://github.com/groundcover-com",
+    "https://github.com/groundcover-com/cli",
+    "https://github.com/groundcover-com/cli/activity?ref=main",
+    "https://github.com/groundcover-com/cli/blob/main/.goreleaser.yaml",
+    "https://github.com/groundcover-com/cli/blob/main/CHANGELOG.md",
+    "https://github.com/groundcover-com/cli/blob/main/go.mod",
+    "https://groundcover.com/llms.txt"
+  ],
+  "grounding": [
+    "https://api.groundcover.com",
+    "https://api.groundcover.com/",
+    "https://api.groundcover.com/api/k8s/v3/clusters/list",
+    "https://api.groundcover.com/api/k8s/v3/workloads/list",
+    "https://app.groundcover.com/?utm_source=docs",
+    "https://app.groundcover.com/api/logs/v2/query",
+    "https://app.groundcover.com/api/prometheus/api/v1/query",
+    "https://archiveprogram.github.com",
+    "https://assets.website-files.com/6268eda2c1a363801996822a/6283a9a6eb4104a1cc3ada07_logo_256.png",
+    "https://clickhouse.com/docs/en/sql-reference/statements/select",
+    "https://code.visualstudio.com/docs/copilot/chat/mcp-servers#_add-an-mcp-server-to-your-workspace",
+    "https://docs.cursor.com/context/model-context-protocol#configuring-mcp-servers",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.groundcover.com/",
+    "https://docs.groundcover.com/#api-key",
+    "https://docs.groundcover.com/#api-key-association",
+    "https://docs.groundcover.com/#api-keys-vs-ingestion-keys",
+    "https://docs.groundcover.com/#authentication",
+    "https://docs.groundcover.com/#authentication-and-usage",
+    "https://docs.groundcover.com/#best-practices",
+    "https://docs.groundcover.com/#binding-and-permissions",
+    "https://docs.groundcover.com/#client-specific-guides",
+    "https://docs.groundcover.com/#configuration-example",
+    "https://docs.groundcover.com/#creating-an-ingestion-key",
+    "https://docs.groundcover.com/#creation-and-management",
+    "https://docs.groundcover.com/#creation-and-storage",
+    "https://docs.groundcover.com/#endpoint",
+    "https://docs.groundcover.com/#examples",
+    "https://docs.groundcover.com/#generate-the-api-key",
+    "https://docs.groundcover.com/#headers",
+    "https://docs.groundcover.com/#how-can-groundcovers-mcp-help-you-and-your-agent",
+    "https://docs.groundcover.com/#how-to-find-your-time-zone",
+    "https://docs.groundcover.com/#identity-and-permissions",
+    "https://docs.groundcover.com/#ingestion-keys-vs.-api-keys",
+    "https://docs.groundcover.com/#install-groundcovers-mcp-server",
+    "https://docs.groundcover.com/#key-types",
+    "https://docs.groundcover.com/#legacy-api-clickhouse",
+    "https://docs.groundcover.com/#logs-api",
+    "https://docs.groundcover.com/#oauth-recommended",
+    "https://docs.groundcover.com/#optional-headers",
+    "https://docs.groundcover.com/#pagination",
+    "https://docs.groundcover.com/#prerequisites",
+    "https://docs.groundcover.com/#querying-clickhouse",
+    "https://docs.groundcover.com/#querying-victoriametrics",
+    "https://docs.groundcover.com/#rate-limits",
+    "https://docs.groundcover.com/#raw-prometheus-api-for-metrics",
+    "https://docs.groundcover.com/#request-body",
+    "https://docs.groundcover.com/#response",
+    "https://docs.groundcover.com/#revoking-a-key",
+    "https://docs.groundcover.com/#scope-of-use",
+    "https://docs.groundcover.com/#security-best-practices",
+    "https://docs.groundcover.com/#structure-of-the-examples",
+    "https://docs.groundcover.com/#summary",
+    "https://docs.groundcover.com/#using-an-ingestion-key",
+    "https://docs.groundcover.com/#validity-and-revocation",
+    "https://docs.groundcover.com/#viewing-keys",
+    "https://docs.groundcover.com/#what-is-mcp",
+    "https://docs.groundcover.com/architecture/byoc",
+    "https://docs.groundcover.com/architecture/overview",
+    "https://docs.groundcover.com/architecture/security-considerations",
+    "https://docs.groundcover.com/articles/datadog-metrics-to-prometheus",
+    "https://docs.groundcover.com/capabilities/ai-observability",
+    "https://docs.groundcover.com/capabilities/application-performance-monitoring-apm",
+    "https://docs.groundcover.com/capabilities/infrastructure-monitoring",
+    "https://docs.groundcover.com/capabilities/log-management",
+    "https://docs.groundcover.com/capabilities/real-user-monitoring-rum",
+    "https://docs.groundcover.com/capabilities/synthetics",
+    "https://docs.groundcover.com/customization/customize-deployment",
+    "https://docs.groundcover.com/customization/customize-usage",
+    "https://docs.groundcover.com/getting-started",
+    "https://docs.groundcover.com/getting-started/5-quick-steps-to-get-you-started",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp.md",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server#api-key",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server#how-to-find-your-time-zone",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server#oauth-recommended",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server#optional-headers",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/configure-groundcovers-mcp-server.md",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/getting-started-prompts",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/mcp-tools-reference",
+    "https://docs.groundcover.com/getting-started/groundcover-mcp/real-world-use-cases",
+    "https://docs.groundcover.com/getting-started/installation-and-updating",
+    "https://docs.groundcover.com/getting-started/login-and-create-a-workspace",
+    "https://docs.groundcover.com/getting-started/migrations",
+    "https://docs.groundcover.com/getting-started/requirements",
+    "https://docs.groundcover.com/integrations/connected-apps",
+    "https://docs.groundcover.com/integrations/data-sources",
+    "https://docs.groundcover.com/integrations/monitor-data-sources-integrations",
+    "https://docs.groundcover.com/integrations/overview",
+    "https://docs.groundcover.com/integrations/workflow-integrations",
+    "https://docs.groundcover.com/llms.txt",
+    "https://docs.groundcover.com/log-and-trace-correlation",
+    "https://docs.groundcover.com/product-updates/whats-new",
+    "https://docs.groundcover.com/rum",
+    "https://docs.groundcover.com/use-groundcover",
+    "https://docs.groundcover.com/use-groundcover/add-custom-environment-labels",
+    "https://docs.groundcover.com/use-groundcover/agent-mode",
+    "https://docs.groundcover.com/use-groundcover/ai-observability",
+    "https://docs.groundcover.com/use-groundcover/api-keys",
+    "https://docs.groundcover.com/use-groundcover/backup-and-restore-metrics",
+    "https://docs.groundcover.com/use-groundcover/billing",
+    "https://docs.groundcover.com/use-groundcover/connectors",
+    "https://docs.groundcover.com/use-groundcover/custom-resource-workloads",
+    "https://docs.groundcover.com/use-groundcover/dashboards-and-alerts",
+    "https://docs.groundcover.com/use-groundcover/data-pipelines",
+    "https://docs.groundcover.com/use-groundcover/drilldown",
+    "https://docs.groundcover.com/use-groundcover/embedded-grafana",
+    "https://docs.groundcover.com/use-groundcover/enrich-workloads-with-service-and-team-metadata",
+    "https://docs.groundcover.com/use-groundcover/fleet-manager",
+    "https://docs.groundcover.com/use-groundcover/fleet-manager#remote-configuration",
+    "https://docs.groundcover.com/use-groundcover/groundcover-terraform-provider",
+    "https://docs.groundcover.com/use-groundcover/insights",
+    "https://docs.groundcover.com/use-groundcover/log-patterns",
+    "https://docs.groundcover.com/use-groundcover/maps",
+    "https://docs.groundcover.com/use-groundcover/metric-summary",
+    "https://docs.groundcover.com/use-groundcover/metrics-and-labels",
+    "https://docs.groundcover.com/use-groundcover/monitors",
+    "https://docs.groundcover.com/use-groundcover/querying-your-groundcover-data",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis.md",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples.md",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/create-ingestion-key",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/create-silence",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/create-workflow",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/delete-ingestion-key",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/delete-silence",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/delete-workflow",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/get-logs-pipeline-configuration",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/get-monitor",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-clusters",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-deployments",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-ingestion-keys",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-monitors",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-namespaces",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-nodes-with-resource-information",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-workflows",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-workloads",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/list-workloads.md",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-logs",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-logs.md",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-logs/advanced-log-queries",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-logs/pagination",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-logs/the-basics-of-querying-logs",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-metrics",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/query-monitors-summary",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/recurring-silences-api",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-examples/update-logs-pipeline-configuration",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-keys",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/api-keys.md",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/build-alerts-and-dashboards-with-grafana-terraform-provider",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/ingestion-keys",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/ingestion-keys.md",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/querying-you-data-using-an-api.md",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/raw-prometheus-and-clickhouse",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/raw-prometheus-and-clickhouse.md",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/service-accounts",
+    "https://docs.groundcover.com/use-groundcover/remote-access-and-apis/service-accounts.md",
+    "https://docs.groundcover.com/use-groundcover/role-based-access-control-rbac",
+    "https://docs.groundcover.com/use-groundcover/saved-views",
+    "https://docs.groundcover.com/use-groundcover/search-and-filter",
+    "https://docs.groundcover.com/use-groundcover/storage-management",
+    "https://docs.groundcover.com/use-groundcover/workflows",
+    "https://docs.groundcover.com/welcome/faq",
+    "https://docs.windsurf.com/windsurf/mcp",
+    "https://ds.groundcover.com/",
+    "https://ds.groundcover.com/datasources/prometheus/api/v1/query_range",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/groundcover-com",
+    "https://github.com/groundcover-com/cli",
+    "https://github.com/groundcover-com/cli/actions",
+    "https://github.com/groundcover-com/cli/activity?ref=main",
+    "https://github.com/groundcover-com/cli/blob/main/.gitignore",
+    "https://github.com/groundcover-com/cli/blob/main/.goreleaser.yaml",
+    "https://github.com/groundcover-com/cli/blob/main/CHANGELOG.md",
+    "https://github.com/groundcover-com/cli/blob/main/CODE_OF_CONDUCT.md",
+    "https://github.com/groundcover-com/cli/blob/main/Earthfile",
+    "https://github.com/groundcover-com/cli/blob/main/LICENSE",
+    "https://github.com/groundcover-com/cli/blob/main/README.md",
+    "https://github.com/groundcover-com/cli/blob/main/go.mod",
+    "https://github.com/groundcover-com/cli/blob/main/go.sum",
+    "https://github.com/groundcover-com/cli/blob/main/install.sh",
+    "https://github.com/groundcover-com/cli/blob/main/main.go",
+    "https://github.com/groundcover-com/cli/branches",
+    "https://github.com/groundcover-com/cli/commit/",
+    "https://github.com/groundcover-com/cli/commit/0a1ecccb108abaaaa1c7e7aba174099ebc1298ec",
+    "https://github.com/groundcover-com/cli/commit/304a32ef69ab1e766af9b4588c7a8d44ee1779ac",
+    "https://github.com/groundcover-com/cli/commit/82d46ce7a61a45b9e08292531dc33c982ea3c05e",
+    "https://github.com/groundcover-com/cli/commit/8991381369e80afa33cce634f79d001956088634",
+    "https://github.com/groundcover-com/cli/commit/9db07f303aaf670b47caa8858502dff9eacc1ac1",
+    "https://github.com/groundcover-com/cli/commit/9e8774e6d77c397fe3071a5cba49ba259b0d5573",
+    "https://github.com/groundcover-com/cli/commit/afecafbc44a331d826c080a7d367f83682f89660",
+    "https://github.com/groundcover-com/cli/commit/b3531d8b57c7ef500abc7704640dd6bec6f8653d",
+    "https://github.com/groundcover-com/cli/commit/be22f0564a761e99521409de7278fcb6bf101b41",
+    "https://github.com/groundcover-com/cli/commit/c3cdc8580f7c4707e6a2f26c9b5b3b9d88dc4edc",
+    "https://github.com/groundcover-com/cli/commit/c517be50aed726c168b7126c3850b1b256fc1506",
+    "https://github.com/groundcover-com/cli/commit/f67703fb6c183b567763a006e60bc9317175df2d",
+    "https://github.com/groundcover-com/cli/commits/main/",
+    "https://github.com/groundcover-com/cli/commits?author=ryechezkel",
+    "https://github.com/groundcover-com/cli/issues",
+    "https://github.com/groundcover-com/cli/projects",
+    "https://github.com/groundcover-com/cli/pull/169",
+    "https://github.com/groundcover-com/cli/pull/173",
+    "https://github.com/groundcover-com/cli/pull/224",
+    "https://github.com/groundcover-com/cli/pull/291",
+    "https://github.com/groundcover-com/cli/pull/299",
+    "https://github.com/groundcover-com/cli/pull/316",
+    "https://github.com/groundcover-com/cli/pull/323",
+    "https://github.com/groundcover-com/cli/pull/325",
+    "https://github.com/groundcover-com/cli/pull/329",
+    "https://github.com/groundcover-com/cli/pull/97",
+    "https://github.com/groundcover-com/cli/pulls",
+    "https://github.com/groundcover-com/cli/pulse",
+    "https://github.com/groundcover-com/cli/security",
+    "https://github.com/groundcover-com/cli/tags",
+    "https://github.com/groundcover-com/cli/tree/main/.github",
+    "https://github.com/groundcover-com/cli/tree/main/cmd",
+    "https://github.com/groundcover-com/cli/tree/main/pkg",
+    "https://github.com/groundcover-com/docs/blob/main/use-groundcover/broken-reference/README.md",
+    "https://github.com/groundcover-com/docs/blob/main/use-groundcover/remote-access-and-apis/broken-reference/README.md",
+    "https://github.com/groundcover-com/terraform-provider-groundcover",
+    "https://github.com/login?return_to=%2Fgroundcover-com%2Fcli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fgroundcover-com%2Fcli",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=groundcover-com%2Fcli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://groundcover.com/llms.txt",
+    "https://join.slack.com/t/groundcover-community/shared_invite/zt-3h47w6vj6-9ajuW0ySTaKd_pH5DoTr1w",
+    "https://maintainers.github.com",
+    "https://mcp.groundcover.com/api/mcp",
+    "https://modelcontextprotocol.io/quickstart/user#2-add-the-filesystem-mcp-server",
+    "https://play.groundcover.com/?utm_source=docs",
+    "https://prometheus.io/docs/prometheus/latest/querying/api/",
+    "https://prometheus.io/docs/prometheus/latest/querying/api/#range-queries",
+    "https://prometheus.io/docs/prometheus/latest/querying/basics/",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.anthropic.com/en/articles/11175166-about-custom-integrations-using-remote-mcp",
+    "https://support.github.com",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=UHgqKYgCiRKdOpWQdi52&utm_content=site_C8WzL",
+    "https://www.groundcover.com",
+    "https://www.groundcover.com/",
+    "https://www.groundcover.com/about",
+    "https://www.groundcover.com/blog",
+    "https://www.groundcover.com/contact",
+    "https://www.groundcover.com/customer-stories",
+    "https://www.groundcover.com/ebpf",
+    "https://www.groundcover.com/integrations",
+    "https://www.groundcover.com/kubernetes-monitoring",
+    "https://www.groundcover.com/kubernetes-troubleshooting",
+    "https://www.groundcover.com/microservices-observability",
+    "https://www.groundcover.com/pricing",
+    "https://www.groundcover.com/sitemap.xml",
+    "https://www.groundcover.com/solutions/aws",
+    "https://www.groundcover.com/solutions/azure",
+    "https://www.groundcover.com/solutions/google-cloud",
+    "https://www.groundcover.com/solutions/kubernetes",
+    "https://www.groundcover.com/support-plans",
+    "https://www.linkedin.com/company/groundcover-com/",
+    "https://www.youtube.com/@groundcover-com",
+    "https://{GROUNDCOVER_MANAGED_OPENTELEMETRY_ENDPOINT}"
+  ]
+}

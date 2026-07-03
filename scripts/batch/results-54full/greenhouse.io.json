@@ -1,0 +1,832 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "greenhouse.io",
+    "detect": {
+      "domain": "greenhouse.io",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:27:12.363Z",
+    "summary": "Greenhouse exposes multiple developer surfaces: Harvest API v3, Job Board API, Candidate Ingestion API, Audit Log API, an Onboarding GraphQL API, and an Assessment partner API; authentication varies by API and includes OAuth, Basic auth, and required On-Behalf-Of headers for some flows.",
+    "description": "Greenhouse provides recruiting and onboarding software used to manage hiring workflows, job postings, candidates, assessments, and employee onboarding data. Its products include Greenhouse Recruiting, job board publishing, audit logging, and onboarding.",
+    "credentials": {
+      "harvest_v3_oauth_client": {
+        "type": "oauth2_cc",
+        "label": "Harvest v3 OAuth client credentials",
+        "generateUrl": "https://harvestdocs.greenhouse.io/docs/authentication",
+        "setup": "In Greenhouse, open **API Credentials**, click **Create new API credentials**, select **Harvest V3 (OAuth)**, save, and configure the scopes your integration needs, as described in [Harvest authentication](https://harvestdocs.greenhouse.io/docs/authentication). Greenhouse then gives you a `Client ID` and `Client Secret`. Use them to get a bearer token from `https://auth.greenhouse.io/token` with the OAuth client-credentials flow."
+      },
+      "harvest_partner_oauth_app": {
+        "type": "oauth2",
+        "label": "Greenhouse Harvest partner OAuth app",
+        "generateUrl": "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+        "setup": "This is for signed Greenhouse partners. Start with the [integration request form](https://www.greenhouse.com/integration-partner#apply-now), then work with Greenhouse Partner Support as described in [the Harvest partner OAuth guide](https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth). Provide your integration name, environment, required scopes, redirect URI(s), and logo; Greenhouse issues a `Client ID` and `Client Secret` for the authorization-code flow against `https://auth.greenhouse.io/authorize` and `https://auth.greenhouse.io/token`."
+      },
+      "harvest_api_key": {
+        "type": "basic",
+        "label": "Harvest API key",
+        "generateUrl": "https://support.greenhouse.io/hc/en-us/articles/5888163769883",
+        "setup": "Create a Harvest API credential in Greenhouse from **API Credentials** / **API Credential Management**. The Harvest docs note existing Harvest API credentials can still be used during the v1/v2→v3 transition and for Audit Log token generation; see [Harvest authentication](https://harvestdocs.greenhouse.io/docs/authentication) and [Audit Log authentication](https://developers.greenhouse.io/audit-log.html#authentication). Use the API key as the HTTP Basic username with an empty password (`api_key:`)."
+      },
+      "job_board_api_key": {
+        "type": "basic",
+        "label": "Job Board API key",
+        "generateUrl": "https://support.greenhouse.io/hc/en-us/articles/5888210160155",
+        "setup": "Create a Job Board API credential in Greenhouse API Credentials/API Credential Management. The [Job Board API docs](https://developers.greenhouse.io/job-board.html) state only application submission requires this key. Use the Job Board API key as the HTTP Basic username with an empty password, base64-encoded as `api_key:`."
+      },
+      "ingestion_partner_oauth_app": {
+        "type": "oauth2",
+        "label": "Candidate Ingestion OAuth app",
+        "generateUrl": "https://developers.greenhouse.io/candidate-ingestion.html#authentication",
+        "setup": "For Candidate Ingestion OAuth, provide Greenhouse with your application name, application URL, callback URL, and logo as described in [Candidate Ingestion authentication](https://developers.greenhouse.io/candidate-ingestion.html#authentication). Greenhouse then supplies a consumer key, consumer secret, token URL, and authorize URL for the OAuth 2.0 flow. Use the resulting bearer access token in API requests."
+      },
+      "partner_api_key": {
+        "type": "basic",
+        "label": "Partner API key",
+        "generateUrl": "https://developers.greenhouse.io/candidate-ingestion.html#authentication",
+        "setup": "For Candidate Ingestion basic auth, the customer supplies the partner with a **Partner API Key** and a service user, per [Candidate Ingestion authentication](https://developers.greenhouse.io/candidate-ingestion.html#authentication). Use the Partner API key as the HTTP Basic username with an empty password (`api_key:`), and send the service user's email in the `On-Behalf-Of` header on every request."
+      },
+      "service_user_email": {
+        "type": "compound",
+        "label": "Service user email for On-Behalf-Of",
+        "setup": "For Candidate Ingestion basic authentication, use the active Greenhouse service user's email address in the `On-Behalf-Of` header on every request, as required by [Candidate Ingestion authentication](https://developers.greenhouse.io/candidate-ingestion.html#authentication). This user is typically created specifically for the integration and must be recognized by Greenhouse."
+      },
+      "audit_log_user_id": {
+        "type": "compound",
+        "label": "Greenhouse user ID for Audit Log token generation",
+        "setup": "When generating an Audit Log access token, send the Greenhouse user ID in the `On-Behalf-Of` header, as shown in [Audit Log authentication](https://developers.greenhouse.io/audit-log.html#authentication). The request also requires a Harvest API key."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "harvest-api-v3",
+        "name": "Harvest API v3",
+        "type": "http",
+        "docs": "https://harvestdocs.greenhouse.io/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://harvestdocs.greenhouse.io/docs/authentication",
+            "https://support.greenhouse.io/hc/en-us/articles/10568627186203-Greenhouse-API-overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "harvest_v3_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://harvestdocs.greenhouse.io/docs/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "harvest_partner_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://harvestdocs.greenhouse.io/docs/authentication",
+                  "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "harvest_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://harvestdocs.greenhouse.io/docs/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://harvest.greenhouse.io/v3"
+      },
+      {
+        "slug": "job-board-api",
+        "name": "Job Board API",
+        "type": "http",
+        "docs": "https://developers.greenhouse.io/job-board.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.greenhouse.io/job-board.html",
+            "https://support.greenhouse.io/hc/en-us/articles/10568627186203-Greenhouse-API-overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "job_board_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.greenhouse.io/job-board.html"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://boards-api.greenhouse.io/v1",
+        "notes": "GET endpoints are public; only the application submission endpoint requires Basic Auth."
+      },
+      {
+        "slug": "candidate-ingestion-api",
+        "name": "Candidate Ingestion API",
+        "type": "http",
+        "docs": "https://developers.greenhouse.io/candidate-ingestion.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.greenhouse.io/candidate-ingestion.html",
+            "https://support.greenhouse.io/hc/en-us/articles/10568627186203-Greenhouse-API-overview"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ingestion_partner_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.greenhouse.io/candidate-ingestion.html#authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "partner_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                },
+                {
+                  "id": "service_user_email",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "On-Behalf-Of"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.greenhouse.io/candidate-ingestion.html#authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.greenhouse.io/v1/partners"
+      },
+      {
+        "slug": "audit-log-api",
+        "name": "Audit Log API",
+        "type": "http",
+        "docs": "https://developers.greenhouse.io/audit-log.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.greenhouse.io/audit-log.html",
+            "https://developers.greenhouse.io/audit-log.html#authentication",
+            "https://developers.greenhouse.io/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "harvest_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                },
+                {
+                  "id": "audit_log_user_id",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "On-Behalf-Of"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.greenhouse.io/audit-log.html#authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://auditlog.greenhouse.io/v1"
+      },
+      {
+        "slug": "onboarding-api",
+        "name": "Onboarding API",
+        "type": "graphql",
+        "docs": "https://developers.greenhouse.io/gho.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.greenhouse.io/gho.html",
+            "https://support.greenhouse.io/hc/en-us/articles/10568627186203-Greenhouse-API-overview"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "spec": "introspection",
+        "url": "https://api.greenhouse.io/v1/graphql"
+      },
+      {
+        "slug": "assessment-api",
+        "name": "Assessment API",
+        "type": "http",
+        "docs": "https://developers.greenhouse.io/assessment.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.greenhouse.io/assessment.html",
+            "https://support.greenhouse.io/hc/en-us/articles/10568627186203-Greenhouse-API-overview"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:27:12.363Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 177714,
+    "completion_tokens": 2775,
+    "total_tokens": 180489
+  },
+  "visited": [
+    "https://developers.greenhouse.io/",
+    "https://developers.greenhouse.io/assessment.html",
+    "https://developers.greenhouse.io/audit-log.html",
+    "https://developers.greenhouse.io/audit-log.html#authentication",
+    "https://developers.greenhouse.io/candidate-ingestion.html",
+    "https://developers.greenhouse.io/candidate-ingestion.html#authentication",
+    "https://developers.greenhouse.io/gho.html",
+    "https://developers.greenhouse.io/gho.html#a-basic-request",
+    "https://developers.greenhouse.io/gho.html#authentication",
+    "https://developers.greenhouse.io/harvest.html",
+    "https://developers.greenhouse.io/harvest.html#authentication",
+    "https://developers.greenhouse.io/job-board.html",
+    "https://github.com/grnhse/greenhouse-api-docs/blob/master/source/includes/harvest/_introduction.md",
+    "https://harvestdocs.greenhouse.io/docs/authentication",
+    "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+    "https://support.greenhouse.io/hc/en-us/articles/10568627186203-Greenhouse-API-overview",
+    "https://www.getknit.dev/blog/greenhouse-api"
+  ],
+  "grounding": [
+    "http://developers.greenhouse.io",
+    "http://en.wikipedia.org/wiki/JSONP",
+    "http://example.com/tests/12345",
+    "http://graphql.org/",
+    "http://harvestdocs.greenhouse.io",
+    "http://your.co/careers",
+    "http://your.co/careers?gh_jid=444444",
+    "http://your.co/careers?gh_jid=55555",
+    "https://api.greenhouse.io/oauth/authorize",
+    "https://api.greenhouse.io/oauth/token",
+    "https://api.greenhouse.io/v1/partner/candidates",
+    "https://app.greenhouse.io/integrations/testing_partners/take_home_tests/12345",
+    "https://app.greenhouse.io/people/17681532?application_id=26234709",
+    "https://auditlog.us.greenhouse.io/events",
+    "https://auditlog.us.greenhouse.io/events/",
+    "https://auth.greenhouse.io/authorize",
+    "https://auth.greenhouse.io/authorize?",
+    "https://auth.greenhouse.io/token",
+    "https://auth.greenhouse.io/token?grant_type=authorization_code&code=auth_code_received_from_greenhouse",
+    "https://auth.greenhouse.io/token?grant_type=refresh_token&refresh_token=stored_refresh_token_string",
+    "https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs",
+    "https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{id}",
+    "https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}",
+    "https://boards-api.greenhouse.io/v1/example/method/url?callback=",
+    "https://boards.greenhouse.io/vaulttec/jobs/127817",
+    "https://brand.greenhouse.io",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-4.1",
+    "https://developers.greenhouse.io/",
+    "https://developers.greenhouse.io/#",
+    "https://developers.greenhouse.io/#a-basic-request",
+    "https://developers.greenhouse.io/#activity-feed",
+    "https://developers.greenhouse.io/#adddepartment-adddepartmentpayload",
+    "https://developers.greenhouse.io/#adddepartmentinput",
+    "https://developers.greenhouse.io/#adddepartmentpayload",
+    "https://developers.greenhouse.io/#addlocation-addlocationpayload",
+    "https://developers.greenhouse.io/#addlocationinput",
+    "https://developers.greenhouse.io/#addlocationpayload",
+    "https://developers.greenhouse.io/#addpendinghire-pendinghire",
+    "https://developers.greenhouse.io/#addpendinghireinput",
+    "https://developers.greenhouse.io/#applications",
+    "https://developers.greenhouse.io/#approvals",
+    "https://developers.greenhouse.io/#assessment-api-change-log",
+    "https://developers.greenhouse.io/#audit-log-change-log",
+    "https://developers.greenhouse.io/#authentication",
+    "https://developers.greenhouse.io/#boolean",
+    "https://developers.greenhouse.io/#candidates",
+    "https://developers.greenhouse.io/#close-reasons",
+    "https://developers.greenhouse.io/#complexityinfo",
+    "https://developers.greenhouse.io/#complexityinfo-complexityinfo",
+    "https://developers.greenhouse.io/#contactrelationships-string",
+    "https://developers.greenhouse.io/#countries-country",
+    "https://developers.greenhouse.io/#country",
+    "https://developers.greenhouse.io/#current-user",
+    "https://developers.greenhouse.io/#custom-fields",
+    "https://developers.greenhouse.io/#customfield",
+    "https://developers.greenhouse.io/#customfield-customfield",
+    "https://developers.greenhouse.io/#customfieldconnection",
+    "https://developers.greenhouse.io/#customfieldedge",
+    "https://developers.greenhouse.io/#customfieldgroup",
+    "https://developers.greenhouse.io/#customfields-customfieldconnection",
+    "https://developers.greenhouse.io/#customfieldtype",
+    "https://developers.greenhouse.io/#customfieldvalue",
+    "https://developers.greenhouse.io/#customfieldvaluesinput",
+    "https://developers.greenhouse.io/#date",
+    "https://developers.greenhouse.io/#datefilter",
+    "https://developers.greenhouse.io/#dateofbirthfilter",
+    "https://developers.greenhouse.io/#datetime",
+    "https://developers.greenhouse.io/#datetimefilter",
+    "https://developers.greenhouse.io/#delete-delete-application",
+    "https://developers.greenhouse.io/#delete-delete-candidate",
+    "https://developers.greenhouse.io/#delete-delete-custom-field",
+    "https://developers.greenhouse.io/#delete-destroy-a-candidate-tag",
+    "https://developers.greenhouse.io/#delete-destroy-openings",
+    "https://developers.greenhouse.io/#delete-remove-custom-field-options",
+    "https://developers.greenhouse.io/#delete-remove-education-from-candidate",
+    "https://developers.greenhouse.io/#delete-remove-employment-from-candidate",
+    "https://developers.greenhouse.io/#delete-remove-hiring-team-member",
+    "https://developers.greenhouse.io/#delete-remove-scheduled-interview",
+    "https://developers.greenhouse.io/#delete-remove-tag-from-candidate",
+    "https://developers.greenhouse.io/#deletedepartment-deletedepartmentpayload",
+    "https://developers.greenhouse.io/#deletedepartmentinput",
+    "https://developers.greenhouse.io/#deletedepartmentpayload",
+    "https://developers.greenhouse.io/#deletelocation-deletelocationpayload",
+    "https://developers.greenhouse.io/#deletelocationinput",
+    "https://developers.greenhouse.io/#deletelocationpayload",
+    "https://developers.greenhouse.io/#demographic-data",
+    "https://developers.greenhouse.io/#department",
+    "https://developers.greenhouse.io/#department-department",
+    "https://developers.greenhouse.io/#departmentconnection",
+    "https://developers.greenhouse.io/#departmentedge",
+    "https://developers.greenhouse.io/#departmentfilter",
+    "https://developers.greenhouse.io/#departments",
+    "https://developers.greenhouse.io/#departments-departmentconnection",
+    "https://developers.greenhouse.io/#document",
+    "https://developers.greenhouse.io/#education",
+    "https://developers.greenhouse.io/#educations",
+    "https://developers.greenhouse.io/#eeoc",
+    "https://developers.greenhouse.io/#email-templates",
+    "https://developers.greenhouse.io/#emailfilter",
+    "https://developers.greenhouse.io/#employee",
+    "https://developers.greenhouse.io/#employee-employee",
+    "https://developers.greenhouse.io/#employeeconnection",
+    "https://developers.greenhouse.io/#employeeedge",
+    "https://developers.greenhouse.io/#employees-employeeconnection",
+    "https://developers.greenhouse.io/#employmentstatuses-string",
+    "https://developers.greenhouse.io/#employmentstatusfilter",
+    "https://developers.greenhouse.io/#enums",
+    "https://developers.greenhouse.io/#error-properties",
+    "https://developers.greenhouse.io/#errors",
+    "https://developers.greenhouse.io/#errors-and-validation",
+    "https://developers.greenhouse.io/#events",
+    "https://developers.greenhouse.io/#file",
+    "https://developers.greenhouse.io/#float",
+    "https://developers.greenhouse.io/#general-concepts",
+    "https://developers.greenhouse.io/#general-considerations",
+    "https://developers.greenhouse.io/#get-hiring-team",
+    "https://developers.greenhouse.io/#get-list-applications",
+    "https://developers.greenhouse.io/#get-list-approvals-for-job",
+    "https://developers.greenhouse.io/#get-list-candidate-tags",
+    "https://developers.greenhouse.io/#get-list-candidates",
+    "https://developers.greenhouse.io/#get-list-close-reasons",
+    "https://developers.greenhouse.io/#get-list-custom-field-options",
+    "https://developers.greenhouse.io/#get-list-custom-fields",
+    "https://developers.greenhouse.io/#get-list-degrees",
+    "https://developers.greenhouse.io/#get-list-demographic-answer-options",
+    "https://developers.greenhouse.io/#get-list-demographic-answer-options-for-demographic-question",
+    "https://developers.greenhouse.io/#get-list-demographic-answers",
+    "https://developers.greenhouse.io/#get-list-demographic-answers-for-application",
+    "https://developers.greenhouse.io/#get-list-demographic-question-sets",
+    "https://developers.greenhouse.io/#get-list-demographic-questions",
+    "https://developers.greenhouse.io/#get-list-demographic-questions-for-demographic-question-set",
+    "https://developers.greenhouse.io/#get-list-departments",
+    "https://developers.greenhouse.io/#get-list-disciplines",
+    "https://developers.greenhouse.io/#get-list-eeoc",
+    "https://developers.greenhouse.io/#get-list-email-templates",
+    "https://developers.greenhouse.io/#get-list-job-openings",
+    "https://developers.greenhouse.io/#get-list-job-posts",
+    "https://developers.greenhouse.io/#get-list-job-posts-for-job",
+    "https://developers.greenhouse.io/#get-list-job-stages",
+    "https://developers.greenhouse.io/#get-list-job-stages-for-job",
+    "https://developers.greenhouse.io/#get-list-jobs",
+    "https://developers.greenhouse.io/#get-list-offers",
+    "https://developers.greenhouse.io/#get-list-offers-for-application",
+    "https://developers.greenhouse.io/#get-list-offices",
+    "https://developers.greenhouse.io/#get-list-prospect-pools",
+    "https://developers.greenhouse.io/#get-list-rejection-reasons",
+    "https://developers.greenhouse.io/#get-list-scheduled-interviews",
+    "https://developers.greenhouse.io/#get-list-scheduled-interviews-for-application",
+    "https://developers.greenhouse.io/#get-list-schools",
+    "https://developers.greenhouse.io/#get-list-scorecards",
+    "https://developers.greenhouse.io/#get-list-scorecards-for-application",
+    "https://developers.greenhouse.io/#get-list-sources",
+    "https://developers.greenhouse.io/#get-list-tags-applied-to-candidate",
+    "https://developers.greenhouse.io/#get-pending-approvals-for-user",
+    "https://developers.greenhouse.io/#get-retrieve-activity-feed",
+    "https://developers.greenhouse.io/#get-retrieve-application",
+    "https://developers.greenhouse.io/#get-retrieve-approval-flow",
+    "https://developers.greenhouse.io/#get-retrieve-candidate",
+    "https://developers.greenhouse.io/#get-retrieve-current-offer-for-application",
+    "https://developers.greenhouse.io/#get-retrieve-custom-field",
+    "https://developers.greenhouse.io/#get-retrieve-custom-locations-for-job-post",
+    "https://developers.greenhouse.io/#get-retrieve-demographic-answer",
+    "https://developers.greenhouse.io/#get-retrieve-demographic-answer-option",
+    "https://developers.greenhouse.io/#get-retrieve-demographic-question",
+    "https://developers.greenhouse.io/#get-retrieve-demographic-question-set",
+    "https://developers.greenhouse.io/#get-retrieve-department",
+    "https://developers.greenhouse.io/#get-retrieve-eeoc-data-for-application",
+    "https://developers.greenhouse.io/#get-retrieve-email-template",
+    "https://developers.greenhouse.io/#get-retrieve-events",
+    "https://developers.greenhouse.io/#get-retrieve-job",
+    "https://developers.greenhouse.io/#get-retrieve-job-post",
+    "https://developers.greenhouse.io/#get-retrieve-job-post-for-job",
+    "https://developers.greenhouse.io/#get-retrieve-job-stage",
+    "https://developers.greenhouse.io/#get-retrieve-offer",
+    "https://developers.greenhouse.io/#get-retrieve-office",
+    "https://developers.greenhouse.io/#get-retrieve-prospect-pool",
+    "https://developers.greenhouse.io/#get-retrieve-scheduled-interview",
+    "https://developers.greenhouse.io/#get-retrieve-scorecard",
+    "https://developers.greenhouse.io/#get-single-opening-for-job",
+    "https://developers.greenhouse.io/#graphql",
+    "https://developers.greenhouse.io/#greenhouserecruitingdata",
+    "https://developers.greenhouse.io/#harvest-change-log",
+    "https://developers.greenhouse.io/#hrmanagerfilter",
+    "https://developers.greenhouse.io/#id",
+    "https://developers.greenhouse.io/#if-you-have-implemented-the-patch-completed-test-option",
+    "https://developers.greenhouse.io/#if-you-have-implemented-the-polling-option",
+    "https://developers.greenhouse.io/#ingestion-api-change-log",
+    "https://developers.greenhouse.io/#input-objects",
+    "https://developers.greenhouse.io/#int",
+    "https://developers.greenhouse.io/#introduction",
+    "https://developers.greenhouse.io/#job-boards",
+    "https://developers.greenhouse.io/#job-openings",
+    "https://developers.greenhouse.io/#job-posts",
+    "https://developers.greenhouse.io/#job-stages",
+    "https://developers.greenhouse.io/#jobs",
+    "https://developers.greenhouse.io/#json",
+    "https://developers.greenhouse.io/#jsonp",
+    "https://developers.greenhouse.io/#list-degrees",
+    "https://developers.greenhouse.io/#list-departments",
+    "https://developers.greenhouse.io/#list-disciplines",
+    "https://developers.greenhouse.io/#list-jobs",
+    "https://developers.greenhouse.io/#list-offices",
+    "https://developers.greenhouse.io/#list-schools",
+    "https://developers.greenhouse.io/#list-sections",
+    "https://developers.greenhouse.io/#list-tests",
+    "https://developers.greenhouse.io/#location",
+    "https://developers.greenhouse.io/#location-location",
+    "https://developers.greenhouse.io/#locationconnection",
+    "https://developers.greenhouse.io/#locationedge",
+    "https://developers.greenhouse.io/#locationfilter",
+    "https://developers.greenhouse.io/#locations-locationconnection",
+    "https://developers.greenhouse.io/#managerfilter",
+    "https://developers.greenhouse.io/#mutation",
+    "https://developers.greenhouse.io/#mutations",
+    "https://developers.greenhouse.io/#oauth-scopes",
+    "https://developers.greenhouse.io/#offers",
+    "https://developers.greenhouse.io/#offices",
+    "https://developers.greenhouse.io/#othercriteria-othercriterionconnection",
+    "https://developers.greenhouse.io/#othercriterion",
+    "https://developers.greenhouse.io/#othercriterion-othercriterion",
+    "https://developers.greenhouse.io/#othercriterionconnection",
+    "https://developers.greenhouse.io/#othercriterionedge",
+    "https://developers.greenhouse.io/#pageinfo",
+    "https://developers.greenhouse.io/#pagination",
+    "https://developers.greenhouse.io/#patch-convert-prospect-to-candidate",
+    "https://developers.greenhouse.io/#patch-edit-candidate",
+    "https://developers.greenhouse.io/#patch-edit-department",
+    "https://developers.greenhouse.io/#patch-edit-office",
+    "https://developers.greenhouse.io/#patch-edit-openings",
+    "https://developers.greenhouse.io/#patch-mark-test-as-completed",
+    "https://developers.greenhouse.io/#patch-update-application",
+    "https://developers.greenhouse.io/#patch-update-current-offer",
+    "https://developers.greenhouse.io/#patch-update-custom-field",
+    "https://developers.greenhouse.io/#patch-update-custom-field-options",
+    "https://developers.greenhouse.io/#patch-update-job",
+    "https://developers.greenhouse.io/#patch-update-job-post",
+    "https://developers.greenhouse.io/#patch-update-job-post-status",
+    "https://developers.greenhouse.io/#patch-update-rejection-reason",
+    "https://developers.greenhouse.io/#patch-update-scheduled-interview",
+    "https://developers.greenhouse.io/#pendinghire",
+    "https://developers.greenhouse.io/#personalemailfilter",
+    "https://developers.greenhouse.io/#phonenumber",
+    "https://developers.greenhouse.io/#post-add-application-to-candidate-prospect",
+    "https://developers.greenhouse.io/#post-add-attachment",
+    "https://developers.greenhouse.io/#post-add-attachment-to-application",
+    "https://developers.greenhouse.io/#post-add-candidate",
+    "https://developers.greenhouse.io/#post-add-department",
+    "https://developers.greenhouse.io/#post-add-e-mail-note",
+    "https://developers.greenhouse.io/#post-add-education",
+    "https://developers.greenhouse.io/#post-add-employment",
+    "https://developers.greenhouse.io/#post-add-hiring-team-members",
+    "https://developers.greenhouse.io/#post-add-new-candidate-tag",
+    "https://developers.greenhouse.io/#post-add-note",
+    "https://developers.greenhouse.io/#post-add-office",
+    "https://developers.greenhouse.io/#post-add-prospect",
+    "https://developers.greenhouse.io/#post-advance-application",
+    "https://developers.greenhouse.io/#post-authenticate-audit-log",
+    "https://developers.greenhouse.io/#post-candidates",
+    "https://developers.greenhouse.io/#post-create-custom-field",
+    "https://developers.greenhouse.io/#post-create-custom-field-options",
+    "https://developers.greenhouse.io/#post-create-job",
+    "https://developers.greenhouse.io/#post-create-new-openings",
+    "https://developers.greenhouse.io/#post-create-scheduled-interview",
+    "https://developers.greenhouse.io/#post-hire-application",
+    "https://developers.greenhouse.io/#post-move-application-different-job",
+    "https://developers.greenhouse.io/#post-move-application-same-job",
+    "https://developers.greenhouse.io/#post-reject-application",
+    "https://developers.greenhouse.io/#post-request-approvals",
+    "https://developers.greenhouse.io/#post-tracking-link",
+    "https://developers.greenhouse.io/#post-unreject-application",
+    "https://developers.greenhouse.io/#prospect-pools",
+    "https://developers.greenhouse.io/#prospect-post-sections",
+    "https://developers.greenhouse.io/#put-add-a-candidate-tag",
+    "https://developers.greenhouse.io/#put-anonymize-candidate",
+    "https://developers.greenhouse.io/#put-create-or-replace-an-approval-flow",
+    "https://developers.greenhouse.io/#put-merge-candidates",
+    "https://developers.greenhouse.io/#put-replace-an-approver-in-an-approver-group",
+    "https://developers.greenhouse.io/#put-replace-hiring-team",
+    "https://developers.greenhouse.io/#queries",
+    "https://developers.greenhouse.io/#rate-limiting",
+    "https://developers.greenhouse.io/#ratelimit",
+    "https://developers.greenhouse.io/#ratelimit-ratelimit",
+    "https://developers.greenhouse.io/#rejection-reasons",
+    "https://developers.greenhouse.io/#request",
+    "https://developers.greenhouse.io/#response",
+    "https://developers.greenhouse.io/#response-error",
+    "https://developers.greenhouse.io/#retrieve-a-department",
+    "https://developers.greenhouse.io/#retrieve-a-job",
+    "https://developers.greenhouse.io/#retrieve-a-section",
+    "https://developers.greenhouse.io/#retrieve-an-office",
+    "https://developers.greenhouse.io/#retrieve-candidates",
+    "https://developers.greenhouse.io/#retrieve-current-user",
+    "https://developers.greenhouse.io/#retrieve-job-board",
+    "https://developers.greenhouse.io/#retrieve-jobs",
+    "https://developers.greenhouse.io/#retrieve-prospect-pools",
+    "https://developers.greenhouse.io/#scalars",
+    "https://developers.greenhouse.io/#scheduled-interviews",
+    "https://developers.greenhouse.io/#scorecards",
+    "https://developers.greenhouse.io/#send-test",
+    "https://developers.greenhouse.io/#sending-updates-to-greenhouse",
+    "https://developers.greenhouse.io/#signaturerequest",
+    "https://developers.greenhouse.io/#signaturerequeststatus",
+    "https://developers.greenhouse.io/#signaturerequesttemplate",
+    "https://developers.greenhouse.io/#sources",
+    "https://developers.greenhouse.io/#startdatefilter",
+    "https://developers.greenhouse.io/#state",
+    "https://developers.greenhouse.io/#string",
+    "https://developers.greenhouse.io/#submit-an-application",
+    "https://developers.greenhouse.io/#tags",
+    "https://developers.greenhouse.io/#team",
+    "https://developers.greenhouse.io/#team-team",
+    "https://developers.greenhouse.io/#teamcategories-teamcategoryconnection",
+    "https://developers.greenhouse.io/#teamcategory",
+    "https://developers.greenhouse.io/#teamcategory-teamcategory",
+    "https://developers.greenhouse.io/#teamcategoryconnection",
+    "https://developers.greenhouse.io/#teamcategoryedge",
+    "https://developers.greenhouse.io/#teamconnection",
+    "https://developers.greenhouse.io/#teamedge",
+    "https://developers.greenhouse.io/#teams-teamconnection",
+    "https://developers.greenhouse.io/#test-status",
+    "https://developers.greenhouse.io/#the-activity-feed-object",
+    "https://developers.greenhouse.io/#the-application-object",
+    "https://developers.greenhouse.io/#the-approval-flow-object",
+    "https://developers.greenhouse.io/#the-candidate-object",
+    "https://developers.greenhouse.io/#the-candidate-tag-object",
+    "https://developers.greenhouse.io/#the-close-reason-object",
+    "https://developers.greenhouse.io/#the-custom-field-object",
+    "https://developers.greenhouse.io/#the-custom-field-options-object",
+    "https://developers.greenhouse.io/#the-demographic-answer-object",
+    "https://developers.greenhouse.io/#the-demographic-answer-option-object",
+    "https://developers.greenhouse.io/#the-demographic-question-object",
+    "https://developers.greenhouse.io/#the-demographic-question-set-object",
+    "https://developers.greenhouse.io/#the-department-object",
+    "https://developers.greenhouse.io/#the-education-objects",
+    "https://developers.greenhouse.io/#the-eeoc-object",
+    "https://developers.greenhouse.io/#the-email-template-object",
+    "https://developers.greenhouse.io/#the-events-object",
+    "https://developers.greenhouse.io/#the-job-object",
+    "https://developers.greenhouse.io/#the-job-opening-object",
+    "https://developers.greenhouse.io/#the-job-post-object",
+    "https://developers.greenhouse.io/#the-job-stage-object",
+    "https://developers.greenhouse.io/#the-offer-object",
+    "https://developers.greenhouse.io/#the-office-object",
+    "https://developers.greenhouse.io/#the-prospect-pools-object",
+    "https://developers.greenhouse.io/#the-rejection-reason-object",
+    "https://developers.greenhouse.io/#the-scheduled-interview-object",
+    "https://developers.greenhouse.io/#the-scorecard-object",
+    "https://developers.greenhouse.io/#the-source-object",
+    "https://developers.greenhouse.io/#throttling",
+    "https://developers.greenhouse.io/#titlefilter",
+    "https://developers.greenhouse.io/#track",
+    "https://developers.greenhouse.io/#tracking-link",
+    "https://developers.greenhouse.io/#types",
+    "https://developers.greenhouse.io/#updatecustomfieldvalue",
+    "https://developers.greenhouse.io/#updatedepartment-updatedepartmentpayload",
+    "https://developers.greenhouse.io/#updatedepartmentinput",
+    "https://developers.greenhouse.io/#updatedepartmentpayload",
+    "https://developers.greenhouse.io/#updateemployee",
+    "https://developers.greenhouse.io/#updateemployeeprofile-employee",
+    "https://developers.greenhouse.io/#updatelocation-updatelocationpayload",
+    "https://developers.greenhouse.io/#updatelocationinput",
+    "https://developers.greenhouse.io/#updatelocationpayload",
+    "https://developers.greenhouse.io/#url",
+    "https://developers.greenhouse.io/#validation",
+    "https://developers.greenhouse.io/#value",
+    "https://developers.greenhouse.io/#workcountrycodefilter",
+    "https://developers.greenhouse.io/#workflow",
+    "https://developers.greenhouse.io/#working-with-greenhouse-to-implement-the-integration",
+    "https://developers.greenhouse.io/assessment.html",
+    "https://developers.greenhouse.io/assessment.html#authentication",
+    "https://developers.greenhouse.io/audit-log.html",
+    "https://developers.greenhouse.io/audit-log.html#authentication",
+    "https://developers.greenhouse.io/audit-log.html#pagination",
+    "https://developers.greenhouse.io/audit-log.html#the-events-object",
+    "https://developers.greenhouse.io/audit-log.html#throttling",
+    "https://developers.greenhouse.io/candidate-ingestion.html",
+    "https://developers.greenhouse.io/candidate-ingestion.html#authentication",
+    "https://developers.greenhouse.io/gho.html",
+    "https://developers.greenhouse.io/gho.html#a-basic-request",
+    "https://developers.greenhouse.io/gho.html#authentication",
+    "https://developers.greenhouse.io/harvest.html",
+    "https://developers.greenhouse.io/harvest.html#authentication",
+    "https://developers.greenhouse.io/job-board.html",
+    "https://developers.greenhouse.io/job-board.html#applications",
+    "https://developers.greenhouse.io/job-board.html#list-jobs",
+    "https://developers.greenhouse.io/job-board.html#submit-an-application",
+    "https://developers.greenhouse.io/onboarding_webhooks.html",
+    "https://developers.greenhouse.io/webhooks.html",
+    "https://github.com/grnhse/greenhouse-api-docs",
+    "https://github.com/grnhse/greenhouse-api-docs/blob/master/source/includes/harvest/_introduction.md",
+    "https://github.com/grnhse/greenhouse-api-docs/tree/master/source/includes/assessment",
+    "https://github.com/grnhse/greenhouse-api-docs/tree/master/source/includes/audit-log",
+    "https://github.com/grnhse/greenhouse-api-docs/tree/master/source/includes/candidate-ingestion",
+    "https://github.com/grnhse/greenhouse-api-docs/tree/master/source/includes/gho",
+    "https://github.com/grnhse/greenhouse-api-docs/tree/master/source/includes/job-board",
+    "https://github.com/skevy/graphiql-app",
+    "https://greenhouse.io/onboarding",
+    "https://greenhouse.statuspage.io/",
+    "https://greenhouse.zendesk.com/access?locale=en-us&brand_id=2395&return_to=https%3A%2F%2Fsupport.greenhouse.io%2Fhc%2Fen-us%2Farticles%2F10568627186203-Greenhouse-API-overview&locale=en-us",
+    "https://harrypotter.com",
+    "https://harvest.greenhouse.io/auth/jwt_access_token",
+    "https://harvest.greenhouse.io/auth/token",
+    "https://harvest.greenhouse.io/v3/job_posts",
+    "https://harvestdocs.greenhouse.io/",
+    "https://harvestdocs.greenhouse.io/#content",
+    "https://harvestdocs.greenhouse.io/docs",
+    "https://harvestdocs.greenhouse.io/docs/api-rate-limiting",
+    "https://harvestdocs.greenhouse.io/docs/authentication",
+    "https://harvestdocs.greenhouse.io/docs/authentication#step-1-create-harvest-v3-oauth-credentials",
+    "https://harvestdocs.greenhouse.io/docs/getting-started",
+    "https://harvestdocs.greenhouse.io/docs/handling-scope-changes",
+    "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth",
+    "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth#step-6-maintain-access-refreshing-the-access-token",
+    "https://harvestdocs.greenhouse.io/docs/harvest-partner-oauth#step-7-access-the-harvest-v3-api",
+    "https://harvestdocs.greenhouse.io/docs/list-endpoints",
+    "https://harvestdocs.greenhouse.io/docs/overview-and-philosophy",
+    "https://harvestdocs.greenhouse.io/docs/pagination",
+    "https://harvestdocs.greenhouse.io/docs/standardizations",
+    "https://harvestdocs.greenhouse.io/docs/step-by-step-migration-instructions",
+    "https://harvestdocs.greenhouse.io/docs/write-endpoint-migration-guide",
+    "https://harvestdocs.greenhouse.io/llms.txt",
+    "https://harvestdocs.greenhouse.io/login?redirect_uri=/docs/authentication",
+    "https://harvestdocs.greenhouse.io/login?redirect_uri=/docs/harvest-partner-oauth",
+    "https://harvestdocs.greenhouse.io/reference",
+    "https://harvestdocs.greenhouse.io/reference/delete_v3-applications-id",
+    "https://harvestdocs.greenhouse.io/reference/generate-token",
+    "https://harvestdocs.greenhouse.io/reference/get_v3-application-stages",
+    "https://harvestdocs.greenhouse.io/reference/get_v3-candidates",
+    "https://harvestdocs.greenhouse.io/reference/post_auth-token",
+    "https://hogwarts.com/resume",
+    "https://learn.greenhouse.io/",
+    "https://learn.greenhouse.io/calendar",
+    "https://learn.greenhouse.io/page/content-library",
+    "https://onboarding-api.greenhouse.io/graphql",
+    "https://onboarding.greenhouse.io/settings/api_management",
+    "https://status.greenhouse.io/",
+    "https://support.greenhouse.io/#h_01GJDS94HXJSERS9FD1CCFAE2H",
+    "https://support.greenhouse.io/#h_01GJDS995KFXDBKE8F068W9NHF",
+    "https://support.greenhouse.io/#h_01GJDS9D0BP1JQKJSGYH9RMS8V",
+    "https://support.greenhouse.io/#h_01GJDS9HH9Z0H7BS6ZXZY068SK",
+    "https://support.greenhouse.io/#h_01GJDS9P1XHQVJ7MW7PCQP5VZA",
+    "https://support.greenhouse.io/hc/en-us",
+    "https://support.greenhouse.io/hc/en-us/articles/10568627186203-Greenhouse-API-overview",
+    "https://support.greenhouse.io/hc/en-us/articles/10568627186203-Greenhouse-API-overview/subscription.html",
+    "https://support.greenhouse.io/hc/en-us/articles/12128717496347",
+    "https://support.greenhouse.io/hc/en-us/articles/15074318933275",
+    "https://support.greenhouse.io/hc/en-us/articles/15075283790107",
+    "https://support.greenhouse.io/hc/en-us/articles/200721644",
+    "https://support.greenhouse.io/hc/en-us/articles/360029266032",
+    "https://support.greenhouse.io/hc/en-us/articles/5888163769883",
+    "https://support.greenhouse.io/hc/en-us/articles/5888210160155",
+    "https://support.greenhouse.io/hc/en-us/categories/360000310871-All-Recruiting-topics",
+    "https://support.greenhouse.io/hc/en-us/requests/new",
+    "https://support.greenhouse.io/hc/en-us/sections/20783130633371-Development",
+    "https://support.greenhouse.io/hc/en-us/sections/20783145026459-API",
+    "https://support.greenhouse.io/hc/en-us/sections/360000685151-HRIS-and-onboarding",
+    "https://support.greenhouse.io/hc/en-us/sections/360000685251-Other-integrations",
+    "https://support.greenhouse.io/hc/en-us/sections/360000710732-Release-Notes",
+    "https://support.greenhouse.io/hc/en-us/sections/4405932824091-Integrations",
+    "https://tools.ietf.org/html/rfc6749",
+    "https://twitter.com/hp",
+    "https://www.getknit.dev/blog/greenhouse-api",
+    "https://www.greenhouse.com/events",
+    "https://www.greenhouse.com/greenhouse-latest-features",
+    "https://www.greenhouse.com/guidance",
+    "https://www.greenhouse.com/guidance?topic=&type=webinar#results",
+    "https://www.greenhouse.com/integration-partner#apply-now",
+    "https://www.greenhouse.com/legal",
+    "https://www.greenhouse.com/privacy-policy",
+    "https://www.testing-partner-a.com/api/list",
+    "https://www.testing-partner.com/api/list_tests",
+    "https://www.testing-partner.com/api/send_test",
+    "https://www.testing-partner.com/api/test_status?partner_interview_id=12345",
+    "https://your-app.com/greenhouse/callback",
+    "https://your-app.com/greenhouse/callback?"
+  ]
+}

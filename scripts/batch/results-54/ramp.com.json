@@ -1,0 +1,495 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "ramp.com",
+    "detect": {
+      "domain": "ramp.com",
+      "found": [
+        "openapi-schema",
+        "llms.txt"
+      ],
+      "apiSchema": {
+        "url": "https://ramp.com/openapi.json",
+        "format": "openapi",
+        "version": "3.0.0"
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T18:50:41.896Z",
+    "summary": "Recorded Ramp’s public developer integration surface: OAuth-protected Developer API, public Ramplify website API spec, two MCP servers (one public, one OAuth-backed), and the Ramp CLI.",
+    "credentials": {
+      "ramp_oauth_app": {
+        "type": "oauth2",
+        "label": "Ramp OAuth app (client ID and client secret)",
+        "generateUrl": "https://docs.ramp.com/developer-api/v1/getting-started",
+        "setup": "Create a Ramp developer app in the Ramp dashboard / developer setup flow described in the [Setup Guide](https://docs.ramp.com/developer-api/v1/getting-started) and [Authorization](https://docs.ramp.com/developer-api/v1/authorization). You will obtain a `client_id` and `client_secret`, then use Ramp OAuth to authorize a business and exchange code for access tokens at `POST /developer/v1/token` (the docs say Ramp authenticates token requests with your client ID and client secret, typically via HTTP Basic Auth).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "ramp-developer-api",
+        "name": "Ramp Developer API",
+        "type": "http",
+        "docs": "https://docs.ramp.com/developer-api/v1",
+        "basis": {
+          "via": "detected",
+          "signal": "openapi:schema",
+          "verifiedAt": "2026-07-02T18:50:41.896Z"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ramp_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.ramp.com/developer-api/v1/authorization",
+                  "https://docs.ramp.com/llms-api.txt"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://ramp.com/openapi.json",
+        "url": "https://demo-api.ramp.com",
+        "notes": "Docs state Ramp uses OAuth 2.0 for secure API access to protected resources. The sandbox page explicitly lists the sandbox API base URL as `https://demo-api.ramp.com`; the production base URL for the Developer API was not clearly shown in scraped docs. The separate machine-readable OpenAPI at `https://ramp.com/openapi.json` describes a different public website API under `https://ramp.com/api/ramplify`."
+      },
+      {
+        "slug": "ramp-developer-mcp",
+        "name": "Ramp Developer MCP",
+        "type": "mcp",
+        "docs": "https://docs.ramp.com/developer-api/v1/developer-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.ramp.com/developer-api/v1/mcp",
+            "https://docs.ramp.com/developer-api/v1/developer-mcp"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.ramp.com/developer-api/v1/developer-mcp"
+            ]
+          }
+        }
+      },
+      {
+        "slug": "ramp-mcp",
+        "name": "Ramp MCP",
+        "type": "mcp",
+        "docs": "https://docs.ramp.com/developer-api/v1/ramp-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.ramp.com/developer-api/v1/mcp",
+            "https://docs.ramp.com/developer-api/v1/ramp-mcp",
+            "https://docs.ramp.com/developer-api/v1/authorization"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ramp_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.ramp.com/developer-api/v1/ramp-mcp",
+                  "https://docs.ramp.com/developer-api/v1/authorization"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "ramp-cli",
+        "name": "Ramp CLI",
+        "type": "cli",
+        "docs": "https://docs.ramp.com/developer-api/v1/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.ramp.com/developer-api/v1/cli",
+            "https://github.com/ramp-public/ramp-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ramp_oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "ramp auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.ramp.com/developer-api/v1/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "ramp-public/ramp-cli"
+          },
+          {
+            "registryType": "uv",
+            "identifier": "git+https://github.com/ramp-public/ramp-cli.git",
+            "runtimeHint": "uv"
+          }
+        ],
+        "command": "ramp"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T18:50:41.896Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 255661,
+    "completion_tokens": 1576,
+    "total_tokens": 257237
+  },
+  "visited": [
+    "https://docs.ramp.com/",
+    "https://docs.ramp.com/developer-api/v1",
+    "https://docs.ramp.com/developer-api/v1/authorization",
+    "https://docs.ramp.com/developer-api/v1/cli",
+    "https://docs.ramp.com/developer-api/v1/developer-mcp",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/authorization.txt",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/cli.txt",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/developer-mcp.txt",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/mcp.txt",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/ramp-mcp.txt",
+    "https://docs.ramp.com/developer-api/v1/mcp",
+    "https://docs.ramp.com/developer-api/v1/ramp-mcp",
+    "https://docs.ramp.com/developer-api/v1/sandbox",
+    "https://docs.ramp.com/llms-api.txt",
+    "https://github.com/ramp-public/ramp-cli",
+    "https://ramp.com/openapi.json"
+  ],
+  "grounding": [
+    "https://agents.ramp.com",
+    "https://agents.ramp.com/install.sh",
+    "https://api.ramp.com/v1/public/api-feedback/llm?feedback=",
+    "https://app.ramp.com/settings/apps/01977e46-48bc-7be8-8a70-52f9235c5b47",
+    "https://app.ramp.com/settings/ramp-developer",
+    "https://app.ramp.com/sign-in",
+    "https://archiveprogram.github.com",
+    "https://demo-api.ramp.com",
+    "https://demo-api.ramp.com↗",
+    "https://demo-mcp.ramp.com/mcp",
+    "https://demo.ramp.com",
+    "https://demo.ramp.com↗",
+    "https://docs.astral.sh/uv/",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.ramp.com/",
+    "https://docs.ramp.com/developer-api/v1",
+    "https://docs.ramp.com/developer-api/v1/accounting-erp-migration",
+    "https://docs.ramp.com/developer-api/v1/agent-cards",
+    "https://docs.ramp.com/developer-api/v1/ai-index",
+    "https://docs.ramp.com/developer-api/v1/ai-usage",
+    "https://docs.ramp.com/developer-api/v1/api/accounting",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-coding",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-connections",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-entities",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-field-option-filter-rules",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-gl-accounts",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-inventory-item",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-ramp-only-fields",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-sync",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-tax",
+    "https://docs.ramp.com/developer-api/v1/api/accounting-vendors",
+    "https://docs.ramp.com/developer-api/v1/api/ai-usage",
+    "https://docs.ramp.com/developer-api/v1/api/applications",
+    "https://docs.ramp.com/developer-api/v1/api/audit-logs",
+    "https://docs.ramp.com/developer-api/v1/api/authorization",
+    "https://docs.ramp.com/developer-api/v1/api/bank-accounts",
+    "https://docs.ramp.com/developer-api/v1/api/banking",
+    "https://docs.ramp.com/developer-api/v1/api/bills",
+    "https://docs.ramp.com/developer-api/v1/api/blank-canvas-approvals",
+    "https://docs.ramp.com/developer-api/v1/api/business",
+    "https://docs.ramp.com/developer-api/v1/api/cards",
+    "https://docs.ramp.com/developer-api/v1/api/cashbacks",
+    "https://docs.ramp.com/developer-api/v1/api/comments",
+    "https://docs.ramp.com/developer-api/v1/api/custom-form",
+    "https://docs.ramp.com/developer-api/v1/api/custom-records-configuration",
+    "https://docs.ramp.com/developer-api/v1/api/custom-records-custom-tables",
+    "https://docs.ramp.com/developer-api/v1/api/custom-records-matrix-tables",
+    "https://docs.ramp.com/developer-api/v1/api/custom-records-native-tables",
+    "https://docs.ramp.com/developer-api/v1/api/departments",
+    "https://docs.ramp.com/developer-api/v1/api/embedded",
+    "https://docs.ramp.com/developer-api/v1/api/entities",
+    "https://docs.ramp.com/developer-api/v1/api/funds",
+    "https://docs.ramp.com/developer-api/v1/api/item-receipts",
+    "https://docs.ramp.com/developer-api/v1/api/limits",
+    "https://docs.ramp.com/developer-api/v1/api/locations",
+    "https://docs.ramp.com/developer-api/v1/api/memos",
+    "https://docs.ramp.com/developer-api/v1/api/merchants",
+    "https://docs.ramp.com/developer-api/v1/api/physical-cards",
+    "https://docs.ramp.com/developer-api/v1/api/purchase-orders",
+    "https://docs.ramp.com/developer-api/v1/api/receipt-integrations",
+    "https://docs.ramp.com/developer-api/v1/api/receipts",
+    "https://docs.ramp.com/developer-api/v1/api/reimbursements",
+    "https://docs.ramp.com/developer-api/v1/api/repayments",
+    "https://docs.ramp.com/developer-api/v1/api/spend-programs",
+    "https://docs.ramp.com/developer-api/v1/api/spend-requests",
+    "https://docs.ramp.com/developer-api/v1/api/statements",
+    "https://docs.ramp.com/developer-api/v1/api/transactions",
+    "https://docs.ramp.com/developer-api/v1/api/transfers",
+    "https://docs.ramp.com/developer-api/v1/api/trips",
+    "https://docs.ramp.com/developer-api/v1/api/unified-requests",
+    "https://docs.ramp.com/developer-api/v1/api/users",
+    "https://docs.ramp.com/developer-api/v1/api/vault",
+    "https://docs.ramp.com/developer-api/v1/api/vendors",
+    "https://docs.ramp.com/developer-api/v1/api/virtual-cards",
+    "https://docs.ramp.com/developer-api/v1/api/webhooks",
+    "https://docs.ramp.com/developer-api/v1/applications",
+    "https://docs.ramp.com/developer-api/v1/authorization",
+    "https://docs.ramp.com/developer-api/v1/banking",
+    "https://docs.ramp.com/developer-api/v1/bill-pay",
+    "https://docs.ramp.com/developer-api/v1/bill-payments",
+    "https://docs.ramp.com/developer-api/v1/build-for-ai-agents",
+    "https://docs.ramp.com/developer-api/v1/build-with-ramp",
+    "https://docs.ramp.com/developer-api/v1/cards-and-funds",
+    "https://docs.ramp.com/developer-api/v1/changelog",
+    "https://docs.ramp.com/developer-api/v1/cli",
+    "https://docs.ramp.com/developer-api/v1/custom-records",
+    "https://docs.ramp.com/developer-api/v1/customized-approvers",
+    "https://docs.ramp.com/developer-api/v1/data-relationships",
+    "https://docs.ramp.com/developer-api/v1/debugging",
+    "https://docs.ramp.com/developer-api/v1/debugging#how-to-submit-a-developer-api-support-ticket",
+    "https://docs.ramp.com/developer-api/v1/deferred-tasks",
+    "https://docs.ramp.com/developer-api/v1/developer-mcp",
+    "https://docs.ramp.com/developer-api/v1/erp-integrations",
+    "https://docs.ramp.com/developer-api/v1/error-handling",
+    "https://docs.ramp.com/developer-api/v1/export-to-a-data-warehouse",
+    "https://docs.ramp.com/developer-api/v1/getting-started",
+    "https://docs.ramp.com/developer-api/v1/guides/agent-cards",
+    "https://docs.ramp.com/developer-api/v1/guides/webhooks",
+    "https://docs.ramp.com/developer-api/v1/incorporation",
+    "https://docs.ramp.com/developer-api/v1/introduction",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/authorization.txt",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/cli.txt",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/developer-mcp.txt",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/mcp.txt",
+    "https://docs.ramp.com/developer-api/v1/llms-guides/ramp-mcp.txt",
+    "https://docs.ramp.com/developer-api/v1/mcp",
+    "https://docs.ramp.com/developer-api/v1/mcp-redirect-whitelist-request",
+    "https://docs.ramp.com/developer-api/v1/monetary-values",
+    "https://docs.ramp.com/developer-api/v1/overview/introduction",
+    "https://docs.ramp.com/developer-api/v1/pagination",
+    "https://docs.ramp.com/developer-api/v1/procurement",
+    "https://docs.ramp.com/developer-api/v1/procurement-intake",
+    "https://docs.ramp.com/developer-api/v1/ramp-data-mcp",
+    "https://docs.ramp.com/developer-api/v1/ramp-mcp",
+    "https://docs.ramp.com/developer-api/v1/ramp-rate",
+    "https://docs.ramp.com/developer-api/v1/rate-limiting",
+    "https://docs.ramp.com/developer-api/v1/reimbursements",
+    "https://docs.ramp.com/developer-api/v1/sandbox",
+    "https://docs.ramp.com/developer-api/v1/sandbox-access",
+    "https://docs.ramp.com/developer-api/v1/spend-controls",
+    "https://docs.ramp.com/developer-api/v1/spend-programs",
+    "https://docs.ramp.com/developer-api/v1/technology-partnerships",
+    "https://docs.ramp.com/developer-api/v1/user-lifecycle",
+    "https://docs.ramp.com/developer-api/v1/users",
+    "https://docs.ramp.com/developer-api/v1/virtual-cards",
+    "https://docs.ramp.com/developer-api/v1/webhooks",
+    "https://docs.ramp.com/llms-api.txt",
+    "https://docs.ramp.com/openapi/developer-api.json",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#",
+    "https://github.com/#readme-ov-file",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Framp-public%2Framp-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Framp-public%2Framp-cli",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/ramp-public",
+    "https://github.com/ramp-public/ramp-cli",
+    "https://github.com/ramp-public/ramp-cli.git",
+    "https://github.com/ramp-public/ramp-cli/actions",
+    "https://github.com/ramp-public/ramp-cli/blob/main/.gitignore",
+    "https://github.com/ramp-public/ramp-cli/blob/main/.pre-commit-config.yaml",
+    "https://github.com/ramp-public/ramp-cli/blob/main/LICENSE",
+    "https://github.com/ramp-public/ramp-cli/blob/main/README.md",
+    "https://github.com/ramp-public/ramp-cli/blob/main/pyproject.toml",
+    "https://github.com/ramp-public/ramp-cli/blob/main/uv.lock",
+    "https://github.com/ramp-public/ramp-cli/branches",
+    "https://github.com/ramp-public/ramp-cli/commit/06df3312be70400a63defdd1af5416d73a3fe7e5",
+    "https://github.com/ramp-public/ramp-cli/commit/3fdbb9f8de62d6a2b9a85c78b70b06148c888e8d",
+    "https://github.com/ramp-public/ramp-cli/commit/cfef15779191f272b407e144386e466dcf317ecb",
+    "https://github.com/ramp-public/ramp-cli/commits/main/",
+    "https://github.com/ramp-public/ramp-cli/commits?author=jjchoi3",
+    "https://github.com/ramp-public/ramp-cli/issues",
+    "https://github.com/ramp-public/ramp-cli/projects",
+    "https://github.com/ramp-public/ramp-cli/pulls",
+    "https://github.com/ramp-public/ramp-cli/pulse",
+    "https://github.com/ramp-public/ramp-cli/security",
+    "https://github.com/ramp-public/ramp-cli/tags",
+    "https://github.com/ramp-public/ramp-cli/tree/main/.github/workflows",
+    "https://github.com/ramp-public/ramp-cli/tree/main/homebrew/Formula",
+    "https://github.com/ramp-public/ramp-cli/tree/main/scripts",
+    "https://github.com/ramp-public/ramp-cli/tree/main/src/ramp_cli",
+    "https://github.com/ramp-public/ramp-cli/tree/main/tests",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=ramp-public%2Framp-cli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://labs.ramp.com",
+    "https://maintainers.github.com",
+    "https://mcp.ramp.com/developer/mcp",
+    "https://mcp.ramp.com/mcp",
+    "https://modelcontextprotocol.io/introduction",
+    "https://ramp.com/about-us",
+    "https://ramp.com/accounting-automation-software",
+    "https://ramp.com/accounts-payable",
+    "https://ramp.com/api/ramplify",
+    "https://ramp.com/blog/accounting-software-for-small-business",
+    "https://ramp.com/blog/accounts-payable-software-large-businesses",
+    "https://ramp.com/blog/accounts-payable-software-small-business",
+    "https://ramp.com/blog/ai-accounting-software",
+    "https://ramp.com/blog/automated-bookkeeping",
+    "https://ramp.com/blog/best-invoice-management-software",
+    "https://ramp.com/blog/business-credit-cards-with-ein-only",
+    "https://ramp.com/blog/corporate-credit-card-expense-management-software",
+    "https://ramp.com/blog/expense-tracker-for-business",
+    "https://ramp.com/blog/high-limit-business-credit-cards",
+    "https://ramp.com/blog/how-to-track-business-expenses",
+    "https://ramp.com/blog/introducing-ramp-treasury",
+    "https://ramp.com/blog/no-credit-check-for-startups",
+    "https://ramp.com/blog/saas-tools-management-101",
+    "https://ramp.com/blog/the-top-procurement-automation-software-of-2024",
+    "https://ramp.com/blog/top-concur-alternatives",
+    "https://ramp.com/blog/top-mercury-alternatives",
+    "https://ramp.com/blog/travel-and-expense-management",
+    "https://ramp.com/blog/travel-management-tools",
+    "https://ramp.com/blog/vendor-invoice-management",
+    "https://ramp.com/blog/vendor-management-systems",
+    "https://ramp.com/blog/what-is-a-p-card",
+    "https://ramp.com/blog/what-is-a-treasury-management-system",
+    "https://ramp.com/blog/what-is-treasury-management",
+    "https://ramp.com/careers",
+    "https://ramp.com/corporate-cards",
+    "https://ramp.com/enterprise",
+    "https://ramp.com/expense-management",
+    "https://ramp.com/get-ramp",
+    "https://ramp.com/global",
+    "https://ramp.com/integrations",
+    "https://ramp.com/intelligence",
+    "https://ramp.com/leading-indicators",
+    "https://ramp.com/legal/platform-agreement",
+    "https://ramp.com/legal/privacy-policy",
+    "https://ramp.com/mid-market",
+    "https://ramp.com/openapi.json",
+    "https://ramp.com/partnerships",
+    "https://ramp.com/platform",
+    "https://ramp.com/pricing",
+    "https://ramp.com/procurement",
+    "https://ramp.com/reporting",
+    "https://ramp.com/rewards",
+    "https://ramp.com/security",
+    "https://ramp.com/small-business",
+    "https://ramp.com/startups",
+    "https://ramp.com/switch",
+    "https://ramp.com/training",
+    "https://ramp.com/travel",
+    "https://ramp.com/treasury",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://support.ramp.com/hc/en-us/articles/1500002005682-Ramp-Admin-guide",
+    "https://support.ramp.com/hc/en-us/articles/16103495669011-Vendor-management-on-Ramp",
+    "https://support.ramp.com/hc/en-us/articles/34648566601235-Bill-Pay-payment-release",
+    "https://support.ramp.com/hc/en-us/articles/360043063133-Applying-and-signing-up-for-Ramp",
+    "https://support.ramp.com/hc/en-us/articles/360043081013-How-to-contact-Ramp-s-Support-team",
+    "https://support.ramp.com/hc/en-us/articles/360056048434-Set-up-your-expense-policy",
+    "https://support.ramp.com/hc/en-us/articles/37424276359443-Get-started-with-Procurement",
+    "https://support.ramp.com/hc/en-us/articles/4417760908435-Bill-Pay-set-up",
+    "https://support.ramp.com/hc/en-us/articles/4434982407443-Overview-of-Ramp-Accounting",
+    "https://support.ramp.com/hc/en-us/articles/45516494479891-Ramp-MCP",
+    "https://support.ramp.com/hc/en-us/sections/35664892787987-Ramp-Treasury",
+    "https://support.ramp.com/hc/en-us/sections/4416852799763-Ramp-Travel",
+    "https://try.ramp.com/"
+  ]
+}

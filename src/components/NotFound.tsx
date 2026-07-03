@@ -21,8 +21,12 @@ export default function NotFound() {
   const [domain, setDomain] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    setDomain(domainFromPath());
+    const d = domainFromPath();
+    setDomain(d);
     setReady(true);
+    // This 404 doubles as the live discover page — title it like a real
+    // domain page (DomainPage.astro) instead of "Not found".
+    if (d) document.title = `${d} — integrations`;
   }, []);
 
   if (!ready) return null;

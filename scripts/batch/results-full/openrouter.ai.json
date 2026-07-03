@@ -1,0 +1,669 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "openrouter.ai",
+    "detect": {
+      "domain": "openrouter.ai",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:16:31.514Z",
+    "summary": "OpenRouter’s public developer surface includes a REST API, a separate management-key admin API, an MCP server, and Codex CLI integration; auth is via Bearer API key, management Bearer key, or OAuth PKCE-minted user key.",
+    "credentials": {
+      "or_api_key": {
+        "type": "bearer",
+        "label": "OpenRouter API key",
+        "generateUrl": "https://openrouter.ai/keys",
+        "setup": "Go to the [API Keys page](https://openrouter.ai/keys) and create a new key. OpenRouter issues keys that start with `sk-or-...`. Use this key for the main API and for the OpenRouter SDKs; store it as `OPENROUTER_API_KEY` if your client reads from env.",
+        "acquisition": "manual"
+      },
+      "or_management_key": {
+        "type": "bearer",
+        "label": "OpenRouter Management API key",
+        "generateUrl": "https://openrouter.ai/settings/management-keys",
+        "setup": "Go to [Management API Keys](https://openrouter.ai/settings/management-keys) and click `Create New Key`. This key is for administrative endpoints under `/api/v1/keys` only; it cannot be used for completion requests.",
+        "acquisition": "manual"
+      },
+      "or_oauth_pkce": {
+        "type": "oauth2",
+        "label": "OpenRouter OAuth PKCE user authorization",
+        "generateUrl": "https://openrouter.ai/auth",
+        "setup": "Send the user to `https://openrouter.ai/auth` with your `callback_url` (optionally `code_challenge` and `code_challenge_method=S256`). After login and consent, exchange the returned `code` at `https://openrouter.ai/api/v1/auth/keys` to mint a user-controlled API key.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "openrouter-api",
+        "name": "OpenRouter API",
+        "type": "http",
+        "docs": "https://openrouter.ai/docs/quickstart.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://openrouter.ai/docs/quickstart.md",
+            "https://openrouter.ai/docs/api/reference/authentication",
+            "https://openrouter.ai/docs/api/reference/streaming.md",
+            "https://openrouter.ai/docs/guides/overview/auth/oauth.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "or_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://openrouter.ai/docs/quickstart.md",
+                  "https://openrouter.ai/docs/api/reference/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "or_oauth_pkce",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://openrouter.ai/docs/guides/overview/auth/oauth.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://openrouter.ai/api/v1"
+      },
+      {
+        "slug": "openrouter-management-api",
+        "name": "OpenRouter Management API",
+        "type": "http",
+        "docs": "https://openrouter.ai/docs/guides/overview/auth/management-api-keys.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://openrouter.ai/docs/guides/overview/auth/management-api-keys.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "or_management_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://openrouter.ai/docs/guides/overview/auth/management-api-keys.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://openrouter.ai/api/v1/keys"
+      },
+      {
+        "slug": "openrouter-mcp-server",
+        "name": "OpenRouter MCP Server",
+        "type": "mcp",
+        "docs": "https://openrouter.ai/docs/mcp-server.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://openrouter.ai/docs/mcp-server.md",
+            "https://openrouter.ai/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "or_oauth_pkce",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://openrouter.ai/docs/mcp-server.md",
+                  "https://openrouter.ai/llms.txt"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.openrouter.ai/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "codex-cli-with-openrouter",
+        "name": "Codex CLI with OpenRouter",
+        "type": "cli",
+        "docs": "https://openrouter.ai/docs/cookbook/coding-agents/codex-cli.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://openrouter.ai/docs/cookbook/coding-agents/codex-cli.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "or_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "export OPENROUTER_API_KEY=\"sk-or-...\"",
+                    "env": [
+                      "OPENROUTER_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://openrouter.ai/docs/cookbook/coding-agents/codex-cli.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "openai/codex",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "codex"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:16:31.514Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 289790,
+    "completion_tokens": 1726,
+    "total_tokens": 291516
+  },
+  "visited": [
+    "https://lobehub.com/mcp/yourusername-openrouter-mcp",
+    "https://openrouter.ai/docs/agent-sdk/overview.md",
+    "https://openrouter.ai/docs/api-reference/overview.md",
+    "https://openrouter.ai/docs/api/reference/authentication",
+    "https://openrouter.ai/docs/api/reference/overview",
+    "https://openrouter.ai/docs/api/reference/streaming.md",
+    "https://openrouter.ai/docs/client-sdks/overview.md",
+    "https://openrouter.ai/docs/cookbook/coding-agents/codex-cli",
+    "https://openrouter.ai/docs/cookbook/coding-agents/codex-cli.md",
+    "https://openrouter.ai/docs/guides/overview/auth/management-api-keys.md",
+    "https://openrouter.ai/docs/guides/overview/auth/oauth.md",
+    "https://openrouter.ai/docs/mcp-server",
+    "https://openrouter.ai/docs/mcp-server.md",
+    "https://openrouter.ai/docs/quickstart",
+    "https://openrouter.ai/docs/quickstart.md",
+    "https://openrouter.ai/llms.txt"
+  ],
+  "grounding": [
+    "http://localhost:51423/callback",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/call-your-api-using-the-authorization-code-flow-with-pkce#parameters",
+    "https://example-app.com/pkce",
+    "https://files.buildwithfern.com/openrouter.docs.buildwithfern.com/docs/5c315bc747b843ac0f3c7fd78ef45b58e9b00397e0685020ff6ac837884c8a71/content/pages/auth/auth-request.png",
+    "https://files.buildwithfern.com/openrouter.docs.buildwithfern.com/docs/6fb7da29e9429d3b2478d6cca8794b9dbeb64d239f2ef8626701a56b2d539497/content/pages/guides/claude-connectors-menu.png",
+    "https://files.buildwithfern.com/openrouter.docs.buildwithfern.com/docs/7c5e0e22334f718612a4a2e88168d104d9a4a3f97c40cb344aa27bb4e335188a/content/pages/auth/code-challenge.png",
+    "https://files.buildwithfern.com/openrouter.docs.buildwithfern.com/docs/c097d0548cbdfc902eaac698ad17aca20c3e5dc64e89d2bd9355902d04f67fea/content/pages/guides/claude-add-custom-connector.png",
+    "https://github.com/OpenRouterTeam/skills/tree/main/skills/create-agent-tui",
+    "https://github.com/openai/codex",
+    "https://github.com/rexxars/eventsource-parser",
+    "https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation",
+    "https://lobehub.com/mcp/yourusername-openrouter-mcp",
+    "https://mcp.openrouter.ai/mcp",
+    "https://oauth.net/2/pkce/",
+    "https://openrouter.ai",
+    "https://openrouter.ai/",
+    "https://openrouter.ai/#assistant-prefill",
+    "https://openrouter.ai/#completions-request-format",
+    "https://openrouter.ai/#completionsresponse-format",
+    "https://openrouter.ai/#configuration-reference",
+    "https://openrouter.ai/#connect-your-agent",
+    "https://openrouter.ai/#core-settings",
+    "https://openrouter.ai/#finish-reason",
+    "https://openrouter.ai/#headers",
+    "https://openrouter.ai/#how-it-works",
+    "https://openrouter.ai/#if-your-key-has-been-exposed",
+    "https://openrouter.ai/#model-flexibility",
+    "https://openrouter.ai/#more-things-you-can-do",
+    "https://openrouter.ai/#openapi-specification",
+    "https://openrouter.ai/#openrouter-provider-block",
+    "https://openrouter.ai/#organizational-controls",
+    "https://openrouter.ai/#pick-the-right-model-for-a-task",
+    "https://openrouter.ai/#plugins",
+    "https://openrouter.ai/#project-trust-levels",
+    "https://openrouter.ai/#provider-failover",
+    "https://openrouter.ai/#querying-cost-and-stats",
+    "https://openrouter.ai/#quick-start",
+    "https://openrouter.ai/#requests",
+    "https://openrouter.ai/#resources",
+    "https://openrouter.ai/#responses",
+    "https://openrouter.ai/#step-1-install-codex-cli",
+    "https://openrouter.ai/#step-2-get-your-openrouter-api-key",
+    "https://openrouter.ai/#step-3-configure-codex-for-openrouter",
+    "https://openrouter.ai/#step-4-set-your-api-key",
+    "https://openrouter.ai/#step-5-start-codex",
+    "https://openrouter.ai/#structured-outputs",
+    "https://openrouter.ai/#troubleshooting",
+    "https://openrouter.ai/#usage-visibility",
+    "https://openrouter.ai/#using-an-api-key",
+    "https://openrouter.ai/#what-is-codex-cli",
+    "https://openrouter.ai/#what-you-can-do",
+    "https://openrouter.ai/#why-use-openrouter-with-codex-cli",
+    "https://openrouter.ai/activity",
+    "https://openrouter.ai/api/v1",
+    "https://openrouter.ai/api/v1/auth/keys",
+    "https://openrouter.ai/api/v1/chat/completions",
+    "https://openrouter.ai/api/v1/keys",
+    "https://openrouter.ai/auth?callback_url=",
+    "https://openrouter.ai/chat",
+    "https://openrouter.ai/docs/_mcp/server",
+    "https://openrouter.ai/docs/agent-sdk/overview",
+    "https://openrouter.ai/docs/agent-sdk/overview.md",
+    "https://openrouter.ai/docs/api",
+    "https://openrouter.ai/docs/api-reference/overview",
+    "https://openrouter.ai/docs/api-reference/overview.md",
+    "https://openrouter.ai/docs/api-reference/parameters",
+    "https://openrouter.ai/docs/api/api-reference/analytics/get-user-activity",
+    "https://openrouter.ai/docs/api/api-reference/anthropic-messages/create-messages",
+    "https://openrouter.ai/docs/api/api-reference/api-keys/create-keys",
+    "https://openrouter.ai/docs/api/api-reference/api-keys/delete-keys",
+    "https://openrouter.ai/docs/api/api-reference/api-keys/get-current-key",
+    "https://openrouter.ai/docs/api/api-reference/api-keys/get-key",
+    "https://openrouter.ai/docs/api/api-reference/api-keys/list",
+    "https://openrouter.ai/docs/api/api-reference/api-keys/update-keys",
+    "https://openrouter.ai/docs/api/api-reference/benchmarks/get-benchmarks",
+    "https://openrouter.ai/docs/api/api-reference/beta-analytics/get-analytics-meta",
+    "https://openrouter.ai/docs/api/api-reference/beta-analytics/query-analytics",
+    "https://openrouter.ai/docs/api/api-reference/byok/create-byok-key",
+    "https://openrouter.ai/docs/api/api-reference/byok/delete-byok-key",
+    "https://openrouter.ai/docs/api/api-reference/byok/get-byok-key",
+    "https://openrouter.ai/docs/api/api-reference/byok/list-byok-keys",
+    "https://openrouter.ai/docs/api/api-reference/byok/update-byok-key",
+    "https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request",
+    "https://openrouter.ai/docs/api/api-reference/classifications/get-task-classifications",
+    "https://openrouter.ai/docs/api/api-reference/credits/get-credits",
+    "https://openrouter.ai/docs/api/api-reference/datasets/get-app-rankings",
+    "https://openrouter.ai/docs/api/api-reference/datasets/get-rankings-daily",
+    "https://openrouter.ai/docs/api/api-reference/embeddings/create-embeddings",
+    "https://openrouter.ai/docs/api/api-reference/embeddings/list-embeddings-models",
+    "https://openrouter.ai/docs/api/api-reference/endpoints/list-endpoints",
+    "https://openrouter.ai/docs/api/api-reference/endpoints/list-endpoints-zdr",
+    "https://openrouter.ai/docs/api/api-reference/files/delete-file",
+    "https://openrouter.ai/docs/api/api-reference/files/download-file-content",
+    "https://openrouter.ai/docs/api/api-reference/files/get-file-metadata",
+    "https://openrouter.ai/docs/api/api-reference/files/list-files",
+    "https://openrouter.ai/docs/api/api-reference/files/upload-file",
+    "https://openrouter.ai/docs/api/api-reference/generations/get-generation",
+    "https://openrouter.ai/docs/api/api-reference/generations/list-generation-content",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/bulk-assign-keys-to-guardrail",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/bulk-assign-members-to-guardrail",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/bulk-unassign-keys-from-guardrail",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/bulk-unassign-members-from-guardrail",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/create-guardrail",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/delete-guardrail",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/get-guardrail",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/list-guardrail-key-assignments",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/list-guardrail-member-assignments",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/list-guardrails",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/list-key-assignments",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/list-member-assignments",
+    "https://openrouter.ai/docs/api/api-reference/guardrails/update-guardrail",
+    "https://openrouter.ai/docs/api/api-reference/images/create-images",
+    "https://openrouter.ai/docs/api/api-reference/images/list-image-model-endpoints",
+    "https://openrouter.ai/docs/api/api-reference/images/list-image-models",
+    "https://openrouter.ai/docs/api/api-reference/models/get-model",
+    "https://openrouter.ai/docs/api/api-reference/models/get-models",
+    "https://openrouter.ai/docs/api/api-reference/models/list-models-count",
+    "https://openrouter.ai/docs/api/api-reference/models/list-models-user",
+    "https://openrouter.ai/docs/api/api-reference/o-auth/create-auth-keys-code",
+    "https://openrouter.ai/docs/api/api-reference/o-auth/exchange-auth-code-for-api-key",
+    "https://openrouter.ai/docs/api/api-reference/observability/create-observability-destination",
+    "https://openrouter.ai/docs/api/api-reference/observability/delete-observability-destination",
+    "https://openrouter.ai/docs/api/api-reference/observability/get-observability-destination",
+    "https://openrouter.ai/docs/api/api-reference/observability/list-observability-destinations",
+    "https://openrouter.ai/docs/api/api-reference/observability/update-observability-destination",
+    "https://openrouter.ai/docs/api/api-reference/organization/list-organization-members",
+    "https://openrouter.ai/docs/api/api-reference/presets/create-presets-chat-completions",
+    "https://openrouter.ai/docs/api/api-reference/presets/create-presets-messages",
+    "https://openrouter.ai/docs/api/api-reference/presets/create-presets-responses",
+    "https://openrouter.ai/docs/api/api-reference/presets/get-preset",
+    "https://openrouter.ai/docs/api/api-reference/presets/get-preset-version",
+    "https://openrouter.ai/docs/api/api-reference/presets/list-preset-versions",
+    "https://openrouter.ai/docs/api/api-reference/presets/list-presets",
+    "https://openrouter.ai/docs/api/api-reference/providers/list-providers",
+    "https://openrouter.ai/docs/api/api-reference/rerank/create-rerank",
+    "https://openrouter.ai/docs/api/api-reference/responses/create-responses",
+    "https://openrouter.ai/docs/api/api-reference/speech/create-audio-speech",
+    "https://openrouter.ai/docs/api/api-reference/transcriptions/create-audio-transcriptions",
+    "https://openrouter.ai/docs/api/api-reference/video-generation/create-videos",
+    "https://openrouter.ai/docs/api/api-reference/video-generation/get-videos",
+    "https://openrouter.ai/docs/api/api-reference/video-generation/list-videos-content",
+    "https://openrouter.ai/docs/api/api-reference/video-generation/list-videos-models",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/bulk-add-workspace-members",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/bulk-remove-workspace-members",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/create-workspace",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/delete-workspace",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/delete-workspace-budget",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/get-workspace",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/list-workspace-budgets",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/list-workspaces",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/update-workspace",
+    "https://openrouter.ai/docs/api/api-reference/workspaces/upsert-workspace-budget",
+    "https://openrouter.ai/docs/api/reference/authentication",
+    "https://openrouter.ai/docs/api/reference/embeddings",
+    "https://openrouter.ai/docs/api/reference/errors-and-debugging",
+    "https://openrouter.ai/docs/api/reference/limits",
+    "https://openrouter.ai/docs/api/reference/overview",
+    "https://openrouter.ai/docs/api/reference/parameters",
+    "https://openrouter.ai/docs/api/reference/responses/basic-usage",
+    "https://openrouter.ai/docs/api/reference/responses/error-handling",
+    "https://openrouter.ai/docs/api/reference/responses/overview",
+    "https://openrouter.ai/docs/api/reference/responses/reasoning",
+    "https://openrouter.ai/docs/api/reference/responses/tool-calling",
+    "https://openrouter.ai/docs/api/reference/responses/web-search",
+    "https://openrouter.ai/docs/api/reference/streaming",
+    "https://openrouter.ai/docs/api/reference/streaming.md",
+    "https://openrouter.ai/docs/app-attribution",
+    "https://openrouter.ai/docs/app-attribution.md",
+    "https://openrouter.ai/docs/client-sdks/overview",
+    "https://openrouter.ai/docs/client-sdks/overview.md",
+    "https://openrouter.ai/docs/cookbook/administration/activity-export",
+    "https://openrouter.ai/docs/cookbook/administration/analytics-cost-control",
+    "https://openrouter.ai/docs/cookbook/administration/api-key-rotation",
+    "https://openrouter.ai/docs/cookbook/administration/crypto-api",
+    "https://openrouter.ai/docs/cookbook/administration/data-api",
+    "https://openrouter.ai/docs/cookbook/administration/organization-management",
+    "https://openrouter.ai/docs/cookbook/administration/usage-accounting",
+    "https://openrouter.ai/docs/cookbook/administration/user-tracking",
+    "https://openrouter.ai/docs/cookbook/building-agents/advisor-server-tool",
+    "https://openrouter.ai/docs/cookbook/building-agents/create-agent-harness-tui",
+    "https://openrouter.ai/docs/cookbook/building-agents/create-headless-agent",
+    "https://openrouter.ai/docs/cookbook/building-agents/hitl-tools",
+    "https://openrouter.ai/docs/cookbook/building-agents/long-horizon-agents",
+    "https://openrouter.ai/docs/cookbook/building-agents/subagent-server-tool",
+    "https://openrouter.ai/docs/cookbook/coding-agents/automatic-code-review",
+    "https://openrouter.ai/docs/cookbook/coding-agents/claude-code-integration",
+    "https://openrouter.ai/docs/cookbook/coding-agents/claude-desktop-integration",
+    "https://openrouter.ai/docs/cookbook/coding-agents/codex-cli",
+    "https://openrouter.ai/docs/cookbook/coding-agents/codex-cli.md",
+    "https://openrouter.ai/docs/cookbook/coding-agents/cursor-integration",
+    "https://openrouter.ai/docs/cookbook/coding-agents/hermes-integration",
+    "https://openrouter.ai/docs/cookbook/coding-agents/junie",
+    "https://openrouter.ai/docs/cookbook/coding-agents/mcp-servers",
+    "https://openrouter.ai/docs/cookbook/coding-agents/openclaw-integration",
+    "https://openrouter.ai/docs/cookbook/coding-agents/opencode-integration",
+    "https://openrouter.ai/docs/cookbook/evaluate-and-optimize/distillation",
+    "https://openrouter.ai/docs/cookbook/evaluate-and-optimize/model-migrations/claude-4-6",
+    "https://openrouter.ai/docs/cookbook/evaluate-and-optimize/model-migrations/claude-4-7",
+    "https://openrouter.ai/docs/cookbook/evaluate-and-optimize/model-migrations/claude-5-sonnet",
+    "https://openrouter.ai/docs/cookbook/evaluate-and-optimize/model-migrations/gpt-5-4",
+    "https://openrouter.ai/docs/cookbook/evaluate-and-optimize/rag",
+    "https://openrouter.ai/docs/cookbook/evaluate-and-optimize/red-teaming",
+    "https://openrouter.ai/docs/cookbook/get-started/enterprise-quickstart",
+    "https://openrouter.ai/docs/cookbook/get-started/free-models-router-playground",
+    "https://openrouter.ai/docs/cookbook/get-started/migrate-to-openrouter",
+    "https://openrouter.ai/docs/cookbook/get-started/quickstart",
+    "https://openrouter.ai/docs/cookbook/image-generation/preset-enhanced-images",
+    "https://openrouter.ai/docs/cookbook/video-generation/choose-video-model",
+    "https://openrouter.ai/docs/cookbook/video-generation/image-to-video",
+    "https://openrouter.ai/docs/cookbook/video-generation/provider-specific-video-options",
+    "https://openrouter.ai/docs/cookbook/video-generation/reference-to-video",
+    "https://openrouter.ai/docs/cookbook/video-generation/text-to-video",
+    "https://openrouter.ai/docs/cookbook/video-generation/video-generation-webhooks",
+    "https://openrouter.ai/docs/faq",
+    "https://openrouter.ai/docs/faq.md",
+    "https://openrouter.ai/docs/guides/best-practices/latency-and-performance",
+    "https://openrouter.ai/docs/guides/best-practices/prompt-caching",
+    "https://openrouter.ai/docs/guides/best-practices/reasoning-tokens",
+    "https://openrouter.ai/docs/guides/best-practices/uptime-optimization",
+    "https://openrouter.ai/docs/guides/community/anthropic-agent-sdk",
+    "https://openrouter.ai/docs/guides/community/arize-ax",
+    "https://openrouter.ai/docs/guides/community/awesome-openrouter",
+    "https://openrouter.ai/docs/guides/community/effect-ai-sdk",
+    "https://openrouter.ai/docs/guides/community/for-providers",
+    "https://openrouter.ai/docs/guides/community/frameworks-and-integrations-overview",
+    "https://openrouter.ai/docs/guides/community/infisical",
+    "https://openrouter.ai/docs/guides/community/langchain",
+    "https://openrouter.ai/docs/guides/community/langfuse",
+    "https://openrouter.ai/docs/guides/community/livekit",
+    "https://openrouter.ai/docs/guides/community/mastra",
+    "https://openrouter.ai/docs/guides/community/openai-sdk",
+    "https://openrouter.ai/docs/guides/community/pydantic-ai",
+    "https://openrouter.ai/docs/guides/community/replit",
+    "https://openrouter.ai/docs/guides/community/tanstack-ai",
+    "https://openrouter.ai/docs/guides/community/vercel-ai-sdk",
+    "https://openrouter.ai/docs/guides/community/xcode",
+    "https://openrouter.ai/docs/guides/community/zapier",
+    "https://openrouter.ai/docs/guides/features/broadcast/arize",
+    "https://openrouter.ai/docs/guides/features/broadcast/arize.md",
+    "https://openrouter.ai/docs/guides/features/broadcast/braintrust",
+    "https://openrouter.ai/docs/guides/features/broadcast/braintrust.md",
+    "https://openrouter.ai/docs/guides/features/broadcast/clickhouse",
+    "https://openrouter.ai/docs/guides/features/broadcast/clickhouse.md",
+    "https://openrouter.ai/docs/guides/features/broadcast/datadog",
+    "https://openrouter.ai/docs/guides/features/broadcast/datadog.md",
+    "https://openrouter.ai/docs/guides/features/broadcast/grafana",
+    "https://openrouter.ai/docs/guides/features/broadcast/langfuse",
+    "https://openrouter.ai/docs/guides/features/broadcast/langsmith",
+    "https://openrouter.ai/docs/guides/features/broadcast/newrelic",
+    "https://openrouter.ai/docs/guides/features/broadcast/opik",
+    "https://openrouter.ai/docs/guides/features/broadcast/opik.md",
+    "https://openrouter.ai/docs/guides/features/broadcast/otel-collector",
+    "https://openrouter.ai/docs/guides/features/broadcast/overview",
+    "https://openrouter.ai/docs/guides/features/broadcast/overview.md",
+    "https://openrouter.ai/docs/guides/features/broadcast/posthog",
+    "https://openrouter.ai/docs/guides/features/broadcast/raindrop",
+    "https://openrouter.ai/docs/guides/features/broadcast/ramp",
+    "https://openrouter.ai/docs/guides/features/broadcast/s3",
+    "https://openrouter.ai/docs/guides/features/broadcast/sentry",
+    "https://openrouter.ai/docs/guides/features/broadcast/snowflake",
+    "https://openrouter.ai/docs/guides/features/broadcast/weave",
+    "https://openrouter.ai/docs/guides/features/broadcast/webhook",
+    "https://openrouter.ai/docs/guides/features/classifiers",
+    "https://openrouter.ai/docs/guides/features/classifiers.md",
+    "https://openrouter.ai/docs/guides/features/guardrails/overview",
+    "https://openrouter.ai/docs/guides/features/guardrails/overview.md",
+    "https://openrouter.ai/docs/guides/features/guardrails/prompt-injection",
+    "https://openrouter.ai/docs/guides/features/guardrails/prompt-injection.md",
+    "https://openrouter.ai/docs/guides/features/guardrails/prompt-injection/allowlist",
+    "https://openrouter.ai/docs/guides/features/guardrails/prompt-injection/allowlist.md",
+    "https://openrouter.ai/docs/guides/features/guardrails/sensitive-info",
+    "https://openrouter.ai/docs/guides/features/guardrails/sensitive-info.md",
+    "https://openrouter.ai/docs/guides/features/input-output-logging",
+    "https://openrouter.ai/docs/guides/features/input-output-logging.md",
+    "https://openrouter.ai/docs/guides/features/message-transforms",
+    "https://openrouter.ai/docs/guides/features/message-transforms.md",
+    "https://openrouter.ai/docs/guides/features/plugins/fusion",
+    "https://openrouter.ai/docs/guides/features/plugins/fusion.md",
+    "https://openrouter.ai/docs/guides/features/plugins/overview",
+    "https://openrouter.ai/docs/guides/features/plugins/overview.md",
+    "https://openrouter.ai/docs/guides/features/plugins/response-healing",
+    "https://openrouter.ai/docs/guides/features/plugins/response-healing.md",
+    "https://openrouter.ai/docs/guides/features/plugins/web-search",
+    "https://openrouter.ai/docs/guides/features/plugins/web-search.md",
+    "https://openrouter.ai/docs/guides/features/presets",
+    "https://openrouter.ai/docs/guides/features/presets.md",
+    "https://openrouter.ai/docs/guides/features/response-caching",
+    "https://openrouter.ai/docs/guides/features/response-caching.md",
+    "https://openrouter.ai/docs/guides/features/router-metadata",
+    "https://openrouter.ai/docs/guides/features/router-metadata.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/advisor",
+    "https://openrouter.ai/docs/guides/features/server-tools/advisor.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/apply-patch",
+    "https://openrouter.ai/docs/guides/features/server-tools/apply-patch.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/datetime",
+    "https://openrouter.ai/docs/guides/features/server-tools/datetime.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/files",
+    "https://openrouter.ai/docs/guides/features/server-tools/files.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/fusion",
+    "https://openrouter.ai/docs/guides/features/server-tools/fusion.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/image-generation",
+    "https://openrouter.ai/docs/guides/features/server-tools/image-generation.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/overview",
+    "https://openrouter.ai/docs/guides/features/server-tools/overview.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/subagent",
+    "https://openrouter.ai/docs/guides/features/server-tools/subagent.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/web-fetch",
+    "https://openrouter.ai/docs/guides/features/server-tools/web-fetch.md",
+    "https://openrouter.ai/docs/guides/features/server-tools/web-search",
+    "https://openrouter.ai/docs/guides/features/server-tools/web-search.md",
+    "https://openrouter.ai/docs/guides/features/service-tiers",
+    "https://openrouter.ai/docs/guides/features/service-tiers.md",
+    "https://openrouter.ai/docs/guides/features/sovereign-ai",
+    "https://openrouter.ai/docs/guides/features/sovereign-ai.md",
+    "https://openrouter.ai/docs/guides/features/structured-outputs",
+    "https://openrouter.ai/docs/guides/features/structured-outputs.md",
+    "https://openrouter.ai/docs/guides/features/tool-calling",
+    "https://openrouter.ai/docs/guides/features/tool-calling.md",
+    "https://openrouter.ai/docs/guides/features/workspaces/overview",
+    "https://openrouter.ai/docs/guides/features/workspaces/overview.md",
+    "https://openrouter.ai/docs/guides/features/workspaces/workspace-budgets",
+    "https://openrouter.ai/docs/guides/features/workspaces/workspace-budgets.md",
+    "https://openrouter.ai/docs/guides/features/zdr",
+    "https://openrouter.ai/docs/guides/features/zdr.md",
+    "https://openrouter.ai/docs/guides/features/zero-completion-insurance",
+    "https://openrouter.ai/docs/guides/features/zero-completion-insurance.md",
+    "https://openrouter.ai/docs/guides/overview/auth/byok",
+    "https://openrouter.ai/docs/guides/overview/auth/byok.md",
+    "https://openrouter.ai/docs/guides/overview/auth/management-api-keys",
+    "https://openrouter.ai/docs/guides/overview/auth/management-api-keys.md",
+    "https://openrouter.ai/docs/guides/overview/auth/oauth",
+    "https://openrouter.ai/docs/guides/overview/auth/oauth.md",
+    "https://openrouter.ai/docs/guides/overview/models",
+    "https://openrouter.ai/docs/guides/overview/models.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/audio",
+    "https://openrouter.ai/docs/guides/overview/multimodal/audio.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/image-generation",
+    "https://openrouter.ai/docs/guides/overview/multimodal/image-generation.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/image-understanding",
+    "https://openrouter.ai/docs/guides/overview/multimodal/image-understanding.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/overview",
+    "https://openrouter.ai/docs/guides/overview/multimodal/overview.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/pdfs",
+    "https://openrouter.ai/docs/guides/overview/multimodal/pdfs.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/stt",
+    "https://openrouter.ai/docs/guides/overview/multimodal/stt.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/tts",
+    "https://openrouter.ai/docs/guides/overview/multimodal/tts.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/video-generation",
+    "https://openrouter.ai/docs/guides/overview/multimodal/video-generation.md",
+    "https://openrouter.ai/docs/guides/overview/multimodal/videos",
+    "https://openrouter.ai/docs/guides/overview/multimodal/videos.md",
+    "https://openrouter.ai/docs/guides/overview/principles",
+    "https://openrouter.ai/docs/guides/overview/principles.md",
+    "https://openrouter.ai/docs/guides/overview/report-feedback",
+    "https://openrouter.ai/docs/guides/overview/report-feedback.md",
+    "https://openrouter.ai/docs/guides/overview/stripe-projects",
+    "https://openrouter.ai/docs/guides/overview/stripe-projects.md",
+    "https://openrouter.ai/docs/guides/privacy/data-collection",
+    "https://openrouter.ai/docs/guides/privacy/provider-logging",
+    "https://openrouter.ai/docs/guides/routing/auto-exacto",
+    "https://openrouter.ai/docs/guides/routing/auto-exacto.md",
+    "https://openrouter.ai/docs/guides/routing/model-fallbacks",
+    "https://openrouter.ai/docs/guides/routing/model-fallbacks.md",
+    "https://openrouter.ai/docs/guides/routing/model-variants/exacto",
+    "https://openrouter.ai/docs/guides/routing/model-variants/exacto.md",
+    "https://openrouter.ai/docs/guides/routing/model-variants/extended",
+    "https://openrouter.ai/docs/guides/routing/model-variants/extended.md",
+    "https://openrouter.ai/docs/guides/routing/model-variants/free",
+    "https://openrouter.ai/docs/guides/routing/model-variants/free.md",
+    "https://openrouter.ai/docs/guides/routing/model-variants/nitro",
+    "https://openrouter.ai/docs/guides/routing/model-variants/nitro.md",
+    "https://openrouter.ai/docs/guides/routing/model-variants/online",
+    "https://openrouter.ai/docs/guides/routing/model-variants/online.md",
+    "https://openrouter.ai/docs/guides/routing/model-variants/thinking",
+    "https://openrouter.ai/docs/guides/routing/model-variants/thinking.md",
+    "https://openrouter.ai/docs/guides/routing/private-models",
+    "https://openrouter.ai/docs/guides/routing/private-models.md",
+    "https://openrouter.ai/docs/guides/routing/provider-selection",
+    "https://openrouter.ai/docs/guides/routing/provider-selection.md",
+    "https://openrouter.ai/docs/guides/routing/routers/auto-router",
+    "https://openrouter.ai/docs/guides/routing/routers/auto-router.md",
+    "https://openrouter.ai/docs/guides/routing/routers/body-builder",
+    "https://openrouter.ai/docs/guides/routing/routers/body-builder.md",
+    "https://openrouter.ai/docs/guides/routing/routers/free-router",
+    "https://openrouter.ai/docs/guides/routing/routers/free-router.md",
+    "https://openrouter.ai/docs/guides/routing/routers/fusion-router",
+    "https://openrouter.ai/docs/guides/routing/routers/fusion-router.md",
+    "https://openrouter.ai/docs/guides/routing/routers/latest-resolution",
+    "https://openrouter.ai/docs/guides/routing/routers/latest-resolution.md",
+    "https://openrouter.ai/docs/guides/routing/routers/pareto-router",
+    "https://openrouter.ai/docs/guides/routing/routers/pareto-router.md",
+    "https://openrouter.ai/docs/llms.txt",
+    "https://openrouter.ai/docs/mcp-server",
+    "https://openrouter.ai/docs/mcp-server.md",
+    "https://openrouter.ai/docs/quickstart",
+    "https://openrouter.ai/docs/quickstart.md",
+    "https://openrouter.ai/docs/tax-id",
+    "https://openrouter.ai/keys",
+    "https://openrouter.ai/llms.txt",
+    "https://openrouter.ai/models",
+    "https://openrouter.ai/models?q=codex",
+    "https://openrouter.ai/openapi.json",
+    "https://openrouter.ai/openapi.yaml",
+    "https://openrouter.ai/privacy",
+    "https://openrouter.ai/rankings",
+    "https://openrouter.ai/request-builder",
+    "https://openrouter.ai/settings/keys",
+    "https://openrouter.ai/settings/management-keys",
+    "https://pkg.go.dev/github.com/OpenRouterTeam/go-sdk",
+    "https://platform.openai.com/docs/frameworks",
+    "https://pypi.org/project/openrouter/",
+    "https://swagger.io/tools/swagger-ui/",
+    "https://tonyxu-io.github.io/pkce-generator/",
+    "https://www.npmjs.com/package/@openrouter/sdk",
+    "https://www.npmjs.com/package/ai",
+    "https://www.npmjs.com/package/openai",
+    "https://www.postman.com/"
+  ]
+}

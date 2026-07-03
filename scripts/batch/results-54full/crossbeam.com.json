@@ -1,0 +1,337 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "crossbeam.com",
+    "detect": {
+      "domain": "crossbeam.com",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:28:01.577Z",
+    "summary": "Crossbeam exposes a REST Partner API, a SCIM provisioning API, and a remote MCP server; the REST API uses a Crossbeam-issued OAuth app, SCIM uses a Crossbeam-issued bearer token, and the MCP server uses OAuth.",
+    "description": "Crossbeam is a B2B ecosystem and partner data collaboration platform that helps companies securely compare CRM and partnership data to find overlapping customers, prospects, and opportunities. It is used by revenue, sales, marketing, and partnerships teams to activate partner insights in their workflows.",
+    "credentials": {
+      "crossbeam_oauth_app": {
+        "type": "oauth2",
+        "label": "Crossbeam custom integration OAuth app",
+        "generateUrl": "https://app.crossbeam.com/integrations",
+        "setup": "In Crossbeam, go to [Integrations](https://app.crossbeam.com/integrations) and create a custom integration (`Create Integration`). After creation, open the integration and copy the `Client ID` and `Client Secret`. Configure your app to use Crossbeam's OAuth 2.0 endpoints: authorization at `https://auth.crossbeam.com/authorize?audience=https://api.getcrossbeam.com` and token exchange at `https://auth.crossbeam.com/oauth/token`. Request at least `openid` plus the endpoint scopes you need; add `offline_access` if you need refresh tokens.",
+        "acquisition": "manual"
+      },
+      "crossbeam_scim_token": {
+        "type": "bearer",
+        "label": "Crossbeam SCIM bearer token",
+        "setup": "SCIM is Enterprise-only. First set up SSO, then in Crossbeam go to [Organization Settings](https://app.crossbeam.com/organization/settings), enable SCIM Provisioning, and copy the generated `SCIM bearer token`. If SCIM is not enabled for your org, contact [Crossbeam Support](mailto:support@crossbeam.com).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "crossbeam-partner-api",
+        "name": "Crossbeam Partner API",
+        "type": "http",
+        "docs": "https://developers.crossbeam.com/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.crossbeam.com/",
+            "https://help.crossbeam.com/en/articles/4677142-rest-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "crossbeam_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.crossbeam.com/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.getcrossbeam.com/v1"
+      },
+      {
+        "slug": "crossbeam-mcp-server",
+        "name": "Crossbeam MCP Server",
+        "type": "mcp",
+        "docs": "https://help.crossbeam.com/en/articles/12601327-crossbeam-mcp-server-limited-availability",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.crossbeam.com/en/articles/12601327-crossbeam-mcp-server-limited-availability",
+            "https://mcp.crossbeam.com"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "crossbeam_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.crossbeam.com/en/articles/12601327-crossbeam-mcp-server-limited-availability",
+                  "https://mcp.crossbeam.com"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.crossbeam.com",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "crossbeam-scim-api",
+        "name": "Crossbeam SCIM API",
+        "type": "http",
+        "docs": "https://help.crossbeam.com/en/articles/12548850-crossbeam-scim-integration-guide",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.crossbeam.com/en/articles/12548850-crossbeam-scim-integration-guide"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "crossbeam_scim_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.crossbeam.com/en/articles/12548850-crossbeam-scim-integration-guide"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.getcrossbeam.com/v1/scim/{sso-config-id}",
+        "variables": [
+          {
+            "name": "sso-config-id",
+            "resolveFrom": "Crossbeam SCIM configuration",
+            "description": "SSO/SCIM configuration ID used in the SCIM endpoint path; docs show endpoints under `/v1/scim/{sso-config-id}`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:28:01.578Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 54936,
+    "completion_tokens": 1306,
+    "total_tokens": 56242
+  },
+  "visited": [
+    "https://crossbeam.com/llms.txt",
+    "https://developers.crossbeam.com/",
+    "https://developers.crossbeam.com/openapi.json",
+    "https://developers.crossbeam.com/openapi.yaml",
+    "https://developers.crossbeam.com/swagger.json",
+    "https://docs.ramp.com/developer-api/v1/developer-mcp",
+    "https://help.crossbeam.com/en/",
+    "https://help.crossbeam.com/en/articles/12548850-crossbeam-scim-integration-guide",
+    "https://help.crossbeam.com/en/articles/12601327-crossbeam-mcp-server-limited-availability",
+    "https://help.crossbeam.com/en/articles/4677142-rest-api",
+    "https://help.crossbeam.com/en/collections/16160781-developer-documentation",
+    "https://mcp.crossbeam.com",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ],
+  "grounding": [
+    "https://academy.crossbeam.com/",
+    "https://academy.crossbeam.com/crossbeam-enablement-catalog/291777/scorm/5afjf6q2q2i3",
+    "https://academy.crossbeam.com/let-your-ai-talk-directly-with-crossbeam/387524/scorm/1q9rhz7sor1av",
+    "https://app.crossbeam.com/billing",
+    "https://app.crossbeam.com/company-setup",
+    "https://app.crossbeam.com/data-sources",
+    "https://app.crossbeam.com/integrations",
+    "https://app.crossbeam.com/organization/settings",
+    "https://app.crossbeam.com/roles",
+    "https://auth.crossbeam.com/authorize?audience=https://api.getcrossbeam.com",
+    "https://auth.crossbeam.com/oauth/token",
+    "https://crossbeam.com/llms.txt",
+    "https://crossbeamusergroup.slack.com/signup#/domain-signup",
+    "https://developers.crossbeam.com/",
+    "https://developers.crossbeam.com/#intro",
+    "https://developers.crossbeam.com/openapi.json",
+    "https://developers.crossbeam.com/openapi.yaml",
+    "https://developers.crossbeam.com/swagger.json",
+    "https://developers.mcp.crossbeam.com/#edb7630c-165b-411d-97d5-e87d7e2e77b6",
+    "https://docs.ramp.com/developer-api/v1/developer-mcp",
+    "https://downloads.intercomcdn.com/i/o/ugh1893t/1770419417/8d9ff82dc8aaecb390ead55599e1/SCIM+2_0+CROSSBEAM_postman_collection.json?expires=1783134000&signature=581a3057077e4a4af45c75c589b4653f4de4462403f83209305de7394273ac51&req=dScgFs1%2FlIVeXvMW3Hu4gU6fri0gqR9%2F49vrVsffUW7HMc%2FF9L%2F1buv1NGCY%0Azw%3D%3D%0A",
+    "https://elgalliance.com/",
+    "https://events.crossbeam.com/demo-office-hours/",
+    "https://gitlab.com/crossbeam-public/crossbeam-simple-oauth2",
+    "https://help.crossbeam.com/",
+    "https://help.crossbeam.com/#h_062ebe5288",
+    "https://help.crossbeam.com/#h_15a402488f",
+    "https://help.crossbeam.com/#h_17bc364ced",
+    "https://help.crossbeam.com/#h_268edf2639",
+    "https://help.crossbeam.com/#h_29890417f1",
+    "https://help.crossbeam.com/#h_35337ab051",
+    "https://help.crossbeam.com/#h_3902d4a266",
+    "https://help.crossbeam.com/#h_40373f0f74",
+    "https://help.crossbeam.com/#h_40e2420c48",
+    "https://help.crossbeam.com/#h_42cf8502a5",
+    "https://help.crossbeam.com/#h_4443e74286",
+    "https://help.crossbeam.com/#h_4fdedc8ca0",
+    "https://help.crossbeam.com/#h_5a2a5ddd76",
+    "https://help.crossbeam.com/#h_662bfa5b11",
+    "https://help.crossbeam.com/#h_6a572f8809",
+    "https://help.crossbeam.com/#h_72be41dd88",
+    "https://help.crossbeam.com/#h_7b08d9cc66",
+    "https://help.crossbeam.com/#h_7c5ed30c18",
+    "https://help.crossbeam.com/#h_8cae672afa",
+    "https://help.crossbeam.com/#h_950b6aaa84",
+    "https://help.crossbeam.com/#h_98205eeb2e",
+    "https://help.crossbeam.com/#h_a055722d20",
+    "https://help.crossbeam.com/#h_a0f2d9329b",
+    "https://help.crossbeam.com/#h_bdcfc0640c",
+    "https://help.crossbeam.com/#h_c296198c87",
+    "https://help.crossbeam.com/#h_c95406a6d9",
+    "https://help.crossbeam.com/#h_cb7b8d3bdb",
+    "https://help.crossbeam.com/#h_cbd667e552",
+    "https://help.crossbeam.com/#h_cff2c39df4",
+    "https://help.crossbeam.com/#h_chatgpt_what_users_can_do",
+    "https://help.crossbeam.com/#h_d0130c9b8b",
+    "https://help.crossbeam.com/#h_d39ec0c403",
+    "https://help.crossbeam.com/#h_dabcb2e8ac",
+    "https://help.crossbeam.com/#h_e0988b6994",
+    "https://help.crossbeam.com/#h_e7723ef36a",
+    "https://help.crossbeam.com/#h_e966b85026",
+    "https://help.crossbeam.com/#h_ea557bd299",
+    "https://help.crossbeam.com/#h_eca169dfa8",
+    "https://help.crossbeam.com/#h_edd7b21191",
+    "https://help.crossbeam.com/#h_efac7983ec",
+    "https://help.crossbeam.com/#h_fbf1c83ea1",
+    "https://help.crossbeam.com/#h_fd5f5543a6",
+    "https://help.crossbeam.com/#main-content",
+    "https://help.crossbeam.com/en/",
+    "https://help.crossbeam.com/en/articles/10844915-crossbeam-deal-navigator",
+    "https://help.crossbeam.com/en/articles/12548850-crossbeam-scim-integration-guide",
+    "https://help.crossbeam.com/en/articles/12601327-crossbeam-mcp-server-limited-availability",
+    "https://help.crossbeam.com/en/articles/12732223-getting-started-with-crossbeam-enriched-apis-and-webhooks",
+    "https://help.crossbeam.com/en/articles/14463181-how-to-set-up-the-partner-account-crm-integration",
+    "https://help.crossbeam.com/en/articles/3160294-manage-team-members",
+    "https://help.crossbeam.com/en/articles/3160301-crossbeam-support",
+    "https://help.crossbeam.com/en/articles/3639783-how-to-use-the-slack-app-for-crossbeam",
+    "https://help.crossbeam.com/en/articles/4477745-setting-up-saml-sso-in-crossbeam",
+    "https://help.crossbeam.com/en/articles/4677142-rest-api",
+    "https://help.crossbeam.com/en/articles/7128217-use-partnerbase-com-to-find-partners-already-on-crossbeam",
+    "https://help.crossbeam.com/en/articles/8765980-salesforce-guide-for-reports-dashboards-automations-powered-by-crossbeam",
+    "https://help.crossbeam.com/en/articles/9280237-installation-guide-crossbeam-for-salesforce-v2",
+    "https://help.crossbeam.com/en/articles/9298987-installation-guide-crossbeam-for-salesforce-v1",
+    "https://help.crossbeam.com/en/articles/9708718-for-sales-seats-getting-started-with-crossbeam-and-crossbeam-features",
+    "https://help.crossbeam.com/en/articles/9956727-crossbeam-overview-for-compliance-teams",
+    "https://help.crossbeam.com/en/collections/16160781-developer-documentation",
+    "https://help.crossbeam.com/en/collections/2111215-integrations-and-api",
+    "https://insider.crossbeam.com/collection/elg-success-stories",
+    "https://insider.crossbeam.com/collection/elg-templates",
+    "https://marketplace.crossbeam.com/",
+    "https://mcp.crossbeam.com",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://oauth.net/2/",
+    "https://oauth.pstmn.io/v1/callback",
+    "https://security.crossbeam.com/",
+    "https://www.crossbeam.com",
+    "https://www.crossbeam.com/about-us",
+    "https://www.crossbeam.com/careers",
+    "https://www.crossbeam.com/contact-ust",
+    "https://www.crossbeam.com/forms/demo",
+    "https://www.crossbeam.com/integrations",
+    "https://www.crossbeam.com/legal/crossbeam-privacy-policy",
+    "https://www.crossbeam.com/newsletter",
+    "https://www.crossbeam.com/partners",
+    "https://www.crossbeam.com/pricing",
+    "https://www.crossbeam.com/resources/case-studies",
+    "https://www.crossbeam.com/resources/events",
+    "https://www.crossbeam.com/resources/news",
+    "https://www.crossbeam.com/teams/channel-partner",
+    "https://www.crossbeam.com/teams/customer-success",
+    "https://www.crossbeam.com/teams/marketing",
+    "https://www.crossbeam.com/teams/revops",
+    "https://www.crossbeam.com/teams/sales",
+    "https://www.crossbeam.com/teams/tech-partner",
+    "https://www.crossbeam.com/use-cases/account-expansion",
+    "https://www.crossbeam.com/use-cases/deal-acceleration",
+    "https://www.crossbeam.com/use-cases/ecosystem-building",
+    "https://www.crossbeam.com/use-cases/enrichment",
+    "https://www.crossbeam.com/use-cases/lead-generation",
+    "https://www.crossbeam.com/what-is-crossbeam/account-mapping",
+    "https://www.crossbeam.com/what-is-crossbeam/attribution",
+    "https://www.crossbeam.com/what-is-crossbeam/co-selling-templates-and-workflows",
+    "https://www.crossbeam.com/what-is-crossbeam/crossbeam-copilot",
+    "https://www.crossbeam.com/what-is-crossbeam/crossbeam-network",
+    "https://www.crossbeam.com/what-is-crossbeam/deal-navigator",
+    "https://www.crossbeam.com/what-is-crossbeam/ecosystem-intelligence",
+    "https://www.crossbeam.com/what-is-crossbeam/greenfield",
+    "https://www.crossbeam.com/what-is-crossbeam/how-it-works",
+    "https://www.crossbeam.com/what-is-crossbeam/offline-partners",
+    "https://www.crossbeam.com/what-is-crossbeam/performance-dashboard",
+    "https://www.crossbeam.com/what-is-crossbeam/security",
+    "https://www.crossbeam.com/what-is-crossbeam/shared-lists",
+    "https://www.crossbeam.com/what-is-crossbeam/slack-and-alerts",
+    "https://www.crossbeam.com/what-is-crossbeam/why-crossbeam",
+    "https://www.crossbeam.com/what-is-ecosystem-led-growth",
+    "https://www.intercom.com/intercom-link?company=Crossbeam&solution=customer-support&utm_campaign=intercom-link&utm_content=We+run+on+Intercom&utm_medium=help-center&utm_referrer=http%3A%2F%2Fhelp.crossbeam.com%2Fen%2Farticles%2F12548850-crossbeam-scim-integration-guide&utm_source=desktop-web",
+    "https://www.intercom.com/intercom-link?company=Crossbeam&solution=customer-support&utm_campaign=intercom-link&utm_content=We+run+on+Intercom&utm_medium=help-center&utm_referrer=http%3A%2F%2Fhelp.crossbeam.com%2Fen%2Farticles%2F4677142-rest-api&utm_source=desktop-web",
+    "https://www.intercom.com/intercom-link?company=Crossbeam&solution=customer-support&utm_campaign=intercom-link&utm_content=We+run+on+Intercom&utm_medium=help-center&utm_referrer=http%3A%2F%2Fhelp.crossbeam.com%2Fen%2Fcollections%2F16160781-developer-documentation&utm_source=desktop-web",
+    "https://www.linkedin.com/company/getcrossbeam/posts/?feedView=all",
+    "https://www.loom.com/share/635300d9c5b042999b686338b8789b35",
+    "https://www.partnerbase.com/",
+    "https://www.postman.com/downloads/",
+    "https://www.robertjmoore.com/book",
+    "https://www.youtube.com/watch?v=6NHs6fj9NrI",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ]
+}

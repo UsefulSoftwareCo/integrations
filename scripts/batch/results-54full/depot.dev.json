@@ -1,0 +1,1211 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "depot.dev",
+    "detect": {
+      "domain": "depot.dev",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:17:35.581Z",
+    "summary": "Depot exposes authenticated HTTP APIs at `https://api.depot.dev` for builds/CI/sandboxes plus Depot Cache and an OCI registry at `{orgId}.registry.depot.dev`, along with the `depot` CLI; authentication is via Depot bearer tokens (user, organization, project, pull where applicable), CLI login or `DEPOT_TOKEN`, and OIDC trust relationships for CI.",
+    "credentials": {
+      "depot_user_token": {
+        "type": "bearer",
+        "label": "Depot user access token",
+        "generateUrl": "https://depot.dev/settings",
+        "setup": "In the [Depot account settings](https://depot.dev/settings), use the **API Tokens** section to create a user access token, or run `depot login` locally to have Depot create and store one for the CLI. User tokens are tied to your Depot account and are recommended for local development, not CI.",
+        "acquisition": "manual"
+      },
+      "depot_org_token": {
+        "type": "bearer",
+        "label": "Depot organization API token",
+        "generateUrl": "https://depot.dev/orgs/_/settings",
+        "setup": "Open [Organization Settings](https://depot.dev/orgs/_/settings), enter a description under **API Tokens**, and click **Create token**. This organization-scoped token can be used for the Depot API, Depot CI, Cache, Registry, Agents, and CLI automation.",
+        "acquisition": "manual"
+      },
+      "depot_project_token": {
+        "type": "bearer",
+        "label": "Depot project token",
+        "generateUrl": "https://depot.dev/orgs/_/projects",
+        "setup": "Go to the [Projects page](https://depot.dev/orgs/_/projects), open a project, click **Settings**, then under **Project Tokens** create a token and copy it. Project tokens are scoped to a single project and are intended for container-build use cases, especially CI where OIDC is not available.",
+        "acquisition": "manual"
+      },
+      "depot_pull_token": {
+        "type": "bearer",
+        "label": "Depot registry pull token",
+        "setup": "Generate a pull token with the Depot CLI using `depot pull-token --project <project-id>`. Pull tokens are short-lived, read-only, and only work for Depot Registry pulls.",
+        "acquisition": "manual"
+      },
+      "depot_oidc_trust": {
+        "type": "two_step",
+        "label": "Depot OIDC trust relationship",
+        "generateUrl": "https://depot.dev/orgs/_/projects",
+        "setup": "Configure a trust relationship on a project in the [Projects page](https://depot.dev/orgs/_/projects): open the project, go to **Settings**, and add a provider under **Trust Relationships**. Depot supports GitHub Actions, CircleCI, Buildkite, and RWX. In CI, the job presents its provider OIDC identity and Depot exchanges it for a temporary token valid for that job.",
+        "acquisition": "manual"
+      },
+      "depot_cache_job_token": {
+        "type": "bearer",
+        "label": "Depot Cache job token",
+        "setup": "Use a Depot GitHub Actions runner job with the automatic Depot Cache integration enabled; Depot injects a one-job cache token as the `DEPOT_CACHE_TOKEN` environment variable. This is not manually minted in the dashboard.",
+        "acquisition": "ambient"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "depot-api",
+        "name": "Depot API",
+        "type": "http",
+        "docs": "https://depot.dev/docs/api/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://depot.dev/docs/api/overview.md",
+            "https://depot.dev/docs/api/authentication.md",
+            "https://depot.dev/docs/api/sdk-reference.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "depot_org_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "depot_user_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/api/overview.md",
+                  "https://depot.dev/docs/api/authentication.md",
+                  "https://depot.dev/docs/api/sdk-reference.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.depot.dev"
+      },
+      {
+        "slug": "depot-cli",
+        "name": "Depot CLI",
+        "type": "cli",
+        "docs": "https://depot.dev/docs/cli/reference/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://depot.dev/docs/cli/installation.md",
+            "https://depot.dev/docs/cli/authentication.md",
+            "https://depot.dev/docs/cli/reference/agents.md",
+            "https://depot.dev/docs/cli/reference/depot-ci.md",
+            "https://depot.dev/docs/cli/reference/container-builds.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "depot_user_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "depot login",
+                    "env": [
+                      "DEPOT_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/cli/authentication.md",
+                  "https://depot.dev/docs/cli/reference/container-builds.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_org_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "DEPOT_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/cli/authentication.md",
+                  "https://depot.dev/docs/cli/reference/depot-ci.md",
+                  "https://depot.dev/docs/cli/reference/agents.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_project_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "DEPOT_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/cli/authentication.md",
+                  "https://depot.dev/docs/cli/reference/container-builds.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_oidc_trust",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "DEPOT_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/cli/authentication.md",
+                  "https://depot.dev/docs/cli/reference/container-builds.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "depot/tap/depot"
+          },
+          {
+            "registryType": "github",
+            "identifier": "depot/cli"
+          }
+        ],
+        "command": "depot"
+      },
+      {
+        "slug": "depot-cache",
+        "name": "Depot Cache",
+        "type": "http",
+        "docs": "https://depot.dev/docs/cache/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://depot.dev/docs/cache/authentication.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "depot_user_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/cache/authentication.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_org_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/cache/authentication.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_cache_job_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "DEPOT_CACHE_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/cache/authentication.md"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "depot-registry",
+        "name": "Depot Registry",
+        "type": "http",
+        "docs": "https://depot.dev/docs/registry/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://depot.dev/docs/registry/overview.md",
+            "https://depot.dev/docs/registry/quickstart.md",
+            "https://depot.dev/docs/cli/authentication.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "depot_user_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/registry/overview.md",
+                  "https://depot.dev/docs/registry/quickstart.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_org_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/registry/overview.md",
+                  "https://depot.dev/docs/registry/quickstart.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_project_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/registry/overview.md",
+                  "https://depot.dev/docs/registry/quickstart.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_oidc_trust",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/registry/overview.md",
+                  "https://depot.dev/docs/registry/quickstart.md",
+                  "https://depot.dev/docs/cli/authentication.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "depot_pull_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://depot.dev/docs/registry/overview.md",
+                  "https://depot.dev/docs/registry/quickstart.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{orgId}.registry.depot.dev",
+        "variables": [
+          {
+            "name": "orgId",
+            "resolveFrom": "Depot organization ID",
+            "description": "Organization ID used as the registry subdomain; available in the Depot dashboard sidebar or via `depot org list`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:17:35.581Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 471629,
+    "completion_tokens": 2873,
+    "total_tokens": 474502
+  },
+  "visited": [
+    "https://depot.dev/blog/claude-code-in-github-actions",
+    "https://depot.dev/blog/now-available-remote-agent-sandboxes",
+    "https://depot.dev/blog/using-ai-as-my-engineering-copilot-not-autopilot",
+    "https://depot.dev/docs/agents/claude-code/quickstart.md",
+    "https://depot.dev/docs/agents/overview.md",
+    "https://depot.dev/docs/api/authentication.md",
+    "https://depot.dev/docs/api/ci/reference",
+    "https://depot.dev/docs/api/ci/reference.md",
+    "https://depot.dev/docs/api/overview",
+    "https://depot.dev/docs/api/overview.md",
+    "https://depot.dev/docs/api/sandbox-sdk-reference.md",
+    "https://depot.dev/docs/api/sdk-reference.md",
+    "https://depot.dev/docs/cache/authentication.md",
+    "https://depot.dev/docs/cache/integrations/bazel.md",
+    "https://depot.dev/docs/cache/integrations/turbo.md",
+    "https://depot.dev/docs/cli/authentication",
+    "https://depot.dev/docs/cli/authentication.md",
+    "https://depot.dev/docs/cli/installation.md",
+    "https://depot.dev/docs/cli/reference/agents.md",
+    "https://depot.dev/docs/cli/reference/container-builds.md",
+    "https://depot.dev/docs/cli/reference/depot-ci.md",
+    "https://depot.dev/docs/cli/reference/overview",
+    "https://depot.dev/docs/cli/reference/overview.md",
+    "https://depot.dev/docs/registry/overview.md",
+    "https://depot.dev/docs/registry/quickstart.md",
+    "https://depot.dev/docs/security",
+    "https://depot.dev/llms.txt",
+    "https://github.com/depot/docs/blob/main/content/cli/authentication.mdx",
+    "https://github.com/depot/skills/blob/main/skills/depot-general/SKILL.md"
+  ],
+  "grounding": [
+    "https://api.depot.dev",
+    "https://aws.amazon.com/security/",
+    "https://bazel.build/",
+    "https://buf.build/depot/api/docs/main:depot.build.v1#depot.build.v1.BuildService",
+    "https://buf.build/depot/api/docs/main:depot.build.v1#depot.build.v1.RegistryService",
+    "https://buf.build/depot/api/docs/main:depot.buildkit.v1#depot.buildkit.v1.BuildKitService",
+    "https://buf.build/depot/api/docs/main:depot.core.v1#depot.core.v1.ProjectService",
+    "https://buf.build/depot/api/docs/main:depot.core.v1#depot.core.v1.UsageService",
+    "https://buildkite.com/docs/agent/v3/cli-oidc",
+    "https://cache.depot.dev",
+    "https://circleci.com/docs/openid-connect-tokens/",
+    "https://cloud.google.com/docs/security/infrastructure/design",
+    "https://connectrpc.com/docs/introduction#seamless-multi-protocol-support",
+    "https://d",
+    "https://depot.ai",
+    "https://depot.dev",
+    "https://depot.dev/",
+    "https://depot.dev/#artifacts",
+    "https://depot.dev/#attempts",
+    "https://depot.dev/#authentication",
+    "https://depot.dev/#ci-service-cancel-job",
+    "https://depot.dev/#ci-service-cancel-run",
+    "https://depot.dev/#ci-service-cancel-workflow",
+    "https://depot.dev/#ci-service-dispatch-workflow",
+    "https://depot.dev/#ci-service-export-job-attempt-logs",
+    "https://depot.dev/#ci-service-get-artifact-download-url",
+    "https://depot.dev/#ci-service-get-attempt",
+    "https://depot.dev/#ci-service-get-failure-diagnosis",
+    "https://depot.dev/#ci-service-get-job",
+    "https://depot.dev/#ci-service-get-job-attempt-logs",
+    "https://depot.dev/#ci-service-get-job-attempt-metrics",
+    "https://depot.dev/#ci-service-get-job-metrics",
+    "https://depot.dev/#ci-service-get-job-summary",
+    "https://depot.dev/#ci-service-get-run",
+    "https://depot.dev/#ci-service-get-run-metrics",
+    "https://depot.dev/#ci-service-get-run-status",
+    "https://depot.dev/#ci-service-get-workflow",
+    "https://depot.dev/#ci-service-list-artifacts",
+    "https://depot.dev/#ci-service-list-runs",
+    "https://depot.dev/#ci-service-list-workflows",
+    "https://depot.dev/#ci-service-rerun-workflow",
+    "https://depot.dev/#ci-service-retry-failed-jobs",
+    "https://depot.dev/#ci-service-retry-job",
+    "https://depot.dev/#ci-service-run",
+    "https://depot.dev/#ci-service-stream-job-attempt-logs",
+    "https://depot.dev/#container-builds-api",
+    "https://depot.dev/#depot-ci-api",
+    "https://depot.dev/#depot-login",
+    "https://depot.dev/#depot-logout",
+    "https://depot.dev/#depot-org",
+    "https://depot.dev/#depot-org-list",
+    "https://depot.dev/#depot-org-show",
+    "https://depot.dev/#depot-org-switch",
+    "https://depot.dev/#depot-tests",
+    "https://depot.dev/#diagnostics",
+    "https://depot.dev/#errors",
+    "https://depot.dev/#jobs",
+    "https://depot.dev/#logs",
+    "https://depot.dev/#runs",
+    "https://depot.dev/#sandbox-api",
+    "https://depot.dev/#security",
+    "https://depot.dev/#tokens",
+    "https://depot.dev/#user-access-tokens",
+    "https://depot.dev/#workflows",
+    "https://depot.dev/about",
+    "https://depot.dev/about/brand-assets",
+    "https://depot.dev/blog",
+    "https://depot.dev/blog/3-fears-that-make-work-suck.md",
+    "https://depot.dev/blog/accelerating-builds-improve-ec2-boot-time.md",
+    "https://depot.dev/blog/accelerating-test-suites.md",
+    "https://depot.dev/blog/asdf-depot-plugin.md",
+    "https://depot.dev/blog/best-ci-for-docker.md",
+    "https://depot.dev/blog/bitbucket-pipelines-docker-build-limitations.md",
+    "https://depot.dev/blog/booting-containers-faster-with-estargz.md",
+    "https://depot.dev/blog/build-autoscaling-now-generally-available.md",
+    "https://depot.dev/blog/build-context.md",
+    "https://depot.dev/blog/build-docker-images-in-circleci.md",
+    "https://depot.dev/blog/build-docker-images-in-gitlab-ci.md",
+    "https://depot.dev/blog/build-insights.md",
+    "https://depot.dev/blog/build-summary-details.md",
+    "https://depot.dev/blog/build-with-sboms.md",
+    "https://depot.dev/blog/building-arm-containers.md",
+    "https://depot.dev/blog/building-ci-with-durable-lambda.md",
+    "https://depot.dev/blog/building-container-layers-from-scratch.md",
+    "https://depot.dev/blog/building-images-gzip-vs-zstd.md",
+    "https://depot.dev/blog/buildkit-in-depth.md",
+    "https://depot.dev/blog/buildkite-integration.md",
+    "https://depot.dev/blog/buildx-bake-deep-dive.md",
+    "https://depot.dev/blog/buildx-bake-with-depot.md",
+    "https://depot.dev/blog/cache-stats.md",
+    "https://depot.dev/blog/cache-v2-faster-builds.md",
+    "https://depot.dev/blog/ci-for-agentic-engineering.md",
+    "https://depot.dev/blog/circleci-oidc.md",
+    "https://depot.dev/blog/claude-code-in-github-actions",
+    "https://depot.dev/blog/claude-code-in-github-actions.md",
+    "https://depot.dev/blog/collaborate-with-claude-on-docs.md",
+    "https://depot.dev/blog/comparing-github-actions-and-depot-runners-for-2x-faster-builds.md",
+    "https://depot.dev/blog/configuring-cache-retention-on-depot.md",
+    "https://depot.dev/blog/container-builds-incident.md",
+    "https://depot.dev/blog/container-security-at-scale-building-untrusted-images-safely.md",
+    "https://depot.dev/blog/context-isolation-in-coding-agent-loops.md",
+    "https://depot.dev/blog/cycle-integration-with-depot.md",
+    "https://depot.dev/blog/dagger-functions-for-depot.md",
+    "https://depot.dev/blog/depot-2025-recap.md",
+    "https://depot.dev/blog/depot-ai.md",
+    "https://depot.dev/blog/depot-and-github-actions-usage.md",
+    "https://depot.dev/blog/depot-api.md",
+    "https://depot.dev/blog/depot-aws-marketplace.md",
+    "https://depot.dev/blog/depot-bake-ephemeral-registry.md",
+    "https://depot.dev/blog/depot-cncf.md",
+    "https://depot.dev/blog/depot-configure-docker.md",
+    "https://depot.dev/blog/depot-docs-now-open-source.md",
+    "https://depot.dev/blog/depot-envoy-discovery-service.md",
+    "https://depot.dev/blog/depot-ephemeral-registry.md",
+    "https://depot.dev/blog/depot-github-actions-runners.md",
+    "https://depot.dev/blog/depot-magic-explained.md",
+    "https://depot.dev/blog/depot-raises-series-a.md",
+    "https://depot.dev/blog/depot-soc-2.md",
+    "https://depot.dev/blog/depot-usage.md",
+    "https://depot.dev/blog/depot-with-dagger.md",
+    "https://depot.dev/blog/depot-with-docker-compose.md",
+    "https://depot.dev/blog/depot-wrapped-2025.md",
+    "https://depot.dev/blog/devex-at-depot-introduction.md",
+    "https://depot.dev/blog/devex-dialogues-annabelle-thomas-taylor.md",
+    "https://depot.dev/blog/devex-dialogues-dan-davidson.md",
+    "https://depot.dev/blog/devex-dialogues-iris-scholten.md",
+    "https://depot.dev/blog/devex-dialogues-nic-pegg.md",
+    "https://depot.dev/blog/devex-past-present-future.md",
+    "https://depot.dev/blog/devops-to-finance-explaining-ci-costs-to-your-cfo.md",
+    "https://depot.dev/blog/differences-between-qemu-and-cloud-hypervisor.md",
+    "https://depot.dev/blog/distributed-rust-fuzzing.md",
+    "https://depot.dev/blog/docker-arm.md",
+    "https://depot.dev/blog/docker-build-api.md",
+    "https://depot.dev/blog/docker-build-fundamentals.md",
+    "https://depot.dev/blog/docker-build-image.md",
+    "https://depot.dev/blog/docker-build-no-cache.md",
+    "https://depot.dev/blog/docker-buildx-explained.md",
+    "https://depot.dev/blog/docker-clear-cache.md",
+    "https://depot.dev/blog/docker-layer-caching-in-github-actions.md",
+    "https://depot.dev/blog/docker-layer-caching-in-google-cloud-build.md",
+    "https://depot.dev/blog/docker-multi-stage-builds.md",
+    "https://depot.dev/blog/docker-system-prune.md",
+    "https://depot.dev/blog/docker-tools.md",
+    "https://depot.dev/blog/dockerfile-explorer.md",
+    "https://depot.dev/blog/dockerfile-lint-on-build.md",
+    "https://depot.dev/blog/dockerfile-linting-issues.md",
+    "https://depot.dev/blog/drop-week-01.md",
+    "https://depot.dev/blog/failure-fingerprints.md",
+    "https://depot.dev/blog/fast-dockerfiles-theory-and-practice.md",
+    "https://depot.dev/blog/faster-bazel-builds-with-remote-cache.md",
+    "https://depot.dev/blog/faster-builds-with-docker-caching.md",
+    "https://depot.dev/blog/faster-database-with-planetscale-metal.md",
+    "https://depot.dev/blog/faster-docker-image-builds-in-aws-codebuild.md",
+    "https://depot.dev/blog/faster-ec2-boot-time.md",
+    "https://depot.dev/blog/faster-github-actions.md",
+    "https://depot.dev/blog/faster-gradle-builds-with-remote-cache.md",
+    "https://depot.dev/blog/fly-builds-powered-by-depot.md",
+    "https://depot.dev/blog/from-go-code-to-container-image-with-depot-api.md",
+    "https://depot.dev/blog/git-is-really-cool-actually.md",
+    "https://depot.dev/blog/github-actions-breaking-five-second-barrier.md",
+    "https://depot.dev/blog/github-actions-cache-management.md",
+    "https://depot.dev/blog/github-actions-cache.md",
+    "https://depot.dev/blog/github-actions-gpus-now-available.md",
+    "https://depot.dev/blog/github-actions-jobs-in-a-container.md",
+    "https://depot.dev/blog/github-actions-matrix-strategy.md",
+    "https://depot.dev/blog/github-actions-oss-fork-builds.md",
+    "https://depot.dev/blog/github-actions-runner-architecture-part-1-the-listener.md",
+    "https://depot.dev/blog/github-actions-runner-settings.md",
+    "https://depot.dev/blog/github-actions-runners-visualization.md",
+    "https://depot.dev/blog/go-code-to-container-depot-api.md",
+    "https://depot.dev/blog/go-remote-cache.md",
+    "https://depot.dev/blog/graceful-shutdown-in-go.md",
+    "https://depot.dev/blog/guide-to-debugging-github-actions.md",
+    "https://depot.dev/blog/guide-to-faster-rust-builds-in-ci.md",
+    "https://depot.dev/blog/hidden-cost-of-self-hosting-ci-runners.md",
+    "https://depot.dev/blog/how-buildkit-parallelizes-your-builds.md",
+    "https://depot.dev/blog/how-i-make-support-suck-less.md",
+    "https://depot.dev/blog/how-overmind-got-10x-faster-dev-container-builds.md",
+    "https://depot.dev/blog/how-simulations-reduce-guesswork.md",
+    "https://depot.dev/blog/how-support-shapes-the-product-at-depot.md",
+    "https://depot.dev/blog/how-to-build-with-depot-on-fly.md",
+    "https://depot.dev/blog/how-to-calculate-github-actions-usage.md",
+    "https://depot.dev/blog/how-to-reduce-cicd-costs-complete-optimization-guide.md",
+    "https://depot.dev/blog/how-to-reduce-your-docker-image-size.md",
+    "https://depot.dev/blog/how-to-use-buildkit-cache-mounts-in-ci.md",
+    "https://depot.dev/blog/how-to-use-cache-mount-to-speed-up-docker-builds.md",
+    "https://depot.dev/blog/how-to-use-depot-in-monorepos.md",
+    "https://depot.dev/blog/how-to-use-depot-with-fly.md",
+    "https://depot.dev/blog/how-we-automated-github-actions-runner-updates-with-claude.md",
+    "https://depot.dev/blog/how-we-built-depot-wrapped.md",
+    "https://depot.dev/blog/how-windmill-got-13x-faster-docker-builds.md",
+    "https://depot.dev/blog/independent-steps-in-parallel.md",
+    "https://depot.dev/blog/infrastructure-provisioner-v3.md",
+    "https://depot.dev/blog/introducing-ai-assistant-sherlock.md",
+    "https://depot.dev/blog/introducing-depot-cache.md",
+    "https://depot.dev/blog/introducing-depot-registry.md",
+    "https://depot.dev/blog/introducing-depot.md",
+    "https://depot.dev/blog/introducing-github-actions-ultra-runners.md",
+    "https://depot.dev/blog/introducing-github-job-details-observability-for-your-cicd-pipeline.md",
+    "https://depot.dev/blog/kysely-dialect-planetscale.md",
+    "https://depot.dev/blog/lambda-durable-implementation.md",
+    "https://depot.dev/blog/larger-builders-for-faster-builds.md",
+    "https://depot.dev/blog/local-builds.md",
+    "https://depot.dev/blog/login-with-google-microsoft.md",
+    "https://depot.dev/blog/mac-github-actions-runners.md",
+    "https://depot.dev/blog/marketers-hour-of-hell-slow-builds.md",
+    "https://depot.dev/blog/may-8-outage.md",
+    "https://depot.dev/blog/migrate-to-depot-ci.md",
+    "https://depot.dev/blog/monorepos-worth-the-hype.md",
+    "https://depot.dev/blog/multi-platform-docker-images-in-github-actions.md",
+    "https://depot.dev/blog/my-intuition-doesnt-work-anymore.md",
+    "https://depot.dev/blog/node-20-deprecation-psa-for-depot-users.md",
+    "https://depot.dev/blog/now-available-audit-logging-for-improved-security.md",
+    "https://depot.dev/blog/now-available-claude-code-sessions-in-depot.md",
+    "https://depot.dev/blog/now-available-depot-ci-api.md",
+    "https://depot.dev/blog/now-available-depot-ci.md",
+    "https://depot.dev/blog/now-available-depot-registry-v2.md",
+    "https://depot.dev/blog/now-available-depot-skills.md",
+    "https://depot.dev/blog/now-available-egress-filtering-for-github-actions-runners.md",
+    "https://depot.dev/blog/now-available-gha-log-search.md",
+    "https://depot.dev/blog/now-available-github-actions-analytics.md",
+    "https://depot.dev/blog/now-available-gocache-v2-faster-improved-golang-build-performance.md",
+    "https://depot.dev/blog/now-available-macos-26-github-actions.md",
+    "https://depot.dev/blog/now-available-nested-virtualization-on-depot-ci.md",
+    "https://depot.dev/blog/now-available-remote-agent-sandboxes",
+    "https://depot.dev/blog/now-available-remote-agent-sandboxes.md",
+    "https://depot.dev/blog/now-available-sherlock-depot-ci-analysis.md",
+    "https://depot.dev/blog/now-available-soci-support-for-container-builds.md",
+    "https://depot.dev/blog/now-available-step-retry-depot-ci.md",
+    "https://depot.dev/blog/now-available-the-depot-sandbox-sdk.md",
+    "https://depot.dev/blog/observing-lambda-durable-functions.md",
+    "https://depot.dev/blog/october-20-us-east-1-outage.md",
+    "https://depot.dev/blog/optimize-for-remote-docker-image-builds.md",
+    "https://depot.dev/blog/optimize-your-dockerfile-for-5x-faster-builds.md",
+    "https://depot.dev/blog/optimizing-microvm-boot-times.md",
+    "https://depot.dev/blog/paranoia-is-baseline-now.md",
+    "https://depot.dev/blog/planetscale-to-reduce-the-thundering-herd.md",
+    "https://depot.dev/blog/project-build-timeouts.md",
+    "https://depot.dev/blog/project-region-selection.md",
+    "https://depot.dev/blog/project-tokens.md",
+    "https://depot.dev/blog/reducing-image-size-with-dive.md",
+    "https://depot.dev/blog/reducing-queue-time-with-cached-schemas.md",
+    "https://depot.dev/blog/registry-integration-testing-load-save.md",
+    "https://depot.dev/blog/reinvent-2024-observing-serverless-applications.md",
+    "https://depot.dev/blog/remote-build-caching-secret-to-software-builds.md",
+    "https://depot.dev/blog/run-visibility-depot-ci.md",
+    "https://depot.dev/blog/rust-dockerfile-best-practices.md",
+    "https://depot.dev/blog/sccache-in-github-actions.md",
+    "https://depot.dev/blog/self-hosted-depot.md",
+    "https://depot.dev/blog/self-hosting-github-actions.md",
+    "https://depot.dev/blog/slow-builds-are-costing-you-money.md",
+    "https://depot.dev/blog/speed-up-docker-builds.md",
+    "https://depot.dev/blog/staying-in-control-of-your-codebase-in-the-ai-era.md",
+    "https://depot.dev/blog/tailscale-integration.md",
+    "https://depot.dev/blog/teaching-sherlock-new-tricks.md",
+    "https://depot.dev/blog/the-bottleneck-has-shifted.md",
+    "https://depot.dev/blog/the-end-of-push-wait-guess-ci.md",
+    "https://depot.dev/blog/troubleshooting-github-actions-unexpected-behaviors.md",
+    "https://depot.dev/blog/turbo-builders.md",
+    "https://depot.dev/blog/ultimate-guide-to-docker-build-cache.md",
+    "https://depot.dev/blog/ultra-runners-for-macos.md",
+    "https://depot.dev/blog/uncovering-disk-io-bottlenecks-github-actions-ci.md",
+    "https://depot.dev/blog/usage-caps.md",
+    "https://depot.dev/blog/using-ai-as-my-engineering-copilot-not-autopilot",
+    "https://depot.dev/blog/using-ai-as-my-engineering-copilot-not-autopilot.md",
+    "https://depot.dev/blog/we-analyzed-66821-github-actions-runs.md",
+    "https://depot.dev/blog/we-hire-people-who-care-about-their-work.md",
+    "https://depot.dev/blog/we-instrumented-github-actions.md",
+    "https://depot.dev/blog/what-are-docker-layers.md",
+    "https://depot.dev/blog/what-is-a-tar-file.md",
+    "https://depot.dev/blog/what-technical-writers-do-at-startups.md",
+    "https://depot.dev/blog/what-we-learned-optimizing-ec2-macos-build-performance.md",
+    "https://depot.dev/blog/why-organizations-have-slow-actions-checkout.md",
+    "https://depot.dev/blog/why-platform-teams-are-focused-on-ci-cd-optimization.md",
+    "https://depot.dev/blog/why-you-should-avoid-copy-link-in-your-dockerfile.md",
+    "https://depot.dev/blog/windows-github-actions-runners.md",
+    "https://depot.dev/careers",
+    "https://depot.dev/changelog",
+    "https://depot.dev/changelog/2022-05-14-depot-cli-0-1-0.md",
+    "https://depot.dev/changelog/2022-05-16-build-push-action.md",
+    "https://depot.dev/changelog/2022-05-31-docs.md",
+    "https://depot.dev/changelog/2022-06-14-self-hosted-builders.md",
+    "https://depot.dev/changelog/2022-06-21-project-tokens.md",
+    "https://depot.dev/changelog/2022-07-28-stability-fixes.md",
+    "https://depot.dev/changelog/2022-07-31-self-hosted-builders.md",
+    "https://depot.dev/changelog/2022-08-05-posthog-blog-post.md",
+    "https://depot.dev/changelog/2022-08-18-self-hosted-builders.md",
+    "https://depot.dev/changelog/2022-08-19-updated-docs.md",
+    "https://depot.dev/changelog/2022-09-16-stability-improvements.md",
+    "https://depot.dev/changelog/2022-09-22-depot-cli-1-0-0.md",
+    "https://depot.dev/changelog/2022-09-28-gitlab-ci-integration.md",
+    "https://depot.dev/changelog/2022-10-30-oauth-login.md",
+    "https://depot.dev/changelog/2022-10-31-company-updates.md",
+    "https://depot.dev/changelog/2022-11-09-bitbucket-guide.md",
+    "https://depot.dev/changelog/2022-11-11-asdf-plugin.md",
+    "https://depot.dev/changelog/2022-11-28-platform-upgrade.md",
+    "https://depot.dev/changelog/2022-11-29-new-onboarding.md",
+    "https://depot.dev/changelog/2022-12-07-y-combinator-launch.md",
+    "https://depot.dev/changelog/2022-12-12-region-selection.md",
+    "https://depot.dev/changelog/2022-12-28-docs-updates.md",
+    "https://depot.dev/changelog/2023-01-07-discord-community.md",
+    "https://depot.dev/changelog/2023-01-27-depot-cli-1-6-0.md",
+    "https://depot.dev/changelog/2023-01-31-bake-action.md",
+    "https://depot.dev/changelog/2023-02-07-api-private-beta.md",
+    "https://depot.dev/changelog/2023-02-15-mastodon-benchmark.md",
+    "https://depot.dev/changelog/2023-02-24-turbo-builders.md",
+    "https://depot.dev/changelog/2023-02-28-new-landing-page.md",
+    "https://depot.dev/changelog/2023-03-17-cache-statistics.md",
+    "https://depot.dev/changelog/2023-03-31-buildkite.md",
+    "https://depot.dev/changelog/2023-03-31-depot-cli-2-7-2.md",
+    "https://depot.dev/changelog/2023-04-03-y-combinator.md",
+    "https://depot.dev/changelog/2023-04-10-billing-details.md",
+    "https://depot.dev/changelog/2023-04-18-github-actions.md",
+    "https://depot.dev/changelog/2023-04-24-kysely-dialect.md",
+    "https://depot.dev/changelog/2023-05-01-depot-cli-2-10-0.md",
+    "https://depot.dev/changelog/2023-05-01-improved-hashing.md",
+    "https://depot.dev/changelog/2023-05-02-docs-open-source.md",
+    "https://depot.dev/changelog/2023-05-17-local-builds.md",
+    "https://depot.dev/changelog/2023-05-23-hacker-news-product-hunt.md",
+    "https://depot.dev/changelog/2023-05-31-depot-cli-2-17-2.md",
+    "https://depot.dev/changelog/2023-05-31-lint.md",
+    "https://depot.dev/changelog/2023-06-05-reset-machines.md",
+    "https://depot.dev/changelog/2023-06-06-build-ui.md",
+    "https://depot.dev/changelog/2023-06-20-jenkins-guide.md",
+    "https://depot.dev/changelog/2023-06-21-depot-api.md",
+    "https://depot.dev/changelog/2023-06-29-depot-cli-2-21-0.md",
+    "https://depot.dev/changelog/2023-07-17-cache-storage-v2.md",
+    "https://depot.dev/changelog/2023-07-18-depot-ai.md",
+    "https://depot.dev/changelog/2023-07-19-llama-2.md",
+    "https://depot.dev/changelog/2023-07-19-open-source-pull-requests.md",
+    "https://depot.dev/changelog/2023-07-27-depot-configure-docker.md",
+    "https://depot.dev/changelog/2023-08-01-semgrep-integration-with-lint.md",
+    "https://depot.dev/changelog/2023-08-10-depot-cncf.md",
+    "https://depot.dev/changelog/2023-08-11-buildx-driver-for-depot.md",
+    "https://depot.dev/changelog/2023-08-11-new-integration-guide-for-docker-build.md",
+    "https://depot.dev/changelog/2023-08-31-build-minute-usage-caps.md",
+    "https://depot.dev/changelog/2023-09-01-new-branding.md",
+    "https://depot.dev/changelog/2023-09-07-circleci-oidc.md",
+    "https://depot.dev/changelog/2023-09-15-npm-package.md",
+    "https://depot.dev/changelog/2023-09-20-language-framework-guides.md",
+    "https://depot.dev/changelog/2023-09-27-depot-cli-2-38-1.md",
+    "https://depot.dev/changelog/2023-10-16-build-insights.md",
+    "https://depot.dev/changelog/2023-10-17-sboms.md",
+    "https://depot.dev/changelog/2023-10-18-track-your-usage.md",
+    "https://depot.dev/changelog/2023-10-19-infrastructure-provisioner-v3.md",
+    "https://depot.dev/changelog/2023-10-20-aws-marketplace.md",
+    "https://depot.dev/changelog/2023-10-20-dockerfile-explorer.md",
+    "https://depot.dev/changelog/2023-10-30-depot-cli-2-45-5.md",
+    "https://depot.dev/changelog/2023-11-15-temporary-registry.md",
+    "https://depot.dev/changelog/2023-11-21-aws-codebuild-integration.md",
+    "https://depot.dev/changelog/2023-11-24-logs-view-enhancements.md",
+    "https://depot.dev/changelog/2023-11-27-trust-policies.md",
+    "https://depot.dev/changelog/2023-12-06-ephemeral-registries.md",
+    "https://depot.dev/changelog/2023-12-07-github-action.md",
+    "https://depot.dev/changelog/2023-12-15-debug-build-context.md",
+    "https://depot.dev/changelog/2023-12-20-depot-cli-2-49-0.md",
+    "https://depot.dev/changelog/2024-01-31-depot-cli-2-53-0.md",
+    "https://depot.dev/changelog/2024-02-12-logs-view-facets.md",
+    "https://depot.dev/changelog/2024-02-19-github-action-runners.md",
+    "https://depot.dev/changelog/2024-02-26-depot-cli-2-54-1.md",
+    "https://depot.dev/changelog/2024-03-04-depot-bake-targeted-load.md",
+    "https://depot.dev/changelog/2024-03-11-ephemeral-registry-for-depot-bake.md",
+    "https://depot.dev/changelog/2024-03-15-mint-oidc-trust-relationship.md",
+    "https://depot.dev/changelog/2024-03-18-pull-token-support.md",
+    "https://depot.dev/changelog/2024-03-26-depot-daggerverse-1-1-0.md",
+    "https://depot.dev/changelog/2024-03-30-rust-dockerfile.md",
+    "https://depot.dev/changelog/2024-04-08-github-actions-runners-for-arm-beta.md",
+    "https://depot.dev/changelog/2024-04-14-contact-us-pane.md",
+    "https://depot.dev/changelog/2024-04-20-aws-privatelink-now-available.md",
+    "https://depot.dev/changelog/2024-04-22-increased-disk-sizes-for-github-actions-runners.md",
+    "https://depot.dev/changelog/2024-05-05-fly-io-integration-guide.md",
+    "https://depot.dev/changelog/2024-05-14-smaller-and-larger-github-actions-runners.md",
+    "https://depot.dev/changelog/2024-05-20-project-token-api-endpoints.md",
+    "https://depot.dev/changelog/2024-05-24-nydus-support-in-beta.md",
+    "https://depot.dev/changelog/2024-06-07-depot-cli-bake-multiple-projects.md",
+    "https://depot.dev/changelog/2024-06-11-new-depot-dashboard.md",
+    "https://depot.dev/changelog/2024-06-20-github-actions-cache-management.md",
+    "https://depot.dev/changelog/2024-06-21-io-optimized-github-actions-runner-beta.md",
+    "https://depot.dev/changelog/2024-06-30-depot-cli-2-70-0.md",
+    "https://depot.dev/changelog/2024-07-12-purge-github-actions-cache.md",
+    "https://depot.dev/changelog/2024-07-12-streamlined-onboarding.md",
+    "https://depot.dev/changelog/2024-07-12-ubuntu-24-04-github-actions-runner-beta.md",
+    "https://depot.dev/changelog/2024-07-15-depot-cli-2-72-0.md",
+    "https://depot.dev/changelog/2024-07-15-github-actions-usage-caps.md",
+    "https://depot.dev/changelog/2024-07-24-detailed-usage-reports.md",
+    "https://depot.dev/changelog/2024-08-24-gha-cache-bulk-delete.md",
+    "https://depot.dev/changelog/2024-08-27-depot-cli-2-75-0.md",
+    "https://depot.dev/changelog/2024-09-11-project-build-health.md",
+    "https://depot.dev/changelog/2024-09-12-build-platforms-support-in-compose.md",
+    "https://depot.dev/changelog/2024-09-19-new-python-guides.md",
+    "https://depot.dev/changelog/2024-10-07-depot-cache-explorer.md",
+    "https://depot.dev/changelog/2024-10-23-build-sharing.md",
+    "https://depot.dev/changelog/2024-11-14-github-actions-queue-time.md",
+    "https://depot.dev/changelog/2024-12-07-cache-usage-updates.md",
+    "https://depot.dev/changelog/2025-01-22-download-cache-files.md",
+    "https://depot.dev/changelog/2025-01-22-force-terminate-github-actions-jobs.md",
+    "https://depot.dev/changelog/2025-02-17-connect-multiple-github-organizations.md",
+    "https://depot.dev/changelog/2025-02-20-ubuntu-latest-is-now-v24.md",
+    "https://depot.dev/changelog/2025-02-24-filter-builds-and-github-actions-jobs.md",
+    "https://depot.dev/changelog/2025-03-03-gocacheprog.md",
+    "https://depot.dev/changelog/2025-03-10-depot-cli-2-84-0.md",
+    "https://depot.dev/changelog/2025-03-20-registry-service.md",
+    "https://depot.dev/changelog/2025-05-07-depot-cache-maven-support.md",
+    "https://depot.dev/changelog/2025-05-21-reset-container-build-machines.md",
+    "https://depot.dev/changelog/2025-06-10-depot-push-env-var-auth.md",
+    "https://depot.dev/changelog/2025-06-24-dependabot-support.md",
+    "https://depot.dev/changelog/2025-06-30-depot-cargo-command.md",
+    "https://depot.dev/changelog/2025-07-15-depot-switch-orgs-delete-projects.md",
+    "https://depot.dev/changelog/2025-07-28-filter-github-actions-jobs.md",
+    "https://depot.dev/changelog/2025-08-25-depot-cli-2-99-0.md",
+    "https://depot.dev/changelog/2025-08-26-push-any-image-to-depot-registry.md",
+    "https://depot.dev/changelog/2025-09-12-macos-15-github-actions.md",
+    "https://depot.dev/changelog/2025-09-12-registry-page-filtering.md",
+    "https://depot.dev/changelog/2025-09-18-api-usage-service.md",
+    "https://depot.dev/changelog/2025-09-26-repo-scoped-actions-cache.md",
+    "https://depot.dev/changelog/2025-10-09-build-parallelism.md",
+    "https://depot.dev/changelog/2025-10-21-build-history-pagination.md",
+    "https://depot.dev/changelog/2025-10-29-github-actions-log-search.md",
+    "https://depot.dev/changelog/2025-10-30-depot-cache-docs.md",
+    "https://depot.dev/changelog/2025-10-30-github-actions-pagination.md",
+    "https://depot.dev/changelog/2025-10-31-troubleshooting-documentation.md",
+    "https://depot.dev/changelog/2025-11-03-resume-remote-agent-sandboxes.md",
+    "https://depot.dev/changelog/2025-11-10-github-actions-troubleshooting.md",
+    "https://depot.dev/changelog/2025-11-17-github-actions-analytics.md",
+    "https://depot.dev/changelog/2025-12-02-cni-isolation-enabled.md",
+    "https://depot.dev/changelog/2025-12-06-usage-page-filtering.md",
+    "https://depot.dev/changelog/2025-12-09-bake-platform-prefixes.md",
+    "https://depot.dev/changelog/2025-12-10-deduplicated-label.md",
+    "https://depot.dev/changelog/2025-12-12-windows-2025-github-actions.md",
+    "https://depot.dev/changelog/2025-12-17-github-actions-m8a-instances.md",
+    "https://depot.dev/changelog/2025-12-18-depot-wrapped.md",
+    "https://depot.dev/changelog/2025-12-18-sherlock-ai-assistant-for-docs.md",
+    "https://depot.dev/changelog/2026-01-12-container-build-resource-utilization.md",
+    "https://depot.dev/changelog/2026-01-16-new-docs-for-observability.md",
+    "https://depot.dev/changelog/2026-01-22-github-actions-workflow-path-filter.md",
+    "https://depot.dev/changelog/2026-02-11-inline-build-step-analytics.md",
+    "https://depot.dev/changelog/2026-02-12-collapse-github-actions-job-logs.md",
+    "https://depot.dev/changelog/2026-02-24-depot-skills.md",
+    "https://depot.dev/changelog/2026-03-06-sherlock-expanded-context.md",
+    "https://depot.dev/changelog/2026-03-24-depot-ci-now-available.md",
+    "https://depot.dev/changelog/2026-03-25-depot-ci-run-ref-flag.md",
+    "https://depot.dev/changelog/2026-03-30-dynamic-job-names-in-ui.md",
+    "https://depot.dev/changelog/2026-04-01-depot-ci-secret-files.md",
+    "https://depot.dev/changelog/2026-04-01-graphite-stacked-prs.md",
+    "https://depot.dev/changelog/2026-04-02-reusable-workflow-parity.md",
+    "https://depot.dev/changelog/2026-04-10-case-expression-support.md",
+    "https://depot.dev/changelog/2026-04-13-registry-explorer.md",
+    "https://depot.dev/changelog/2026-04-15-ci-run-local-composite-actions.md",
+    "https://depot.dev/changelog/2026-04-16-ci-step-summaries.md",
+    "https://depot.dev/changelog/2026-04-16-depot-registry-v2.md",
+    "https://depot.dev/changelog/2026-04-23-depot-ci-cancel-rerun-retry-dispatch.md",
+    "https://depot.dev/changelog/2026-04-23-depot-job-url.md",
+    "https://depot.dev/changelog/2026-04-30-depot-ci-workflow.md",
+    "https://depot.dev/changelog/2026-05-06-depot-ci-logs-streaming-and-exports.md",
+    "https://depot.dev/changelog/2026-05-06-registry-pull-through-and-explorer-updates.md",
+    "https://depot.dev/changelog/2026-05-07-depot-ci-metrics-and-status-json.md",
+    "https://depot.dev/changelog/2026-05-08-depot-ci-diagnose.md",
+    "https://depot.dev/changelog/2026-05-11-ci-secrets-variables-variants.md",
+    "https://depot.dev/changelog/2026-05-12-depot-ci-workflow-dashboard.md",
+    "https://depot.dev/changelog/2026-05-20-nested-virtualization-on-depot-ci.md",
+    "https://depot.dev/changelog/2026-05-26-macos-26-beta-github-actions.md",
+    "https://depot.dev/changelog/2026-05-27-sherlock-depot-ci-analysis.md",
+    "https://depot.dev/changelog/2026-05-29-markdown-for-docs-and-ai-agents.md",
+    "https://depot.dev/changelog/2026-06-01-depot-ci-ipv6.md",
+    "https://depot.dev/changelog/2026-06-01-depot-ci-usage.md",
+    "https://depot.dev/changelog/2026-06-01-depot-ci-workflow-explorer.md",
+    "https://depot.dev/changelog/2026-06-02-test-results-beta.md",
+    "https://depot.dev/changelog/2026-06-03-ssh-exec-host.md",
+    "https://depot.dev/changelog/2026-06-04-depot-ci-api-cli.md",
+    "https://depot.dev/changelog/2026-06-10-depot-ci-cache-disk-beta.md",
+    "https://depot.dev/changelog/2026-06-12-depot-ci-step-retry.md",
+    "https://depot.dev/changelog/2026-06-18-sandbox-sdk-beta.md",
+    "https://depot.dev/changelog/2026-06-19-soci-support.md",
+    "https://depot.dev/changelog/2026-06-26-snapshot-enhancements.md",
+    "https://depot.dev/cookies",
+    "https://depot.dev/customers",
+    "https://depot.dev/customers/albacore.md",
+    "https://depot.dev/customers/astral.md",
+    "https://depot.dev/customers/bastion.md",
+    "https://depot.dev/customers/hathora.md",
+    "https://depot.dev/customers/inference.md",
+    "https://depot.dev/customers/jane-app.md",
+    "https://depot.dev/customers/nominal.md",
+    "https://depot.dev/customers/people-data-labs.md",
+    "https://depot.dev/customers/planetscale.md",
+    "https://depot.dev/customers/posthog.md",
+    "https://depot.dev/dockerfile-explorer",
+    "https://depot.dev/docs",
+    "https://depot.dev/docs.md",
+    "https://depot.dev/docs/account",
+    "https://depot.dev/docs/account.md",
+    "https://depot.dev/docs/agents/claude-code/quickstart",
+    "https://depot.dev/docs/agents/claude-code/quickstart.md",
+    "https://depot.dev/docs/agents/overview",
+    "https://depot.dev/docs/agents/overview.md",
+    "https://depot.dev/docs/ai-at-depot",
+    "https://depot.dev/docs/ai-at-depot.md",
+    "https://depot.dev/docs/api/api-container-builds-tutorial",
+    "https://depot.dev/docs/api/api-container-builds-tutorial.md",
+    "https://depot.dev/docs/api/authentication",
+    "https://depot.dev/docs/api/authentication.md",
+    "https://depot.dev/docs/api/ci/reference",
+    "https://depot.dev/docs/api/ci/reference.md",
+    "https://depot.dev/docs/api/overview",
+    "https://depot.dev/docs/api/overview.md",
+    "https://depot.dev/docs/api/sandbox-sdk-reference",
+    "https://depot.dev/docs/api/sandbox-sdk-reference.md",
+    "https://depot.dev/docs/api/sdk-reference",
+    "https://depot.dev/docs/api/sdk-reference.md",
+    "https://depot.dev/docs/cache/authentication",
+    "https://depot.dev/docs/cache/authentication.md",
+    "https://depot.dev/docs/cache/integrations/bazel",
+    "https://depot.dev/docs/cache/integrations/bazel.md",
+    "https://depot.dev/docs/cache/integrations/github-actions",
+    "https://depot.dev/docs/cache/integrations/github-actions.md",
+    "https://depot.dev/docs/cache/integrations/gocache",
+    "https://depot.dev/docs/cache/integrations/gocache.md",
+    "https://depot.dev/docs/cache/integrations/gradle",
+    "https://depot.dev/docs/cache/integrations/gradle.md",
+    "https://depot.dev/docs/cache/integrations/maven",
+    "https://depot.dev/docs/cache/integrations/maven.md",
+    "https://depot.dev/docs/cache/integrations/moonrepo",
+    "https://depot.dev/docs/cache/integrations/moonrepo.md",
+    "https://depot.dev/docs/cache/integrations/pants",
+    "https://depot.dev/docs/cache/integrations/pants.md",
+    "https://depot.dev/docs/cache/integrations/sccache",
+    "https://depot.dev/docs/cache/integrations/sccache.md",
+    "https://depot.dev/docs/cache/integrations/turbo",
+    "https://depot.dev/docs/cache/integrations/turbo.md",
+    "https://depot.dev/docs/cache/overview",
+    "https://depot.dev/docs/cache/overview.md",
+    "https://depot.dev/docs/ci/compatibility",
+    "https://depot.dev/docs/ci/compatibility.md",
+    "https://depot.dev/docs/ci/how-to-guides/cache-disks",
+    "https://depot.dev/docs/ci/how-to-guides/cache-disks.md",
+    "https://depot.dev/docs/ci/how-to-guides/coding-agents",
+    "https://depot.dev/docs/ci/how-to-guides/coding-agents.md",
+    "https://depot.dev/docs/ci/how-to-guides/custom-images",
+    "https://depot.dev/docs/ci/how-to-guides/custom-images.md",
+    "https://depot.dev/docs/ci/how-to-guides/debug-with-ssh",
+    "https://depot.dev/docs/ci/how-to-guides/debug-with-ssh.md",
+    "https://depot.dev/docs/ci/how-to-guides/manage-secrets-and-variables",
+    "https://depot.dev/docs/ci/how-to-guides/manage-secrets-and-variables.md",
+    "https://depot.dev/docs/ci/how-to-guides/manage-workflow-runs",
+    "https://depot.dev/docs/ci/how-to-guides/manage-workflow-runs.md",
+    "https://depot.dev/docs/ci/how-to-guides/parallel-steps",
+    "https://depot.dev/docs/ci/how-to-guides/parallel-steps.md",
+    "https://depot.dev/docs/ci/how-to-guides/retry-steps",
+    "https://depot.dev/docs/ci/how-to-guides/retry-steps.md",
+    "https://depot.dev/docs/ci/observability/depot-ci-logs",
+    "https://depot.dev/docs/ci/observability/depot-ci-logs.md",
+    "https://depot.dev/docs/ci/observability/depot-ci-metrics",
+    "https://depot.dev/docs/ci/observability/depot-ci-metrics.md",
+    "https://depot.dev/docs/ci/observability/depot-ci-test-results",
+    "https://depot.dev/docs/ci/observability/depot-ci-test-results.md",
+    "https://depot.dev/docs/ci/observability/github-checks",
+    "https://depot.dev/docs/ci/observability/github-checks.md",
+    "https://depot.dev/docs/ci/oidc",
+    "https://depot.dev/docs/ci/oidc.md",
+    "https://depot.dev/docs/ci/overview",
+    "https://depot.dev/docs/ci/overview.md",
+    "https://depot.dev/docs/ci/quickstart",
+    "https://depot.dev/docs/ci/quickstart.md",
+    "https://depot.dev/docs/cli.md",
+    "https://depot.dev/docs/cli/authentication",
+    "https://depot.dev/docs/cli/authentication#oidc-trust-relationships",
+    "https://depot.dev/docs/cli/authentication#organization-tokens",
+    "https://depot.dev/docs/cli/authentication#project-tokens",
+    "https://depot.dev/docs/cli/authentication#pull-tokens",
+    "https://depot.dev/docs/cli/authentication#user-access-tokens",
+    "https://depot.dev/docs/cli/authentication.md",
+    "https://depot.dev/docs/cli/installation",
+    "https://depot.dev/docs/cli/installation.md",
+    "https://depot.dev/docs/cli/reference/agents",
+    "https://depot.dev/docs/cli/reference/agents.md",
+    "https://depot.dev/docs/cli/reference/container-builds",
+    "https://depot.dev/docs/cli/reference/container-builds.md",
+    "https://depot.dev/docs/cli/reference/depot-ci",
+    "https://depot.dev/docs/cli/reference/depot-ci.md",
+    "https://depot.dev/docs/cli/reference/overview",
+    "https://depot.dev/docs/cli/reference/overview#depot-login",
+    "https://depot.dev/docs/cli/reference/overview.md",
+    "https://depot.dev/docs/container-builds/build-parallelism",
+    "https://depot.dev/docs/container-builds/build-parallelism.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/arm-containers",
+    "https://depot.dev/docs/container-builds/how-to-guides/arm-containers.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/autoscaling",
+    "https://depot.dev/docs/container-builds/how-to-guides/autoscaling.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/continuous-integration",
+    "https://depot.dev/docs/container-builds/how-to-guides/continuous-integration.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/devcontainers",
+    "https://depot.dev/docs/container-builds/how-to-guides/devcontainers.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/docker-bake",
+    "https://depot.dev/docs/container-builds/how-to-guides/docker-bake.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/docker-build",
+    "https://depot.dev/docs/container-builds/how-to-guides/docker-build.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/docker-compose",
+    "https://depot.dev/docs/container-builds/how-to-guides/docker-compose.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/local-development",
+    "https://depot.dev/docs/container-builds/how-to-guides/local-development.md",
+    "https://depot.dev/docs/container-builds/how-to-guides/private-registries",
+    "https://depot.dev/docs/container-builds/how-to-guides/private-registries.md",
+    "https://depot.dev/docs/container-builds/integrations/aws-codebuild",
+    "https://depot.dev/docs/container-builds/integrations/aws-codebuild.md",
+    "https://depot.dev/docs/container-builds/integrations/bitbucket-pipelines",
+    "https://depot.dev/docs/container-builds/integrations/bitbucket-pipelines.md",
+    "https://depot.dev/docs/container-builds/integrations/buildkite",
+    "https://depot.dev/docs/container-builds/integrations/buildkite.md",
+    "https://depot.dev/docs/container-builds/integrations/circleci",
+    "https://depot.dev/docs/container-builds/integrations/circleci.md",
+    "https://depot.dev/docs/container-builds/integrations/depot-ci",
+    "https://depot.dev/docs/container-builds/integrations/depot-ci.md",
+    "https://depot.dev/docs/container-builds/integrations/fly",
+    "https://depot.dev/docs/container-builds/integrations/fly.md",
+    "https://depot.dev/docs/container-builds/integrations/github-actions",
+    "https://depot.dev/docs/container-builds/integrations/github-actions.md",
+    "https://depot.dev/docs/container-builds/integrations/gitlab-ci",
+    "https://depot.dev/docs/container-builds/integrations/gitlab-ci.md",
+    "https://depot.dev/docs/container-builds/integrations/google-cloud-build",
+    "https://depot.dev/docs/container-builds/integrations/google-cloud-build.md",
+    "https://depot.dev/docs/container-builds/integrations/jenkins",
+    "https://depot.dev/docs/container-builds/integrations/jenkins.md",
+    "https://depot.dev/docs/container-builds/integrations/travis-ci",
+    "https://depot.dev/docs/container-builds/integrations/travis-ci.md",
+    "https://depot.dev/docs/container-builds/observability/container-build-logs",
+    "https://depot.dev/docs/container-builds/observability/container-build-logs.md",
+    "https://depot.dev/docs/container-builds/observability/container-build-metrics",
+    "https://depot.dev/docs/container-builds/observability/container-build-metrics.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/dotnet",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/dotnet-aspnetcore-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/dotnet-worker-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/dotnet.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/go-dockerfile",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/go-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/java",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/java-gradle-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/java-maven-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/java.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/node",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/node-npm-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/node-pnpm-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/node.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/overview",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/overview.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/php-composer-dockerfile",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/php-composer-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/python",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/python-pip-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/python-poetry-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/python-uv-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/python.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/ruby-bundler-dockerfile",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/ruby-bundler-dockerfile.md",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/rust-dockerfile",
+    "https://depot.dev/docs/container-builds/optimal-dockerfiles/rust-dockerfile.md",
+    "https://depot.dev/docs/container-builds/overview",
+    "https://depot.dev/docs/container-builds/overview.md",
+    "https://depot.dev/docs/container-builds/quickstart",
+    "https://depot.dev/docs/container-builds/quickstart.md",
+    "https://depot.dev/docs/container-builds/troubleshooting",
+    "https://depot.dev/docs/container-builds/troubleshooting.md",
+    "https://depot.dev/docs/environment-variables",
+    "https://depot.dev/docs/environment-variables.md",
+    "https://depot.dev/docs/github-actions/how-to-guides/access-private-resources",
+    "https://depot.dev/docs/github-actions/how-to-guides/access-private-resources.md",
+    "https://depot.dev/docs/github-actions/how-to-guides/egress-filtering",
+    "https://depot.dev/docs/github-actions/how-to-guides/egress-filtering.md",
+    "https://depot.dev/docs/github-actions/integrations/dagger.md",
+    "https://depot.dev/docs/github-actions/integrations/dependabot",
+    "https://depot.dev/docs/github-actions/integrations/dependabot.md",
+    "https://depot.dev/docs/github-actions/observability/github-actions-logs",
+    "https://depot.dev/docs/github-actions/observability/github-actions-logs.md",
+    "https://depot.dev/docs/github-actions/observability/github-actions-metrics",
+    "https://depot.dev/docs/github-actions/observability/github-actions-metrics.md",
+    "https://depot.dev/docs/github-actions/observability/github-actions-test-results",
+    "https://depot.dev/docs/github-actions/observability/github-actions-test-results.md",
+    "https://depot.dev/docs/github-actions/overview",
+    "https://depot.dev/docs/github-actions/overview.md",
+    "https://depot.dev/docs/github-actions/quickstart",
+    "https://depot.dev/docs/github-actions/quickstart.md",
+    "https://depot.dev/docs/github-actions/runner-types",
+    "https://depot.dev/docs/github-actions/runner-types.md",
+    "https://depot.dev/docs/github-actions/troubleshooting",
+    "https://depot.dev/docs/github-actions/troubleshooting.md",
+    "https://depot.dev/docs/integrations/tailscale",
+    "https://depot.dev/docs/integrations/tailscale.md",
+    "https://depot.dev/docs/managed/on-aws",
+    "https://depot.dev/docs/managed/on-aws.md",
+    "https://depot.dev/docs/managed/overview",
+    "https://depot.dev/docs/managed/overview.md",
+    "https://depot.dev/docs/managed/using-gpus",
+    "https://depot.dev/docs/managed/using-gpus.md",
+    "https://depot.dev/docs/observability",
+    "https://depot.dev/docs/observability.md",
+    "https://depot.dev/docs/registry/overview",
+    "https://depot.dev/docs/registry/overview.md",
+    "https://depot.dev/docs/registry/pull-through-cache",
+    "https://depot.dev/docs/registry/pull-through-cache.md",
+    "https://depot.dev/docs/registry/quickstart",
+    "https://depot.dev/docs/registry/quickstart.md",
+    "https://depot.dev/docs/security",
+    "https://depot.dev/docs/security.md",
+    "https://depot.dev/docs/troubleshooting",
+    "https://depot.dev/docs/troubleshooting.md",
+    "https://depot.dev/drop-week",
+    "https://depot.dev/events",
+    "https://depot.dev/github-actions-price-calculator",
+    "https://depot.dev/help",
+    "https://depot.dev/install-cli.sh",
+    "https://depot.dev/llms-all.txt",
+    "https://depot.dev/llms.txt",
+    "https://depot.dev/merch",
+    "https://depot.dev/openapi/depot-ci/v1.json",
+    "https://depot.dev/orgs/12345678911/claude/feature-auth",
+    "https://depot.dev/orgs/_/claude",
+    "https://depot.dev/orgs/_/projects",
+    "https://depot.dev/orgs/_/settings",
+    "https://depot.dev/pricing",
+    "https://depot.dev/privacy-policy",
+    "https://depot.dev/settings",
+    "https://depot.dev/sign-in",
+    "https://depot.dev/sign-up",
+    "https://depot.dev/terms-of-service",
+    "https://discord.gg/MMPqYSgDCg",
+    "https://docs.claude.com/en/api/overview",
+    "https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect",
+    "https://github.com/depot",
+    "https://github.com/depot/cli",
+    "https://github.com/depot/cli/releases",
+    "https://github.com/depot/depot-go",
+    "https://github.com/depot/docs/blob/main/content/api/overview.mdx",
+    "https://github.com/depot/docs/blob/main/content/cli/authentication.mdx",
+    "https://github.com/depot/docs/blob/main/content/cli/reference/overview.mdx",
+    "https://github.com/depot/sandbox-sdk",
+    "https://github.com/depot/sdk-node",
+    "https://github.com/depot/skills/blob/main/skills/depot-general/SKILL.md",
+    "https://github.com/depot/test-report-action",
+    "https://github.com/foo/bar",
+    "https://github.com/mxschmitt/action-tmate",
+    "https://github.com/org/private-repo.git",
+    "https://github.com/user/repo.git",
+    "https://status.depot.dev",
+    "https://turbo.build/",
+    "https://twitter.com/depotdev",
+    "https://www.linkedin.com/company/depot-technologies",
+    "https://www.npmjs.com/package/@depot/sandbox",
+    "https://www.rwx.com/",
+    "https://www.rwx.com/docs/oidc-depot",
+    "https://www.ycombinator.com/companies/depot"
+  ]
+}

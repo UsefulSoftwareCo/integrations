@@ -1,0 +1,401 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "nexmo.com",
+    "detect": {
+      "domain": "nexmo.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T15:03:31.728Z",
+    "summary": "Vonage (nexmo.com) exposes SMS and Voice HTTP APIs plus the Vonage CLI; SMS uses Basic auth with API key/secret, Voice accepts either JWT (app ID + private key) or Basic auth, and the CLI is configured via `vonage auth set`.",
+    "credentials": {
+      "vonage_api_key_secret": {
+        "type": "basic",
+        "label": "Vonage API key and API secret",
+        "generateUrl": "https://dashboard.nexmo.com/settings",
+        "setup": "Create or sign in to a Vonage account, then open the [account settings](https://dashboard.nexmo.com/settings) in the Vonage dashboard. Your API key and API secret are shown there. Use them as `API_KEY` / `API_SECRET`, typically via `Authorization: Basic base64(API_KEY:API_SECRET)` for APIs that support Basic auth.",
+        "acquisition": "manual"
+      },
+      "vonage_app_jwt": {
+        "type": "jwt",
+        "label": "Vonage application JWT",
+        "generateUrl": "https://dashboard.nexmo.com/applications",
+        "setup": "Create a Vonage application in the [Applications](https://dashboard.nexmo.com/applications) area of the dashboard, generate or download its private key, and use the resulting `APP_ID` + private key to mint JWTs. The docs note you can also use the Vonage CLI or SDKs to generate the JWT. Keep the private key secure; it is only available when the application is created or when keys are regenerated.",
+        "acquisition": "manual"
+      },
+      "vonage_cli_auth": {
+        "type": "compound",
+        "label": "Vonage CLI authenticated configuration",
+        "generateUrl": "https://developer.vonage.com/en/getting-started/tools/cli",
+        "setup": "Install the Vonage CLI with `npm install -g @vonage/cli` or `yarn global add @vonage/cli`, then run `vonage auth set` and provide your `--api-key`, `--api-secret`, `--app-id`, and `--private-key`. The CLI stores these in `.vonagerc` or `~/.vonage/config.json` and uses them for subsequent commands.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "vonage-sms-api",
+        "name": "Vonage SMS API",
+        "type": "http",
+        "docs": "https://developer.vonage.com/en/api/sms",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.vonage.com/en/api/sms",
+            "https://developer.vonage.com/en/getting-started/concepts/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "vonage_api_key_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.vonage.com/en/getting-started/concepts/authentication",
+                  "https://developer.vonage.com/en/api/sms"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://rest.nexmo.com"
+      },
+      {
+        "slug": "vonage-voice-api",
+        "name": "Vonage Voice API",
+        "type": "http",
+        "docs": "https://developer.vonage.com/en/api/voice",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.vonage.com/en/api/voice",
+            "https://developer.vonage.com/en/getting-started/concepts/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "vonage_app_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.vonage.com/en/getting-started/concepts/authentication",
+                  "https://developer.vonage.com/en/api/voice"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "vonage_api_key_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.vonage.com/en/getting-started/concepts/authentication",
+                  "https://developer.vonage.com/en/api/voice"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.nexmo.com"
+      },
+      {
+        "slug": "vonage-cli",
+        "name": "Vonage CLI",
+        "type": "cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.vonage.com/en/getting-started/tools/cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "vonage_cli_auth",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "vonage auth set"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.vonage.com/en/getting-started/tools/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@vonage/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "vonage"
+      },
+      {
+        "slug": "vonage-docs-portal",
+        "name": "Vonage Docs portal",
+        "type": "http",
+        "docs": "https://developer.vonage.com/en/documentation",
+        "basis": {
+          "via": "discovered",
+          "evidence": []
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://developer.vonage.com/en/documentation"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T15:03:31.729Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 121790,
+    "completion_tokens": 1377,
+    "total_tokens": 123167
+  },
+  "visited": [
+    "https://developer.vonage.com/en/api/sms",
+    "https://developer.vonage.com/en/api/voice",
+    "https://developer.vonage.com/en/application/overview",
+    "https://developer.vonage.com/en/application/vonage-cli",
+    "https://developer.vonage.com/en/blog/pstn-branded-calling-with-vonage-voice-api-and-first-orion",
+    "https://developer.vonage.com/en/documentation",
+    "https://developer.vonage.com/en/getting-started/concepts/authentication",
+    "https://developer.vonage.com/en/getting-started/concepts/glossary",
+    "https://developer.vonage.com/en/getting-started/overview",
+    "https://developer.vonage.com/en/getting-started/tools/cli",
+    "https://developer.vonage.com/en/home",
+    "https://developer.vonage.com/en/verify/concepts/authentication",
+    "https://developer.vonage.com/en/verify/guides/verify-migration-guide",
+    "https://developer.vonage.com/en/voice/voice-api/code-snippets/before-you-begin",
+    "https://github.com/nexmo/nexmo-node",
+    "https://www.vonage.com/communications-apis/"
+  ],
+  "grounding": [
+    "http://iosdevelopertips.com/swift-code/base64-encode-decode-swift.html",
+    "https://api-eu.vonage.com/v2/verify",
+    "https://api.nexmo.com/v2/verify",
+    "https://api.support.vonage.com/hc/en-us",
+    "https://api.support.vonage.com/hc/en-us/articles/115014939548",
+    "https://dashboard.nexmo.com",
+    "https://dashboard.nexmo.com/applications",
+    "https://dashboard.nexmo.com/billing-and-payments?source=verify",
+    "https://dashboard.nexmo.com/getting-started/verify?source=verify&source=verify",
+    "https://dashboard.nexmo.com/settings",
+    "https://dashboard.nexmo.com/verify-v2/logs?source=verify",
+    "https://dashboard.nexmo.com/verify/analytics?source=verify",
+    "https://dashboard.vonage.com/?adobe_mc=MCMID%3D61887306761217370542154470605095489707%7CMCORGID%3DA8833BC75245AF9E0A490D4D%2540AdobeOrg%7CTS%3D1744809316&_gl=1*1kq9gv4*_gcl_au*OTEzNjQxNzU1LjE3Mzg2MDM1NDE",
+    "https://datatracker.ietf.org/doc/html/rfc7519",
+    "https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding",
+    "https://developer.uc.vonage.com/",
+    "https://developer.vonage.com/#access-control-list-acl",
+    "https://developer.vonage.com/#api-key-and-secret",
+    "https://developer.vonage.com/#authentication",
+    "https://developer.vonage.com/#basic-authentication",
+    "https://developer.vonage.com/#configuration",
+    "https://developer.vonage.com/#content-section",
+    "https://developer.vonage.com/#generating-jwts-for-the-client-sdks",
+    "https://developer.vonage.com/#json-web-tokens",
+    "https://developer.vonage.com/#jwt",
+    "https://developer.vonage.com/#secret-rotation",
+    "https://developer.vonage.com/api/account",
+    "https://developer.vonage.com/api/account#secret-management",
+    "https://developer.vonage.com/api/application.v2",
+    "https://developer.vonage.com/api/audit",
+    "https://developer.vonage.com/api/conversation",
+    "https://developer.vonage.com/api/conversion",
+    "https://developer.vonage.com/api/dispatch",
+    "https://developer.vonage.com/api/identity-insights",
+    "https://developer.vonage.com/api/location-retrieval",
+    "https://developer.vonage.com/api/media",
+    "https://developer.vonage.com/api/messages",
+    "https://developer.vonage.com/api/number-insight",
+    "https://developer.vonage.com/api/numbers",
+    "https://developer.vonage.com/api/pricing",
+    "https://developer.vonage.com/api/pricing.v2",
+    "https://developer.vonage.com/api/psip",
+    "https://developer.vonage.com/api/qod",
+    "https://developer.vonage.com/api/redact",
+    "https://developer.vonage.com/api/reports",
+    "https://developer.vonage.com/api/sms",
+    "https://developer.vonage.com/api/verify",
+    "https://developer.vonage.com/api/verify.v2",
+    "https://developer.vonage.com/api/verify.v2?source=verify",
+    "https://developer.vonage.com/api/voice",
+    "https://developer.vonage.com/application/overview",
+    "https://developer.vonage.com/blog?product=verify-api&source=verify",
+    "https://developer.vonage.com/careers",
+    "https://developer.vonage.com/changelogs",
+    "https://developer.vonage.com/client-sdk/setup/create-your-application",
+    "https://developer.vonage.com/community",
+    "https://developer.vonage.com/community/slack?source=verify",
+    "https://developer.vonage.com/documentation",
+    "https://developer.vonage.com/en/api/sms",
+    "https://developer.vonage.com/en/api/voice",
+    "https://developer.vonage.com/en/application/overview",
+    "https://developer.vonage.com/en/application/vonage-cli",
+    "https://developer.vonage.com/en/blog",
+    "https://developer.vonage.com/en/blog/how-to-generate-a-json-web-token-jwt-for-network-apis",
+    "https://developer.vonage.com/en/blog/pstn-branded-calling-with-vonage-voice-api-and-first-orion",
+    "https://developer.vonage.com/en/cloud-runtime",
+    "https://developer.vonage.com/en/documentation",
+    "https://developer.vonage.com/en/getting-started/concepts/authentication",
+    "https://developer.vonage.com/en/getting-started/concepts/glossary",
+    "https://developer.vonage.com/en/getting-started/overview",
+    "https://developer.vonage.com/en/getting-started/tools/cli",
+    "https://developer.vonage.com/en/home",
+    "https://developer.vonage.com/en/startups",
+    "https://developer.vonage.com/en/verify/concepts/authentication",
+    "https://developer.vonage.com/en/verify/guides/verify-migration-guide",
+    "https://developer.vonage.com/en/video/guides/authentication.md",
+    "https://developer.vonage.com/en/voice/voice-api/code-snippets/before-you-begin",
+    "https://developer.vonage.com/getting-started-network/concepts/coverage?source=verify",
+    "https://developer.vonage.com/getting-started-network/concepts/network-features?source=verify",
+    "https://developer.vonage.com/getting-started-network/concepts/network-registry-api?source=verify",
+    "https://developer.vonage.com/getting-started-network/concepts/network-registry-change-requests?source=verify",
+    "https://developer.vonage.com/getting-started-network/concepts/network-registry?source=verify",
+    "https://developer.vonage.com/getting-started-network/concepts/playground?source=verify",
+    "https://developer.vonage.com/getting-started/concepts/authentication#basic-authentication",
+    "https://developer.vonage.com/getting-started/concepts/authentication?source=getting-started",
+    "https://developer.vonage.com/getting-started/concepts/glossary?source=getting-started",
+    "https://developer.vonage.com/getting-started/concepts/openapi?source=getting-started",
+    "https://developer.vonage.com/getting-started/concepts/regulatory-certifications?source=getting-started",
+    "https://developer.vonage.com/getting-started/concepts/signing-messages",
+    "https://developer.vonage.com/getting-started/concepts/signing-messages?source=getting-started",
+    "https://developer.vonage.com/getting-started/concepts/webhooks?source=getting-started",
+    "https://developer.vonage.com/getting-started/overview?source=getting-started",
+    "https://developer.vonage.com/getting-started/tools/cli",
+    "https://developer.vonage.com/getting-started/tools/ngrok?source=getting-started",
+    "https://developer.vonage.com/getting-started/tools/postman?source=getting-started",
+    "https://developer.vonage.com/getting-started/tools/prism?source=getting-started",
+    "https://developer.vonage.com/jwt",
+    "https://developer.vonage.com/logout",
+    "https://developer.vonage.com/messages/technical-details#authentication",
+    "https://developer.vonage.com/newsletter",
+    "https://developer.vonage.com/profile",
+    "https://developer.vonage.com/sip/overview#authentication",
+    "https://developer.vonage.com/team",
+    "https://developer.vonage.com/tools",
+    "https://developer.vonage.com/tutorials/silent-authentication?source=verify",
+    "https://developer.vonage.com/verify/analytics-and-logs?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/cancel-request-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/check-verification-code-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/create-template-fragment-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/create-template-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/delete-fragment-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/delete-template-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/get-fragment-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/get-template-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/list-fragments-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/list-templates-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/send-request-email-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/send-request-silent-auth-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/send-request-sms-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/send-request-voice-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/send-request-whatsapp-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/send-request-with-fallback-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/update-template-fragment-v2?source=verify",
+    "https://developer.vonage.com/verify/code-snippets/update-template-v2?source=verify",
+    "https://developer.vonage.com/verify/concepts/authentication?source=verify",
+    "https://developer.vonage.com/verify/concepts/network-unblock?source=verify",
+    "https://developer.vonage.com/verify/concepts/silent-auth-registration?source=verify",
+    "https://developer.vonage.com/verify/concepts/silent-authentication",
+    "https://developer.vonage.com/verify/concepts/silent-authentication-advanced?source=verify",
+    "https://developer.vonage.com/verify/concepts/silent-authentication?source=verify",
+    "https://developer.vonage.com/verify/concepts/virtual-operator-silent-auth?source=verify",
+    "https://developer.vonage.com/verify/concepts/webhooks?source=verify",
+    "https://developer.vonage.com/verify/concepts/workflow?source=verify",
+    "https://developer.vonage.com/verify/getting-started?source=verify",
+    "https://developer.vonage.com/verify/guides/custom-templates?source=verify",
+    "https://developer.vonage.com/verify/guides/silent-authentication-advanced/silent-auth-advanced-asynch?source=verify",
+    "https://developer.vonage.com/verify/guides/silent-authentication-advanced/silent-auth-advanced-web-browsers?source=verify",
+    "https://developer.vonage.com/verify/guides/silent-authentication/async-silent-auth?source=verify",
+    "https://developer.vonage.com/verify/guides/silent-authentication/best-practices?source=verify",
+    "https://developer.vonage.com/verify/guides/silent-authentication/number-verification-migration?source=verify",
+    "https://developer.vonage.com/verify/guides/silent-authentication/sandbox?source=verify",
+    "https://developer.vonage.com/verify/guides/silent-authentication/sync-silent-auth?source=verify",
+    "https://developer.vonage.com/verify/guides/v2-anti-fraud?source=verify",
+    "https://developer.vonage.com/verify/guides/verify-migration-guide?source=verify",
+    "https://developer.vonage.com/verify/guides/verify-v2-languages?source=verify",
+    "https://developer.vonage.com/verify/guides/vonage-protection-suite-okta?source=verify",
+    "https://developer.vonage.com/verify/overview?source=verify",
+    "https://developer.vonage.com/verify/technical-details?source=verify",
+    "https://developer.vonage.com/video/guides/create-session",
+    "https://developer.vonage.com/voice/voice-api/concepts/in-app-calling.md",
+    "https://developer.vonage.com/vonage-cli/guides/authentication-security/jwt",
+    "https://docs.oracle.com/javase/8/docs/api/java/util/Base64.html",
+    "https://docs.python.org/2/library/base64.html",
+    "https://en.wikipedia.org/wiki/Base64",
+    "https://github.com/nexmo/nexmo-node",
+    "https://github.com/vonage/vonage-cli",
+    "https://github.com/vonage/vonage-node-sdk",
+    "https://gobyexample.com/base64-encoding",
+    "https://god.gw.postman.com/run-collection/48291439-e0cd3237-9411-47e5-8524-7f0f2c2e2fac?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D48291439-e0cd3237-9411-47e5-8524-7f0f2c2e2fac%26entityType%3Dcollection%26workspaceId%3D891943ce-d001-4118-9da2-769d820354aa&source=verify",
+    "https://jwt.io/",
+    "https://newvoicemedia.atlassian.net/wiki/spaces/VCCA/overview",
+    "https://nodejs.org",
+    "https://nodejs.org/en/about/previous-releases",
+    "https://ruby-doc.org/stdlib-2.5.0/libdoc/base64/rdoc/Base64.html",
+    "https://secure.php.net/manual/en/function.base64-encode.php",
+    "https://stackoverflow.com/questions/11743160/how-do-i-encode-and-decode-a-base64-string",
+    "https://tools.ietf.org/html/rfc7519",
+    "https://vonage.com",
+    "https://vonageapi.statuspage.io/",
+    "https://www.base64encode.org/",
+    "https://www.rfc-editor.org/rfc/rfc7519#section-4.1.7",
+    "https://www.vonage.co.uk/communications-apis/verify/pricing/?source=verify",
+    "https://www.vonage.com/communications-apis/",
+    "https://www.vonage.com/communications-apis/pricing",
+    "https://yargs.js.org/"
+  ]
+}

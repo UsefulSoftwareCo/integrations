@@ -1,0 +1,446 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "tigrisdata.com",
+    "detect": {
+      "domain": "tigrisdata.com",
+      "found": [
+        "mcp",
+        "mcp-self-onboard",
+        "agent-card",
+        "agent-skills",
+        "llms.txt",
+        "auth"
+      ],
+      "auth": {
+        "mcp": [
+          {
+            "url": "https://mcp.storage.dev/mcp",
+            "type": "oauth2",
+            "authorizationServer": "https://mcp.storage.dev",
+            "dcr": true,
+            "cimd": false
+          }
+        ]
+      },
+      "mcp": [
+        {
+          "url": "https://mcp.storage.dev/mcp",
+          "source": "server-card",
+          "auth": "oauth2",
+          "authorizationServer": "https://mcp.storage.dev",
+          "dcr": true,
+          "cimd": false
+        }
+      ],
+      "agentCard": {
+        "name": "Tigris Object Storage",
+        "url": "https://www.tigrisdata.com"
+      },
+      "agentSkills": {
+        "count": 6,
+        "names": [
+          "Authentication",
+          "Bucket Management",
+          "Object Operations",
+          "Access Key Management",
+          "IAM Policies",
+          "Storage Subagent"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:27:20.035Z",
+    "summary": "Tigris exposes a CLI, an S3-compatible object storage HTTP API, a partner-integrations HTTP API, and an OAuth-protected MCP server.",
+    "credentials": {
+      "tigris_access_key": {
+        "type": "compound",
+        "label": "Tigris access key + secret",
+        "generateUrl": "https://www.tigrisdata.com/docs/cli/",
+        "setup": "Create an access key in Tigris, then use it either in the CLI with `tigris login credentials --access-key <your-key> --access-secret <your-secret>` or configure it permanently with `tigris configure --access-key <your-key> --access-secret <your-secret>`. The CLI docs also note AWS environment-variable support via `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` for scripting.",
+        "acquisition": "manual"
+      },
+      "tigris_oauth_session": {
+        "type": "oauth2",
+        "label": "Tigris OAuth session",
+        "generateUrl": "https://www.tigrisdata.com/docs/cli/",
+        "setup": "Run `tigris login oauth` to authenticate in the browser. Tigris notes this creates a temporary session that expires in about an hour and can be cleared with `tigris logout`.",
+        "acquisition": "manual"
+      },
+      "tigris_partner_signing": {
+        "type": "signature",
+        "label": "Tigris partner provider ID + signing key",
+        "generateUrl": "https://www.tigrisdata.com/docs/partner-integrations/api/tigris-partner-integrations-api-reference/",
+        "setup": "Request a `Provider ID` and `Signing Key` from Tigris by emailing `help@tigrisdata.com`. Use them to sign partner-integration requests with `X-Tigris-Time`, `X-Tigris-Nonce`, and `X-Tigris-Signature` per the docs.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "tigris-cli",
+        "name": "Tigris CLI",
+        "type": "cli",
+        "docs": "https://www.tigrisdata.com/docs/cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.tigrisdata.com/docs/cli/",
+            "https://www.tigrisdata.com/docs/ai-agents/tigris-cli-quickstart/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "tigris_oauth_session",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "tigris login oauth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.tigrisdata.com/docs/cli/",
+                  "https://www.tigrisdata.com/docs/ai-agents/tigris-cli-quickstart/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "tigris_access_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "tigris login credentials --access-key <your-key> --access-secret <your-secret>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.tigrisdata.com/docs/cli/",
+                  "https://www.tigrisdata.com/docs/ai-agents/tigris-cli-quickstart/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@tigrisdata/cli",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "homebrew",
+            "identifier": "tigrisdata/tap/tigris"
+          }
+        ],
+        "command": "tigris"
+      },
+      {
+        "slug": "tigris-object-storage-api",
+        "name": "Tigris Object Storage API",
+        "type": "http",
+        "docs": "https://www.tigrisdata.com/docs/sdks/tigris/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.tigrisdata.com/docs/sdks/tigris/api/",
+            "https://www.tigrisdata.com/docs/concepts/authnz/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "tigris_access_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "awsSigv4"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.tigrisdata.com/docs/concepts/authnz/"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "tigris-partner-integrations-api",
+        "name": "Tigris Partner Integrations API",
+        "type": "http",
+        "docs": "https://www.tigrisdata.com/docs/partner-integrations/api/tigris-partner-integrations-api-reference/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.tigrisdata.com/docs/partner-integrations/api/tigris-partner-integrations-api-reference/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "tigris_partner_signing",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Tigris-Time",
+                    "scheme": "apiKey"
+                  }
+                },
+                {
+                  "id": "tigris_partner_signing",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Tigris-Nonce",
+                    "scheme": "apiKey"
+                  }
+                },
+                {
+                  "id": "tigris_partner_signing",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Tigris-Signature",
+                    "scheme": "apiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.tigrisdata.com/docs/partner-integrations/api/tigris-partner-integrations-api-reference/"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://www.tigrisdata.com/docs/api/extensions/v1/api.yaml",
+        "url": "https://mgmt.storage.dev"
+      },
+      {
+        "slug": "tigris-mcp-server",
+        "name": "Tigris MCP Server",
+        "type": "mcp",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T14:27:20.035Z"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "tigris_oauth_session",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://tigrisdata.com/llms.txt"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.storage.dev/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:27:20.035Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 133916,
+    "completion_tokens": 1438,
+    "total_tokens": 135354
+  },
+  "visited": [
+    "https://github.com/tigrisdata-archive/tigris-cli",
+    "https://www.tigrisdata.com/docs/ai-agents/tigris-cli-quickstart/",
+    "https://www.tigrisdata.com/docs/cli/",
+    "https://www.tigrisdata.com/docs/concepts/authnz/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/tigris-partner-integrations-api-reference/",
+    "https://www.tigrisdata.com/docs/sdks/tigris/api/"
+  ],
+  "grounding": [
+    "https://community.tigrisdata.com/",
+    "https://console.storage.dev/signin",
+    "https://console.storage.dev/signin?pid=019f2339-8b60-7f16-a725-d2de22decff1&sid=019f2339-8b7a-77c2-9e12-3cc188f9b10b",
+    "https://console.storage.dev/signin?pid=019f2339-8b8f-7bba-b584-760a0a30477d&sid=019f2339-8b9e-7d5e-acaf-e1d8c52a161f",
+    "https://console.storage.dev/signin?pid=019f2339-8c39-70c5-a6ef-9dc3b2616d5b&sid=019f2339-8c45-730f-9af8-92f5fb378ced",
+    "https://console.storage.dev/signin?pid=019f2339-8c7e-7c39-ae20-7cc53b397a95&sid=019f2339-8c89-7887-8985-3db71f88288c",
+    "https://console.storage.dev/signin?pid=019f2339-8d67-7583-9442-a7ae180e89d5&sid=019f2339-8d79-78d3-a1ac-112b85550e4c",
+    "https://console.storage.dev/signup",
+    "https://console.storage.dev/signup?pid=019f2339-8b60-7f16-a725-d2de22decff1&sid=019f2339-8b7a-77c2-9e12-3cc188f9b10b",
+    "https://console.storage.dev/signup?pid=019f2339-8b8f-7bba-b584-760a0a30477d&sid=019f2339-8b9e-7d5e-acaf-e1d8c52a161f",
+    "https://console.storage.dev/signup?pid=019f2339-8c39-70c5-a6ef-9dc3b2616d5b&sid=019f2339-8c45-730f-9af8-92f5fb378ced",
+    "https://console.storage.dev/signup?pid=019f2339-8c7e-7c39-ae20-7cc53b397a95&sid=019f2339-8c89-7887-8985-3db71f88288c",
+    "https://console.storage.dev/signup?pid=019f2339-8d67-7583-9442-a7ae180e89d5&sid=019f2339-8d79-78d3-a1ac-112b85550e4c",
+    "https://github.com/tigrisdata-archive/tigris-cli",
+    "https://github.com/tigrisdata/cli/releases/latest/download/install.sh",
+    "https://mgmt.storage.dev/provider/your-provider-id/orgs/?include_inactive=true",
+    "https://mgmt.storage.dev/provider/your-provider-id/orgs/user-org-id/provision",
+    "https://mgmt.storage.dev/provider/your-provider-id/orgs/user-org-id/provision1731703213870f8d133cb-5a42-47b1-9ef2-874bb55bab72",
+    "https://status.tigrisdata.com/",
+    "https://www.npmjs.com/package/@tigrisdata/storage",
+    "https://www.tigrisdata.com/#",
+    "https://www.tigrisdata.com/#1-generate-current-timestamp",
+    "https://www.tigrisdata.com/#2-generate-a-unique-nonce",
+    "https://www.tigrisdata.com/#3-create-a-canonical-request",
+    "https://www.tigrisdata.com/#4-generate-request-signature",
+    "https://www.tigrisdata.com/#5-include-the-signature-in-the-request",
+    "https://www.tigrisdata.com/#__docusaurus_skipToContent_fallback",
+    "https://www.tigrisdata.com/#access-key-and-secret-authentication",
+    "https://www.tigrisdata.com/#authentication",
+    "https://www.tigrisdata.com/#authorization",
+    "https://www.tigrisdata.com/#aws-profiles-and-environment-variables",
+    "https://www.tigrisdata.com/#aws-signature-version-4",
+    "https://www.tigrisdata.com/#bucket-configuration",
+    "https://www.tigrisdata.com/#bucket-management",
+    "https://www.tigrisdata.com/#client-api",
+    "https://www.tigrisdata.com/#client-upload-handling",
+    "https://www.tigrisdata.com/#common-types",
+    "https://www.tigrisdata.com/#contents",
+    "https://www.tigrisdata.com/#executewithconcurrency",
+    "https://www.tigrisdata.com/#frequently-asked-questions",
+    "https://www.tigrisdata.com/#get",
+    "https://www.tigrisdata.com/#getoptions",
+    "https://www.tigrisdata.com/#getresponse",
+    "https://www.tigrisdata.com/#head",
+    "https://www.tigrisdata.com/#headoptions",
+    "https://www.tigrisdata.com/#headresponse",
+    "https://www.tigrisdata.com/#how-do-i-authenticate",
+    "https://www.tigrisdata.com/#how-do-i-check-stats",
+    "https://www.tigrisdata.com/#how-do-i-create-buckets",
+    "https://www.tigrisdata.com/#how-do-i-generate-presigned-urls",
+    "https://www.tigrisdata.com/#how-do-i-list-buckets-and-objects",
+    "https://www.tigrisdata.com/#how-do-i-manage-access-keys",
+    "https://www.tigrisdata.com/#how-do-i-move-rename-and-delete",
+    "https://www.tigrisdata.com/#how-do-i-upload-and-download-files",
+    "https://www.tigrisdata.com/#how-do-i-use-forks-and-snapshots",
+    "https://www.tigrisdata.com/#iam-policies",
+    "https://www.tigrisdata.com/#learn-more",
+    "https://www.tigrisdata.com/#list",
+    "https://www.tigrisdata.com/#listitem",
+    "https://www.tigrisdata.com/#listoptions",
+    "https://www.tigrisdata.com/#listresponse",
+    "https://www.tigrisdata.com/#multipart-upload",
+    "https://www.tigrisdata.com/#oauth-authentication",
+    "https://www.tigrisdata.com/#object-operations",
+    "https://www.tigrisdata.com/#openapi-specification",
+    "https://www.tigrisdata.com/#presigned-urls",
+    "https://www.tigrisdata.com/#put",
+    "https://www.tigrisdata.com/#putonuploadprogress",
+    "https://www.tigrisdata.com/#putoptions",
+    "https://www.tigrisdata.com/#putresponse",
+    "https://www.tigrisdata.com/#remove",
+    "https://www.tigrisdata.com/#removeoptions",
+    "https://www.tigrisdata.com/#role-based-access-control-rbac",
+    "https://www.tigrisdata.com/#saving-credentials-permanently",
+    "https://www.tigrisdata.com/#session-token",
+    "https://www.tigrisdata.com/#setup",
+    "https://www.tigrisdata.com/#snapshots",
+    "https://www.tigrisdata.com/#statistics",
+    "https://www.tigrisdata.com/#testing-credentials",
+    "https://www.tigrisdata.com/#types",
+    "https://www.tigrisdata.com/#types-1",
+    "https://www.tigrisdata.com/#updateobject",
+    "https://www.tigrisdata.com/#updateobjectoptions",
+    "https://www.tigrisdata.com/#upload",
+    "https://www.tigrisdata.com/#uploadoptions",
+    "https://www.tigrisdata.com/#uploadprogress",
+    "https://www.tigrisdata.com/#uploadresponse",
+    "https://www.tigrisdata.com/#verifying-authentication-status",
+    "https://www.tigrisdata.com/about",
+    "https://www.tigrisdata.com/about/",
+    "https://www.tigrisdata.com/blog/",
+    "https://www.tigrisdata.com/docs/",
+    "https://www.tigrisdata.com/docs/ai-agents/",
+    "https://www.tigrisdata.com/docs/ai-agents/bucket-configuration/",
+    "https://www.tigrisdata.com/docs/ai-agents/bucket-forks-and-snapshots/",
+    "https://www.tigrisdata.com/docs/ai-agents/presigned-urls/",
+    "https://www.tigrisdata.com/docs/ai-agents/tigris-cli-quickstart/",
+    "https://www.tigrisdata.com/docs/api/extensions/v1/api.yaml",
+    "https://www.tigrisdata.com/docs/api/s3/",
+    "https://www.tigrisdata.com/docs/changelog/",
+    "https://www.tigrisdata.com/docs/cli/",
+    "https://www.tigrisdata.com/docs/cli/access-keys/",
+    "https://www.tigrisdata.com/docs/cli/buckets/",
+    "https://www.tigrisdata.com/docs/cli/bundle/",
+    "https://www.tigrisdata.com/docs/cli/configure/",
+    "https://www.tigrisdata.com/docs/cli/cp/",
+    "https://www.tigrisdata.com/docs/cli/credentials/",
+    "https://www.tigrisdata.com/docs/cli/iam/",
+    "https://www.tigrisdata.com/docs/cli/login/",
+    "https://www.tigrisdata.com/docs/cli/logout/",
+    "https://www.tigrisdata.com/docs/cli/ls/",
+    "https://www.tigrisdata.com/docs/cli/mk/",
+    "https://www.tigrisdata.com/docs/cli/mv/",
+    "https://www.tigrisdata.com/docs/cli/objects/",
+    "https://www.tigrisdata.com/docs/cli/organizations/",
+    "https://www.tigrisdata.com/docs/cli/presign/",
+    "https://www.tigrisdata.com/docs/cli/rm/",
+    "https://www.tigrisdata.com/docs/cli/snapshots/",
+    "https://www.tigrisdata.com/docs/cli/stat/",
+    "https://www.tigrisdata.com/docs/cli/touch/",
+    "https://www.tigrisdata.com/docs/cli/update/",
+    "https://www.tigrisdata.com/docs/cli/whoami/",
+    "https://www.tigrisdata.com/docs/concepts/architecture/",
+    "https://www.tigrisdata.com/docs/concepts/authnz/",
+    "https://www.tigrisdata.com/docs/concepts/consistency/",
+    "https://www.tigrisdata.com/docs/concepts/regions/",
+    "https://www.tigrisdata.com/docs/iam/",
+    "https://www.tigrisdata.com/docs/legal/privacy-policy/",
+    "https://www.tigrisdata.com/docs/legal/service-terms/",
+    "https://www.tigrisdata.com/docs/overview/",
+    "https://www.tigrisdata.com/docs/overview/benchmarks/",
+    "https://www.tigrisdata.com/docs/overview/features/",
+    "https://www.tigrisdata.com/docs/partner-integrations/",
+    "https://www.tigrisdata.com/docs/partner-integrations/access-control/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/account/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/billing/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/buckets/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/iam/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/organizations/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/snapshots/",
+    "https://www.tigrisdata.com/docs/partner-integrations/api/tigris-partner-integrations-api-reference/",
+    "https://www.tigrisdata.com/docs/partner-integrations/architecture/",
+    "https://www.tigrisdata.com/docs/partner-integrations/dashboard/",
+    "https://www.tigrisdata.com/docs/sdks/s3/",
+    "https://www.tigrisdata.com/docs/sdks/tigris/",
+    "https://www.tigrisdata.com/docs/sdks/tigris/api/",
+    "https://www.tigrisdata.com/docs/sdks/tigris/client-uploads/",
+    "https://www.tigrisdata.com/docs/sdks/tigris/examples/",
+    "https://www.tigrisdata.com/docs/sdks/tigris/snapshots-and-forks/",
+    "https://www.tigrisdata.com/docs/sdks/tigris/using-sdk/",
+    "https://www.tigrisdata.com/docs/support/",
+    "https://www.tigrisdata.com/docs/web-console/",
+    "https://www.tigrisdata.com/pricing/"
+  ]
+}

@@ -1,0 +1,885 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "sourcegraph.com",
+    "detect": {
+      "domain": "sourcegraph.com",
+      "found": [
+        "oauth-protected-resource",
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://sourcegraph.com"
+          ],
+          "authorizationEndpoint": "https://sourcegraph.com/.auth/idp/oauth/authorize",
+          "tokenEndpoint": "https://sourcegraph.com/.auth/idp/oauth/token",
+          "protectedResourceUrl": "https://sourcegraph.com/.well-known/oauth-protected-resource",
+          "scopes": [
+            "openid",
+            "profile",
+            "email",
+            "offline_access",
+            "user:all",
+            "mcp",
+            "externalapi:read",
+            "externalapi:write"
+          ],
+          "registrationEndpoint": "https://sourcegraph.com/.auth/idp/oauth/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token",
+            "client_credentials",
+            "urn:ietf:params:oauth:grant-type:device_code"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:56:46.948Z",
+    "summary": "Sourcegraph exposes a GraphQL debug API, a streaming search HTTP API, a newer external HTTP API at `/api-reference`, an MCP server, an analytics HTTP API on analytics.sourcegraph.com, and the `src` CLI; all documented surfaces require authentication.",
+    "description": "Sourcegraph provides code search, code navigation, repository analysis, and related developer tooling for source code across many repositories. It is offered as Sourcegraph Cloud and self-hosted deployments, with separate analytics features for usage and performance data.",
+    "credentials": {
+      "sg_access_token": {
+        "type": "api_key",
+        "label": "Sourcegraph access token",
+        "generateUrl": "https://sourcegraph.com/docs/cli/how-tos/creating-an-access-token",
+        "setup": "Create a personal or service-account access token in your Sourcegraph instance. The docs reference **Settings > Access tokens** for users and service-account **Access tokens** for service accounts; start from [creating an access token](https://sourcegraph.com/docs/cli/how-tos/creating-an-access-token) or [service accounts](https://sourcegraph.com/docs/admin/service-accounts). Use the `mcp` scope for MCP-only access when desired.",
+        "acquisition": "manual"
+      },
+      "sg_oauth_app": {
+        "type": "oauth2",
+        "label": "Sourcegraph OAuth app token",
+        "generateUrl": "https://sourcegraph.com/docs/admin/oauth-apps",
+        "setup": "A site admin creates an OAuth app in **Site admin > OAuth clients** as described in [OAuth Apps](https://sourcegraph.com/docs/admin/oauth-apps). Choose the needed scopes for your integration, then complete the user OAuth flow against your Sourcegraph instance. Use `user:all` for GraphQL and streaming search, `externalapi:read`/`externalapi:write` for the supported external API, and `mcp` for MCP.",
+        "acquisition": "manual"
+      },
+      "sg_m2m_client": {
+        "type": "oauth2_cc",
+        "label": "Sourcegraph service-account M2M OAuth client",
+        "generateUrl": "https://sourcegraph.com/docs/admin/service-accounts",
+        "setup": "Create a service account, then open that account's **Access tokens > M2M credentials** and click **Create M2M credential** as documented in [service accounts](https://sourcegraph.com/docs/admin/service-accounts). Save the generated `client_id` and `client_secret`, then exchange them for a short-lived bearer token with the Sourcegraph OAuth token endpoint. Select scopes appropriate to the target API.",
+        "acquisition": "manual"
+      },
+      "sg_analytics_token": {
+        "type": "bearer",
+        "label": "Sourcegraph Analytics access token",
+        "generateUrl": "http://analytics.sourcegraph.com/access-tokens",
+        "setup": "Sign in to your Sourcegraph Account, open the [Sourcegraph Analytics access tokens management page](http://analytics.sourcegraph.com/access-tokens), and create an analytics access token. Export it for scripts as `ACCESS_TOKEN`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "sourcegraph-graphql-debug-api",
+        "name": "Sourcegraph GraphQL debug API",
+        "type": "graphql",
+        "docs": "https://sourcegraph.com/docs/api/graphql",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://sourcegraph.com/docs/api/graphql",
+            "https://sourcegraph.com/docs/admin/oauth-apps",
+            "https://sourcegraph.com/docs/admin/service-accounts"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sg_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/api/graphql"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sg_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/api/graphql",
+                  "https://sourcegraph.com/docs/admin/oauth-apps"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sg_m2m_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/admin/service-accounts"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "https://sourcegraph.com/.api/graphql"
+      },
+      {
+        "slug": "sourcegraph-streaming-search-api",
+        "name": "Sourcegraph streaming search API",
+        "type": "http",
+        "docs": "https://sourcegraph.com/docs/api/stream-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://sourcegraph.com/docs/api/stream-api",
+            "https://sourcegraph.com/docs/api/graphql",
+            "https://sourcegraph.com/docs/admin/oauth-apps",
+            "https://sourcegraph.com/docs/admin/service-accounts"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sg_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/api/stream-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sg_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/api/stream-api",
+                  "https://sourcegraph.com/docs/admin/oauth-apps"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sg_m2m_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/admin/service-accounts"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://sourcegraph.com/.api/search/stream",
+        "requiredHeaders": [
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "text/event-stream"
+            },
+            "description": "Streaming responses use server-sent event format."
+          }
+        ]
+      },
+      {
+        "slug": "sourcegraph-mcp-server",
+        "name": "Sourcegraph MCP server",
+        "type": "mcp",
+        "docs": "https://sourcegraph.com/docs/api/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://sourcegraph.com/docs/api/mcp",
+            "https://sourcegraph.com/changelog/mcp-ga",
+            "https://sourcegraph.com/changelog/mcp-dcr"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sg_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/api/mcp",
+                  "https://sourcegraph.com/changelog/mcp-ga",
+                  "https://sourcegraph.com/changelog/mcp-dcr",
+                  "https://sourcegraph.com/docs/admin/oauth-apps"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sg_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/api/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://sourcegraph.com/.api/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "sourcegraph-cli-src",
+        "name": "Sourcegraph CLI (src)",
+        "type": "cli",
+        "docs": "https://sourcegraph.com/docs/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://sourcegraph.com/docs/cli",
+            "https://sourcegraph.com/docs/cli/quickstart",
+            "https://sourcegraph.com/docs/api/graphql"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sg_oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "src login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/cli/quickstart"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sg_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "SRC_ACCESS_TOKEN",
+                      "SRC_ENDPOINT"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/cli/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "sourcegraph/src-cli/src-cli"
+          }
+        ],
+        "command": "src"
+      },
+      {
+        "slug": "sourcegraph-external-api",
+        "name": "Sourcegraph external API",
+        "type": "http",
+        "docs": "https://sourcegraph.com/docs/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://sourcegraph.com/docs/api",
+            "https://sourcegraph.com/docs/admin/oauth-apps"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sg_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/admin/oauth-apps",
+                  "https://sourcegraph.com/docs/api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://sourcegraph.com/api-reference"
+      },
+      {
+        "slug": "sourcegraph-analytics-api",
+        "name": "Sourcegraph Analytics API",
+        "type": "http",
+        "docs": "https://sourcegraph.com/docs/analytics/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://sourcegraph.com/docs/analytics/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sg_analytics_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://sourcegraph.com/docs/analytics/api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://analytics.sourcegraph.com/api"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:56:46.949Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 126393,
+    "completion_tokens": 2298,
+    "total_tokens": 128691
+  },
+  "visited": [
+    "https://6.8.sourcegraph.com/api/graphql",
+    "https://docs.sourcegraph.com/batch_changes/explanations/how_src_executes_a_batch_spec",
+    "https://github.com/sourcegraph/src-cli",
+    "https://sourcegraph.com/api-reference",
+    "https://sourcegraph.com/blog/using-batch-changes-via-graphql-api",
+    "https://sourcegraph.com/changelog/mcp-dcr",
+    "https://sourcegraph.com/changelog/mcp-ga",
+    "https://sourcegraph.com/changelog/releases/7.0",
+    "https://sourcegraph.com/docs/admin/oauth-apps",
+    "https://sourcegraph.com/docs/admin/service-accounts",
+    "https://sourcegraph.com/docs/analytics/api",
+    "https://sourcegraph.com/docs/api",
+    "https://sourcegraph.com/docs/api/graphql",
+    "https://sourcegraph.com/docs/api/mcp",
+    "https://sourcegraph.com/docs/api/stream-api",
+    "https://sourcegraph.com/docs/cli",
+    "https://sourcegraph.com/docs/cli/quickstart",
+    "https://sourcegraph.com/docs/technical-changelog",
+    "https://sourcegraph.com/github.com/go-openapi/spec",
+    "https://sourcegraph.com/github.com/goadesign/goa",
+    "https://sourcegraph.com/github.com/kubernetes/kubernetes/-/blob/hack/local-up-cluster.sh",
+    "https://sourcegraph.com/github.com/ory/kratos/-/blob/CHANGELOG.md",
+    "https://sourcegraph.com/github.com/portainer/portainer",
+    "https://sourcegraph.com/github.com/swaggo/swag",
+    "https://sourcegraph.com/mcp"
+  ],
+  "grounding": [
+    "http://analytics.sourcegraph.com/access-tokens",
+    "https://1603afe0cbf07123cfdef2286d1b98d3@o19358.ingest.sentry.io/1391511",
+    "https://6.8.sourcegraph.com/api/graphql",
+    "https://YOUR-SOURCEGRAPH-INSTANCE",
+    "https://about.sourcegraph.com/privacy/",
+    "https://about.sourcegraph.com/terms/",
+    "https://accounts.sourcegraph.com",
+    "https://ampcode.com/",
+    "https://analytics.sourcegraph.com/api/credits?instanceURL=$INSTANCE_URL",
+    "https://analytics.sourcegraph.com/api/credits?instanceURL=$INSTANCE_URL&startDate=$START_DATE&endDate=$END_DATE",
+    "https://analytics.sourcegraph.com/api/reports/by-user-client-date?instanceURL=$INSTANCE_URL",
+    "https://analytics.sourcegraph.com/api/reports/by-user-client-date?instanceURL=$INSTANCE_URL&granularity=$GRANULARITY",
+    "https://analytics.sourcegraph.com/api/reports/by-user-client-date?instanceURL=$INSTANCE_URL&startDate=$START_DATE&endDate=$END_DATE",
+    "https://analytics.sourcegraph.com/overview?dateRange=LAST_30_DAYS",
+    "https://api.claydar.com&quot",
+    "https://bat.bing.com/bat.js",
+    "https://business.safety.google/privacy/",
+    "https://cdn.claydar.com/releases/latest/radar.min.js",
+    "https://chrome.google.com/webstore/detail/dgjhfomjieaadpoljlnidmbgkdffpack",
+    "https://code.visualstudio.com/",
+    "https://cursor.com/",
+    "https://datatracker.ietf.org/doc/html/rfc7591",
+    "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format",
+    "https://docs.sourcegraph.com/batch_changes/explanations/how_src_executes_a_batch_spec",
+    "https://github.com/sourcegraph/deploy-sourcegraph-docker/releases/tag/v6.11.5639",
+    "https://github.com/sourcegraph/deploy-sourcegraph-docker/releases/tag/v6.12.0",
+    "https://github.com/sourcegraph/deploy-sourcegraph-docker/releases/tag/v6.12.1271",
+    "https://github.com/sourcegraph/deploy-sourcegraph-helm/releases/tag/v6.11.5639",
+    "https://github.com/sourcegraph/deploy-sourcegraph-helm/releases/tag/v6.12.0",
+    "https://github.com/sourcegraph/deploy-sourcegraph-helm/releases/tag/v6.12.1271",
+    "https://github.com/sourcegraph/deploy-sourcegraph-k8s/releases/tag/v6.11.5639",
+    "https://github.com/sourcegraph/deploy-sourcegraph-k8s/releases/tag/v6.12.0",
+    "https://github.com/sourcegraph/deploy-sourcegraph-k8s/releases/tag/v6.12.1271",
+    "https://github.com/sourcegraph/docs/edit/main/docs/",
+    "https://github.com/sourcegraph/docs/edit/main/docs/api/graphql/index.mdx",
+    "https://github.com/sourcegraph/docs/edit/main/docs/api/index.mdx",
+    "https://github.com/sourcegraph/docs/edit/main/docs/cli/index.mdx",
+    "https://github.com/sourcegraph/sourcegraph/releases/tag/v6.11.5428",
+    "https://github.com/sourcegraph/sourcegraph/releases/tag/v6.11.5639",
+    "https://github.com/sourcegraph/sourcegraph/releases/tag/v6.12.0",
+    "https://github.com/sourcegraph/sourcegraph/releases/tag/v6.12.1271",
+    "https://github.com/sourcegraph/src-cli",
+    "https://j.6sc.co/6si.min.js",
+    "https://js.hs-analytics.net/analytics/1783025700000/2762526.js",
+    "https://js.hs-banner.com/v2/2762526/banner.js",
+    "https://js.hsadspixel.net/pixels.js",
+    "https://js.sentry-cdn.com/ae2f74442b154faf90b5ff0f7cd1c618.min.js",
+    "https://scripts.clarity.ms/0.8.66/clarity.js",
+    "https://security.sourcegraph.com/",
+    "https://snap.licdn.com/li.lms-analytics/insight.min.js",
+    "https://snap.licdn.com/li.lms-analytics/insight.old.min.js",
+    "https://sourcegraph-cloud.okta.com",
+    "https://sourcegraph.com",
+    "https://sourcegraph.com/",
+    "https://sourcegraph.com/#access-tokens",
+    "https://sourcegraph.com/#administration",
+    "https://sourcegraph.com/#administration-1",
+    "https://sourcegraph.com/#alerting",
+    "https://sourcegraph.com/#alerts",
+    "https://sourcegraph.com/#api-console-and-documentation",
+    "https://sourcegraph.com/#api-reference",
+    "https://sourcegraph.com/#authentication",
+    "https://sourcegraph.com/#availability-and-access-control",
+    "https://sourcegraph.com/#available-scopes",
+    "https://sourcegraph.com/#available-tools",
+    "https://sourcegraph.com/#batch-changes",
+    "https://sourcegraph.com/#batch-changes-1",
+    "https://sourcegraph.com/#chore",
+    "https://sourcegraph.com/#chore-1",
+    "https://sourcegraph.com/#chore-2",
+    "https://sourcegraph.com/#client-types",
+    "https://sourcegraph.com/#code-hosts",
+    "https://sourcegraph.com/#code-insights",
+    "https://sourcegraph.com/#code-intelligence",
+    "https://sourcegraph.com/#code-intelligence-1",
+    "https://sourcegraph.com/#code-navigation",
+    "https://sourcegraph.com/#code-search",
+    "https://sourcegraph.com/#cody",
+    "https://sourcegraph.com/#cody-1",
+    "https://sourcegraph.com/#commit_search",
+    "https://sourcegraph.com/#compare_revisions",
+    "https://sourcegraph.com/#congratulations",
+    "https://sourcegraph.com/#connect-to-sourcegraph",
+    "https://sourcegraph.com/#cost-limits",
+    "https://sourcegraph.com/#creating-an-oauth-app",
+    "https://sourcegraph.com/#creating-service-accounts",
+    "https://sourcegraph.com/#credit-buckets",
+    "https://sourcegraph.com/#csv-export",
+    "https://sourcegraph.com/#deep-search",
+    "https://sourcegraph.com/#deep-search-1",
+    "https://sourcegraph.com/#deep-search-2",
+    "https://sourcegraph.com/#deepsearch",
+    "https://sourcegraph.com/#deepsearch_read",
+    "https://sourcegraph.com/#diff_search",
+    "https://sourcegraph.com/#documentation--tooling",
+    "https://sourcegraph.com/#dynamic-client-registration-for-mcp",
+    "https://sourcegraph.com/#endpoint",
+    "https://sourcegraph.com/#evaluator",
+    "https://sourcegraph.com/#event-stream-format",
+    "https://sourcegraph.com/#event-types",
+    "https://sourcegraph.com/#example-curl",
+    "https://sourcegraph.com/#executor",
+    "https://sourcegraph.com/#faq",
+    "https://sourcegraph.com/#features",
+    "https://sourcegraph.com/#features-1",
+    "https://sourcegraph.com/#features-2",
+    "https://sourcegraph.com/#file--repository-operations",
+    "https://sourcegraph.com/#find_references",
+    "https://sourcegraph.com/#fix",
+    "https://sourcegraph.com/#fix-1",
+    "https://sourcegraph.com/#fix-2",
+    "https://sourcegraph.com/#get_contributor_repos",
+    "https://sourcegraph.com/#getting-started",
+    "https://sourcegraph.com/#gitserver",
+    "https://sourcegraph.com/#go_to_definition",
+    "https://sourcegraph.com/#graphql-api",
+    "https://sourcegraph.com/#graphqlmaxaliases",
+    "https://sourcegraph.com/#graphqlmaxdepth",
+    "https://sourcegraph.com/#graphqlmaxduplicatefieldcount",
+    "https://sourcegraph.com/#graphqlmaxfieldcount",
+    "https://sourcegraph.com/#graphqlmaxuniquefieldcount",
+    "https://sourcegraph.com/#installation",
+    "https://sourcegraph.com/#introduction",
+    "https://sourcegraph.com/#invalid_scope-error-during-oauth",
+    "https://sourcegraph.com/#keyword_search",
+    "https://sourcegraph.com/#linux",
+    "https://sourcegraph.com/#list_files",
+    "https://sourcegraph.com/#list_repos",
+    "https://sourcegraph.com/#m2m-oauth-credentials-client-credentials-flow",
+    "https://sourcegraph.com/#macos",
+    "https://sourcegraph.com/#managing-access-tokens",
+    "https://sourcegraph.com/#managing-roles",
+    "https://sourcegraph.com/#nls_search",
+    "https://sourcegraph.com/#oauth-20",
+    "https://sourcegraph.com/#oauth-apps",
+    "https://sourcegraph.com/#oauth-dynamic-client-registration",
+    "https://sourcegraph.com/#oauth-endpoints-reference",
+    "https://sourcegraph.com/#oauth-flow-examples",
+    "https://sourcegraph.com/#oauth-login",
+    "https://sourcegraph.com/#oauth-tokens",
+    "https://sourcegraph.com/#pat-login",
+    "https://sourcegraph.com/#permissions",
+    "https://sourcegraph.com/#permissions-1",
+    "https://sourcegraph.com/#private-clients",
+    "https://sourcegraph.com/#public-clients",
+    "https://sourcegraph.com/#q-are-there-plans-for-supporting-a-streaming-client-or-interface-with-more-functionality-eg-parallelizing-multiple-streaming-requests-or-aggregating-results-from-multiple-streams",
+    "https://sourcegraph.com/#q-how-can-i-run-an-exhaustive-search-directly-against-the-stream-api",
+    "https://sourcegraph.com/#quick-links",
+    "https://sourcegraph.com/#quickstart",
+    "https://sourcegraph.com/#quickstart-for-src",
+    "https://sourcegraph.com/#read_file",
+    "https://sourcegraph.com/#refresh-tokens",
+    "https://sourcegraph.com/#removals",
+    "https://sourcegraph.com/#repositories",
+    "https://sourcegraph.com/#repository-permissions",
+    "https://sourcegraph.com/#request",
+    "https://sourcegraph.com/#restricting-mcp-with-rbac",
+    "https://sourcegraph.com/#reverts",
+    "https://sourcegraph.com/#reverts-1",
+    "https://sourcegraph.com/#reverts-2",
+    "https://sourcegraph.com/#role-based-access-control-rbac",
+    "https://sourcegraph.com/#run-a-code-search",
+    "https://sourcegraph.com/#search",
+    "https://sourcegraph.com/#security",
+    "https://sourcegraph.com/#server-endpoints",
+    "https://sourcegraph.com/#service-accounts",
+    "https://sourcegraph.com/#site-configuration",
+    "https://sourcegraph.com/#site-level-enablement",
+    "https://sourcegraph.com/#sourcegraph-analytics-api",
+    "https://sourcegraph.com/#sourcegraph-api",
+    "https://sourcegraph.com/#sourcegraph-cli",
+    "https://sourcegraph.com/#sourcegraph-graphql-debug-api",
+    "https://sourcegraph.com/#sourcegraph-streaming-search-api",
+    "https://sourcegraph.com/#streaming-api",
+    "https://sourcegraph.com/#sudo-access-tokens",
+    "https://sourcegraph.com/#system-roles",
+    "https://sourcegraph.com/#token-creation",
+    "https://sourcegraph.com/#token-expiration",
+    "https://sourcegraph.com/#token-expiration-handling",
+    "https://sourcegraph.com/#token-management",
+    "https://sourcegraph.com/#token-revocation",
+    "https://sourcegraph.com/#tool-availability-by-endpoint",
+    "https://sourcegraph.com/#traditional-access-tokens",
+    "https://sourcegraph.com/#troubleshooting",
+    "https://sourcegraph.com/#ui",
+    "https://sourcegraph.com/#uncategorized",
+    "https://sourcegraph.com/#uncategorized-1",
+    "https://sourcegraph.com/#uncategorized-2",
+    "https://sourcegraph.com/#using-oauth-tokens",
+    "https://sourcegraph.com/#using-the-api-via-curl",
+    "https://sourcegraph.com/#using-the-api-via-the-sourcegraph-cli",
+    "https://sourcegraph.com/#v6115428",
+    "https://sourcegraph.com/#v6115639",
+    "https://sourcegraph.com/#v6120",
+    "https://sourcegraph.com/#v6121271",
+    "https://sourcegraph.com/#version-control--history",
+    "https://sourcegraph.com/#vscode",
+    "https://sourcegraph.com/#windows",
+    "https://sourcegraph.com/-/debug/jaeger/trace/b1be66f71a79e0dbeda6bb200dae8326",
+    "https://sourcegraph.com/./cli/quickstart",
+    "https://sourcegraph.com/./cli/references",
+    "https://sourcegraph.com/.api/graphql",
+    "https://sourcegraph.com/.api/search/stream",
+    "https://sourcegraph.com/.api/src-cli/src_darwin_amd64",
+    "https://sourcegraph.com/.api/src-cli/src_linux_amd64",
+    "https://sourcegraph.com/.api/src-cli/src_windows_amd64.exe",
+    "https://sourcegraph.com/.assets/",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/assets/0.K1PnRPK3.css",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/69_IOA4Y.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/B0aOhJfx.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/B889lL9w.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/B8chVbEc.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/BDeNra6z.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/BPzQUrXs.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/BQW5gsCz.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/BWDhT-o7.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/BbLulGRm.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/Bd1evf2M.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/Bg7tSa0O.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/BraxHzPF.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/BxZ2w-Xj.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/C9CxEYMI.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/CDkR9WF6.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/CKuRiwrL.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/CRAqdQWw.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/CV0dHcg-.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/CW1y2YAT.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/CdrktJ2T.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/CgNyJsTk.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DDi0DGRF.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DFx12FBd.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DNsf47ah.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DXvSB2je.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DZp1MRst.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/Dai1v-ct.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/Dbf40np5.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DiEPPGb_.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DsqdWQfm.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DuQxD0U0.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/DusJ8qdQ.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/FLfdibV2.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/PvKOwYhg.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/RuXvAMH9.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/eCe-RlO2.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/f9ncSBqC.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/fDJXAzqb.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/lluWE6Oa.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/npVn5V6X.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/chunks/rVgk7U56.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/nodes/0.D22RcPIW.js",
+    "https://sourcegraph.com/.assets/_sk/_app/immutable/nodes/1.Bp1s3_P1.js",
+    "https://sourcegraph.com/about",
+    "https://sourcegraph.com/admin",
+    "https://sourcegraph.com/agentic-batch-changes",
+    "https://sourcegraph.com/api-reference",
+    "https://sourcegraph.com/batch-changes",
+    "https://sourcegraph.com/blog",
+    "https://sourcegraph.com/blog/mcp-stories-from-the-field",
+    "https://sourcegraph.com/blog/using-batch-changes-via-graphql-api",
+    "https://sourcegraph.com/blog/why-coding-agents-fail-large-codebases",
+    "https://sourcegraph.com/case-studies",
+    "https://sourcegraph.com/changelog",
+    "https://sourcegraph.com/changelog/mcp-dcr",
+    "https://sourcegraph.com/changelog/mcp-ga",
+    "https://sourcegraph.com/changelog/releases",
+    "https://sourcegraph.com/changelog/releases/6.12",
+    "https://sourcegraph.com/changelog/releases/7.0",
+    "https://sourcegraph.com/changelog/self-hosted/docker-compose",
+    "https://sourcegraph.com/changelog/self-hosted/kubernetes",
+    "https://sourcegraph.com/changelog/self-hosted/server",
+    "https://sourcegraph.com/changelog/sourcegraph-api",
+    "https://sourcegraph.com/code-insights",
+    "https://sourcegraph.com/code-search",
+    "https://sourcegraph.com/community",
+    "https://sourcegraph.com/contact",
+    "https://sourcegraph.com/contact/code-search",
+    "https://sourcegraph.com/contact/request-info",
+    "https://sourcegraph.com/debug/console",
+    "https://sourcegraph.com/deep-search",
+    "https://sourcegraph.com/deepsearch/abc123",
+    "https://sourcegraph.com/deepsearch/shared/abc123",
+    "https://sourcegraph.com/docs",
+    "https://sourcegraph.com/docs/admin",
+    "https://sourcegraph.com/docs/admin/access-control",
+    "https://sourcegraph.com/docs/admin/access-control#creating-a-new-role-and-assigning-it-permissions",
+    "https://sourcegraph.com/docs/admin/access-control#managing-roles-and-permissions",
+    "https://sourcegraph.com/docs/admin/access-control#managing-user-roles",
+    "https://sourcegraph.com/docs/admin/executors",
+    "https://sourcegraph.com/docs/admin/oauth-apps",
+    "https://sourcegraph.com/docs/admin/oauth-apps#oauth-flow-examples",
+    "https://sourcegraph.com/docs/admin/oauth-apps.md",
+    "https://sourcegraph.com/docs/admin/permissions",
+    "https://sourcegraph.com/docs/admin/permissions/api#explicit-permissions-api",
+    "https://sourcegraph.com/docs/admin/service-accounts",
+    "https://sourcegraph.com/docs/admin/service-accounts#m2m-oauth-credentials-client-credentials-flow",
+    "https://sourcegraph.com/docs/admin/service-accounts.md",
+    "https://sourcegraph.com/docs/admin/webhooks",
+    "https://sourcegraph.com/docs/agentic-batch-changes",
+    "https://sourcegraph.com/docs/analytics",
+    "https://sourcegraph.com/docs/analytics/api",
+    "https://sourcegraph.com/docs/analytics/api.md",
+    "https://sourcegraph.com/docs/api",
+    "https://sourcegraph.com/docs/api.md",
+    "https://sourcegraph.com/docs/api/graphql",
+    "https://sourcegraph.com/docs/api/graphql#quickstart",
+    "https://sourcegraph.com/docs/api/graphql.md",
+    "https://sourcegraph.com/docs/api/mcp",
+    "https://sourcegraph.com/docs/api/mcp#availability-and-access-control",
+    "https://sourcegraph.com/docs/api/mcp/client-integrations",
+    "https://sourcegraph.com/docs/api/stream-api",
+    "https://sourcegraph.com/docs/api/stream-api.md",
+    "https://sourcegraph.com/docs/batch-changes",
+    "https://sourcegraph.com/docs/batch-changes/quickstart",
+    "https://sourcegraph.com/docs/beta-and-experimental",
+    "https://sourcegraph.com/docs/cli",
+    "https://sourcegraph.com/docs/cli.md",
+    "https://sourcegraph.com/docs/cli/explanations",
+    "https://sourcegraph.com/docs/cli/explanations/windows",
+    "https://sourcegraph.com/docs/cli/how-tos/creating-an-access-token",
+    "https://sourcegraph.com/docs/cli/how-tos/managing-access-tokens",
+    "https://sourcegraph.com/docs/cli/how-tos/revoking-an-access-token",
+    "https://sourcegraph.com/docs/cli/quickstart",
+    "https://sourcegraph.com/docs/cli/quickstart.md",
+    "https://sourcegraph.com/docs/cli/references",
+    "https://sourcegraph.com/docs/cli/references/search",
+    "https://sourcegraph.com/docs/cloud",
+    "https://sourcegraph.com/docs/code-insights",
+    "https://sourcegraph.com/docs/code-monitoring",
+    "https://sourcegraph.com/docs/code-navigation",
+    "https://sourcegraph.com/docs/code-ownership",
+    "https://sourcegraph.com/docs/code-ownership/codeowners-format",
+    "https://sourcegraph.com/docs/code-search",
+    "https://sourcegraph.com/docs/code-search/queries",
+    "https://sourcegraph.com/docs/cody",
+    "https://sourcegraph.com/docs/cody/clients/install-cli",
+    "https://sourcegraph.com/docs/deep-search",
+    "https://sourcegraph.com/docs/integration/browser-extension",
+    "https://sourcegraph.com/docs/integration/editor",
+    "https://sourcegraph.com/docs/model-provider",
+    "https://sourcegraph.com/docs/pricing/faqs",
+    "https://sourcegraph.com/docs/pricing/plans/enterprise",
+    "https://sourcegraph.com/docs/self-hosted",
+    "https://sourcegraph.com/docs/sla",
+    "https://sourcegraph.com/docs/sourcegraph-accounts",
+    "https://sourcegraph.com/docs/technical-changelog",
+    "https://sourcegraph.com/docs/tutorials",
+    "https://sourcegraph.com/events",
+    "https://sourcegraph.com/github.com/go-openapi/spec",
+    "https://sourcegraph.com/github.com/goadesign/goa",
+    "https://sourcegraph.com/github.com/kubernetes/kubernetes/-/blob/hack/local-up-cluster.sh",
+    "https://sourcegraph.com/github.com/ory/kratos/-/blob/CHANGELOG.md",
+    "https://sourcegraph.com/github.com/portainer/portainer",
+    "https://sourcegraph.com/github.com/sourcegraph/src-cli",
+    "https://sourcegraph.com/github.com/swaggo/swag",
+    "https://sourcegraph.com/github.com/ziv/source-graph-stream-client",
+    "https://sourcegraph.com/jobs",
+    "https://sourcegraph.com/mcp",
+    "https://sourcegraph.com/partners",
+    "https://sourcegraph.com/pricing",
+    "https://sourcegraph.com/resources",
+    "https://sourcegraph.com/resources/context-compare",
+    "https://sourcegraph.com/resources/ebooks/code-scale-bench-report",
+    "https://sourcegraph.com/resources/ebooks/running-coding-agents-in-enterprise-codebases",
+    "https://sourcegraph.com/search",
+    "https://sourcegraph.com/terms",
+    "https://sourcegraph.com/terms/privacy",
+    "https://sourcegraph.com/terms/privacy#how-we-use-cookies-and-similar-technologies",
+    "https://sourcegraph.com/use-cases",
+    "https://sourcegraph.example.com/.api/graphql",
+    "https://sourcegraph.example.com/.api/mcp",
+    "https://sourcegraph.example.com/.api/search/stream",
+    "https://sourcegraph.example.com/.auth/idp/oauth/authorize",
+    "https://sourcegraph.example.com/.auth/idp/oauth/device/code",
+    "https://sourcegraph.example.com/.auth/idp/oauth/introspect",
+    "https://sourcegraph.example.com/.auth/idp/oauth/register",
+    "https://sourcegraph.example.com/.auth/idp/oauth/revoke",
+    "https://sourcegraph.example.com/.auth/idp/oauth/token",
+    "https://sourcegraph.example.com/.auth/idp/oauth/userinfo",
+    "https://sourcegraph.example.com/api-reference",
+    "https://sourcegraph.example.com/debug/console",
+    "https://sourcegraph.notion.site/Brand-guide-15aa8e11265880a6baecf35d6d3617ac",
+    "https://sourcegraph.notion.site/d7614e3e9dc04c09ac2d42d57f1816e6?v=2a6d426dbae14390b155120b0c029ce0",
+    "https://sourcegraphstatus.com/",
+    "https://static.ads-twitter.com/uwt.js",
+    "https://tools.ietf.org/html/rfc6749",
+    "https://tools.ietf.org/html/rfc7636",
+    "https://tools.ietf.org/html/rfc8628",
+    "https://workspaces.sourcegraph.com",
+    "https://www.clarity.ms/tag/uet/17546895",
+    "https://www.claude.com/product/claude-code",
+    "https://www.googletagmanager.com/gtm.js?id=",
+    "https://www.googletagmanager.com/gtm.js?id=GTM-TB4NLS7",
+    "https://www.googletagmanager.com/gtm.js?id=GTM-TB4NLS7&amp;gtg_health=1",
+    "https://www.redditstatic.com/ads/pixel.js",
+    "https://x.clearbitjs.com/v1/pk_a66b9ed76e62c713c06aab39bfae7234/forms.js?page_path=%2Fapi-reference",
+    "https://x.clearbitjs.com/v2/pk_a66b9ed76e62c713c06aab39bfae7234/destinations.min.js",
+    "https://x.clearbitjs.com/v2/pk_a66b9ed76e62c713c06aab39bfae7234/tracking.min.js",
+    "https://your-sourcegraph-instance.com/.api/mcp"
+  ]
+}

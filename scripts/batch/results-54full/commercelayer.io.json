@@ -1,0 +1,797 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "commercelayer.io",
+    "detect": {
+      "domain": "commercelayer.io",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:15:04.916Z",
+    "summary": "Commerce Layer exposes three HTTP APIs (Core at `https://yourdomain.commercelayer.io`, Metrics at `https://{{your_domain}}.commercelayer.io/metrics`, and Provisioning at `https://provisioning.commercelayer.io`), three MCP servers (Core, Metrics, and a public Docs MCP), and a CLI; Core/Metrics use Commerce Layer OAuth bearer tokens from Core API credentials, Provisioning uses its own client-credentials bearer token, Docs MCP is unauthenticated, and CLI auth is undocumented.",
+    "credentials": {
+      "core_api_client": {
+        "type": "oauth2",
+        "label": "Core API OAuth client credentials (sales channel, integration, or webapp client)",
+        "generateUrl": "https://dashboard.commercelayer.io/sign_in",
+        "setup": "Sign in to the [Commerce Layer Dashboard](https://dashboard.commercelayer.io/sign_in). Under `Settings > API credentials`, create the appropriate Core API client: `sales channel`, `integration`, or `webapp`, as described in the [API credentials docs](https://docs.commercelayer.io/core/api-credentials). Use its `client_id` and, for confidential clients (`integration` or `webapp`), `client_secret` to obtain bearer tokens from `https://auth.commercelayer.io/oauth/token` per the [authentication guide](https://docs.commercelayer.io/core/authentication).",
+        "acquisition": "manual"
+      },
+      "provisioning_client": {
+        "type": "oauth2_cc",
+        "label": "Provisioning API client credentials",
+        "generateUrl": "https://dashboard.commercelayer.io/user/provisioning_api",
+        "setup": "Sign in to the [Commerce Layer Dashboard](https://dashboard.commercelayer.io/sign_in), open your profile menu, and select [Provisioning API](https://dashboard.commercelayer.io/user/provisioning_api). Copy the issued `client_id` and `client_secret`, then exchange them for a bearer token at `https://auth.commercelayer.io/oauth/token` with `grant_type=client_credentials` as shown in the [Provisioning authorization docs](https://docs.commercelayer.io/provisioning/getting-started/authorization).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "commerce-layer-core-api",
+        "name": "Commerce Layer Core API",
+        "type": "http",
+        "docs": "https://docs.commercelayer.io/core/api-specification",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.commercelayer.io/core/api-specification",
+            "https://docs.commercelayer.io/core/authentication",
+            "https://docs.commercelayer.io/core/api-credentials"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "core_api_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.commercelayer.io/core/authentication",
+                  "https://docs.commercelayer.io/core/api-specification"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://yourdomain.commercelayer.io"
+      },
+      {
+        "slug": "commerce-layer-metrics-api",
+        "name": "Commerce Layer Metrics API",
+        "type": "http",
+        "docs": "https://docs.commercelayer.io/metrics/getting-started/api-specification",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.commercelayer.io/metrics/",
+            "https://docs.commercelayer.io/metrics/getting-started/api-specification",
+            "https://docs.commercelayer.io/public-endpoints"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "core_api_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.commercelayer.io/metrics/getting-started/api-specification",
+                  "https://docs.commercelayer.io/metrics/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{{your_domain}}.commercelayer.io/metrics",
+        "requiredHeaders": [
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.api.v1+json"
+            },
+            "description": "Versioned media type required by the Metrics API."
+          },
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.api+json"
+            },
+            "description": "Required request content type per docs."
+          }
+        ]
+      },
+      {
+        "slug": "commerce-layer-provisioning-api",
+        "name": "Commerce Layer Provisioning API",
+        "type": "http",
+        "docs": "https://docs.commercelayer.io/provisioning/getting-started/api-specification",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.commercelayer.io/provisioning",
+            "https://docs.commercelayer.io/provisioning/getting-started/api-specification",
+            "https://docs.commercelayer.io/provisioning/getting-started/authorization",
+            "https://docs.commercelayer.io/public-endpoints"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "provisioning_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.commercelayer.io/provisioning/getting-started/authorization",
+                  "https://docs.commercelayer.io/provisioning/getting-started/api-specification"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://provisioning.commercelayer.io",
+        "requiredHeaders": [
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.api+json"
+            },
+            "description": "Required JSON:API media type."
+          },
+          {
+            "name": "Accept-Version",
+            "source": {
+              "kind": "static",
+              "value": "v1"
+            },
+            "description": "Latest documented Provisioning API version."
+          },
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.api+json"
+            },
+            "description": "Required for POST, PUT, and PATCH requests."
+          }
+        ]
+      },
+      {
+        "slug": "commerce-layer-documentation-mcp",
+        "name": "Commerce Layer Documentation MCP",
+        "type": "mcp",
+        "docs": "https://docs.commercelayer.io/ai/mcp/servers/docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.commercelayer.io/ai/mcp/servers/docs"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.commercelayer.io/ai/mcp/servers/docs"
+            ]
+          }
+        },
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "commerce-layer-core-mcp",
+        "name": "Commerce Layer Core MCP",
+        "type": "mcp",
+        "docs": "https://docs.commercelayer.io/ai/mcp/servers/core",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.commercelayer.io/ai/mcp/servers/core"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "core_api_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.commercelayer.io/ai/mcp/servers/core"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "core_api_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.commercelayer.io/ai/mcp/servers/core"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://core-mcp.commercelayer.io/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "commerce-layer-metrics-mcp",
+        "name": "Commerce Layer Metrics MCP",
+        "type": "mcp",
+        "docs": "https://docs.commercelayer.io/ai/mcp/servers/metrics",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.commercelayer.io/ai/mcp/servers/metrics"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "core_api_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.commercelayer.io/ai/mcp/servers/metrics"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "core_api_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.commercelayer.io/ai/mcp/servers/metrics"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://metrics-mcp.commercelayer.io/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "commerce-layer-cli",
+        "name": "Commerce Layer CLI",
+        "type": "cli",
+        "docs": "https://github.com/commercelayer/commercelayer-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.commercelayer.io/core/api-specification",
+            "https://docs.commercelayer.io/provisioning",
+            "https://docs.commercelayer.io/metrics/",
+            "https://github.com/commercelayer/commercelayer-cli"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@commercelayer/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "commercelayer"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:15:04.917Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 469302,
+    "completion_tokens": 2858,
+    "total_tokens": 472160
+  },
+  "visited": [
+    "https://commercelayer.io/resources",
+    "https://docs.commercelayer.io/",
+    "https://docs.commercelayer.io/ai",
+    "https://docs.commercelayer.io/ai/mcp/servers",
+    "https://docs.commercelayer.io/ai/mcp/servers/core",
+    "https://docs.commercelayer.io/ai/mcp/servers/docs",
+    "https://docs.commercelayer.io/ai/mcp/servers/metrics",
+    "https://docs.commercelayer.io/core/api-credentials",
+    "https://docs.commercelayer.io/core/api-specification",
+    "https://docs.commercelayer.io/core/authentication",
+    "https://docs.commercelayer.io/metrics/",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification",
+    "https://docs.commercelayer.io/provisioning",
+    "https://docs.commercelayer.io/provisioning/getting-started/api-specification",
+    "https://docs.commercelayer.io/provisioning/getting-started/authorization",
+    "https://docs.commercelayer.io/public-endpoints",
+    "https://docs.commercetools.com/dev-tooling/mcp/knowledge-mcp",
+    "https://github.com/commercelayer/commercelayer-cli"
+  ],
+  "grounding": [
+    "http://en.wikipedia.org/wiki/HTTP_Secure",
+    "http://en.wikipedia.org/wiki/Representational_State_Transfer",
+    "http://jsonapi.org/format/",
+    "http://jsonapi.org/implementations/#client-libraries",
+    "https://app.gitbook.com/s/XD42JVYENWrharWaLF3W",
+    "https://archiveprogram.github.com",
+    "https://auth.commercelayer.io/oauth/token",
+    "https://code.visualstudio.com/docs/copilot/customization/mcp-servers",
+    "https://code.visualstudio.com/docs/editing/userinterface#_command-palette",
+    "https://commercelayer.io/",
+    "https://commercelayer.io/agentic-commerce",
+    "https://commercelayer.io/blog",
+    "https://commercelayer.io/blog/black-friday-2025",
+    "https://commercelayer.io/blog/connecting-any-payment-gateway-to-commerce-layer-with-external-payments",
+    "https://commercelayer.io/blog/core-mcp-server",
+    "https://commercelayer.io/blog/introducing-the-metrics-dashboard",
+    "https://commercelayer.io/blog/introducing-timed-checkout",
+    "https://commercelayer.io/blog/real-time-anomaly-detection",
+    "https://commercelayer.io/blog/rules-engine-flex-promotion-examples",
+    "https://commercelayer.io/blog/single-sign-on-with-commerce-layer-using-next-js-and-auth0",
+    "https://commercelayer.io/customers",
+    "https://commercelayer.io/developers",
+    "https://commercelayer.io/distributed-oms",
+    "https://commercelayer.io/pos-system",
+    "https://commercelayer.io/pricing",
+    "https://commercelayer.io/promotion-engine",
+    "https://commercelayer.io/resources",
+    "https://commercelayer.io/universal-checkout",
+    "https://core-mcp.commercelayer.io/mcp",
+    "https://cursor.com/docs/context/mcp",
+    "https://dashboard.commercelayer.io/sign_in",
+    "https://dashboard.commercelayer.io/sign_up",
+    "https://dashboard.commercelayer.io/user/provisioning_api",
+    "https://data.commercelayer.app/schemas/metrics/openapi.json",
+    "https://data.commercelayer.app/schemas/openapi.json",
+    "https://data.commercelayer.app/schemas/provisioning/openapi.json",
+    "https://develop-commercelayer.vercel.app/docs/data-model/users-and-organizations",
+    "https://discord.gg/commercelayer",
+    "https://docs.commercelayer.io/",
+    "https://docs.commercelayer.io/#access-token-expiry",
+    "https://docs.commercelayer.io/#additional-developer-tools",
+    "https://docs.commercelayer.io/#advanced-apis",
+    "https://docs.commercelayer.io/#analysis-tools",
+    "https://docs.commercelayer.io/#api-versioning",
+    "https://docs.commercelayer.io/#authentication",
+    "https://docs.commercelayer.io/#authentication-and-permissions",
+    "https://docs.commercelayer.io/#authorization",
+    "https://docs.commercelayer.io/#authorization-grant-flows",
+    "https://docs.commercelayer.io/#authorization-scopes",
+    "https://docs.commercelayer.io/#available-mcp-servers",
+    "https://docs.commercelayer.io/#base-endpoint",
+    "https://docs.commercelayer.io/#build-with-us",
+    "https://docs.commercelayer.io/#changelog",
+    "https://docs.commercelayer.io/#cli-plugin",
+    "https://docs.commercelayer.io/#core-api",
+    "https://docs.commercelayer.io/#core-resources",
+    "https://docs.commercelayer.io/#create-a-commerce-layer-account",
+    "https://docs.commercelayer.io/#credentials",
+    "https://docs.commercelayer.io/#developer-tools",
+    "https://docs.commercelayer.io/#docs-first-platform",
+    "https://docs.commercelayer.io/#environments",
+    "https://docs.commercelayer.io/#errors",
+    "https://docs.commercelayer.io/#example",
+    "https://docs.commercelayer.io/#generating-api-credentials",
+    "https://docs.commercelayer.io/#getting-an-access-token",
+    "https://docs.commercelayer.io/#getting-the-api-credentials",
+    "https://docs.commercelayer.io/#headers",
+    "https://docs.commercelayer.io/#helper-endpoints",
+    "https://docs.commercelayer.io/#how-to-connect",
+    "https://docs.commercelayer.io/#http-request-headers",
+    "https://docs.commercelayer.io/#integration",
+    "https://docs.commercelayer.io/#js-sdk",
+    "https://docs.commercelayer.io/#lets-get-started",
+    "https://docs.commercelayer.io/#list-of-tools",
+    "https://docs.commercelayer.io/#llm-friendly",
+    "https://docs.commercelayer.io/#llm-friendly-formats",
+    "https://docs.commercelayer.io/#llms.txt-files",
+    "https://docs.commercelayer.io/#metrics-api",
+    "https://docs.commercelayer.io/#model-context-protocol",
+    "https://docs.commercelayer.io/#more-to-read",
+    "https://docs.commercelayer.io/#open-source-projects-and-developer-tools",
+    "https://docs.commercelayer.io/#openapi-schema",
+    "https://docs.commercelayer.io/#per-page-markdown",
+    "https://docs.commercelayer.io/#postman-collection",
+    "https://docs.commercelayer.io/#pre-built-applications",
+    "https://docs.commercelayer.io/#provisioning-api",
+    "https://docs.commercelayer.io/#query-tools",
+    "https://docs.commercelayer.io/#query-types",
+    "https://docs.commercelayer.io/#rate-limits",
+    "https://docs.commercelayer.io/#ready-for-the-agentic-age",
+    "https://docs.commercelayer.io/#request",
+    "https://docs.commercelayer.io/#resources",
+    "https://docs.commercelayer.io/#response",
+    "https://docs.commercelayer.io/#rules-engine",
+    "https://docs.commercelayer.io/#sales-channel",
+    "https://docs.commercelayer.io/#webapp",
+    "https://docs.commercelayer.io/#what-can-you-ask-it",
+    "https://docs.commercelayer.io/#what-is-the-core-mcp",
+    "https://docs.commercelayer.io/#what-is-the-documentation-mcp",
+    "https://docs.commercelayer.io/#what-is-the-metrics-mcp",
+    "https://docs.commercelayer.io/#why-does-it-exist",
+    "https://docs.commercelayer.io/ai",
+    "https://docs.commercelayer.io/ai/build-with-ai.md",
+    "https://docs.commercelayer.io/ai/mcp",
+    "https://docs.commercelayer.io/ai/mcp/inspector",
+    "https://docs.commercelayer.io/ai/mcp/security",
+    "https://docs.commercelayer.io/ai/mcp/servers",
+    "https://docs.commercelayer.io/ai/mcp/servers.md",
+    "https://docs.commercelayer.io/ai/mcp/servers/core",
+    "https://docs.commercelayer.io/ai/mcp/servers/core.md",
+    "https://docs.commercelayer.io/ai/mcp/servers/docs",
+    "https://docs.commercelayer.io/ai/mcp/servers/docs#llms.txt-files",
+    "https://docs.commercelayer.io/ai/mcp/servers/docs#per-page-markdown",
+    "https://docs.commercelayer.io/ai/mcp/servers/docs.md",
+    "https://docs.commercelayer.io/ai/mcp/servers/metrics",
+    "https://docs.commercelayer.io/ai/mcp/servers/metrics#analysis-tools",
+    "https://docs.commercelayer.io/ai/mcp/servers/metrics#query-tools",
+    "https://docs.commercelayer.io/ai/mcp/servers/metrics.md",
+    "https://docs.commercelayer.io/api-reference/",
+    "https://docs.commercelayer.io/changelog",
+    "https://docs.commercelayer.io/changelog/",
+    "https://docs.commercelayer.io/core",
+    "https://docs.commercelayer.io/core-api-reference",
+    "https://docs.commercelayer.io/core-api-reference/",
+    "https://docs.commercelayer.io/core-api-reference/application",
+    "https://docs.commercelayer.io/core-api-reference/application/retrieve",
+    "https://docs.commercelayer.io/core-api-reference/markets#disabling-markets",
+    "https://docs.commercelayer.io/core-api-reference/orders/retrieve.md",
+    "https://docs.commercelayer.io/core/",
+    "https://docs.commercelayer.io/core/api-credentials",
+    "https://docs.commercelayer.io/core/api-credentials#generating-api-credentials",
+    "https://docs.commercelayer.io/core/api-credentials#integration",
+    "https://docs.commercelayer.io/core/api-credentials#sales-channel",
+    "https://docs.commercelayer.io/core/api-credentials#webapp",
+    "https://docs.commercelayer.io/core/api-credentials.md",
+    "https://docs.commercelayer.io/core/api-specification",
+    "https://docs.commercelayer.io/core/api-specification#environments",
+    "https://docs.commercelayer.io/core/api-specification.md",
+    "https://docs.commercelayer.io/core/authentication",
+    "https://docs.commercelayer.io/core/authentication#authorization-scopes",
+    "https://docs.commercelayer.io/core/authentication#putting-a-market-in-scope",
+    "https://docs.commercelayer.io/core/authentication#putting-a-stock-location-in-scope",
+    "https://docs.commercelayer.io/core/authentication#putting-a-store-in-scope",
+    "https://docs.commercelayer.io/core/authentication.md",
+    "https://docs.commercelayer.io/core/authentication/authorization-code",
+    "https://docs.commercelayer.io/core/authentication/authorization-code#webapp",
+    "https://docs.commercelayer.io/core/authentication/client-credentials",
+    "https://docs.commercelayer.io/core/authentication/client-credentials#integration",
+    "https://docs.commercelayer.io/core/authentication/client-credentials#sales-channel",
+    "https://docs.commercelayer.io/core/authentication/jwt-bearer",
+    "https://docs.commercelayer.io/core/authentication/password",
+    "https://docs.commercelayer.io/core/authentication/refresh-token",
+    "https://docs.commercelayer.io/core/authentication/revoking-a-token",
+    "https://docs.commercelayer.io/core/callbacks-security",
+    "https://docs.commercelayer.io/core/cleaning-resources",
+    "https://docs.commercelayer.io/core/creating-resources",
+    "https://docs.commercelayer.io/core/deleting-resources",
+    "https://docs.commercelayer.io/core/event-stream-hub",
+    "https://docs.commercelayer.io/core/exporting-resources",
+    "https://docs.commercelayer.io/core/external-resources",
+    "https://docs.commercelayer.io/core/fetching-relationships",
+    "https://docs.commercelayer.io/core/fetching-resources",
+    "https://docs.commercelayer.io/core/fetching-resources#fetching-a-collection-of-skus",
+    "https://docs.commercelayer.io/core/filtering-data",
+    "https://docs.commercelayer.io/core/handling-errors",
+    "https://docs.commercelayer.io/core/importing-resources",
+    "https://docs.commercelayer.io/core/including-associations",
+    "https://docs.commercelayer.io/core/onboarding/manual-configuration",
+    "https://docs.commercelayer.io/core/pagination",
+    "https://docs.commercelayer.io/core/rate-limits",
+    "https://docs.commercelayer.io/core/rate-limits#authentication-endpoint",
+    "https://docs.commercelayer.io/core/rate-limits#other-endpoints",
+    "https://docs.commercelayer.io/core/rate-limits#uncacheable",
+    "https://docs.commercelayer.io/core/real-time-webhooks",
+    "https://docs.commercelayer.io/core/roles-and-permissions",
+    "https://docs.commercelayer.io/core/roles-and-permissions#integration",
+    "https://docs.commercelayer.io/core/roles-and-permissions#sales-channel",
+    "https://docs.commercelayer.io/core/roles-and-permissions#webapp",
+    "https://docs.commercelayer.io/core/sorting-results",
+    "https://docs.commercelayer.io/core/sparse-fieldsets",
+    "https://docs.commercelayer.io/core/tagging-resources",
+    "https://docs.commercelayer.io/core/updating-resources",
+    "https://docs.commercelayer.io/core/v/api-reference/orders",
+    "https://docs.commercelayer.io/core/v/api-reference/organization",
+    "https://docs.commercelayer.io/core/v/api-reference/returns",
+    "https://docs.commercelayer.io/data-model/",
+    "https://docs.commercelayer.io/how-tos/",
+    "https://docs.commercelayer.io/how-tos/faq/authentication-and-access-tokens#i-keep-being-rate-limited-on-auth-calls.-what-shall-i-do",
+    "https://docs.commercelayer.io/llms-full.txt",
+    "https://docs.commercelayer.io/llms.txt",
+    "https://docs.commercelayer.io/metrics",
+    "https://docs.commercelayer.io/metrics-api-reference/",
+    "https://docs.commercelayer.io/metrics-api-reference/resources/carts",
+    "https://docs.commercelayer.io/metrics-api-reference/resources/orders",
+    "https://docs.commercelayer.io/metrics-api-reference/resources/returns",
+    "https://docs.commercelayer.io/metrics/",
+    "https://docs.commercelayer.io/metrics/getting-started",
+    "https://docs.commercelayer.io/metrics/getting-started/analysis",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification#authorization",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification#base-endpoint",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification#meta",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification#meta-1",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification#query-types",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification#resources",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification#undefined",
+    "https://docs.commercelayer.io/metrics/getting-started/api-specification.md",
+    "https://docs.commercelayer.io/metrics/getting-started/errors",
+    "https://docs.commercelayer.io/metrics/getting-started/errors#405-method-not-allowed",
+    "https://docs.commercelayer.io/metrics/getting-started/filters",
+    "https://docs.commercelayer.io/metrics/getting-started/filters#date-formats",
+    "https://docs.commercelayer.io/metrics/getting-started/filters#default-filter",
+    "https://docs.commercelayer.io/metrics/getting-started/queries",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/breakdown",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/breakdown#request",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/breakdown#response",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/date-breakdown",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/date-breakdown#request",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/date-breakdown#response",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/export",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/search",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/search#pagination",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/search#request",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/search#response",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/stats",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/stats#request",
+    "https://docs.commercelayer.io/metrics/getting-started/queries/stats#response",
+    "https://docs.commercelayer.io/metrics/getting-started/use-cases",
+    "https://docs.commercelayer.io/metrics/welcome.md",
+    "https://docs.commercelayer.io/provisioning",
+    "https://docs.commercelayer.io/provisioning/",
+    "https://docs.commercelayer.io/provisioning/api-reference/api_credentials",
+    "https://docs.commercelayer.io/provisioning/api-reference/api_credentials#access-token-expiry",
+    "https://docs.commercelayer.io/provisioning/api-reference/application_memberships",
+    "https://docs.commercelayer.io/provisioning/api-reference/identity_providers",
+    "https://docs.commercelayer.io/provisioning/api-reference/membership_profiles",
+    "https://docs.commercelayer.io/provisioning/api-reference/memberships",
+    "https://docs.commercelayer.io/provisioning/api-reference/organizations",
+    "https://docs.commercelayer.io/provisioning/api-reference/permissions",
+    "https://docs.commercelayer.io/provisioning/api-reference/roles",
+    "https://docs.commercelayer.io/provisioning/api-reference/user",
+    "https://docs.commercelayer.io/provisioning/api-reference/versions",
+    "https://docs.commercelayer.io/provisioning/getting-started",
+    "https://docs.commercelayer.io/provisioning/getting-started/api-specification",
+    "https://docs.commercelayer.io/provisioning/getting-started/api-specification#api-versioning",
+    "https://docs.commercelayer.io/provisioning/getting-started/api-specification#headers",
+    "https://docs.commercelayer.io/provisioning/getting-started/api-specification.md",
+    "https://docs.commercelayer.io/provisioning/getting-started/applications",
+    "https://docs.commercelayer.io/provisioning/getting-started/authorization",
+    "https://docs.commercelayer.io/provisioning/getting-started/authorization#api-credentials",
+    "https://docs.commercelayer.io/provisioning/getting-started/authorization#getting-an-access-token",
+    "https://docs.commercelayer.io/provisioning/getting-started/authorization.md",
+    "https://docs.commercelayer.io/provisioning/welcome.md",
+    "https://docs.commercelayer.io/public-endpoints",
+    "https://docs.commercelayer.io/public-endpoints.md",
+    "https://docs.commercelayer.io/readme.md",
+    "https://docs.commercelayer.io/rules-engine",
+    "https://docs.commercelayer.io/rules-engine/",
+    "https://docs.commercelayer.io/~gitbook/mcp",
+    "https://docs.commercetools.com/dev-tooling/mcp/knowledge-mcp",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://en.wikipedia.org/wiki/UTF-8",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/commercelayer",
+    "https://github.com/commercelayer/app-elements",
+    "https://github.com/commercelayer/commercelayer-cli",
+    "https://github.com/commercelayer/commercelayer-cli-plugin-metrics",
+    "https://github.com/commercelayer/commercelayer-cli-plugin-provisioning",
+    "https://github.com/commercelayer/commercelayer-cli/actions",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/.gitignore",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/.markdownlint.json",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/.mocharc.json",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/.npmrc",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/.releaserc",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/CHANGELOG.md",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/LICENSE",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/README.md",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/biome.json",
+    "https://github.com/commercelayer/commercelayer-cli/blob/main/package.json",
+    "https://github.com/commercelayer/commercelayer-cli/branches",
+    "https://github.com/commercelayer/commercelayer-cli/commit/1dfee69d3e353441cb2adbef40bd8fd980a12a54",
+    "https://github.com/commercelayer/commercelayer-cli/commit/1f6b69b600a29df51140c8e35e7fcfeafe3d8fc0",
+    "https://github.com/commercelayer/commercelayer-cli/commit/242e14ab543a76d809b8283efdf16ad9412649e8",
+    "https://github.com/commercelayer/commercelayer-cli/commit/59b8aa3497c3ced5f264c8878edcc4326737dc67",
+    "https://github.com/commercelayer/commercelayer-cli/commit/6d511e5d3f5a3c926fbfd38feaaa211764f5c0f1",
+    "https://github.com/commercelayer/commercelayer-cli/commit/794ac33c7143aaab55a1494c4450eff1aa3a79fe",
+    "https://github.com/commercelayer/commercelayer-cli/commit/83e9400f148f52beaa7a436ff1b035775223f593",
+    "https://github.com/commercelayer/commercelayer-cli/commit/8ade5b2",
+    "https://github.com/commercelayer/commercelayer-cli/commit/8ade5b25fd8f566a7d3693fb68a8227942b5276e",
+    "https://github.com/commercelayer/commercelayer-cli/commit/c29d06e1bc04c8e4a096a6ef1eb1106f138d6f64",
+    "https://github.com/commercelayer/commercelayer-cli/commit/ca712870204987ec92854d4ae20a19c06a9b1c6c",
+    "https://github.com/commercelayer/commercelayer-cli/commit/d77fa0b5eff2f31485fd2c135a42056ca051c2e1",
+    "https://github.com/commercelayer/commercelayer-cli/commit/e750c5af89c26071d838e55868400dee2185250a",
+    "https://github.com/commercelayer/commercelayer-cli/commit/e7d89c5b3061ff7b054fa10e41b0d81fbb62f4ff",
+    "https://github.com/commercelayer/commercelayer-cli/commits/main/",
+    "https://github.com/commercelayer/commercelayer-cli/commits?author=semantic-release-bot",
+    "https://github.com/commercelayer/commercelayer-cli/compare/v6.9.2...v6.9.3",
+    "https://github.com/commercelayer/commercelayer-cli/issues",
+    "https://github.com/commercelayer/commercelayer-cli/projects",
+    "https://github.com/commercelayer/commercelayer-cli/pulls",
+    "https://github.com/commercelayer/commercelayer-cli/pulse",
+    "https://github.com/commercelayer/commercelayer-cli/security",
+    "https://github.com/commercelayer/commercelayer-cli/tags",
+    "https://github.com/commercelayer/commercelayer-cli/tree/main/.fig/autocomplete",
+    "https://github.com/commercelayer/commercelayer-cli/tree/main/.github/workflows",
+    "https://github.com/commercelayer/commercelayer-cli/tree/main/assets",
+    "https://github.com/commercelayer/commercelayer-cli/tree/main/bin",
+    "https://github.com/commercelayer/commercelayer-cli/tree/main/docs",
+    "https://github.com/commercelayer/commercelayer-cli/tree/main/src",
+    "https://github.com/commercelayer/commercelayer-cli/tree/main/test",
+    "https://github.com/commercelayer/commercelayer-demo-store",
+    "https://github.com/commercelayer/commercelayer-js-auth",
+    "https://github.com/commercelayer/commercelayer-js-auth?tab=readme-ov-file#decode-an-access-token",
+    "https://github.com/commercelayer/commercelayer-js-auth?tab=readme-ov-file#provisioning",
+    "https://github.com/commercelayer/commercelayer-js-auth?tab=readme-ov-file#verify-an-access-token",
+    "https://github.com/commercelayer/commercelayer-react-components",
+    "https://github.com/commercelayer/commercelayer-sdk",
+    "https://github.com/commercelayer/commercelayer…",
+    "https://github.com/commercelayer/dashboard-apps",
+    "https://github.com/commercelayer/docs-provisioning-api-resources/blob/main/broken-reference/README.md",
+    "https://github.com/commercelayer/drop-in.js",
+    "https://github.com/commercelayer/examples",
+    "https://github.com/commercelayer/mfe-cart",
+    "https://github.com/commercelayer/mfe-checkout",
+    "https://github.com/commercelayer/mfe-identity",
+    "https://github.com/commercelayer/mfe-microstore",
+    "https://github.com/commercelayer/mfe-my-account",
+    "https://github.com/commercelayer/provisioning-sdk",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fcommercelayer%2Fcommercelayer-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fcommercelayer%2Fcommercelayer-cli",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=commercelayer%2Fcommercelayer-cli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://llmstxt.org/",
+    "https://maintainers.github.com",
+    "https://metrics-mcp.commercelayer.io/mcp",
+    "https://modelcontextprotocol.io/",
+    "https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http",
+    "https://oauth.net/2/",
+    "https://oauth.net/2/grant-types/",
+    "https://provisioning.commercelayer.io",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://status.commercelayer.io",
+    "https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop",
+    "https://support.github.com",
+    "https://swagger.io/docs/specification/data-models/data-types/#string",
+    "https://www.linkedin.com/company/commerce-layer",
+    "https://www.postman.com/commercelayer/workspace/commerce-layer-public-workspace/documentation/19711194-37a2d863-72f6-4b8f-8146-2f61d405fd3c",
+    "https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html",
+    "https://www.w3.org/TR/NOTE-datetime",
+    "https://yourdomain.commercelayer.io",
+    "https://{{your_domain}}.commercelayer.io/metrics",
+    "https://{{your_domain}}.commercelayer.io/metrics/{{resource_name}}/{{query_type}}"
+  ]
+}

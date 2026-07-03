@@ -1,0 +1,910 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "kensho.com",
+    "detect": {
+      "domain": "kensho.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T18:50:56.896Z",
+    "summary": "Mapped Kensho’s public developer surface: 6 HTTP APIs (Scribe Batch, Scribe Real Time/websocket, Extract, NERD, LLM-ready API, Adaptive Retrieval), 3 MCP surfaces (LLM-ready hosted MCP, LLM-ready local MCP, Adaptive Retrieval MCP), and 1 CLI/package surface (kfinance), with refresh-token, keypair/client-ID, LLM-ready OAuth/access-token, and S&P Global OAuth credential options.",
+    "credentials": {
+      "kensho_refresh_token": {
+        "type": "bearer",
+        "label": "Kensho refresh token",
+        "generateUrl": "https://scribe.kensho.com/account",
+        "setup": "For testing/development, mint a refresh token from the product-specific account/login page. The general auth guide says to visit the website for the Kensho API you want; for Scribe it is [Scribe account](https://scribe.kensho.com/account). For the LLM-ready API, the Python auth guide says to sign in at [LLM-ready API Manual Login](https://kfinance.kensho.com/manual_login/) with your LLM-ready API Okta credentials and copy the refresh token. Refresh tokens are product-specific and expire 7 days after last use; exchange them for short-lived access tokens at that product's refresh endpoint before calling APIs.",
+        "acquisition": "manual"
+      },
+      "kensho_keypair_client": {
+        "type": "compound",
+        "label": "Kensho client ID + private key for JWT client authentication",
+        "generateUrl": "mailto:support@kensho.com",
+        "setup": "For production, generate an RSA keypair locally, then email Kensho your PEM-encoded public key and the Kensho application(s) you need. The production auth guide says Kensho will respond with your `Client ID`; you then use your private key plus that `Client ID` to obtain access tokens. Start from [Production Authentication](https://docs.kensho.com/authentication/keypair). For the LLM-ready API, the same flow is documented in [kFinance authentication](https://docs.kensho.com/llmreadyapi/python-library/kf-authentication) and access can be requested via [commercial@kensho.com](mailto:commercial@kensho.com).",
+        "acquisition": "manual"
+      },
+      "spg_oauth_client": {
+        "type": "oauth2",
+        "label": "S&P Global OAuth client credentials for Adaptive Retrieval",
+        "generateUrl": "mailto:commercial@kensho.com",
+        "setup": "For Adaptive Retrieval, request S&P Global OAuth credentials by emailing [commercial@kensho.com](mailto:commercial@kensho.com). The MCP guide says you need S&P Global OAuth credentials / `CLIENT_ID`, then complete the OAuth flow against the Kensho-hosted MCP/API endpoints.",
+        "acquisition": "manual"
+      },
+      "kensho_lra_access_token": {
+        "type": "bearer",
+        "label": "Kensho LLM-ready API access token",
+        "generateUrl": "https://kfinance.kensho.com/manual_login/",
+        "setup": "For temporary experiments or batch jobs, sign in at [LLM-ready API Manual Login](https://kfinance.kensho.com/manual_login/) and copy an access token or refresh token. The docs say the access token expires after one hour and the refresh token after one week.",
+        "acquisition": "manual"
+      },
+      "kensho_lra_oauth_client": {
+        "type": "oauth2",
+        "label": "LLM-ready API OAuth client",
+        "generateUrl": "mailto:support@kensho.com",
+        "setup": "For custom MCP/OAuth integrations, if your client supports metadata self-discovery and dynamic client registration, you only need the MCP server URL and the published OAuth metadata at [protected resource metadata](https://kfinance.kensho.com/.well-known/oauth-protected-resource/mcp) and [authorization server metadata](https://kfinance.kensho.com/.well-known/oauth-authorization-server). If your client does not support dynamic client registration, contact [support@kensho.com](mailto:support@kensho.com) to have a client ID provisioned. Kensho can provision either public/private-key or client-secret client authentication; key pairs are preferred.",
+        "acquisition": "manual"
+      },
+      "kensho_lra_client_secret": {
+        "type": "oauth2_cc",
+        "label": "LLM-ready API client ID + client secret",
+        "generateUrl": "mailto:support@kensho.com",
+        "setup": "If your platform cannot use key-pair client authentication for the LLM-ready API, contact [support@kensho.com](mailto:support@kensho.com) and Kensho will provision a client ID with client secret authentication for the OAuth client credentials flow.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "scribe-real-time-api",
+        "name": "Scribe Real Time API",
+        "type": "http",
+        "docs": "https://docs.kensho.com/scribe/v2/real-time-specification",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/scribe/v2/real-time-specification",
+            "https://docs.kensho.com/scribe/v2/developer-guide",
+            "https://docs.kensho.com/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kensho_refresh_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "token"
+                  }
+                },
+                {
+                  "id": "kensho_keypair_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/scribe/v2/real-time-specification",
+                  "https://docs.kensho.com/authentication/personal-token",
+                  "https://docs.kensho.com/authentication/keypair"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "wss://scribe.kensho.com/ws"
+      },
+      {
+        "slug": "adaptive-retrieval-api",
+        "name": "Adaptive Retrieval API",
+        "type": "http",
+        "docs": "https://docs.kensho.com/adaptive-retrieval/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/adaptive-retrieval/api",
+            "https://docs.kensho.com/adaptive-retrieval/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "spg_oauth_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/adaptive-retrieval/api",
+                  "https://docs.kensho.com/adaptive-retrieval/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://grounding.kensho.com/api/v2/search"
+      },
+      {
+        "slug": "adaptive-retrieval-mcp-server",
+        "name": "Adaptive Retrieval MCP server",
+        "type": "mcp",
+        "docs": "https://docs.kensho.com/adaptive-retrieval/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/adaptive-retrieval/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "spg_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/adaptive-retrieval/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://grounding.kensho.com/integrations/v2/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "kfinance-local-mcp-server",
+        "name": "kFinance local MCP server",
+        "type": "mcp",
+        "docs": "https://docs.kensho.com/llmreadyapi/mcp/custom/local-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/llmreadyapi/mcp/custom/local-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kensho_refresh_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "KFINANCE_REFRESH_TOKEN"
+                    ]
+                  }
+                },
+                {
+                  "id": "kensho_keypair_client",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "KFINANCE_CLIENT_ID",
+                      "KFINANCE_PRIVATE_KEY_PATH"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/llmreadyapi/mcp/custom/local-mcp",
+                  "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "stdio",
+          "sse",
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "kfinance-cli",
+        "name": "kFinance CLI",
+        "type": "cli",
+        "docs": "https://docs.kensho.com/llmreadyapi/mcp/custom/local-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/llmreadyapi/mcp/custom/local-mcp",
+            "https://docs.kensho.com/llmreadyapi/python-library"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kensho_refresh_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "KFINANCE_REFRESH_TOKEN"
+                    ]
+                  }
+                },
+                {
+                  "id": "kensho_keypair_client",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "KFINANCE_CLIENT_ID",
+                      "KFINANCE_PRIVATE_KEY_PATH"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/llmreadyapi/mcp/custom/local-mcp",
+                  "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "pypi",
+            "identifier": "kensho-kfinance",
+            "runtimeHint": "Python >=3.10"
+          }
+        ],
+        "command": "kfinance"
+      },
+      {
+        "slug": "scribe-batch-api",
+        "name": "Scribe Batch API",
+        "type": "http",
+        "docs": "https://docs.kensho.com/scribe/v2/batch-api-specification",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/scribe/v2/batch-api-specification",
+            "https://docs.kensho.com/scribe/v2/batch-development",
+            "https://docs.kensho.com/authentication",
+            "https://docs.kensho.com/authentication/personal-token",
+            "https://docs.kensho.com/authentication/keypair"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kensho_refresh_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/scribe/v2/batch-api-specification",
+                  "https://docs.kensho.com/scribe/v2/batch-development",
+                  "https://docs.kensho.com/authentication/personal-token"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kensho_keypair_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/authentication/keypair",
+                  "https://docs.kensho.com/scribe/v2/batch-development"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://scribe.kensho.com/api/v2/transcription"
+      },
+      {
+        "slug": "kensho-extract-api",
+        "name": "Kensho Extract API",
+        "type": "http",
+        "docs": "https://docs.kensho.com/extract/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/extract/api",
+            "https://docs.kensho.com/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kensho_refresh_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/extract/api",
+                  "https://docs.kensho.com/authentication/personal-token"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kensho_keypair_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/authentication/keypair",
+                  "https://docs.kensho.com/extract/api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://extract.kensho.com/v3/extractions"
+      },
+      {
+        "slug": "kensho-nerd-api",
+        "name": "Kensho NERD API",
+        "type": "http",
+        "docs": "https://docs.kensho.com/nerd/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/nerd/api",
+            "https://docs.kensho.com/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kensho_refresh_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "BearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/nerd/api",
+                  "https://docs.kensho.com/authentication/personal-token"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kensho_keypair_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/authentication/keypair",
+                  "https://docs.kensho.com/nerd/api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://nerd.kensho.com/api/v1"
+      },
+      {
+        "slug": "kensho-llm-ready-api",
+        "name": "Kensho LLM-ready API",
+        "type": "http",
+        "docs": "https://docs.kensho.com/llmreadyapi/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/llmreadyapi/api",
+            "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication",
+            "https://docs.kensho.com/llmreadyapi/mcp/custom"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kensho_lra_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/llmreadyapi/mcp/custom/oauth-client-credentials",
+                  "https://docs.kensho.com/llmreadyapi/mcp/custom/refresh-or-access-token"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kensho_refresh_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kensho_keypair_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://kfinance.kensho.com/api/v1"
+      },
+      {
+        "slug": "kensho-llm-ready-mcp-server",
+        "name": "Kensho LLM-ready MCP server",
+        "type": "mcp",
+        "docs": "https://docs.kensho.com/llmreadyapi/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/llmreadyapi/mcp/custom/oauth-authorization-code",
+            "https://docs.kensho.com/llmreadyapi/mcp/custom/refresh-or-access-token",
+            "https://docs.kensho.com/llmreadyapi/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kensho_lra_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/llmreadyapi/mcp/custom/oauth-authorization-code"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kensho_lra_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.kensho.com/llmreadyapi/mcp/custom/refresh-or-access-token",
+                  "https://docs.kensho.com/llmreadyapi/mcp/custom/oauth-client-credentials"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://kfinance.kensho.com/integrations/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "adaptive-retrieval-api-2",
+        "name": "Adaptive Retrieval API",
+        "type": "http",
+        "docs": "https://docs.kensho.com/adaptive-retrieval/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.kensho.com/adaptive-retrieval/api",
+            "https://docs.kensho.com/adaptive-retrieval/mcp",
+            "https://grounding.kensho.com/redoc"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "spg_oauth_client",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "HTTPBearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://grounding.kensho.com/redoc",
+                  "https://docs.kensho.com/adaptive-retrieval/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://grounding.kensho.com/openapi.json",
+        "url": "https://grounding.kensho.com/api/v2/search"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T18:50:56.896Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 368496,
+    "completion_tokens": 5520,
+    "total_tokens": 374016
+  },
+  "visited": [
+    "https://blog.kensho.com/@predrag.gruevski",
+    "https://docs.kensho.com/",
+    "https://docs.kensho.com/adaptive-retrieval/api",
+    "https://docs.kensho.com/adaptive-retrieval/mcp",
+    "https://docs.kensho.com/authentication",
+    "https://docs.kensho.com/authentication/keypair",
+    "https://docs.kensho.com/authentication/personal-token",
+    "https://docs.kensho.com/extract/api",
+    "https://docs.kensho.com/llmreadyapi/api",
+    "https://docs.kensho.com/llmreadyapi/faqs",
+    "https://docs.kensho.com/llmreadyapi/mcp",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom/local-mcp",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom/oauth-authorization-code",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom/oauth-client-credentials",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom/refresh-or-access-token",
+    "https://docs.kensho.com/llmreadyapi/overview",
+    "https://docs.kensho.com/llmreadyapi/python-library",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication",
+    "https://docs.kensho.com/nerd/api",
+    "https://docs.kensho.com/scribe/v2/batch-api-specification",
+    "https://docs.kensho.com/scribe/v2/batch-development",
+    "https://docs.kensho.com/scribe/v2/developer-guide",
+    "https://docs.kensho.com/scribe/v2/real-time-specification",
+    "https://grounding.kensho.com/redoc",
+    "https://kensho.com/news/learnings-from-the-lab-querying-s-p-globals-tabular-data-using-llms",
+    "https://kensho.com/solutions/llm-ready-api"
+  ],
+  "grounding": [
+    "http://example.com",
+    "https://auth0.com/docs/authenticate/protocols/openid-connect-protocol",
+    "https://blog.kensho.com/@predrag.gruevski",
+    "https://datatracker.ietf.org/doc/html/rfc6749",
+    "https://docs.kensho.com/",
+    "https://docs.kensho.com/#1-refresh-token-authentication",
+    "https://docs.kensho.com/#2-key-pair-authentication",
+    "https://docs.kensho.com/#3-browser-based-authentication",
+    "https://docs.kensho.com/#adddata",
+    "https://docs.kensho.com/#addtranscript",
+    "https://docs.kensho.com/#alternative-flow",
+    "https://docs.kensho.com/#architecture",
+    "https://docs.kensho.com/#authenticate",
+    "https://docs.kensho.com/#authenticated",
+    "https://docs.kensho.com/#authenticating-to-kensho-apis",
+    "https://docs.kensho.com/#authentication",
+    "https://docs.kensho.com/#authentication-guides",
+    "https://docs.kensho.com/#authentication-methods",
+    "https://docs.kensho.com/#authorization-code-flow",
+    "https://docs.kensho.com/#automatically-refreshing-an-access-token",
+    "https://docs.kensho.com/#browser-login",
+    "https://docs.kensho.com/#cli-reference",
+    "https://docs.kensho.com/#client-credentials-flow",
+    "https://docs.kensho.com/#client-initiated-messages",
+    "https://docs.kensho.com/#command-signature",
+    "https://docs.kensho.com/#custom-integrations",
+    "https://docs.kensho.com/#dataadded",
+    "https://docs.kensho.com/#deployment-options",
+    "https://docs.kensho.com/#development-and-testing-options",
+    "https://docs.kensho.com/#endofstream",
+    "https://docs.kensho.com/#endoftranscript",
+    "https://docs.kensho.com/#error",
+    "https://docs.kensho.com/#error-handling",
+    "https://docs.kensho.com/#full-implementation-recommended",
+    "https://docs.kensho.com/#generating-an-rsa-keypair",
+    "https://docs.kensho.com/#get-a-new-refresh-token-in-case-of-expiration",
+    "https://docs.kensho.com/#getting-started",
+    "https://docs.kensho.com/#getting-started---authentication",
+    "https://docs.kensho.com/#implementation-example",
+    "https://docs.kensho.com/#installation",
+    "https://docs.kensho.com/#integration-requirements",
+    "https://docs.kensho.com/#kfinance-library-installation",
+    "https://docs.kensho.com/#learn-more",
+    "https://docs.kensho.com/#local-mcp-server",
+    "https://docs.kensho.com/#local-mcp-server-integration",
+    "https://docs.kensho.com/#manual-token-generation",
+    "https://docs.kensho.com/#manual-usage",
+    "https://docs.kensho.com/#mcp-client-entry",
+    "https://docs.kensho.com/#notification-of-completion",
+    "https://docs.kensho.com/#obtaining-an-access-token",
+    "https://docs.kensho.com/#overview",
+    "https://docs.kensho.com/#partial-implementation",
+    "https://docs.kensho.com/#polling-for-completion",
+    "https://docs.kensho.com/#prerequisites",
+    "https://docs.kensho.com/#production-authentication",
+    "https://docs.kensho.com/#production-authentication-flows",
+    "https://docs.kensho.com/#publicprivate-key",
+    "https://docs.kensho.com/#python-installation",
+    "https://docs.kensho.com/#quick-start-claude-desktop-integration",
+    "https://docs.kensho.com/#refresh-token",
+    "https://docs.kensho.com/#refresh-token-authentication",
+    "https://docs.kensho.com/#refresh-tokens",
+    "https://docs.kensho.com/#remote-mcp-server",
+    "https://docs.kensho.com/#required-endpoints",
+    "https://docs.kensho.com/#requirements",
+    "https://docs.kensho.com/#resumetranscription",
+    "https://docs.kensho.com/#retrieving-the-final-transcript",
+    "https://docs.kensho.com/#running-the-mcp-server",
+    "https://docs.kensho.com/#send-kensho-your-public-key",
+    "https://docs.kensho.com/#server-initiated-messages",
+    "https://docs.kensho.com/#server-sent-events-sse",
+    "https://docs.kensho.com/#setup-instructions",
+    "https://docs.kensho.com/#standard-io-stdio",
+    "https://docs.kensho.com/#starting-a-new-transcription",
+    "https://docs.kensho.com/#starttranscription",
+    "https://docs.kensho.com/#streamable-http",
+    "https://docs.kensho.com/#testing-via-mcp-inspector",
+    "https://docs.kensho.com/#transcribing-with-local-data",
+    "https://docs.kensho.com/#transcribing-with-remote-data",
+    "https://docs.kensho.com/#transcript-format",
+    "https://docs.kensho.com/#transcriptionresumed",
+    "https://docs.kensho.com/#transcriptionstarted",
+    "https://docs.kensho.com/#transport-layers",
+    "https://docs.kensho.com/#usage",
+    "https://docs.kensho.com/#use-cases-and-benefits",
+    "https://docs.kensho.com/#using-the-batch-api",
+    "https://docs.kensho.com/#using-the-real-time-api",
+    "https://docs.kensho.com/#using-your-keypair",
+    "https://docs.kensho.com/#verify-token",
+    "https://docs.kensho.com/#waiting-for-the-transcription-to-complete",
+    "https://docs.kensho.com/#workflow",
+    "https://docs.kensho.com/adaptive-retrieval/api",
+    "https://docs.kensho.com/adaptive-retrieval/api-guide",
+    "https://docs.kensho.com/adaptive-retrieval/data-agents",
+    "https://docs.kensho.com/adaptive-retrieval/datasets",
+    "https://docs.kensho.com/adaptive-retrieval/faqs",
+    "https://docs.kensho.com/adaptive-retrieval/integrations",
+    "https://docs.kensho.com/adaptive-retrieval/mcp",
+    "https://docs.kensho.com/adaptive-retrieval/notebooks",
+    "https://docs.kensho.com/adaptive-retrieval/overview",
+    "https://docs.kensho.com/adaptive-retrieval/sample-prompts",
+    "https://docs.kensho.com/agentskills",
+    "https://docs.kensho.com/authentication",
+    "https://docs.kensho.com/authentication/keypair",
+    "https://docs.kensho.com/authentication/keypair#generating-an-rsa-keypair",
+    "https://docs.kensho.com/authentication/keypair#obtaining-an-access-token",
+    "https://docs.kensho.com/authentication/keypair#send-kensho-your-public-key",
+    "https://docs.kensho.com/authentication/personal-token",
+    "https://docs.kensho.com/authentication/personal-token#refresh-tokens",
+    "https://docs.kensho.com/blob:https://docs.kensho.com/837b2c4d-9461-4f85-ae1e-c5e0af7725ba",
+    "https://docs.kensho.com/blob:https://docs.kensho.com/8cee3524-1f14-47bf-8a4d-09785b9c82e0",
+    "https://docs.kensho.com/blob:https://docs.kensho.com/b410ac9c-b1f3-4f7a-8320-0ad103468212",
+    "https://docs.kensho.com/blob:https://docs.kensho.com/d6b6caf4-b801-4f3a-8b14-0ae838abec7d",
+    "https://docs.kensho.com/extract",
+    "https://docs.kensho.com/extract/api",
+    "https://docs.kensho.com/extract/figex",
+    "https://docs.kensho.com/extract/home",
+    "https://docs.kensho.com/extract/ocr",
+    "https://docs.kensho.com/extract/output",
+    "https://docs.kensho.com/extract/quickstart",
+    "https://docs.kensho.com/extract/toolkit",
+    "https://docs.kensho.com/figex",
+    "https://docs.kensho.com/home",
+    "https://docs.kensho.com/llmreadyapi/api",
+    "https://docs.kensho.com/llmreadyapi/faqs",
+    "https://docs.kensho.com/llmreadyapi/mcp",
+    "https://docs.kensho.com/llmreadyapi/mcp#remote-mcp-server",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom#authentication-methods",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom/local-mcp",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom/oauth-authorization-code",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom/oauth-client-credentials",
+    "https://docs.kensho.com/llmreadyapi/mcp/custom/refresh-or-access-token",
+    "https://docs.kensho.com/llmreadyapi/mcp/third-party/aws",
+    "https://docs.kensho.com/llmreadyapi/mcp/third-party/chatgpt",
+    "https://docs.kensho.com/llmreadyapi/mcp/third-party/claude",
+    "https://docs.kensho.com/llmreadyapi/mcp/third-party/copilot",
+    "https://docs.kensho.com/llmreadyapi/mcp/third-party/databricks",
+    "https://docs.kensho.com/llmreadyapi/mcp/third-party/mistral",
+    "https://docs.kensho.com/llmreadyapi/overview",
+    "https://docs.kensho.com/llmreadyapi/python-library",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication#Authentication-Guide",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication#browser-login",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication#generating-an-rsa-keypair",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication#obtaining-an-access-token",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication#publicprivate-key",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication#refresh-token",
+    "https://docs.kensho.com/llmreadyapi/python-library/kf-authentication#send-kensho-your-public-key",
+    "https://docs.kensho.com/llmreadyapi/python-library/usage",
+    "https://docs.kensho.com/llmreadyapi/python-library/usage#Usage-Guide",
+    "https://docs.kensho.com/llmreadyapi/release-notes",
+    "https://docs.kensho.com/llmreadyapi/sample-questions",
+    "https://docs.kensho.com/llmreadyapi/support",
+    "https://docs.kensho.com/nerd/api",
+    "https://docs.kensho.com/nerd/api#tag/upload-url/operation/api_annotations_upload_url",
+    "https://docs.kensho.com/nerd/faq",
+    "https://docs.kensho.com/nerd/overview",
+    "https://docs.kensho.com/nerd/text-annotation",
+    "https://docs.kensho.com/ocr",
+    "https://docs.kensho.com/scribe/v1/batch-api-specification",
+    "https://docs.kensho.com/scribe/v1/batch-development",
+    "https://docs.kensho.com/scribe/v1/overview",
+    "https://docs.kensho.com/scribe/v1/real-time-development",
+    "https://docs.kensho.com/scribe/v1/real-time-specification",
+    "https://docs.kensho.com/scribe/v2/batch-api-specification",
+    "https://docs.kensho.com/scribe/v2/batch-development",
+    "https://docs.kensho.com/scribe/v2/developer-guide",
+    "https://docs.kensho.com/scribe/v2/faq",
+    "https://docs.kensho.com/scribe/v2/hitl-development",
+    "https://docs.kensho.com/scribe/v2/real-time-development",
+    "https://docs.kensho.com/scribe/v2/real-time-specification",
+    "https://docs.npmjs.com/cli/v9/commands/npx?v=true",
+    "https://en.wikipedia.org/wiki/Representational_state_transfer",
+    "https://everything.curl.dev/get",
+    "https://example.com/earnings_report.mp3",
+    "https://extract.kensho.com/v3/extractions",
+    "https://extract.kensho.com/v3/extractions/download-url/{request",
+    "https://extract.kensho.com/v3/extractions/upload-complete",
+    "https://extract.kensho.com/v3/extractions/upload-url",
+    "https://extract.kensho.com/v3/extractions/{request",
+    "https://github.com/kensho-technologies/kfinance",
+    "https://github.com/kensho-technologies/kfinance/blob/3610e6423a99e25c22cdaa914da1e1e50e3552b3/kfinance/client/fetch.py#L141-L165",
+    "https://github.com/kensho-technologies/kfinance?tab=readme-ov-file#mcp-model-context-protocol",
+    "https://github.com/modelcontextprotocol/inspector?tab=readme-ov-file#mcp-inspector",
+    "https://gofastmcp.com/clients/client",
+    "https://grounding.kensho.com/admin-login",
+    "https://grounding.kensho.com/admin-login-spgi",
+    "https://grounding.kensho.com/api/v1/admin/agents",
+    "https://grounding.kensho.com/api/v1/agents",
+    "https://grounding.kensho.com/api/v2/search",
+    "https://grounding.kensho.com/integrations/v2/mcp",
+    "https://grounding.kensho.com/login",
+    "https://grounding.kensho.com/login-spgi",
+    "https://grounding.kensho.com/login/redirect",
+    "https://grounding.kensho.com/oauth2/refresh",
+    "https://grounding.kensho.com/openapi.json",
+    "https://grounding.kensho.com/ready",
+    "https://grounding.kensho.com/redoc",
+    "https://grounding.kensho.com/spgi-login",
+    "https://kensho.com/contact/solutions",
+    "https://kensho.com/news/learnings-from-the-lab-querying-s-p-globals-tabular-data-using-llms",
+    "https://kensho.com/solutions",
+    "https://kensho.com/solutions/llm-ready-api",
+    "https://kensho.okta.com/oauth2/default/v1/token",
+    "https://kfinance.kensho.com/.well-known/oauth-authorization-server",
+    "https://kfinance.kensho.com/.well-known/oauth-protected-resource/mcp",
+    "https://kfinance.kensho.com/api/v1/auditors/",
+    "https://kfinance.kensho.com/api/v1/ciqpro/{company",
+    "https://kfinance.kensho.com/api/v1/company",
+    "https://kfinance.kensho.com/api/v1/competitors/{company",
+    "https://kfinance.kensho.com/integrations/mcp",
+    "https://kfinance.kensho.com/manual",
+    "https://kfinance.kensho.com/manual_login/",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://modelcontextprotocol.io/introduction",
+    "https://modelcontextprotocol.io/quickstart/user#installing-the-filesystem-server",
+    "https://nerd.kensho.com/api/v1/annotations-async",
+    "https://oauth.net/2/",
+    "https://pyjwt.readthedocs.io/en/stable/",
+    "https://redocly.com/redoc/",
+    "https://requests-oauthlib.readthedocs.io/en/latest/",
+    "https://scribe.kensho.com/account",
+    "https://scribe.kensho.com/api/v2/transcription",
+    "https://scribe.kensho.com/api/v2/transcription/",
+    "https://scribe.kensho.com/api/v2/transcription/{transcription",
+    "https://scribe.kensho.com/api/v2/transcription/{transcription_id}",
+    "https://scribe.kensho.com/me",
+    "https://scribe.kensho.com/oauth2/refresh?refresh_token=",
+    "https://services.kensho.com/free-trial",
+    "https://support.anthropic.com/en/articles/10065433-installing-claude-for-desktop",
+    "https://wiki.python.org/moin/BeginnersGuide/Download",
+    "https://www.marketplace.spglobal.com/en/solutions/kensho-llm-ready-api-(a156fe9f-5564-4f60-a624-95d8645dc98f",
+    "https://www.openssl.org/"
+  ]
+}

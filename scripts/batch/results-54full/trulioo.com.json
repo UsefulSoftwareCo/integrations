@@ -1,0 +1,781 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "trulioo.com",
+    "detect": {
+      "domain": "trulioo.com",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:03:56.885Z",
+    "summary": "Trulioo exposes multiple HTTP APIs for identity/business verification and workflow orchestration: the legacy Normalized API, Workflow Studio API, and KYC Document/Customer APIs v2.5 and v3.0; no public GraphQL, MCP server, or CLI surfaced.",
+    "description": "Trulioo provides identity verification, document verification, business verification, and related onboarding/fraud services. Its platform lets customers build verification workflows and query verification results across global and regional hosting options.",
+    "credentials": {
+      "napi_basic": {
+        "type": "basic",
+        "label": "Normalized API username and password",
+        "generateUrl": "https://developer.trulioo.com/reference/keys-and-authentication-2.md",
+        "setup": "Use the username and password for your Trulioo Normalized API account. Trulioo says this account is needed to access NAPI, and if you don't have one you should contact [Trulioo Support](mailto:support@trulioo.com). Send them as HTTP Basic auth: `Authorization: Basic base64(username:password)`.",
+        "acquisition": "manual"
+      },
+      "napi_mtls_cert": {
+        "type": "compound",
+        "label": "Trulioo-issued mTLS client certificate",
+        "generateUrl": "https://developer.trulioo.com/reference/connecting-to-trulioos-api-using-mutual-tls.md",
+        "setup": "To use mTLS, first have a Trulioo normalized API user account and a \"Manage mTLS\" Customer Portal user account. Generate a private key and CSR, then log in to the Customer Portal with your Manage mTLS credentials, upload the CSR, and download the Trulioo-issued client certificate as described in [Connecting to Trulioo's API using Mutual TLS - v1](https://developer.trulioo.com/reference/connecting-to-trulioos-api-using-mutual-tls.md). Install that certificate and its private key on the server making API calls. If you lack either account, contact [Trulioo Support](mailto:support@trulioo.com).",
+        "acquisition": "manual"
+      },
+      "oauth_client": {
+        "type": "oauth2_cc",
+        "label": "OAuth client ID and client secret",
+        "generateUrl": "https://developer.trulioo.com/reference/workflow-studio-api.md",
+        "setup": "Obtain a Trulioo Client ID and Client Secret from your Implementation Specialist. The Workflow Studio API docs say these are required for authentication and are not the same credentials as workflow export step credentials. Use them to obtain an access token from `http://auth-api.trulioo.com/connect/token` as described in [Authentication](https://developer.trulioo.com/reference/authentication-recipe) and [Workflow Studio (API)](https://developer.trulioo.com/reference/workflow-studio-api.md).",
+        "acquisition": "manual"
+      },
+      "docv_license": {
+        "type": "api_key",
+        "label": "KYC Document / Customer API license key",
+        "generateUrl": "https://docs.verification.trulioo.com/sdk/demo-license/index.html",
+        "setup": "Use your Trulioo KYC Document Verification license key for the Customer API authorization call. The Customer API docs say you pass the license in the authorization header to `/authorize` to mint transaction access tokens. Trulioo provides a [Demo License](https://docs.verification.trulioo.com/sdk/demo-license/index.html) page in the KYC Docs developer docs, and production credentials are obtained through your Trulioo account/onboarding.",
+        "acquisition": "manual"
+      },
+      "docv_access_token": {
+        "type": "bearer",
+        "label": "Customer API access token",
+        "generateUrl": "https://docs.verification.trulioo.com/api/customer/3.0/index.html",
+        "setup": "For Customer API v2.5, call `/authorize/customer` with your license key in the authorization header to receive an `accessToken`; for v3.0, obtain an OAuth2 client-credentials access token as described in [KYC Document API (3.0)](https://docs.verification.trulioo.com/api/customer/3.0/index.html) and [Authentication](https://developer.trulioo.com/reference/authentication-recipe). Use the returned access token in the `Authorization` header for subsequent transaction endpoints.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "trulioo-normalized-api-v1-legacy",
+        "name": "Trulioo Normalized API v1 (legacy)",
+        "type": "http",
+        "docs": "https://developer.trulioo.com/reference/normalized-api-10-legacy",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.trulioo.com/reference/keys-and-authentication-2.md",
+            "https://developer.trulioo.com/reference/multi-region-hosting.md",
+            "https://developer.trulioo.com/reference/connecting-to-trulioos-api-using-mutual-tls.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "napi_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.trulioo.com/reference/keys-and-authentication-2.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "napi_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                },
+                {
+                  "id": "napi_mtls_cert",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.trulioo.com/reference/connecting-to-trulioos-api-using-mutual-tls.md",
+                  "https://developer.trulioo.com/reference/keys-and-authentication-2.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.trulioo.com",
+        "notes": "Global endpoint is `api.trulioo.com`; regional variants are documented as `api-us.trulioo.com`, `api-eu.trulioo.com`, `api-apac.trulioo.com`, and `api-ca.trulioo.com`. For mTLS, replace `api.trulioo.com` with `mtls.primary.prod.trulioo.com`."
+      },
+      {
+        "slug": "workflow-studio-api",
+        "name": "Workflow Studio API",
+        "type": "http",
+        "docs": "https://developer.trulioo.com/reference/workflow-studio-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.trulioo.com/reference/workflow-studio-api.md",
+            "https://developer.trulioo.com/reference/multi-region-hosting.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "oauth_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.trulioo.com/reference/workflow-studio-api.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.trulioo.com/wfs"
+      },
+      {
+        "slug": "kyc-document-api-customer-api-v3-0",
+        "name": "KYC Document API / Customer API v3.0",
+        "type": "http",
+        "docs": "https://docs.verification.trulioo.com/api/customer/3.0/index.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.verification.trulioo.com/api/customer/3.0/index.html",
+            "https://developer.trulioo.com/reference/multi-region-hosting.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "docv_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.verification.trulioo.com/api/customer/3.0/index.html"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://docs.verification.trulioo.com/redocusaurus/CustomerAPIv3_0.yaml",
+        "url": "https://verification.trulioo.com/api",
+        "requiredHeaders": [
+          {
+            "name": "Accept-Version",
+            "source": {
+              "kind": "static",
+              "value": "3.0"
+            },
+            "description": "API version header required by the docs."
+          }
+        ],
+        "notes": "Regional variants for KYC Docs are documented as `verification-[region].trulioo.com`, for example `verification-us.trulioo.com`."
+      },
+      {
+        "slug": "customer-api-v2-5",
+        "name": "Customer API v2.5",
+        "type": "http",
+        "docs": "https://docs.verification.trulioo.com/api/customer/2.5/index.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.verification.trulioo.com/api/customer/2.5/index.html",
+            "https://docs.verification.trulioo.com/sdk/getting-started/index.html",
+            "https://developer.trulioo.com/reference/multi-region-hosting.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "docv_license",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.verification.trulioo.com/api/customer/2.5/index.html",
+                  "https://docs.verification.trulioo.com/sdk/getting-started/index.html"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "docv_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.verification.trulioo.com/api/customer/2.5/index.html",
+                  "https://docs.verification.trulioo.com/sdk/getting-started/index.html"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://docs.verification.trulioo.com/redocusaurus/CustomerAPIv2_5.yaml",
+        "url": "https://verification.trulioo.com",
+        "requiredHeaders": [
+          {
+            "name": "Accept-Version",
+            "source": {
+              "kind": "static",
+              "value": "2.5"
+            },
+            "description": "API version header required by the docs."
+          }
+        ],
+        "notes": "The license key is used on `/authorize/customer` to mint per-transaction access tokens, and the resulting access token is then used on subsequent transaction endpoints. Regional variants for KYC Docs are documented as `verification-[region].trulioo.com`, for example `verification-us.trulioo.com`."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:03:56.885Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 512496,
+    "completion_tokens": 2728,
+    "total_tokens": 515224
+  },
+  "visited": [
+    "https://developer.trulioo.com/",
+    "https://developer.trulioo.com/llms.txt",
+    "https://developer.trulioo.com/reference/api-handshake",
+    "https://developer.trulioo.com/reference/api-reference-overview",
+    "https://developer.trulioo.com/reference/authentication-recipe",
+    "https://developer.trulioo.com/reference/connecting-to-trulioos-api-using-mutual-tls.md",
+    "https://developer.trulioo.com/reference/getting-started-1.md",
+    "https://developer.trulioo.com/reference/hmac",
+    "https://developer.trulioo.com/reference/keys-and-authentication-2",
+    "https://developer.trulioo.com/reference/keys-and-authentication-2.md",
+    "https://developer.trulioo.com/reference/multi-region-hosting.md",
+    "https://developer.trulioo.com/reference/normalized-api",
+    "https://developer.trulioo.com/reference/trulioo-platform-api",
+    "https://developer.trulioo.com/reference/trulioo-platform-api-endpoints",
+    "https://developer.trulioo.com/reference/v1-sandbox-vs-live-environment.md",
+    "https://developer.trulioo.com/reference/welcome",
+    "https://developer.trulioo.com/reference/workflow-studio-api",
+    "https://developer.trulioo.com/reference/workflow-studio-api.md",
+    "https://docs.verification.trulioo.com/api/customer/2.5/index.html",
+    "https://docs.verification.trulioo.com/api/customer/3.0/index.html",
+    "https://docs.verification.trulioo.com/sdk/getting-started/index.html",
+    "https://github.com/api-evangelist/trulioo/blob/main/apis.yml",
+    "https://trulioo.com/llms.txt"
+  ],
+  "grounding": [
+    "http://auth-api.trulioo.com/connect/token",
+    "http://example.com",
+    "https://api.trulioo.com/connection/v1/testauthentication",
+    "https://api.trulioo.com/wfs/export/v2/query/client/",
+    "https://api.trulioo.com/wfs/interpreter-v2/submit/",
+    "https://developer.trulioo.com/",
+    "https://developer.trulioo.com/#content",
+    "https://developer.trulioo.com/docs",
+    "https://developer.trulioo.com/docs/identity-verification",
+    "https://developer.trulioo.com/docs/overview-business-verification",
+    "https://developer.trulioo.com/docs/platform-update-60.md",
+    "https://developer.trulioo.com/docs/platform-update-61.md",
+    "https://developer.trulioo.com/docs/platform-update-62.md",
+    "https://developer.trulioo.com/docs/platform-update-63.md",
+    "https://developer.trulioo.com/docs/platform-update-64.md",
+    "https://developer.trulioo.com/docs/platform-update-65.md",
+    "https://developer.trulioo.com/docs/platform-update-66.md",
+    "https://developer.trulioo.com/docs/release-notes",
+    "https://developer.trulioo.com/docs/release-notes.md",
+    "https://developer.trulioo.com/llms.txt",
+    "https://developer.trulioo.com/recipes",
+    "https://developer.trulioo.com/reference",
+    "https://developer.trulioo.com/reference/address-validation",
+    "https://developer.trulioo.com/reference/address-validation.md",
+    "https://developer.trulioo.com/reference/all-products-verifications.md",
+    "https://developer.trulioo.com/reference/android",
+    "https://developer.trulioo.com/reference/android#4-start-a-verification-flow",
+    "https://developer.trulioo.com/reference/android.md",
+    "https://developer.trulioo.com/reference/api-handshake",
+    "https://developer.trulioo.com/reference/api-integration",
+    "https://developer.trulioo.com/reference/api-integration-4",
+    "https://developer.trulioo.com/reference/api-integration-4.md",
+    "https://developer.trulioo.com/reference/api-integration.md",
+    "https://developer.trulioo.com/reference/api-reference-overview",
+    "https://developer.trulioo.com/reference/asynchronous-requests",
+    "https://developer.trulioo.com/reference/asynchronous-requests-3",
+    "https://developer.trulioo.com/reference/asynchronous-requests-3.md",
+    "https://developer.trulioo.com/reference/asynchronous-requests.md",
+    "https://developer.trulioo.com/reference/authentication",
+    "https://developer.trulioo.com/reference/authentication-recipe",
+    "https://developer.trulioo.com/reference/best-practices",
+    "https://developer.trulioo.com/reference/best-practices-help-guide-2",
+    "https://developer.trulioo.com/reference/best-practices-help-guide-2.md",
+    "https://developer.trulioo.com/reference/best-practices.md",
+    "https://developer.trulioo.com/reference/business-credit-and-financial-insights",
+    "https://developer.trulioo.com/reference/business-credit-and-financial-insights.md",
+    "https://developer.trulioo.com/reference/business-insights-business-watchlist-screening",
+    "https://developer.trulioo.com/reference/business-kyb-monitoring",
+    "https://developer.trulioo.com/reference/business-kyb-monitoring.md",
+    "https://developer.trulioo.com/reference/business-screening",
+    "https://developer.trulioo.com/reference/business-screening.md",
+    "https://developer.trulioo.com/reference/business-verification-step1-say-hello",
+    "https://developer.trulioo.com/reference/business-verification-step1-say-hello.md",
+    "https://developer.trulioo.com/reference/business-verification-step2-test-authentication",
+    "https://developer.trulioo.com/reference/business-verification-step2-test-authentication.md",
+    "https://developer.trulioo.com/reference/business-verification-step3-get-account-configuration",
+    "https://developer.trulioo.com/reference/business-verification-step3-get-account-configuration.md",
+    "https://developer.trulioo.com/reference/business-verification-step4-selecting-flow",
+    "https://developer.trulioo.com/reference/business-verification-step4-selecting-flow.md",
+    "https://developer.trulioo.com/reference/business-verification-step5-business-search",
+    "https://developer.trulioo.com/reference/business-verification-step5-business-search.md",
+    "https://developer.trulioo.com/reference/business-verification-step6-verify",
+    "https://developer.trulioo.com/reference/business-verification-step6-verify.md",
+    "https://developer.trulioo.com/reference/business-verification-step7-download-document",
+    "https://developer.trulioo.com/reference/business-verification-step7-download-document.md",
+    "https://developer.trulioo.com/reference/business-watchlist-screening",
+    "https://developer.trulioo.com/reference/business-watchlist-screening.md",
+    "https://developer.trulioo.com/reference/c",
+    "https://developer.trulioo.com/reference/comprehensive-view",
+    "https://developer.trulioo.com/reference/comprehensive-view-2",
+    "https://developer.trulioo.com/reference/comprehensive-view-2.md",
+    "https://developer.trulioo.com/reference/comprehensive-view.md",
+    "https://developer.trulioo.com/reference/connecting-to-trulioos-api-using-mutual-tls",
+    "https://developer.trulioo.com/reference/connecting-to-trulioos-api-using-mutual-tls.md",
+    "https://developer.trulioo.com/reference/country-codes",
+    "https://developer.trulioo.com/reference/country-codes.md",
+    "https://developer.trulioo.com/reference/createlinkedlead",
+    "https://developer.trulioo.com/reference/credit-and-financial-insights-data-dictionary",
+    "https://developer.trulioo.com/reference/credit-and-financial-insights-data-dictionary.md",
+    "https://developer.trulioo.com/reference/customer-consent",
+    "https://developer.trulioo.com/reference/customer-consent-1",
+    "https://developer.trulioo.com/reference/customer-consent-1.md",
+    "https://developer.trulioo.com/reference/customer-consent.md",
+    "https://developer.trulioo.com/reference/deletelinkedlead",
+    "https://developer.trulioo.com/reference/document-availability-1",
+    "https://developer.trulioo.com/reference/document-availability-1.md",
+    "https://developer.trulioo.com/reference/document-request-time-1",
+    "https://developer.trulioo.com/reference/document-request-time-1.md",
+    "https://developer.trulioo.com/reference/document-types",
+    "https://developer.trulioo.com/reference/document-types.md",
+    "https://developer.trulioo.com/reference/errors",
+    "https://developer.trulioo.com/reference/errors-1",
+    "https://developer.trulioo.com/reference/errors-1.md",
+    "https://developer.trulioo.com/reference/event-dispatcher",
+    "https://developer.trulioo.com/reference/examples",
+    "https://developer.trulioo.com/reference/field-content-standardization",
+    "https://developer.trulioo.com/reference/field-content-standardization.md",
+    "https://developer.trulioo.com/reference/flow",
+    "https://developer.trulioo.com/reference/fraud-intelligence-person-fraud",
+    "https://developer.trulioo.com/reference/fraud-intelligence-person-fraud.md",
+    "https://developer.trulioo.com/reference/get-country-codes-2",
+    "https://developer.trulioo.com/reference/get-country-codes-2.md",
+    "https://developer.trulioo.com/reference/get-fields-1",
+    "https://developer.trulioo.com/reference/get-fields-1.md",
+    "https://developer.trulioo.com/reference/get-transaction-record-errors-1",
+    "https://developer.trulioo.com/reference/get-transaction-record-errors-1.md",
+    "https://developer.trulioo.com/reference/get_v3-account-packages.md",
+    "https://developer.trulioo.com/reference/get_v3-configuration-consents-packageid-countrycode-detail.md",
+    "https://developer.trulioo.com/reference/get_v3-configuration-consents-packageid-countrycode.md",
+    "https://developer.trulioo.com/reference/get_v3-configuration-countrycodes-packageid.md",
+    "https://developer.trulioo.com/reference/get_v3-configuration-countrysubdivisions-countrycode.md",
+    "https://developer.trulioo.com/reference/get_v3-configuration-datasources-packageid-countrycode.md",
+    "https://developer.trulioo.com/reference/get_v3-verifications-transaction-transactionid-status.md",
+    "https://developer.trulioo.com/reference/get_v3-verifications-transactionrecord-transactionrecordid.md",
+    "https://developer.trulioo.com/reference/getclientdata",
+    "https://developer.trulioo.com/reference/getclientfile",
+    "https://developer.trulioo.com/reference/getflows",
+    "https://developer.trulioo.com/reference/getting-started",
+    "https://developer.trulioo.com/reference/getting-started-1",
+    "https://developer.trulioo.com/reference/getting-started-1#5-retrieve-data",
+    "https://developer.trulioo.com/reference/getting-started-1#6-retrieve-images",
+    "https://developer.trulioo.com/reference/getting-started-1#additional-information",
+    "https://developer.trulioo.com/reference/getting-started-1.md",
+    "https://developer.trulioo.com/reference/getting-started.md",
+    "https://developer.trulioo.com/reference/guide-business-verification",
+    "https://developer.trulioo.com/reference/guide-business-verification.md",
+    "https://developer.trulioo.com/reference/guide-get-country-codes",
+    "https://developer.trulioo.com/reference/guide-get-country-codes.md",
+    "https://developer.trulioo.com/reference/guide-get-fields",
+    "https://developer.trulioo.com/reference/guide-get-fields.md",
+    "https://developer.trulioo.com/reference/hmac",
+    "https://developer.trulioo.com/reference/http-errors-1",
+    "https://developer.trulioo.com/reference/http-errors-1.md",
+    "https://developer.trulioo.com/reference/id-document-verification",
+    "https://developer.trulioo.com/reference/identity-document-verification",
+    "https://developer.trulioo.com/reference/identity-document-verification-2",
+    "https://developer.trulioo.com/reference/identity-document-verification-2.md",
+    "https://developer.trulioo.com/reference/identity-document-verification.md",
+    "https://developer.trulioo.com/reference/identity-verification-2",
+    "https://developer.trulioo.com/reference/identity-verification-2.md",
+    "https://developer.trulioo.com/reference/important-concepts-1",
+    "https://developer.trulioo.com/reference/important-concepts-1.md",
+    "https://developer.trulioo.com/reference/improving-document-capture-results",
+    "https://developer.trulioo.com/reference/improving-document-capture-results.md",
+    "https://developer.trulioo.com/reference/integration-guide",
+    "https://developer.trulioo.com/reference/integration-guide.md",
+    "https://developer.trulioo.com/reference/introduction",
+    "https://developer.trulioo.com/reference/introduction.md",
+    "https://developer.trulioo.com/reference/ios",
+    "https://developer.trulioo.com/reference/ios#5-initialize-the-trulioo-sdk",
+    "https://developer.trulioo.com/reference/ios.md",
+    "https://developer.trulioo.com/reference/keys-and-authentication-2",
+    "https://developer.trulioo.com/reference/keys-and-authentication-2.md",
+    "https://developer.trulioo.com/reference/known-faces",
+    "https://developer.trulioo.com/reference/known-faces.md",
+    "https://developer.trulioo.com/reference/kyb-best-practices",
+    "https://developer.trulioo.com/reference/kyb-best-practices.md",
+    "https://developer.trulioo.com/reference/kyb-business-screening",
+    "https://developer.trulioo.com/reference/kyb-business-screening.md",
+    "https://developer.trulioo.com/reference/kyb-prefill",
+    "https://developer.trulioo.com/reference/kyb-prefill.md",
+    "https://developer.trulioo.com/reference/kyb-web-insights",
+    "https://developer.trulioo.com/reference/kyb-web-insights.md",
+    "https://developer.trulioo.com/reference/kyc-best-practices-help-guide",
+    "https://developer.trulioo.com/reference/kyc-best-practices-help-guide.md",
+    "https://developer.trulioo.com/reference/kyc-person-screening",
+    "https://developer.trulioo.com/reference/kyc-person-screening-1",
+    "https://developer.trulioo.com/reference/kyc-person-screening-1.md",
+    "https://developer.trulioo.com/reference/kyc-person-screening.md",
+    "https://developer.trulioo.com/reference/kyc-person-verification",
+    "https://developer.trulioo.com/reference/kyc-person-verification.md",
+    "https://developer.trulioo.com/reference/language-intelligence",
+    "https://developer.trulioo.com/reference/language-intelligence-2",
+    "https://developer.trulioo.com/reference/language-intelligence-2.md",
+    "https://developer.trulioo.com/reference/language-intelligence.md",
+    "https://developer.trulioo.com/reference/legacy-document-verification",
+    "https://developer.trulioo.com/reference/legacy-document-verification.md",
+    "https://developer.trulioo.com/reference/matching-on-persons-of-significant-control",
+    "https://developer.trulioo.com/reference/matching-on-persons-of-significant-control-2",
+    "https://developer.trulioo.com/reference/matching-on-persons-of-significant-control-2.md",
+    "https://developer.trulioo.com/reference/matching-on-persons-of-significant-control.md",
+    "https://developer.trulioo.com/reference/migration-guide",
+    "https://developer.trulioo.com/reference/migration-guide.md",
+    "https://developer.trulioo.com/reference/mobile-sdk-android",
+    "https://developer.trulioo.com/reference/mobile-sdk-android.md",
+    "https://developer.trulioo.com/reference/mobile-sdk-ios",
+    "https://developer.trulioo.com/reference/mobile-sdk-ios.md",
+    "https://developer.trulioo.com/reference/modifying-hosted-workflow-theme-via-query-parameter",
+    "https://developer.trulioo.com/reference/modifying-hosted-workflow-theme-via-query-parameter.md",
+    "https://developer.trulioo.com/reference/multi-region-hosting",
+    "https://developer.trulioo.com/reference/multi-region-hosting.md",
+    "https://developer.trulioo.com/reference/my-previous-transactions-1",
+    "https://developer.trulioo.com/reference/my-previous-transactions-1.md",
+    "https://developer.trulioo.com/reference/national-ids-supported-types-2",
+    "https://developer.trulioo.com/reference/national-ids-supported-types-2.md",
+    "https://developer.trulioo.com/reference/next-steps-3",
+    "https://developer.trulioo.com/reference/next-steps-3.md",
+    "https://developer.trulioo.com/reference/normalized-api",
+    "https://developer.trulioo.com/reference/normalized-api-10-legacy",
+    "https://developer.trulioo.com/reference/normalized-api-10-legacy.md",
+    "https://developer.trulioo.com/reference/normalized-api.md",
+    "https://developer.trulioo.com/reference/overview-3",
+    "https://developer.trulioo.com/reference/overview-3.md",
+    "https://developer.trulioo.com/reference/overview-api-guides",
+    "https://developer.trulioo.com/reference/overview-api-guides.md",
+    "https://developer.trulioo.com/reference/partial-results",
+    "https://developer.trulioo.com/reference/partial-results-2",
+    "https://developer.trulioo.com/reference/partial-results-2.md",
+    "https://developer.trulioo.com/reference/partial-results.md",
+    "https://developer.trulioo.com/reference/person-match-person-watchlist-screening",
+    "https://developer.trulioo.com/reference/quick-start-copy",
+    "https://developer.trulioo.com/reference/quick-start-copy.md",
+    "https://developer.trulioo.com/reference/react-native",
+    "https://developer.trulioo.com/reference/react-native.md",
+    "https://developer.trulioo.com/reference/record-level-errors-1",
+    "https://developer.trulioo.com/reference/record-level-errors-1.md",
+    "https://developer.trulioo.com/reference/retrieve-profiles",
+    "https://developer.trulioo.com/reference/sendevent",
+    "https://developer.trulioo.com/reference/standardized-business-verification-content-1",
+    "https://developer.trulioo.com/reference/standardized-business-verification-content-1.md",
+    "https://developer.trulioo.com/reference/step-1-say-hello",
+    "https://developer.trulioo.com/reference/step-1-say-hello.md",
+    "https://developer.trulioo.com/reference/step-2-test-authentication",
+    "https://developer.trulioo.com/reference/step-2-test-authentication-3",
+    "https://developer.trulioo.com/reference/step-2-test-authentication-3.md",
+    "https://developer.trulioo.com/reference/step-2-test-authentication.md",
+    "https://developer.trulioo.com/reference/step-3-get-country-codes",
+    "https://developer.trulioo.com/reference/step-3-get-country-codes.md",
+    "https://developer.trulioo.com/reference/step-3-retrieve-your-account-configuration-1",
+    "https://developer.trulioo.com/reference/step-3-retrieve-your-account-configuration-1.md",
+    "https://developer.trulioo.com/reference/step-4-sdk-token-request-optional",
+    "https://developer.trulioo.com/reference/step-4-sdk-token-request-optional.md",
+    "https://developer.trulioo.com/reference/step-4-selecting-your-flow-2",
+    "https://developer.trulioo.com/reference/step-4-selecting-your-flow-2.md",
+    "https://developer.trulioo.com/reference/step-4b-verify-2",
+    "https://developer.trulioo.com/reference/step-4b-verify-2.md",
+    "https://developer.trulioo.com/reference/step-5-business-search",
+    "https://developer.trulioo.com/reference/step-5-business-search.md",
+    "https://developer.trulioo.com/reference/step-5-sdk-token-request-optional",
+    "https://developer.trulioo.com/reference/step-5-sdk-token-request-optional-1",
+    "https://developer.trulioo.com/reference/step-5-sdk-token-request-optional-1.md",
+    "https://developer.trulioo.com/reference/step-5-sdk-token-request-optional.md",
+    "https://developer.trulioo.com/reference/step-6-image-capture-sdk",
+    "https://developer.trulioo.com/reference/step-6-image-capture-sdk.md",
+    "https://developer.trulioo.com/reference/step-7-async-verify",
+    "https://developer.trulioo.com/reference/step-7-async-verify.md",
+    "https://developer.trulioo.com/reference/step-8-synch-verify",
+    "https://developer.trulioo.com/reference/step-8-synch-verify.md",
+    "https://developer.trulioo.com/reference/submit",
+    "https://developer.trulioo.com/reference/submitfile",
+    "https://developer.trulioo.com/reference/test",
+    "https://developer.trulioo.com/reference/trulioo-platform-api",
+    "https://developer.trulioo.com/reference/trulioo-platform-api-endpoints",
+    "https://developer.trulioo.com/reference/trulioo-platform-api.md",
+    "https://developer.trulioo.com/reference/trulioo-servicedatasource-level-errors-1",
+    "https://developer.trulioo.com/reference/trulioo-servicedatasource-level-errors-1.md",
+    "https://developer.trulioo.com/reference/ubo-discovery",
+    "https://developer.trulioo.com/reference/ubo-discovery.md",
+    "https://developer.trulioo.com/reference/understanding-a-verify-response",
+    "https://developer.trulioo.com/reference/understanding-a-verify-response.md",
+    "https://developer.trulioo.com/reference/understanding-standardized-fields",
+    "https://developer.trulioo.com/reference/understanding-standardized-fields-2",
+    "https://developer.trulioo.com/reference/understanding-standardized-fields-2.md",
+    "https://developer.trulioo.com/reference/understanding-standardized-fields.md",
+    "https://developer.trulioo.com/reference/uploading-and-retrieving-workflow-documents",
+    "https://developer.trulioo.com/reference/uploading-and-retrieving-workflow-documents.md",
+    "https://developer.trulioo.com/reference/us-criminal-record-search",
+    "https://developer.trulioo.com/reference/us-criminal-record-search.md",
+    "https://developer.trulioo.com/reference/using-search-and-verify-apis-1",
+    "https://developer.trulioo.com/reference/using-search-and-verify-apis-1.md",
+    "https://developer.trulioo.com/reference/v1-business-verification-overview",
+    "https://developer.trulioo.com/reference/v1-business-verification-overview.md",
+    "https://developer.trulioo.com/reference/v1-docverification-step1-say-hello",
+    "https://developer.trulioo.com/reference/v1-docverification-step1-say-hello.md",
+    "https://developer.trulioo.com/reference/v1-international-watchlist",
+    "https://developer.trulioo.com/reference/v1-international-watchlist.md",
+    "https://developer.trulioo.com/reference/v1-java",
+    "https://developer.trulioo.com/reference/v1-sandbox-vs-live-environment",
+    "https://developer.trulioo.com/reference/v1-sandbox-vs-live-environment.md",
+    "https://developer.trulioo.com/reference/v1-understanding-a-verify-response",
+    "https://developer.trulioo.com/reference/v1-understanding-a-verify-response.md",
+    "https://developer.trulioo.com/reference/validation-codes",
+    "https://developer.trulioo.com/reference/validation-codes.md",
+    "https://developer.trulioo.com/reference/verify",
+    "https://developer.trulioo.com/reference/verify.md",
+    "https://developer.trulioo.com/reference/verifying-additional-names-addresses",
+    "https://developer.trulioo.com/reference/verifying-additional-names-addresses-2",
+    "https://developer.trulioo.com/reference/verifying-additional-names-addresses-2.md",
+    "https://developer.trulioo.com/reference/verifying-additional-names-addresses.md",
+    "https://developer.trulioo.com/reference/view-previous-transactions-1",
+    "https://developer.trulioo.com/reference/view-previous-transactions-1.md",
+    "https://developer.trulioo.com/reference/watchlist-screening-3",
+    "https://developer.trulioo.com/reference/watchlist-screening-3.md",
+    "https://developer.trulioo.com/reference/web",
+    "https://developer.trulioo.com/reference/web#3-start-a-verification-flow",
+    "https://developer.trulioo.com/reference/web-copy",
+    "https://developer.trulioo.com/reference/web-copy.md",
+    "https://developer.trulioo.com/reference/web.md",
+    "https://developer.trulioo.com/reference/webhook",
+    "https://developer.trulioo.com/reference/webhook.md",
+    "https://developer.trulioo.com/reference/welcome",
+    "https://developer.trulioo.com/reference/what-fields-am-i-configured-for-1",
+    "https://developer.trulioo.com/reference/what-fields-am-i-configured-for-1.md",
+    "https://developer.trulioo.com/reference/what-is-address-cleansing-2",
+    "https://developer.trulioo.com/reference/what-is-address-cleansing-2.md",
+    "https://developer.trulioo.com/reference/what-is-address-validation-2",
+    "https://developer.trulioo.com/reference/what-is-address-validation-2.md",
+    "https://developer.trulioo.com/reference/workflow-studio-api",
+    "https://developer.trulioo.com/reference/workflow-studio-api.md",
+    "https://developer.trulioo.com/reference/workflow-studio-low-code",
+    "https://developer.trulioo.com/reference/workflow-studio-low-code.md",
+    "https://developer.trulioo.com/reference/working-with-recipes-and-examples",
+    "https://developer.trulioo.com/reference/xback",
+    "https://developer.trulioo.com/v1.0/reference/testauthentication",
+    "https://docs.verification.trulioo.com/",
+    "https://docs.verification.trulioo.com/#",
+    "https://docs.verification.trulioo.com/#1-authorize",
+    "https://docs.verification.trulioo.com/#2-create-a-transaction",
+    "https://docs.verification.trulioo.com/#3-fetch-the-shortcode",
+    "https://docs.verification.trulioo.com/#4-let-your-sdk-do-the-work",
+    "https://docs.verification.trulioo.com/#5-retrieve-data",
+    "https://docs.verification.trulioo.com/#6-retrieve-images",
+    "https://docs.verification.trulioo.com/#__docusaurus_skipToContent_fallback",
+    "https://docs.verification.trulioo.com/#additional-information",
+    "https://docs.verification.trulioo.com/#flow-visualization",
+    "https://docs.verification.trulioo.com/#steps-to-take",
+    "https://docs.verification.trulioo.com/#tag/Audit/operation/post-customer-audit-record-consent",
+    "https://docs.verification.trulioo.com/api/customer/2.4/index.html",
+    "https://docs.verification.trulioo.com/api/customer/2.4/index.html#tag/Transaction/operation/post-transactions",
+    "https://docs.verification.trulioo.com/api/customer/2.5/index.html",
+    "https://docs.verification.trulioo.com/api/customer/2.5/index.html#tag/Authorization",
+    "https://docs.verification.trulioo.com/api/customer/2.5/index.html#tag/Authorization/operation/post-auth-refresh",
+    "https://docs.verification.trulioo.com/api/customer/2.5/index.html#tag/Transaction/operation/get_presigned_url",
+    "https://docs.verification.trulioo.com/api/customer/2.5/index.html#tag/Transaction/operation/get_transaction_data",
+    "https://docs.verification.trulioo.com/api/customer/2.5/index.html#tag/Transaction/operation/post-handoff",
+    "https://docs.verification.trulioo.com/api/customer/2.5/index.html#tag/Transaction/operation/post-transactions",
+    "https://docs.verification.trulioo.com/api/customer/3.0/index.html",
+    "https://docs.verification.trulioo.com/redocusaurus/CustomerAPIv2_5.yaml",
+    "https://docs.verification.trulioo.com/redocusaurus/CustomerAPIv3_0.yaml",
+    "https://docs.verification.trulioo.com/sdk/android/index.html",
+    "https://docs.verification.trulioo.com/sdk/android/index.html/#4-start-a-verification-flow",
+    "https://docs.verification.trulioo.com/sdk/demo-license",
+    "https://docs.verification.trulioo.com/sdk/demo-license/index.html",
+    "https://docs.verification.trulioo.com/sdk/getting-started/index.html",
+    "https://docs.verification.trulioo.com/sdk/getting-started/index.html#additional-information",
+    "https://docs.verification.trulioo.com/sdk/intro",
+    "https://docs.verification.trulioo.com/sdk/ios/index.html",
+    "https://docs.verification.trulioo.com/sdk/ios/index.html/#5-initialize-the-trulioo-sdk",
+    "https://docs.verification.trulioo.com/sdk/known-faces/index.html",
+    "https://docs.verification.trulioo.com/sdk/web/index.html",
+    "https://docs.verification.trulioo.com/sdk/web/index.html/#3-start-a-verification-flow",
+    "https://docs.verification.trulioo.com/sdk/webhook",
+    "https://docs.verification.trulioo.com/sdk/webhook/index.html",
+    "https://docs.verification.trulioo.com/sdk/wfs-api/index.html",
+    "https://docs.verification.trulioo.com/sdk/wfs/index.html",
+    "https://en.wikipedia.org/wiki/Basic_access_authentication",
+    "https://en.wikipedia.org/wiki/Mutual_authentication#mTLS",
+    "https://example.com/logo.png",
+    "https://files.readme.io/1c6b6bc-Screenshot_285.png",
+    "https://files.readme.io/2b64a29-Screenshot_283.png",
+    "https://files.readme.io/746eae6-Screenshot_282.png",
+    "https://files.readme.io/84fa1c0-Screenshot_284.png",
+    "https://files.readme.io/bd8efce-Screenshot_286.png",
+    "https://files.readme.io/f1b50e46723c3aa71f6ce7a73de6c51345976c4143e5a23e76ff9f78a09b331d-flow.png",
+    "https://github.com/api-evangelist/trulioo/blob/main/apis.yml",
+    "https://knowledgehub.trulioo.com/",
+    "https://knowledgehub.trulioo.com/collections",
+    "https://launch-workflow.trulioo.com/",
+    "https://mtls.primary.prod.trulioo.com**",
+    "https://mtls.primary.prod.trulioo.com/connection/v1/testauthentication",
+    "https://mtls.primary.prod.trulioo.com/connection/v1/testauthentication.**",
+    "https://redocly.com/redoc/",
+    "https://trulioo.com/llms.txt",
+    "https://trulioo.com/webhook",
+    "https://verification.trulioo.com/api/handoff",
+    "https://verification.trulioo.com/api/transactions",
+    "https://verification.trulioo.com/api/transactions/images",
+    "https://verification.trulioo.com/api/transactions/verify",
+    "https://verification.trulioo.com/api/transactions/{transactionId}",
+    "https://verification.trulioo.com/authorize/customer",
+    "https://verification.trulioo.com/customer/handoff",
+    "https://verification.trulioo.com/customer/transactions",
+    "https://www.postman.com/",
+    "https://www.soapui.org/",
+    "https://www.trulioo.com/blog/business-verification/hospice-fraud",
+    "https://www.trulioo.com/blog/compliance/customer-due-diligence",
+    "https://www.trulioo.com/blog/enhanced-due-diligence",
+    "https://www.trulioo.com/blog/fraud-prevention/legacy-identity-verification-ai-fraud",
+    "https://www.trulioo.com/blog/fraud-prevention/when-fraud-becomes-background-noise",
+    "https://www.trulioo.com/company/about-us",
+    "https://www.trulioo.com/company/careers",
+    "https://www.trulioo.com/company/contact-us",
+    "https://www.trulioo.com/company/leadership",
+    "https://www.trulioo.com/company/newsroom",
+    "https://www.trulioo.com/company/newsroom/featured-articles/ai-found-2000-vulnerabilities",
+    "https://www.trulioo.com/company/newsroom/interviews/agentic-commerce-is-coming-but-zac-cohen-says-the-trust-layer-is-not-ready",
+    "https://www.trulioo.com/company/newsroom/interviews/ai-finds-the-cracks-between-login-and-payment",
+    "https://www.trulioo.com/company/newsroom/interviews/credibly-challenged-podcast-interview-with-chad-gerhardstein-chief-risk-and-strategy-officer-at-trulioo",
+    "https://www.trulioo.com/company/newsroom/interviews/identity-verification-broken-truth-behind-detection-rates",
+    "https://www.trulioo.com/company/partners",
+    "https://www.trulioo.com/company/security-compliance",
+    "https://www.trulioo.com/cookie-policy",
+    "https://www.trulioo.com/events",
+    "https://www.trulioo.com/events/conference/acams-las-vegas-2026",
+    "https://www.trulioo.com/events/conference/money-2020-europe-2024-2",
+    "https://www.trulioo.com/events/conference/mrc-las-vegas-2024",
+    "https://www.trulioo.com/events/conference/singapore-fintech-festival-2026",
+    "https://www.trulioo.com/events/conference/the-assembly-las-vegas",
+    "https://www.trulioo.com/legal/SST",
+    "https://www.trulioo.com/lp/contact/book-a-demo",
+    "https://www.trulioo.com/lp/industry-report/digital-identity-verification-for-global-cryptocurrency-exchanges",
+    "https://www.trulioo.com/lp/take-a-tour",
+    "https://www.trulioo.com/lp/white-paper/build-trust-and-safety-with-digital-kyc",
+    "https://www.trulioo.com/lp/white-paper/enhance-security-with-identity-document-verification",
+    "https://www.trulioo.com/lp/white-paper/verify-your-world-with-digital-identity-verification",
+    "https://www.trulioo.com/newsroom-types/company-news",
+    "https://www.trulioo.com/newsroom-types/featured-articles",
+    "https://www.trulioo.com/newsroom-types/interviews",
+    "https://www.trulioo.com/newsroom-types/press-releases",
+    "https://www.trulioo.com/post-topics/aml",
+    "https://www.trulioo.com/post-topics/compliance",
+    "https://www.trulioo.com/post-topics/fraud-prevention",
+    "https://www.trulioo.com/post-topics/identity-verification",
+    "https://www.trulioo.com/post-topics/kyc",
+    "https://www.trulioo.com/post-types/announcements",
+    "https://www.trulioo.com/post-types/guides",
+    "https://www.trulioo.com/post-types/industry-news",
+    "https://www.trulioo.com/post-types/resources",
+    "https://www.trulioo.com/post-types/thought-leadership",
+    "https://www.trulioo.com/privacy",
+    "https://www.trulioo.com/resources-topics/business-verification-kyb",
+    "https://www.trulioo.com/resources-topics/compliance",
+    "https://www.trulioo.com/resources-topics/fraud-prevention",
+    "https://www.trulioo.com/resources-topics/individual-verification-kyc",
+    "https://www.trulioo.com/resources-topics/onboarding",
+    "https://www.trulioo.com/resources-types/case-studies",
+    "https://www.trulioo.com/resources-types/industry-sheets",
+    "https://www.trulioo.com/resources-types/solution-sheets",
+    "https://www.trulioo.com/resources-types/videos",
+    "https://www.trulioo.com/resources-types/white-papers",
+    "https://www.trulioo.com/resources/solution-sheets/business-credit-insights-solution-sheet",
+    "https://www.trulioo.com/resources/toolkit/2026-digital-identity-trends-toolkit",
+    "https://www.trulioo.com/resources/webinars/balance-fraud-and-friction-fintech",
+    "https://www.trulioo.com/resources/white-papers/building-adaptive-defenses-ai-scale-fraud",
+    "https://www.trulioo.com/resources/white-papers/e-id-inflection-point",
+    "https://www.trulioo.com/sitemap",
+    "https://www.trulioo.com/sitemap_index.xml",
+    "https://www.trulioo.com/solutions/aml-watchlist-screening",
+    "https://www.trulioo.com/solutions/business-verification",
+    "https://www.trulioo.com/solutions/business-verification/kyb-verification",
+    "https://www.trulioo.com/solutions/business-verification/ubo-discovery",
+    "https://www.trulioo.com/solutions/global-identity-platform",
+    "https://www.trulioo.com/solutions/identity-verification/document-verification",
+    "https://www.trulioo.com/solutions/identity-verification/electronic-identification",
+    "https://www.trulioo.com/solutions/identity-verification/person-match"
+  ]
+}

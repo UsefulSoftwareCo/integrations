@@ -26,6 +26,7 @@ export interface Surface {
   basis: Basis;
   auth: AuthStatus;
   spec?: string;
+  specAlternates?: readonly string[];
   url?: string;
   transports?: readonly string[];
   packages?: readonly { registryType: string; identifier: string; runtimeHint?: string }[];
@@ -64,6 +65,29 @@ export function credCta(type: string): string {
   return "Get key";
 }
 
+/** The CLI login command that acquires a credential, when every one of its
+ * bindings across the given auths is such a flow. In that case the command IS
+ * the acquisition — `mint login` runs the OAuth dance — so the "go mint one"
+ * CTA (often a raw authorize endpoint) is wrong. A cli binding that merely
+ * CONSUMES an existing credential (`resend --api-key <key>`, env vars) is not
+ * acquisition: those keep the normal get-it-from-the-dashboard card. */
+export function cliLoginFor(credId: string, auths: AuthStatus[]): string | undefined {
+  const uses = auths
+    .flatMap((a) => (a.status === "required" ? a.entries : []))
+    .flatMap((e) => e.use)
+    .filter((u) => u.id === credId);
+  if (!uses.length) return undefined;
+  const commands = uses.map((u) => {
+    const m = u.mechanics;
+    if (m.source !== "cli" || !m.command) return undefined;
+    // A placeholder (`<key>`) or env injection means the credential already
+    // exists before the command runs — consumption, not acquisition.
+    if (/[<{$]/.test(m.command) || m.env?.length) return undefined;
+    return m.command;
+  });
+  return commands.every(Boolean) ? commands[0] : undefined;
+}
+
 /** One-line "how the credential is passed" summary for an auth entry. */
 export function mechanicsLine(m: Mechanics): string {
   switch (m.source) {
@@ -86,19 +110,3 @@ export function mechanicsLine(m: Mechanics): string {
   }
 }
 
-/** A `claude mcp add` / install one-liner, when we have what we need. */
-export function connectCmd(surface: Surface): { label: string; cmd: string } | null {
-  if (surface.type === "mcp" && surface.url) {
-    return { label: "Connect", cmd: `claude mcp add --transport http ${surface.slug} ${surface.url}` };
-  }
-  if (surface.type === "cli") {
-    const p = surface.packages?.[0];
-    if (p) {
-      return {
-        label: "Install",
-        cmd: p.runtimeHint === "npx" ? `npx ${p.identifier}` : `${p.registryType === "npm" ? "npm i -g" : p.registryType} ${p.identifier}`,
-      };
-    }
-  }
-  return null;
-}

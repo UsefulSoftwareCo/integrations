@@ -1,0 +1,610 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "sanity.io",
+    "detect": {
+      "domain": "sanity.io",
+      "found": [
+        "api-catalog",
+        "agent-skills",
+        "llms.txt"
+      ],
+      "apiCatalog": {
+        "rest": [
+          "https://www.sanity.io/docs"
+        ],
+        "openapi": [
+          "https://www.sanity.io/docs/api/openapi"
+        ],
+        "docs": [
+          "https://www.sanity.io/docs/http-reference"
+        ],
+        "status": [
+          "https://status.sanity.io/"
+        ],
+        "mcp": []
+      },
+      "mcp": [],
+      "agentSkills": {
+        "count": 6,
+        "names": [
+          "Content Experimentation Best Practices",
+          "Content Modeling Best Practices",
+          "Portable Text Conversion",
+          "Portable Text Serialization",
+          "Sanity Best Practices",
+          "SEO & AEO Best Practices"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:20:30.634Z",
+    "summary": "Sanity exposes one authenticated HTTP API, one authenticated GraphQL API, a hosted MCP server, and the Sanity CLI; auth is via Sanity account login/OAuth and project API tokens.",
+    "credentials": {
+      "sanity_user_login": {
+        "type": "oauth2",
+        "label": "Sanity account login",
+        "generateUrl": "https://www.sanity.io/entry",
+        "setup": "Use the Sanity CLI login flow: run `sanity login` (or `npx sanity@latest login`). This opens a browser to sign in with your Sanity account or supported SSO provider. For headless use, log in locally and copy the personal auth token from `sanity debug --secrets`, then set `SANITY_AUTH_TOKEN` for CLI commands that need authentication.",
+        "acquisition": "manual"
+      },
+      "sanity_api_token": {
+        "type": "api_key",
+        "label": "Sanity API token",
+        "generateUrl": "https://www.sanity.io/organization",
+        "setup": "Create a project token in Sanity. From the CLI, run `sanity tokens add` to mint a new token for a project; the docs also point to the Sanity account/organization settings for token management. Use a token with the minimum role needed (for example `viewer` or `editor`) and store it securely.",
+        "acquisition": "manual"
+      },
+      "sanity_cli_login_token": {
+        "type": "bearer",
+        "label": "Sanity CLI personal auth token",
+        "setup": "If you need a non-browser workflow, log in with `sanity login`, then run `sanity debug --secrets` to print a personal auth token and export it as `SANITY_AUTH_TOKEN`. This token is mainly for CLI automation and can be reused by commands that rely on your logged-in Sanity session.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "sanity-http-api",
+        "name": "Sanity HTTP API",
+        "type": "http",
+        "docs": "https://www.sanity.io/docs/http-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.sanity.io/docs/http-reference",
+            "https://www.sanity.io/docs/content-lake/http-urls"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sanity_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.sanity.io/docs/content-lake/http-auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sanity_cli_login_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.sanity.io/docs/content-lake/http-auth",
+                  "https://www.sanity.io/docs/cli-reference/login"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<projectId>.api.sanity.io/<version>/"
+      },
+      {
+        "slug": "sanity-graphql-api",
+        "name": "Sanity GraphQL API",
+        "type": "graphql",
+        "docs": "https://www.sanity.io/docs/content-lake/graphql",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.sanity.io/docs/content-lake/graphql",
+            "https://www.sanity.io/docs/cli-reference/cli-graphql"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sanity_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.sanity.io/docs/content-lake/http-auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sanity_cli_login_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.sanity.io/docs/content-lake/http-auth",
+                  "https://www.sanity.io/docs/cli-reference/login"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "https://<projectId>.api.sanity.io/<version>/graphql/<dataset>/<apiId>"
+      },
+      {
+        "slug": "sanity-mcp-server",
+        "name": "Sanity MCP server",
+        "type": "mcp",
+        "docs": "https://www.sanity.io/docs/ai/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.sanity.io/docs/ai/mcp-server",
+            "https://www.sanity.io/docs/cli-reference/cli-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sanity_user_login",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                },
+                {
+                  "id": "sanity_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.sanity.io/docs/ai/mcp-server"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sanity_user_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "sanity login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.sanity.io/docs/ai/mcp-server",
+                  "https://www.sanity.io/docs/cli-reference/login"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.sanity.io",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "sanity-cli",
+        "name": "Sanity CLI",
+        "type": "cli",
+        "docs": "https://www.sanity.io/docs/cli-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.sanity.io/docs/cli-reference",
+            "https://www.sanity.io/docs/cli-reference/login",
+            "https://www.sanity.io/docs/cli-reference/tokens",
+            "https://www.sanity.io/docs/cli-reference/cli-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sanity_user_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "sanity login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.sanity.io/docs/cli-reference/login"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "sanity_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "SANITY_AUTH_TOKEN=<token> sanity <command>",
+                    "env": [
+                      "SANITY_AUTH_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.sanity.io/docs/cli-reference/login"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "sanity",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "@sanity/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "sanity"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:20:30.635Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 207539,
+    "completion_tokens": 1591,
+    "total_tokens": 209130
+  },
+  "visited": [
+    "https://github.com/sanity-io/reference-api-typedoc",
+    "https://www.sanity.io/docs/ai/mcp-server",
+    "https://www.sanity.io/docs/changelog/e75b1d45-03be-4fa6-994b-248750b3fa9f",
+    "https://www.sanity.io/docs/cli-reference/cli-graphql",
+    "https://www.sanity.io/docs/cli-reference/cli-mcp",
+    "https://www.sanity.io/docs/cli-reference/login",
+    "https://www.sanity.io/docs/cli-reference/tokens",
+    "https://www.sanity.io/docs/content-lake/graphql",
+    "https://www.sanity.io/docs/content-lake/http-auth",
+    "https://www.sanity.io/docs/content-lake/http-urls",
+    "https://www.sanity.io/docs/http-reference"
+  ],
+  "grounding": [
+    "https://code.visualstudio.com/docs/copilot/customization/mcp-servers",
+    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURI",
+    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent",
+    "https://docs.anthropic.com/en/docs/claude-code/mcp",
+    "https://docs.cursor.com/context/mcp#installing-mcp-servers",
+    "https://docs.lovable.dev/integrations/mcp-servers",
+    "https://docs.netlify.com/configure-builds/environment-variables/",
+    "https://docs.replit.com/replitai/integrations",
+    "https://docs.replit.com/replitai/mcp/overview",
+    "https://github.com/sanity-io/agent-toolkit",
+    "https://github.com/sanity-io/reference-api-typedoc",
+    "https://github.com/sanity-io/webhook-toolkit",
+    "https://github.com/sanity-labs/starters/tree/main/agentic-localization",
+    "https://github.com/sanity-labs/starters/tree/main/ai-shopping-assistant",
+    "https://mcp.sanity.io",
+    "https://opencode.ai/config.json",
+    "https://opencode.ai/docs/mcp-servers/",
+    "https://replit.com/integrations",
+    "https://snty.link/community",
+    "https://spec.groq.dev/",
+    "https://v0.app",
+    "https://v0.app/docs/MCP",
+    "https://vercel.com/blog/environment-variables-ui",
+    "https://www.sanity-status.com",
+    "https://www.sanity.io/#04501f1778aa",
+    "https://www.sanity.io/#a1vzqc3l",
+    "https://www.sanity.io/#ad83bf3157eb",
+    "https://www.sanity.io/#b085a7eab7d5",
+    "https://www.sanity.io/#bca18ac68f0f",
+    "https://www.sanity.io/#ca347e0f7449",
+    "https://www.sanity.io/#cf93f4cd638a",
+    "https://www.sanity.io/#create-documents-bknntb7qv1s",
+    "https://www.sanity.io/#create-version-2ny8oaddlb6",
+    "https://www.sanity.io/#deploy-schema-z0j8u6n7m4",
+    "https://www.sanity.io/#deploy-studio-t4p2albrjr",
+    "https://www.sanity.io/#dk9cqhjb",
+    "https://www.sanity.io/#e33a5dc0c097",
+    "https://www.sanity.io/#e4d6a37648fb",
+    "https://www.sanity.io/#get-schema-jgigebmlhq",
+    "https://www.sanity.io/#k102f2ab26ef5",
+    "https://www.sanity.io/#k1ec72e5689c0",
+    "https://www.sanity.io/#k38193acbf4a8",
+    "https://www.sanity.io/#k3af0194e8e42",
+    "https://www.sanity.io/#k4ae680bb2e88",
+    "https://www.sanity.io/#k4c21d7b829fe",
+    "https://www.sanity.io/#k657cb4a435cf",
+    "https://www.sanity.io/#k6ef7c8992e66",
+    "https://www.sanity.io/#k967e449638bc",
+    "https://www.sanity.io/#k9d0db1c32064",
+    "https://www.sanity.io/#list-workspace-schemas-v4zfcvdxkbb",
+    "https://www.sanity.io/#patch-documents-67vilfbd2o8",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db2zk",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db312",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db5ki",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db5m0",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db5oa",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db5ra",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db6i4",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db6ke",
+    "https://www.sanity.io/#pz46mlnen6w8sdly5db6ne",
+    "https://www.sanity.io/#query-documents-q08ky9fp3cl",
+    "https://www.sanity.io/#tch01",
+    "https://www.sanity.io/#tcuh01",
+    "https://www.sanity.io/#tlovh01",
+    "https://www.sanity.io/#toch01",
+    "https://www.sanity.io/#tothh01",
+    "https://www.sanity.io/#treph01",
+    "https://www.sanity.io/#tv0h01",
+    "https://www.sanity.io/#tvsh01",
+    "https://www.sanity.io/?ref=cli-reference-cli-graphql",
+    "https://www.sanity.io/?ref=cli-reference-cli-mcp",
+    "https://www.sanity.io/?ref=cli-reference-login",
+    "https://www.sanity.io/?ref=cli-reference-tokens",
+    "https://www.sanity.io/?ref=content-lake-http-auth",
+    "https://www.sanity.io/?ref=content-lake-http-urls",
+    "https://www.sanity.io/?ref=http-reference",
+    "https://www.sanity.io/cursor://anysphere.cursor-deeplink/mcp/install?name=Sanity&config=eyJ1cmwiOiJodHRwczovL21jcC5zYW5pdHkuaW8iLCJ0eXBlIjoiaHR0cCJ9Cg==",
+    "https://www.sanity.io/docs",
+    "https://www.sanity.io/docs/agent-actions",
+    "https://www.sanity.io/docs/ai",
+    "https://www.sanity.io/docs/ai/get-started",
+    "https://www.sanity.io/docs/ai/mcp-server",
+    "https://www.sanity.io/docs/ai/mcp-server/changelog",
+    "https://www.sanity.io/docs/ai/mcp-server?ref=cli-reference-cli-mcp",
+    "https://www.sanity.io/docs/ai/sanity-context",
+    "https://www.sanity.io/docs/ai/sanity-context-insights",
+    "https://www.sanity.io/docs/ai/sanity-context-patterns",
+    "https://www.sanity.io/docs/ai/skills",
+    "https://www.sanity.io/docs/apis-and-sdks",
+    "https://www.sanity.io/docs/apis-and-sdks/cli",
+    "https://www.sanity.io/docs/apis-and-sdks/content-agent-api",
+    "https://www.sanity.io/docs/apis-and-sdks/iiif-api-reference",
+    "https://www.sanity.io/docs/apis-and-sdks/image-metadata",
+    "https://www.sanity.io/docs/apis-and-sdks/image-urls",
+    "https://www.sanity.io/docs/apis-and-sdks/sanity-typegen",
+    "https://www.sanity.io/docs/app-sdk",
+    "https://www.sanity.io/docs/astro",
+    "https://www.sanity.io/docs/astro-quickstart",
+    "https://www.sanity.io/docs/blueprints",
+    "https://www.sanity.io/docs/canvas",
+    "https://www.sanity.io/docs/changelog",
+    "https://www.sanity.io/docs/changelog/e75b1d45-03be-4fa6-994b-248750b3fa9f",
+    "https://www.sanity.io/docs/cli-reference",
+    "https://www.sanity.io/docs/cli-reference/authentication",
+    "https://www.sanity.io/docs/cli-reference/build",
+    "https://www.sanity.io/docs/cli-reference/cli-backups",
+    "https://www.sanity.io/docs/cli-reference/cli-blueprints",
+    "https://www.sanity.io/docs/cli-reference/cli-config",
+    "https://www.sanity.io/docs/cli-reference/cli-datasets",
+    "https://www.sanity.io/docs/cli-reference/cli-graphql",
+    "https://www.sanity.io/docs/cli-reference/cli-graphql/changelog",
+    "https://www.sanity.io/docs/cli-reference/cli-hooks",
+    "https://www.sanity.io/docs/cli-reference/cli-learn",
+    "https://www.sanity.io/docs/cli-reference/cli-mcp",
+    "https://www.sanity.io/docs/cli-reference/cli-mcp/changelog",
+    "https://www.sanity.io/docs/cli-reference/cli-migrations",
+    "https://www.sanity.io/docs/cli-reference/cli-schemas",
+    "https://www.sanity.io/docs/cli-reference/cli-skills",
+    "https://www.sanity.io/docs/cli-reference/cli-typegen",
+    "https://www.sanity.io/docs/cli-reference/codemod",
+    "https://www.sanity.io/docs/cli-reference/cors-in-cli",
+    "https://www.sanity.io/docs/cli-reference/debug",
+    "https://www.sanity.io/docs/cli-reference/deploy",
+    "https://www.sanity.io/docs/cli-reference/dev",
+    "https://www.sanity.io/docs/cli-reference/docs",
+    "https://www.sanity.io/docs/cli-reference/documents",
+    "https://www.sanity.io/docs/cli-reference/exec",
+    "https://www.sanity.io/docs/cli-reference/functions",
+    "https://www.sanity.io/docs/cli-reference/help",
+    "https://www.sanity.io/docs/cli-reference/init",
+    "https://www.sanity.io/docs/cli-reference/install",
+    "https://www.sanity.io/docs/cli-reference/login",
+    "https://www.sanity.io/docs/cli-reference/login/changelog",
+    "https://www.sanity.io/docs/cli-reference/logout",
+    "https://www.sanity.io/docs/cli-reference/manage",
+    "https://www.sanity.io/docs/cli-reference/manifest",
+    "https://www.sanity.io/docs/cli-reference/media",
+    "https://www.sanity.io/docs/cli-reference/openapi",
+    "https://www.sanity.io/docs/cli-reference/preview",
+    "https://www.sanity.io/docs/cli-reference/projects",
+    "https://www.sanity.io/docs/cli-reference/start",
+    "https://www.sanity.io/docs/cli-reference/telemetry",
+    "https://www.sanity.io/docs/cli-reference/tokens",
+    "https://www.sanity.io/docs/cli-reference/tokens/changelog",
+    "https://www.sanity.io/docs/cli-reference/undeploy",
+    "https://www.sanity.io/docs/cli-reference/users",
+    "https://www.sanity.io/docs/cli-reference/versions",
+    "https://www.sanity.io/docs/content-agent",
+    "https://www.sanity.io/docs/content-lake",
+    "https://www.sanity.io/docs/content-lake/api-cdn",
+    "https://www.sanity.io/docs/content-lake/api-versioning",
+    "https://www.sanity.io/docs/content-lake/assets",
+    "https://www.sanity.io/docs/content-lake/attribute-limit",
+    "https://www.sanity.io/docs/content-lake/backups",
+    "https://www.sanity.io/docs/content-lake/browser-security-and-cors",
+    "https://www.sanity.io/docs/content-lake/content-migration-cheatsheet",
+    "https://www.sanity.io/docs/content-lake/cors",
+    "https://www.sanity.io/docs/content-lake/create-query-embeddings-index",
+    "https://www.sanity.io/docs/content-lake/custom-groq-functions",
+    "https://www.sanity.io/docs/content-lake/dataset-embeddings",
+    "https://www.sanity.io/docs/content-lake/datasets",
+    "https://www.sanity.io/docs/content-lake/dispatch-actions",
+    "https://www.sanity.io/docs/content-lake/document-reference",
+    "https://www.sanity.io/docs/content-lake/documents",
+    "https://www.sanity.io/docs/content-lake/drafts",
+    "https://www.sanity.io/docs/content-lake/embeddings-index-api-overview",
+    "https://www.sanity.io/docs/content-lake/graphql",
+    "https://www.sanity.io/docs/content-lake/graphql/changelog",
+    "https://www.sanity.io/docs/content-lake/groq-feature-support-by-context",
+    "https://www.sanity.io/docs/content-lake/groq-introduction",
+    "https://www.sanity.io/docs/content-lake/hierarchy",
+    "https://www.sanity.io/docs/content-lake/how-queries-work",
+    "https://www.sanity.io/docs/content-lake/how-to-use-cloud-clone-for-datasets",
+    "https://www.sanity.io/docs/content-lake/how-to-use-hot-swapping-for-datasets",
+    "https://www.sanity.io/docs/content-lake/http-auth",
+    "https://www.sanity.io/docs/content-lake/http-auth/changelog",
+    "https://www.sanity.io/docs/content-lake/http-patches",
+    "https://www.sanity.io/docs/content-lake/http-urls",
+    "https://www.sanity.io/docs/content-lake/http-urls/changelog",
+    "https://www.sanity.io/docs/content-lake/ids",
+    "https://www.sanity.io/docs/content-lake/important-considerations-for-schema-and-content-migrations",
+    "https://www.sanity.io/docs/content-lake/importing-data",
+    "https://www.sanity.io/docs/content-lake/ip-addresses",
+    "https://www.sanity.io/docs/content-lake/json-match",
+    "https://www.sanity.io/docs/content-lake/keeping-your-data-safe",
+    "https://www.sanity.io/docs/content-lake/live-content-api",
+    "https://www.sanity.io/docs/content-lake/manage-assets",
+    "https://www.sanity.io/docs/content-lake/mutation-patterns",
+    "https://www.sanity.io/docs/content-lake/mutations-introduction",
+    "https://www.sanity.io/docs/content-lake/perspectives",
+    "https://www.sanity.io/docs/content-lake/presenting-and-previewing-content",
+    "https://www.sanity.io/docs/content-lake/query-cheat-sheet",
+    "https://www.sanity.io/docs/content-lake/realtime-updates",
+    "https://www.sanity.io/docs/content-lake/restore-deleted-dataset",
+    "https://www.sanity.io/docs/content-lake/roles-concepts",
+    "https://www.sanity.io/docs/content-lake/schema-and-content-migrations",
+    "https://www.sanity.io/docs/content-lake/schema-validation-and-the-content-lake",
+    "https://www.sanity.io/docs/content-lake/search-content-with-groq",
+    "https://www.sanity.io/docs/content-lake/technical-limits",
+    "https://www.sanity.io/docs/content-lake/the-vision-plugin",
+    "https://www.sanity.io/docs/content-lake/transactions",
+    "https://www.sanity.io/docs/content-lake/webhook-best-practices",
+    "https://www.sanity.io/docs/content-lake/webhooks",
+    "https://www.sanity.io/docs/content-lake/what-about-graphql",
+    "https://www.sanity.io/docs/dashboard",
+    "https://www.sanity.io/docs/developer-guides",
+    "https://www.sanity.io/docs/developer-guides/sso-saml",
+    "https://www.sanity.io/docs/functions",
+    "https://www.sanity.io/docs/getting-started",
+    "https://www.sanity.io/docs/getting-started/ai-app-builder-quickstart",
+    "https://www.sanity.io/docs/getting-started/ai-coding-agents",
+    "https://www.sanity.io/docs/getting-started/the-sanity-content-operating-system-an-introduction",
+    "https://www.sanity.io/docs/http-reference",
+    "https://www.sanity.io/docs/http-reference/access-api",
+    "https://www.sanity.io/docs/http-reference/actions",
+    "https://www.sanity.io/docs/http-reference/activity-log",
+    "https://www.sanity.io/docs/http-reference/agent-actions",
+    "https://www.sanity.io/docs/http-reference/assets",
+    "https://www.sanity.io/docs/http-reference/backups",
+    "https://www.sanity.io/docs/http-reference/content-agent",
+    "https://www.sanity.io/docs/http-reference/copy",
+    "https://www.sanity.io/docs/http-reference/doc",
+    "https://www.sanity.io/docs/http-reference/embeddings-index",
+    "https://www.sanity.io/docs/http-reference/export",
+    "https://www.sanity.io/docs/http-reference/history",
+    "https://www.sanity.io/docs/http-reference/jobs",
+    "https://www.sanity.io/docs/http-reference/listen",
+    "https://www.sanity.io/docs/http-reference/live",
+    "https://www.sanity.io/docs/http-reference/media-library",
+    "https://www.sanity.io/docs/http-reference/mutation",
+    "https://www.sanity.io/docs/http-reference/projects-api",
+    "https://www.sanity.io/docs/http-reference/query",
+    "https://www.sanity.io/docs/http-reference/roles",
+    "https://www.sanity.io/docs/http-reference/scheduling",
+    "https://www.sanity.io/docs/http-reference/user-attributes",
+    "https://www.sanity.io/docs/http-reference/webhooks",
+    "https://www.sanity.io/docs/libraries",
+    "https://www.sanity.io/docs/libraries/embeddings-index-cli-reference",
+    "https://www.sanity.io/docs/media-library",
+    "https://www.sanity.io/docs/next-js-quickstart",
+    "https://www.sanity.io/docs/nextjs",
+    "https://www.sanity.io/docs/nuxt-js-quickstart",
+    "https://www.sanity.io/docs/platform-management",
+    "https://www.sanity.io/docs/platform-management/activity-feed",
+    "https://www.sanity.io/docs/react-router-quickstart",
+    "https://www.sanity.io/docs/sanity-studio-quickstart",
+    "https://www.sanity.io/docs/specifications",
+    "https://www.sanity.io/docs/specifications/groq-syntax",
+    "https://www.sanity.io/docs/studio",
+    "https://www.sanity.io/docs/studio/environment-variables",
+    "https://www.sanity.io/docs/studio/install-and-configure-sanity-ai-assist",
+    "https://www.sanity.io/docs/studio/workspaces",
+    "https://www.sanity.io/docs/user-guides",
+    "https://www.sanity.io/docs/user-guides/roles",
+    "https://www.sanity.io/docs/visual-editing",
+    "https://www.sanity.io/entry?ref=docs",
+    "https://www.sanity.io/get-started?ref=docs",
+    "https://www.sanity.io/learn",
+    "https://www.sanity.io/learn/course/between-groq-and-a-hard-place",
+    "https://www.sanity.io/learn/course/handling-schema-changes-confidently/introduction-to-schema-change-management",
+    "https://www.sanity.io/legal/privacy",
+    "https://www.sanity.io/manage",
+    "https://www.sanity.io/templates",
+    "https://zp7mbokg.api.sanity.io/v2026-06-09/data/query/production?query=*%5B_id%20%3D%3D%20%24id%5D&%24id=%22myId%22",
+    "https://zp7mbokg.api.sanity.io/v2026-06-09/data/query/production?query=*[0",
+    "https://zp7mbokg.api.sanity.io/v2026-06-09/data/query/production?query=*[_id"
+  ]
+}

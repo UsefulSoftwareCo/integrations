@@ -1,0 +1,229 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "make.com",
+    "detect": {
+      "domain": "make.com",
+      "found": [
+        "llms.txt",
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://make.com"
+          ],
+          "authorizationEndpoint": "https://www.make.com/oauth/v2/authorize",
+          "tokenEndpoint": "https://www.make.com/oauth/v2/token",
+          "registrationEndpoint": "https://www.make.com/oauth/v2/register/mcp",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T09:58:27.729Z",
+    "summary": "Make exposes one REST API, one MCP server, and one CLI; all require authentication via API token, OAuth 2.0, or MCP token depending on the surface.",
+    "credentials": {
+      "make_api_token": {
+        "type": "bearer",
+        "label": "Make API token",
+        "generateUrl": "https://www.make.com/oauth/v2/authorize",
+        "setup": "Go to your Make account, open [Profile](https://www.make.com/) → **API access** → **Tokens** → **Add token**. Choose the scopes you need, name the token, and save. Use the token as `Authorization: Token <API_TOKEN>` for the Make API. The docs note this token is scope-limited and may be required for paid-plan endpoints.",
+        "acquisition": "manual"
+      },
+      "make_oauth_client": {
+        "type": "oauth2_cc",
+        "label": "Make OAuth 2.0 client",
+        "generateUrl": "https://www.make.com/oauth/v2/register/mcp",
+        "setup": "Register an OAuth client for Make using the OAuth client registration flow for MCP. The seed docs indicate OAuth is used for MCP connections and that client registration is available at [Make OAuth dynamic client registration](https://www.make.com/oauth/v2/register/mcp). After registration, connect with the authorization URL `https://www.make.com/oauth/v2/authorize` and token URL `https://www.make.com/oauth/v2/token`.",
+        "acquisition": "manual"
+      },
+      "make_mcp_token": {
+        "type": "bearer",
+        "label": "Make MCP token",
+        "setup": "In your Make account, click your name → **Profile** → **API access** → **Tokens** → **Add token**. Select the `mcp:use` scope if you want scenarios exposed as MCP tools, name the token, and create it. Treat the token as secret. Use it in MCP connection URLs like `https://<MAKE_ZONE>/mcp/u/<MCP_TOKEN>/stateless` or send it as `Authorization: Bearer <MCP_TOKEN>` when the client supports headers.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "make-api",
+        "name": "Make API",
+        "type": "http",
+        "docs": "https://developers.make.com/api-documentation",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.make.com/api-documentation",
+            "https://developers.make.com/api-documentation/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "make_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/api-documentation/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "make_oauth_client",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/api-documentation/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "make-mcp-server",
+        "name": "Make MCP Server",
+        "type": "mcp",
+        "docs": "https://developers.make.com/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.make.com/mcp-server",
+            "https://developers.make.com/mcp-server/connect-using-oauth",
+            "https://developers.make.com/mcp-server/connect-using-mcp-token"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "make_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/mcp-server",
+                  "https://developers.make.com/mcp-server/connect-using-oauth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "make_mcp_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/mcp-server",
+                  "https://developers.make.com/mcp-server/connect-using-mcp-token"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.make.com",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ]
+      },
+      {
+        "slug": "make-cli",
+        "name": "Make CLI",
+        "type": "cli",
+        "docs": "https://developers.make.com/make-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.make.com/make-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "make_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "make login",
+                    "env": [
+                      "MAKE_API_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/make-cli"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T09:58:27.730Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 44178,
+    "completion_tokens": 1165,
+    "total_tokens": 45343
+  },
+  "visited": [
+    "https://developers.make.com/api-documentation",
+    "https://developers.make.com/api-documentation/authentication",
+    "https://developers.make.com/make-cli",
+    "https://developers.make.com/mcp-server",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token",
+    "https://developers.make.com/mcp-server/connect-using-oauth",
+    "https://github.com/SecretiveShell/MCP-llms-txt",
+    "https://www.reddit.com/r/technicalwriting/comments/1nshttx/show_tell_generate_a_clean_llmtxt_from_any_docs/",
+    "https://www.theneo.io/blog/llms-txt-mcp-api-discovery"
+  ]
+}

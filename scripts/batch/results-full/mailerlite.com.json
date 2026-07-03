@@ -1,0 +1,583 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "mailerlite.com",
+    "detect": {
+      "domain": "mailerlite.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:59:19.756Z",
+    "summary": "MailerLite exposes one REST API, a CLI, and an MCP server; all require either an API token or OAuth-based client login depending on surface.",
+    "credentials": {
+      "ml_api_key": {
+        "type": "bearer",
+        "label": "MailerLite API token",
+        "generateUrl": "https://dashboard.mailerlite.com/integrations/api",
+        "setup": "Open [MailerLite dashboard](https://dashboard.mailerlite.com/), go to [Integrations](https://dashboard.mailerlite.com/integrations) → [MailerLite API](https://dashboard.mailerlite.com/integrations/api), then click **Generate new token**. Name it for the use case, copy it immediately, and store it securely; MailerLite will not show it again. Send it on API requests as `Authorization: Bearer <token>`.",
+        "acquisition": "manual"
+      },
+      "ml_oauth_cli": {
+        "type": "oauth2",
+        "label": "MailerLite OAuth session for the CLI/MCP connector",
+        "setup": "Use the built-in browser flow from the client: run `mailerlite auth login` for the CLI, or connect the MCP server in a compatible client and complete the OAuth login. This grants a MailerLite OAuth session that can be refreshed automatically by the client.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "mailerlite-api",
+        "name": "MailerLite API",
+        "type": "http",
+        "docs": "https://developers.mailerlite.com/getting-started",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.mailerlite.com/getting-started",
+            "https://developers.mailerlite.com/api/subscribers",
+            "https://developers.mailerlite.com/api/groups",
+            "https://developers.mailerlite.com/api/batching",
+            "https://developers.mailerlite.com/api/webhooks"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ml_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.mailerlite.com/getting-started"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://connect.mailerlite.com/api",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/json"
+            },
+            "description": "Send JSON payloads"
+          },
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "application/json"
+            },
+            "description": "Expect JSON responses"
+          }
+        ]
+      },
+      {
+        "slug": "mailerlite-cli",
+        "name": "MailerLite CLI",
+        "type": "cli",
+        "docs": "https://developers.mailerlite.com/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.mailerlite.com/cli",
+            "https://github.com/mailerlite/mailerlite-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ml_oauth_cli",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "mailerlite auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.mailerlite.com/cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "ml_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "mailerlite auth login --method token",
+                    "env": [
+                      "MAILERLITE_API_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.mailerlite.com/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "brew",
+            "identifier": "mailerlite/tap/mailerlite",
+            "runtimeHint": "macOS"
+          },
+          {
+            "registryType": "go",
+            "identifier": "github.com/mailerlite/mailerlite-cli@latest",
+            "runtimeHint": "Go 1.25+"
+          },
+          {
+            "registryType": "github-releases",
+            "identifier": "mailerlite/mailerlite-cli",
+            "runtimeHint": "Linux/macOS/Windows binaries"
+          },
+          {
+            "registryType": "nix",
+            "identifier": "git+ssh://git@github.com/mailerlite/mailerlite-cli.git",
+            "runtimeHint": "Nix"
+          }
+        ],
+        "command": "mailerlite"
+      },
+      {
+        "slug": "mailerlite-mcp-server",
+        "name": "MailerLite MCP Server",
+        "type": "mcp",
+        "docs": "https://developers.mailerlite.com/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.mailerlite.com/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ml_oauth_cli",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.mailerlite.com/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.mailerlite.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:59:19.756Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 133597,
+    "completion_tokens": 1189,
+    "total_tokens": 134786
+  },
+  "visited": [
+    "https://developers.mailerlite.com/",
+    "https://developers.mailerlite.com/api/batching",
+    "https://developers.mailerlite.com/api/groups",
+    "https://developers.mailerlite.com/api/subscribers",
+    "https://developers.mailerlite.com/api/webhooks",
+    "https://developers.mailerlite.com/cli",
+    "https://developers.mailerlite.com/getting-started",
+    "https://developers.mailerlite.com/mcp",
+    "https://github.com/mailerlite/mailerlite-cli",
+    "https://www.mailerlite.com/help/where-to-find-the-mailerlite-api-key-groupid-and-documentation"
+  ],
+  "grounding": [
+    "http://google.com",
+    "http://harber.net/ipsa-molestias-voluptatem-fugiat-quis-tempora-ullam.html",
+    "http://homenick.biz/tempora-asperiores-qui-alias-voluptas-eos-necessitatibus-et",
+    "http://kautzer.com/consequatur-neque-eaque-ad-et-rem-labore-ut.html",
+    "http://localhost:8080/api/webhooks",
+    "http://localhost:8080/api/webhooks?page=1",
+    "http://www.brekke.com/",
+    "http://www.cartwright.info/eligendi-soluta-corporis-in-quod-ullam",
+    "http://www.marvin.com/omnis-accusamus-est-rem-delectus-quaerat.html",
+    "http://www.oconner.org/laudantium-ipsa-ad-distinctio-eos-quasi-dicta.html",
+    "http://www.pfeffer.net/quod-voluptatibus-explicabo-nihil-ipsum-accusamus-error",
+    "https://connect.mailerlite.com/api",
+    "https://connect.mailerlite.com/api/groups",
+    "https://connect.mailerlite.com/api/groups/1234567890/subscribers",
+    "https://connect.mailerlite.com/api/groups/1234567890/subscribers?cursor=eyJpZCI6NzI1ODIxNjQ2NDU5Mzg1NTksIl9wb2ludHNUb05leHRJdGVtcyI6ZmFsc2V9",
+    "https://connect.mailerlite.com/api/groups/1234567890/subscribers?cursor=eyJpZCI6NzI1ODIxNjQ2NDY5ODcxMzYsIl9wb2ludHNUb05leHRJdGVtcyI6dHJ1ZX0",
+    "https://connect.mailerlite.com/api/groups/{group_id}",
+    "https://connect.mailerlite.com/api/groups/{group_id}/import-subscribers",
+    "https://connect.mailerlite.com/api/groups/{group_id}/subscribers",
+    "https://connect.mailerlite.com/api/groups?page=1",
+    "https://connect.mailerlite.com/api/subscribers",
+    "https://connect.mailerlite.com/api/subscribers/(:id",
+    "https://connect.mailerlite.com/api/subscribers/31986843064993537",
+    "https://connect.mailerlite.com/api/subscribers/:id",
+    "https://connect.mailerlite.com/api/subscribers/:id/activity-log",
+    "https://connect.mailerlite.com/api/subscribers/:id/forget",
+    "https://connect.mailerlite.com/api/subscribers/dummy@example.com",
+    "https://connect.mailerlite.com/api/subscribers/import/100000000000000000",
+    "https://connect.mailerlite.com/api/subscribers/{subscriber_id}/groups/{group_id}",
+    "https://connect.mailerlite.com/api/subscribers?cursor=eyJpZCI6NzI1ODIxNjQ2NDU5Mzg1NTksIl9wb2ludHNUb05leHRJdGVtcyI6ZmFsc2V9",
+    "https://connect.mailerlite.com/api/subscribers?cursor=eyJpZCI6NzI1ODIxNjQ2NDY5ODcxMzYsIl9wb2ludHNUb05leHRJdGVtcyI6dHJ1ZX0",
+    "https://connect.mailerlite.com/api/subscribers?limit=0",
+    "https://connect.mailerlite.com/api/webhooks",
+    "https://connect.mailerlite.com/api/webhooks/{webhook_id}",
+    "https://dashboard.mailerlite.com/",
+    "https://dashboard.mailerlite.com/integrations",
+    "https://dashboard.mailerlite.com/integrations/api",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status",
+    "https://developers-classic.mailerlite.com",
+    "https://developers.mailerli",
+    "https://developers.mailerlite.com",
+    "https://developers.mailerlite.com/",
+    "https://developers.mailerlite.com/#api-keys",
+    "https://developers.mailerlite.com/#api-keys-lifecycle--user-deletion",
+    "https://developers.mailerlite.com/#api-token",
+    "https://developers.mailerlite.com/#assign-subscriber-to-a-group",
+    "https://developers.mailerlite.com/#auth-status-and-logout",
+    "https://developers.mailerlite.com/#authentication",
+    "https://developers.mailerlite.com/#automation-management",
+    "https://developers.mailerlite.com/#automations",
+    "https://developers.mailerlite.com/#available-events",
+    "https://developers.mailerlite.com/#available-tools",
+    "https://developers.mailerlite.com/#branding",
+    "https://developers.mailerlite.com/#campaign-management",
+    "https://developers.mailerlite.com/#campaigns",
+    "https://developers.mailerlite.com/#chatgpt",
+    "https://developers.mailerlite.com/#claude-code",
+    "https://developers.mailerlite.com/#claude-desktop-and-web",
+    "https://developers.mailerlite.com/#commands",
+    "https://developers.mailerlite.com/#connecting-a-client",
+    "https://developers.mailerlite.com/#create-a-group",
+    "https://developers.mailerlite.com/#create-a-webhook",
+    "https://developers.mailerlite.com/#createupsert-subscriber",
+    "https://developers.mailerlite.com/#cursor",
+    "https://developers.mailerlite.com/#delete-a-subscriber",
+    "https://developers.mailerlite.com/#delete-a-webhook",
+    "https://developers.mailerlite.com/#delete-group",
+    "https://developers.mailerlite.com/#delivery-attempts-and-retries",
+    "https://developers.mailerlite.com/#discovery--utility",
+    "https://developers.mailerlite.com/#e-commerce-bulk-import",
+    "https://developers.mailerlite.com/#e-commerce-cart-items",
+    "https://developers.mailerlite.com/#e-commerce-carts",
+    "https://developers.mailerlite.com/#e-commerce-categories",
+    "https://developers.mailerlite.com/#e-commerce-customers",
+    "https://developers.mailerlite.com/#e-commerce-management",
+    "https://developers.mailerlite.com/#e-commerce-orders",
+    "https://developers.mailerlite.com/#e-commerce-products",
+    "https://developers.mailerlite.com/#e-commerce-shops",
+    "https://developers.mailerlite.com/#email-content",
+    "https://developers.mailerlite.com/#environment-variable",
+    "https://developers.mailerlite.com/#error",
+    "https://developers.mailerlite.com/#error-1",
+    "https://developers.mailerlite.com/#error-2",
+    "https://developers.mailerlite.com/#error-3",
+    "https://developers.mailerlite.com/#error-4",
+    "https://developers.mailerlite.com/#error-5",
+    "https://developers.mailerlite.com/#feedback",
+    "https://developers.mailerlite.com/#fetch-a-subscriber",
+    "https://developers.mailerlite.com/#fetch-subscriber-activity",
+    "https://developers.mailerlite.com/#fetch-total-subscribers-count",
+    "https://developers.mailerlite.com/#field-management",
+    "https://developers.mailerlite.com/#fields",
+    "https://developers.mailerlite.com/#forget-a-subscriber",
+    "https://developers.mailerlite.com/#form-management",
+    "https://developers.mailerlite.com/#forms",
+    "https://developers.mailerlite.com/#frequently-asked-questions",
+    "https://developers.mailerlite.com/#from-source",
+    "https://developers.mailerlite.com/#gemini-cli",
+    "https://developers.mailerlite.com/#get-a-webhook",
+    "https://developers.mailerlite.com/#get-subscribers-belonging-to-a-group",
+    "https://developers.mailerlite.com/#github-releases",
+    "https://developers.mailerlite.com/#global-flags",
+    "https://developers.mailerlite.com/#go-install",
+    "https://developers.mailerlite.com/#group-management",
+    "https://developers.mailerlite.com/#groups",
+    "https://developers.mailerlite.com/#homebrew-macos",
+    "https://developers.mailerlite.com/#how-mcp-works",
+    "https://developers.mailerlite.com/#http-status-codes",
+    "https://developers.mailerlite.com/#import-bulk-subscribers-to-group",
+    "https://developers.mailerlite.com/#import-rate-limits",
+    "https://developers.mailerlite.com/#installation",
+    "https://developers.mailerlite.com/#interactive-dashboard",
+    "https://developers.mailerlite.com/#json-output",
+    "https://developers.mailerlite.com/#list-all-groups",
+    "https://developers.mailerlite.com/#list-all-subscribers",
+    "https://developers.mailerlite.com/#list-all-webhooks",
+    "https://developers.mailerlite.com/#mailerlite-api",
+    "https://developers.mailerlite.com/#multiple-accounts",
+    "https://developers.mailerlite.com/#multiple-profiles",
+    "https://developers.mailerlite.com/#nix",
+    "https://developers.mailerlite.com/#oauth-recommended",
+    "https://developers.mailerlite.com/#payloads",
+    "https://developers.mailerlite.com/#rate-limit-error",
+    "https://developers.mailerlite.com/#rate-limits",
+    "https://developers.mailerlite.com/#request",
+    "https://developers.mailerlite.com/#request-1",
+    "https://developers.mailerlite.com/#request-2",
+    "https://developers.mailerlite.com/#request-3",
+    "https://developers.mailerlite.com/#request-4",
+    "https://developers.mailerlite.com/#request-5",
+    "https://developers.mailerlite.com/#request-6",
+    "https://developers.mailerlite.com/#request-body",
+    "https://developers.mailerlite.com/#request-body-1",
+    "https://developers.mailerlite.com/#request-parameters",
+    "https://developers.mailerlite.com/#response",
+    "https://developers.mailerlite.com/#response-1",
+    "https://developers.mailerlite.com/#response-2",
+    "https://developers.mailerlite.com/#response-3",
+    "https://developers.mailerlite.com/#response-4",
+    "https://developers.mailerlite.com/#response-5",
+    "https://developers.mailerlite.com/#response-6",
+    "https://developers.mailerlite.com/#response-7",
+    "https://developers.mailerlite.com/#response-import-progress",
+    "https://developers.mailerlite.com/#restrictions",
+    "https://developers.mailerlite.com/#sdk",
+    "https://developers.mailerlite.com/#security",
+    "https://developers.mailerlite.com/#segment-management",
+    "https://developers.mailerlite.com/#segments",
+    "https://developers.mailerlite.com/#subscriber-management",
+    "https://developers.mailerlite.com/#subscribers",
+    "https://developers.mailerlite.com/#templates",
+    "https://developers.mailerlite.com/#terms-of-service",
+    "https://developers.mailerlite.com/#timezones",
+    "https://developers.mailerlite.com/#unassign-subscriber-from-a-group",
+    "https://developers.mailerlite.com/#update-a-group",
+    "https://developers.mailerlite.com/#update-a-subscriber",
+    "https://developers.mailerlite.com/#update-a-webhook",
+    "https://developers.mailerlite.com/#validation-errors",
+    "https://developers.mailerlite.com/#versioning",
+    "https://developers.mailerlite.com/#vscode",
+    "https://developers.mailerlite.com/#webhook-events",
+    "https://developers.mailerlite.com/#webhook-management",
+    "https://developers.mailerlite.com/#webhooks",
+    "https://developers.mailerlite.com/#what-is-the-difference-between-this-and-classic-api",
+    "https://developers.mailerlite.com/#which-account-version-do-i-use",
+    "https://developers.mailerlite.com/#which-api-version-should-i-use",
+    "https://developers.mailerlite.com/api/automations",
+    "https://developers.mailerlite.com/api/batching",
+    "https://developers.mailerlite.com/api/campaign-languages",
+    "https://developers.mailerlite.com/api/campaigns",
+    "https://developers.mailerlite.com/api/fields",
+    "https://developers.mailerlite.com/api/forms",
+    "https://developers.mailerlite.com/api/groups",
+    "https://developers.mailerlite.com/api/segments",
+    "https://developers.mailerlite.com/api/subscribers",
+    "https://developers.mailerlite.com/api/timezones",
+    "https://developers.mailerlite.com/api/webhooks",
+    "https://developers.mailerlite.com/cli",
+    "https://developers.mailerlite.com/getting-started",
+    "https://developers.mailerlite.com/getting-started#sdk",
+    "https://developers.mailerlite.com/getting-started#versioning",
+    "https://developers.mailerlite.com/guides",
+    "https://developers.mailerlite.com/guides/basic",
+    "https://developers.mailerlite.com/guides/ecommerce",
+    "https://developers.mailerlite.com/mcp",
+    "https://developers.mailerlite.com/mcp/examples",
+    "https://developers.mailerlite.com/vscode:mcp/install?%7B%22name%22%3A%22mailerlite%22%2C%22gallery%22%3Afalse%2C%22url%22%3A%22https%3A%2F%2Fmcp.mailerlite.com%2Fmcp%22%7D",
+    "https://example.com/webhook",
+    "https://example_preview.url",
+    "https://github.com/mailerlite/",
+    "https://github.com/mailerlite/mailerlite-cli",
+    "https://github.com/mailerlite/mailerlite-cli.git",
+    "https://github.com/mailerlite/mailerlite-cli/releases",
+    "https://github.com/mailerlite/mailerlite-go",
+    "https://github.com/mailerlite/mailerlite-nodejs",
+    "https://github.com/mailerlite/mailerlite-php",
+    "https://github.com/mailerlite/mailerlite-python",
+    "https://github.com/mailerlite/mailerlite-ruby",
+    "https://github.com/mailerlite/mailerlite-rust",
+    "https://mcp.mailerlite.com/mcp",
+    "https://mystore.com",
+    "https://mystore.com/tshirt",
+    "https://status.mailerlite.com/",
+    "https://www.cartwright.org/mollitia-corporis-ipsam-reiciendis-dolor-error-amet-velit",
+    "https://www.deckow.com/aut-quae-voluptate-ab-qui-qui",
+    "https://www.mailerlite.com",
+    "https://www.mailerlite.com/about",
+    "https://www.mailerlite.com/activecampaign-alternative",
+    "https://www.mailerlite.com/affiliate",
+    "https://www.mailerlite.com/automation-examples",
+    "https://www.mailerlite.com/automation-templates",
+    "https://www.mailerlite.com/aweber-alternative",
+    "https://www.mailerlite.com/become-a-partner",
+    "https://www.mailerlite.com/blog",
+    "https://www.mailerlite.com/blog/avoiding-spam-filters-and-reaching-the-inbox",
+    "https://www.mailerlite.com/blog/best-online-side-hustles-from-home",
+    "https://www.mailerlite.com/blog/best-time-to-send-email",
+    "https://www.mailerlite.com/blog/best-welcome-email-examples",
+    "https://www.mailerlite.com/blog/best-wordpress-newsletter-subscription-plugins",
+    "https://www.mailerlite.com/blog/compare-your-email-performance-metrics-industry-benchmarks",
+    "https://www.mailerlite.com/blog/digital-products",
+    "https://www.mailerlite.com/blog/email-marketing-calendar-template",
+    "https://www.mailerlite.com/blog/email-signature-best-practices",
+    "https://www.mailerlite.com/blog/how-to-create-opt-in-forms-that-still-work-under-gdpr",
+    "https://www.mailerlite.com/blog/sending-survey-via-email-how-to-get-the-best-results",
+    "https://www.mailerlite.com/blog/web-pages-a-website-should-have",
+    "https://www.mailerlite.com/brand-assets",
+    "https://www.mailerlite.com/brevo-alternative",
+    "https://www.mailerlite.com/campaign-monitor-alternative",
+    "https://www.mailerlite.com/case-studies",
+    "https://www.mailerlite.com/company-values",
+    "https://www.mailerlite.com/compare",
+    "https://www.mailerlite.com/constant-contact-alternative",
+    "https://www.mailerlite.com/contact-us",
+    "https://www.mailerlite.com/convertkit-alternative",
+    "https://www.mailerlite.com/culture",
+    "https://www.mailerlite.com/email-authentication-policy-changes",
+    "https://www.mailerlite.com/email-marketing-by-industry",
+    "https://www.mailerlite.com/email-marketing-designed-for-agencies",
+    "https://www.mailerlite.com/email-marketing-for-creators",
+    "https://www.mailerlite.com/experts",
+    "https://www.mailerlite.com/features/appointment-booking-and-scheduling-software",
+    "https://www.mailerlite.com/features/automation",
+    "https://www.mailerlite.com/features/create-a-blog",
+    "https://www.mailerlite.com/features/email-marketing",
+    "https://www.mailerlite.com/features/email-marketing-for-ecommerce",
+    "https://www.mailerlite.com/features/email-verifier",
+    "https://www.mailerlite.com/features/ipad-app",
+    "https://www.mailerlite.com/features/landing-pages",
+    "https://www.mailerlite.com/features/mcp",
+    "https://www.mailerlite.com/features/newsletter-editors",
+    "https://www.mailerlite.com/features/paid-newsletter-subscriptions",
+    "https://www.mailerlite.com/features/performance-reports",
+    "https://www.mailerlite.com/features/popups",
+    "https://www.mailerlite.com/features/quiz-maker",
+    "https://www.mailerlite.com/features/sell-digital-products",
+    "https://www.mailerlite.com/features/signup-forms",
+    "https://www.mailerlite.com/features/templates",
+    "https://www.mailerlite.com/features/transactional-emails",
+    "https://www.mailerlite.com/features/website-builder",
+    "https://www.mailerlite.com/flodesk-alternative",
+    "https://www.mailerlite.com/free-email-marketing-resources-and-tools",
+    "https://www.mailerlite.com/gdpr-compliance",
+    "https://www.mailerlite.com/getresponse-alternative",
+    "https://www.mailerlite.com/ghost-alternative",
+    "https://www.mailerlite.com/godaddy-digital-marketing-alternative",
+    "https://www.mailerlite.com/gumroad-alternative",
+    "https://www.mailerlite.com/help",
+    "https://www.mailerlite.com/help/c/account-settings",
+    "https://www.mailerlite.com/help/c/approval",
+    "https://www.mailerlite.com/help/c/automation",
+    "https://www.mailerlite.com/help/c/billing",
+    "https://www.mailerlite.com/help/c/create-and-send",
+    "https://www.mailerlite.com/help/c/create-your-first-campaign",
+    "https://www.mailerlite.com/help/c/dashboard",
+    "https://www.mailerlite.com/help/c/deliverability",
+    "https://www.mailerlite.com/help/c/domain-authentication",
+    "https://www.mailerlite.com/help/c/domains",
+    "https://www.mailerlite.com/help/c/e-commerce-automation-triggers",
+    "https://www.mailerlite.com/help/c/ecommerce",
+    "https://www.mailerlite.com/help/c/forms",
+    "https://www.mailerlite.com/help/c/get-started-with-automations",
+    "https://www.mailerlite.com/help/c/getting-started",
+    "https://www.mailerlite.com/help/c/groups-and-segments",
+    "https://www.mailerlite.com/help/c/integrations",
+    "https://www.mailerlite.com/help/c/landing-pages",
+    "https://www.mailerlite.com/help/c/migration",
+    "https://www.mailerlite.com/help/c/reports",
+    "https://www.mailerlite.com/help/c/sites",
+    "https://www.mailerlite.com/help/c/subscriber-information",
+    "https://www.mailerlite.com/help/c/subscriber-management",
+    "https://www.mailerlite.com/help/c/troubleshooting",
+    "https://www.mailerlite.com/help/everything-about-test-emails",
+    "https://www.mailerlite.com/help/how-to-clear-caches-and-cookies-in-different-browsers",
+    "https://www.mailerlite.com/help/how-to-create-an-embedded-form",
+    "https://www.mailerlite.com/help/how-to-get-approved",
+    "https://www.mailerlite.com/help/how-to-get-started-with-mailerlite",
+    "https://www.mailerlite.com/help/how-to-import-subscribers",
+    "https://www.mailerlite.com/help/how-to-turn-on-two-factor-authentication-2fa",
+    "https://www.mailerlite.com/help/how-to-use-mailerlite-with-wordpress",
+    "https://www.mailerlite.com/help/how-to-use-variables-in-mailerlite",
+    "https://www.mailerlite.com/help/how-to-verify-and-authenticate-your-domain",
+    "https://www.mailerlite.com/help/i-can-t-login-to-my-account",
+    "https://www.mailerlite.com/help/migration",
+    "https://www.mailerlite.com/help/plan-and-billing",
+    "https://www.mailerlite.com/help/whats-the-difference-between-a-landing-page-and-a-website",
+    "https://www.mailerlite.com/help/where-to-find-the-mailerlite-api-key-groupid-and-documentation",
+    "https://www.mailerlite.com/help/where-to-find-the-mailerlite-api-key-groupid-and-documentation#new",
+    "https://www.mailerlite.com/integrations",
+    "https://www.mailerlite.com/jobs",
+    "https://www.mailerlite.com/landing-page-examples",
+    "https://www.mailerlite.com/legal",
+    "https://www.mailerlite.com/legal/intellectual-property-guidelines",
+    "https://www.mailerlite.com/legal/privacy-policy",
+    "https://www.mailerlite.com/legal/security-statement",
+    "https://www.mailerlite.com/legal/terms-of-service",
+    "https://www.mailerlite.com/linktree-alternative",
+    "https://www.mailerlite.com/madmimi-alternative",
+    "https://www.mailerlite.com/mailchimp-alternative",
+    "https://www.mailerlite.com/mailerlite-for-authors",
+    "https://www.mailerlite.com/mailerlite-for-nonprofits",
+    "https://www.mailerlite.com/mailerlite-for-smb",
+    "https://www.mailerlite.com/newsletter-examples",
+    "https://www.mailerlite.com/newsroom",
+    "https://www.mailerlite.com/paid-newsletter-platform",
+    "https://www.mailerlite.com/pricing",
+    "https://www.mailerlite.com/pricing.md",
+    "https://www.mailerlite.com/report-abuse",
+    "https://www.mailerlite.com/substack-alternative",
+    "https://www.mailerlite.com/support",
+    "https://www.mailerlite.com/templates",
+    "https://www.mailerlite.com/templates/landing-pages",
+    "https://www.mailerlite.com/templates/newsletters",
+    "https://www.mailerlite.com/templates/pop-ups",
+    "https://www.mailerlite.com/templates/websites",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/ab-testing",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/automation",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/call-to-action",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/content",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/design",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/email-list",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/paid-advertising-for-landing-page",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/personalization",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/segmentation",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/social-media",
+    "https://www.mailerlite.com/ultimate-guide-to-email-marketing/subject-line",
+    "https://www.mailerlite.com/video-tutorials",
+    "https://www.mailerlite.com/video-tutorials/email-domain-authentication",
+    "https://www.mailerlite.com/wall-of-love",
+    "https://www.mailerlite.com/webinars",
+    "https://www.mailerlite.com/whats-new",
+    "https://www.mailerlite.com/why-lite"
+  ]
+}

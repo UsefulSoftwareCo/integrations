@@ -1,0 +1,766 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "chargebee.com",
+    "detect": {
+      "domain": "chargebee.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:13:16.522Z",
+    "summary": "Chargebee exposes tenant-scoped REST APIs at `/api/v1` and `/api/v2` authenticated with a site API key via HTTP Basic Auth, plus MCP servers for Knowledge Base (public), Data Lookup, Onboarding, and Custom tools authenticated either by per-server Bearer API keys or Chargebee-issued OAuth clients.",
+    "credentials": {
+      "site_api_key": {
+        "type": "basic",
+        "label": "Chargebee site API key",
+        "generateUrl": "https://app.chargebee.com/login",
+        "setup": "Log in to the [Chargebee application](https://app.chargebee.com/login), then go to **Settings > Configure Chargebee > API Keys and Webhooks**. Open the **API Keys** tab, click **Add an API Key**, choose a **Full-Access Key**, name it, and copy the key. Use the API key for the specific test or live site you are integrating with; keys are environment-specific.",
+        "acquisition": "manual"
+      },
+      "mcp_api_key": {
+        "type": "bearer",
+        "label": "Chargebee MCP server API key",
+        "generateUrl": "https://app.chargebee.com",
+        "setup": "In [Chargebee Billing](https://app.chargebee.com), go to **Settings > Configure Chargebee > Agentic AI > MCP Servers**, open the specific MCP server, then under **Access & Authentication** enable **MCP Access** and create an API key for that server. Chargebee allows up to 5 API keys per MCP server. Use the key as `Authorization: Bearer <key>`.",
+        "acquisition": "manual"
+      },
+      "mcp_oauth_client": {
+        "type": "oauth2",
+        "label": "Chargebee MCP OAuth client",
+        "generateUrl": "https://app.chargebee.com",
+        "setup": "In [Chargebee Billing](https://app.chargebee.com), go to **Settings > Configure Chargebee > Agentic AI > MCP Servers**, open the specific MCP server, then under **Access & Authentication** enable **MCP Access** and create an OAuth client for the MCP client you want to use. Reuse the same OAuth client ID for users of the same MCP client as Chargebee recommends. Users authenticate through the Chargebee Billing login page and are redirected back to the MCP client. OAuth is not supported on sites with Multi-Business Entity enabled.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "chargebee-rest-api-v2",
+        "name": "Chargebee REST API v2",
+        "type": "http",
+        "docs": "https://apidocs.chargebee.com/docs/api/getting-started",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://apidocs.chargebee.com/docs/api/getting-started",
+            "https://www.chargebee.com/docs/billing/2.0/developer-resources/developer_resources"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "site_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://apidocs.chargebee.com/docs/api/getting-started"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{site}.chargebee.com/api/v2",
+        "variables": [
+          {
+            "name": "site",
+            "in": "url",
+            "resolveFrom": "your Chargebee site name",
+            "description": "Chargebee site subdomain, e.g. `acme-test`."
+          }
+        ]
+      },
+      {
+        "slug": "chargebee-api-v1",
+        "name": "Chargebee API v1",
+        "type": "http",
+        "docs": "https://apidocs.chargebee.com/docs/api/v1/getting-started",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://apidocs.chargebee.com/docs/api/v1/getting-started"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "site_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://apidocs.chargebee.com/docs/api/v1/getting-started"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{site}.chargebee.com/api/v1",
+        "variables": [
+          {
+            "name": "site",
+            "in": "url",
+            "resolveFrom": "your Chargebee site name",
+            "description": "Chargebee site subdomain."
+          }
+        ]
+      },
+      {
+        "slug": "chargebee-knowledge-base-mcp-server",
+        "name": "Chargebee Knowledge Base MCP Server",
+        "type": "mcp",
+        "docs": "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/knowledge-base-agent",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/knowledge-base-agent"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/knowledge-base-agent"
+            ]
+          }
+        },
+        "url": "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/knowledge_base_agent",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "YOUR-CHARGEBEE-SUBDOMAIN",
+            "in": "url",
+            "resolveFrom": "your Chargebee site subdomain",
+            "description": "Site subdomain; EU and AU data centers use `mcp.eu.chargebee.com` or `mcp.au.chargebee.com` instead."
+          }
+        ]
+      },
+      {
+        "slug": "chargebee-data-lookup-mcp-server",
+        "name": "Chargebee Data Lookup MCP Server",
+        "type": "mcp",
+        "docs": "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mcp_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "mcp_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/data_lookup_agent",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "YOUR-CHARGEBEE-SUBDOMAIN",
+            "in": "url",
+            "resolveFrom": "your Chargebee site subdomain",
+            "description": "Site subdomain; EU and AU data centers use `mcp.eu.chargebee.com` or `mcp.au.chargebee.com` instead."
+          }
+        ]
+      },
+      {
+        "slug": "chargebee-onboarding-mcp-server",
+        "name": "Chargebee Onboarding MCP Server",
+        "type": "mcp",
+        "docs": "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mcp_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "mcp_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/onboarding_agent",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "YOUR-CHARGEBEE-SUBDOMAIN",
+            "in": "url",
+            "resolveFrom": "your Chargebee site subdomain",
+            "description": "Site subdomain; EU and AU data centers use `mcp.eu.chargebee.com` or `mcp.au.chargebee.com` instead."
+          }
+        ]
+      },
+      {
+        "slug": "chargebee-custom-mcp-server",
+        "name": "Chargebee Custom MCP Server",
+        "type": "mcp",
+        "docs": "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mcp_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "mcp_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/YOUR-CUSTOM-SERVER-SLUG",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "YOUR-CHARGEBEE-SUBDOMAIN",
+            "in": "url",
+            "resolveFrom": "your Chargebee site subdomain",
+            "description": "Site subdomain; EU and AU data centers use `mcp.eu.chargebee.com` or `mcp.au.chargebee.com` instead."
+          },
+          {
+            "name": "YOUR-CUSTOM-SERVER-SLUG",
+            "in": "url",
+            "resolveFrom": "the custom MCP server name slug from Chargebee",
+            "description": "Slug derived from the custom server name, e.g. `invoice_lookup_mcp_server`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:13:16.522Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 457022,
+    "completion_tokens": 2967,
+    "total_tokens": 459989
+  },
+  "visited": [
+    "https://apidocs.chargebee.com/docs/api/getting-started",
+    "https://apidocs.chargebee.com/docs/api/v1/getting-started",
+    "https://chargebee.com/llms.txt",
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
+    "https://github.com/chargebee",
+    "https://github.com/chargebee/cb-partner-spi",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/docs/mintlify-files.md",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/gradlew.bat",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/spec",
+    "https://github.com/chargebee/openapi",
+    "https://github.com/chargebee/openapi/tree/main/spec",
+    "https://github.com/chargebee/sdk-generator",
+    "https://spidocs.chargebee.com/api-reference/partner-spi/overview",
+    "https://spidocs.chargebee.com/app-onboarding/guide",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/knowledge-base-agent",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent",
+    "https://www.chargebee.com/docs/billing/2.0/developer-resources/developer_resources",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://en.wikipedia.org/wiki/JSON",
+    "http://en.wikipedia.org/wiki/Query_string",
+    "http://en.wikipedia.org/wiki/Representational_state_transfer#RESTful_web_services",
+    "http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.au.chargebee.com/YOUR-CUSTOM-SERVER-SLUG",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.au.chargebee.com/data_lookup_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.au.chargebee.com/knowledge_base_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.au.chargebee.com/onboarding_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/YOUR-CUSTOM-SERVER-SLUG",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/data_lookup_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/knowledge_base_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.chargebee.com/onboarding_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.eu.chargebee.com/YOUR-CUSTOM-SERVER-SLUG",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.eu.chargebee.com/data_lookup_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.eu.chargebee.com/knowledge_base_agent",
+    "https://YOUR-CHARGEBEE-SUBDOMAIN.mcp.eu.chargebee.com/onboarding_agent",
+    "https://api-explorer.chargebee.com",
+    "https://api-explorer.chargebee.com/",
+    "https://apidocs.chargebee.com",
+    "https://apidocs.chargebee.com/?lang=curl#client_library",
+    "https://apidocs.chargebee.com/docs/api",
+    "https://apidocs.chargebee.com/docs/api/",
+    "https://apidocs.chargebee.com/docs/api/#client_library",
+    "https://apidocs.chargebee.com/docs/api/error-handling?lang=curl#api_rate_limits",
+    "https://apidocs.chargebee.com/docs/api/events",
+    "https://apidocs.chargebee.com/docs/api/getting-started",
+    "https://apidocs.chargebee.com/docs/api/time_machines",
+    "https://apidocs.chargebee.com/docs/api/tls_certificate_update_g2",
+    "https://apidocs.chargebee.com/docs/api/v1/getting-started",
+    "https://apidocs.chargebee.com/docs/sdks",
+    "https://apidocs.chargebee.com/llms.txt",
+    "https://app.chargebee.com",
+    "https://app.chargebee.com/login",
+    "https://app.chargebee.com/login?forward=https://apidocs.chargebee.com/docs/api/v1&ref=bhdocs",
+    "https://app.chargebee.com/login?forward=https://apidocs.chargebee.com/docs/api/v1?lang=curl",
+    "https://appexchange.salesforce.com/appxListingDetail?listingId=a0N3A00000FHCdzUAH",
+    "https://archiveprogram.github.com",
+    "https://better-auth.com/docs/plugins/chargebee",
+    "https://chargebee.com/llms.txt",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication#basic_authentication_scheme",
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
+    "https://discord.gg/nEtpvhqzG3",
+    "https://docs.github.com",
+    "https://docs.github.com/",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+    "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+    "https://ecosystem.hubspot.com/marketplace/listing/chargebee",
+    "https://en.wikipedia.org/wiki/POST_(HTTP",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#",
+    "https://github.com/#MIT-1-ov-file",
+    "https://github.com/#readme-ov-file",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/chargebee",
+    "https://github.com/chargebee/ai",
+    "https://github.com/chargebee/cb-partner-spi",
+    "https://github.com/chargebee/cb-partner-spi/actions",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/.gitignore",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/.pre-commit-config.yaml",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/JsonSchemaValidator.java",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/README.md",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/build.gradle",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/docs.json",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/docs/mintlify-files.md",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/gradle.properties",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/gradlew",
+    "https://github.com/chargebee/cb-partner-spi/blob/main/gradlew.bat",
+    "https://github.com/chargebee/cb-partner-spi/branches",
+    "https://github.com/chargebee/cb-partner-spi/commit/015adf85940a4a41166c87d29a1822273a9f20b4",
+    "https://github.com/chargebee/cb-partner-spi/commit/05b80e1b3a9b9ef32af30771245f6a2a7c825179",
+    "https://github.com/chargebee/cb-partner-spi/commit/1074cf6d9134da3effce29967df08714fdfe8b6a",
+    "https://github.com/chargebee/cb-partner-spi/commit/221f0decd7f629154784e5ffeb2964cdaf6521e4",
+    "https://github.com/chargebee/cb-partner-spi/commit/2b071e108a9b04c762a6206dfef42dbeb77b2f78",
+    "https://github.com/chargebee/cb-partner-spi/commit/34c10b81d2997fc497bb0a6642fe589ee7f427b5",
+    "https://github.com/chargebee/cb-partner-spi/commit/4066945eb5b194be4c91f5e55b459e6210c3bc9e",
+    "https://github.com/chargebee/cb-partner-spi/commit/5c5047be92273fff913ef148dec6244ad4000cca",
+    "https://github.com/chargebee/cb-partner-spi/commit/74f04d43ac6721d657d9c191900bf8ffbc92fc65",
+    "https://github.com/chargebee/cb-partner-spi/commit/7c415d417feed075bce4afb36914d11a76a04b21",
+    "https://github.com/chargebee/cb-partner-spi/commit/8ccdf2698e91e0bd7b8eea164d65496e7514d51c",
+    "https://github.com/chargebee/cb-partner-spi/commit/ba384843eb9e11cc6361c2dd0ca6818451145c14",
+    "https://github.com/chargebee/cb-partner-spi/commit/c03e7e9d7542f9b5911564982280a5572d31ea40",
+    "https://github.com/chargebee/cb-partner-spi/commit/c8a8be5dc94b38317938ac040b53b94988d4422d",
+    "https://github.com/chargebee/cb-partner-spi/commit/f97e651454cb966db313144fe016048a2873b1ea",
+    "https://github.com/chargebee/cb-partner-spi/commits/main/",
+    "https://github.com/chargebee/cb-partner-spi/commits/main/spec",
+    "https://github.com/chargebee/cb-partner-spi/commits?author=cb-adityabhat",
+    "https://github.com/chargebee/cb-partner-spi/commits?author=cbvenu",
+    "https://github.com/chargebee/cb-partner-spi/issues",
+    "https://github.com/chargebee/cb-partner-spi/pull/133",
+    "https://github.com/chargebee/cb-partner-spi/pulls",
+    "https://github.com/chargebee/cb-partner-spi/pulse",
+    "https://github.com/chargebee/cb-partner-spi/security",
+    "https://github.com/chargebee/cb-partner-spi/tags",
+    "https://github.com/chargebee/cb-partner-spi/tree/main",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/.github",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/api-reference",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/app-onboarding",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/docs",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/gradle/wrapper",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/logo",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/postman",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/spec",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/spec/capabilities",
+    "https://github.com/chargebee/cb-partner-spi/tree/main/spec/spi",
+    "https://github.com/chargebee/chargebee-dotnet",
+    "https://github.com/chargebee/chargebee-go",
+    "https://github.com/chargebee/chargebee-java",
+    "https://github.com/chargebee/chargebee-node",
+    "https://github.com/chargebee/chargebee-php",
+    "https://github.com/chargebee/chargebee-python",
+    "https://github.com/chargebee/chargebee-ruby",
+    "https://github.com/chargebee/chargebee-samples",
+    "https://github.com/chargebee/openapi",
+    "https://github.com/chargebee/openapi/actions",
+    "https://github.com/chargebee/openapi/activity",
+    "https://github.com/chargebee/openapi/blob/main/LICENSE",
+    "https://github.com/chargebee/openapi/blob/main/README.md",
+    "https://github.com/chargebee/openapi/blob/main/spec/chargebee_api_v1_spec.json",
+    "https://github.com/chargebee/openapi/blob/main/spec/chargebee_api_v1_spec.yaml",
+    "https://github.com/chargebee/openapi/blob/main/spec/chargebee_api_v2_pc_v1_spec.json",
+    "https://github.com/chargebee/openapi/blob/main/spec/chargebee_api_v2_pc_v1_spec.yaml",
+    "https://github.com/chargebee/openapi/blob/main/spec/chargebee_api_v2_pc_v2_spec.json",
+    "https://github.com/chargebee/openapi/blob/main/spec/chargebee_api_v2_pc_v2_spec.yaml",
+    "https://github.com/chargebee/openapi/blob/main/spec/chargebee_sdk_spec.json",
+    "https://github.com/chargebee/openapi/blob/main/spec/chargebee_sdk_spec.yaml",
+    "https://github.com/chargebee/openapi/branches",
+    "https://github.com/chargebee/openapi/commit/084d8ce992bf5a133cb07552f9e98abbee495ec8",
+    "https://github.com/chargebee/openapi/commit/22de8b10b2e5b6729342101d3cab4307af5ca10e",
+    "https://github.com/chargebee/openapi/commit/78295e47deba5c883031efff4071bb8c3aba26a8",
+    "https://github.com/chargebee/openapi/commit/c5273cae89b2ead4cedd3fa5daf37e45ebeedc45",
+    "https://github.com/chargebee/openapi/commits/main/",
+    "https://github.com/chargebee/openapi/commits/main/spec",
+    "https://github.com/chargebee/openapi/commits?author=cb-alish",
+    "https://github.com/chargebee/openapi/custom-properties",
+    "https://github.com/chargebee/openapi/forks",
+    "https://github.com/chargebee/openapi/graphs/contributors",
+    "https://github.com/chargebee/openapi/issues",
+    "https://github.com/chargebee/openapi/pull/14",
+    "https://github.com/chargebee/openapi/pull/33",
+    "https://github.com/chargebee/openapi/pulls",
+    "https://github.com/chargebee/openapi/pulse",
+    "https://github.com/chargebee/openapi/releases",
+    "https://github.com/chargebee/openapi/security",
+    "https://github.com/chargebee/openapi/stargazers",
+    "https://github.com/chargebee/openapi/tags",
+    "https://github.com/chargebee/openapi/tree/main",
+    "https://github.com/chargebee/openapi/tree/main/spec",
+    "https://github.com/chargebee/openapi/watchers",
+    "https://github.com/chargebee/sdk-generator",
+    "https://github.com/collections",
+    "https://github.com/contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fchargebee%2Fopenapi&report=chargebee+%28user%29",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fchargebee%2Fcb-partner-spi",
+    "https://github.com/login?return_to=%2Fchargebee%2Fopenapi",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fchargebee%2Fcb-partner-spi",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fchargebee%2Fcb-partner-spi%2Ftree%2Fmain%2Fspec",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fchargebee%2Fopenapi",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fchargebee%2Fopenapi%2Ftree%2Fmain%2Fspec",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/chargebee/packages?repo_name=openapi",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Ffiles%2Fdisambiguate&source=header-repo&source_repo=chargebee%2Fcb-partner-spi",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Ffiles%2Fdisambiguate&source=header-repo&source_repo=chargebee%2Fopenapi",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=chargebee%2Fcb-partner-spi",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=chargebee%2Fopenapi",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/topics/chargebee",
+    "https://github.com/topics/license",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.community/",
+    "https://maintainers.github.com",
+    "https://marketplace.chargebee.com/",
+    "https://modelcontextprotocol.io/docs/learn/server-concepts#tools",
+    "https://modelcontextprotocol.io/introduction",
+    "https://release-notes.chargebee.com/",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://spec.openapis.org/oas/v3.0.1",
+    "https://spidocs.chargebee.com/",
+    "https://spidocs.chargebee.com/#content-area",
+    "https://spidocs.chargebee.com/#developing-an-app-to-integrate-with-chargebee",
+    "https://spidocs.chargebee.com/#e-invoicing",
+    "https://spidocs.chargebee.com/#general-requisites",
+    "https://spidocs.chargebee.com/#go-live-steps",
+    "https://spidocs.chargebee.com/#key-features-of-partner-spi",
+    "https://spidocs.chargebee.com/#onboarding-process-for-apps-via-spi",
+    "https://spidocs.chargebee.com/#publication-process",
+    "https://spidocs.chargebee.com/#publishing-your-app-on-the-marketplace",
+    "https://spidocs.chargebee.com/#steps-to-develop-your-application",
+    "https://spidocs.chargebee.com/#tax-calculation",
+    "https://spidocs.chargebee.com/#tax-reconciliation",
+    "https://spidocs.chargebee.com/#tax-registration-number-validation",
+    "https://spidocs.chargebee.com/#technical-requisites",
+    "https://spidocs.chargebee.com/#why-publish-on-the-chargebee-marketplace",
+    "https://spidocs.chargebee.com/api-reference/einvoicing-spi/docs/overview",
+    "https://spidocs.chargebee.com/api-reference/einvoicing-spi/docs/testing-with-postman",
+    "https://spidocs.chargebee.com/api-reference/partner-spi/overview",
+    "https://spidocs.chargebee.com/api-reference/tax-reg-number-validate/docs/overview",
+    "https://spidocs.chargebee.com/api-reference/tax-reg-number-validate/docs/testing-with-postman",
+    "https://spidocs.chargebee.com/api-reference/tax-spi/docs/authorization",
+    "https://spidocs.chargebee.com/api-reference/tax-spi/docs/overview",
+    "https://spidocs.chargebee.com/api-reference/tax-spi/docs/testing-with-postman",
+    "https://spidocs.chargebee.com/api-reference/troubleshooting",
+    "https://spidocs.chargebee.com/app-onboarding/guide",
+    "https://spidocs.chargebee.com/llms.txt",
+    "https://stars.github.com",
+    "https://status.chargebee.com/",
+    "https://support.chargebee.com/support/home",
+    "https://support.github.com",
+    "https://support.github.com?tags=dotcom-footer",
+    "https://www.chargebee.com/",
+    "https://www.chargebee.com/?mode=agent",
+    "https://www.chargebee.com/agent/homepage.txt",
+    "https://www.chargebee.com/billing/",
+    "https://www.chargebee.com/blog/",
+    "https://www.chargebee.com/blog/gorgias-cfo-kunal-agarwal-ai-monetization-lessons/",
+    "https://www.chargebee.com/careers/",
+    "https://www.chargebee.com/champions-of-change/podcast/",
+    "https://www.chargebee.com/checkout-portal-docs/",
+    "https://www.chargebee.com/checkout-portal-docs/api-integration-overview.html",
+    "https://www.chargebee.com/checkout-portal-docs/drop-in-tutorial.html",
+    "https://www.chargebee.com/checkout-portal-docs/dropIn-overview.html",
+    "https://www.chargebee.com/checkout-portal-docs/mobile-solutions-overview.html",
+    "https://www.chargebee.com/company/",
+    "https://www.chargebee.com/contact/",
+    "https://www.chargebee.com/cpq/",
+    "https://www.chargebee.com/customers/",
+    "https://www.chargebee.com/docs",
+    "https://www.chargebee.com/docs/",
+    "https://www.chargebee.com/docs/1.0/",
+    "https://www.chargebee.com/docs/2.0/product-catalog.html",
+    "https://www.chargebee.com/docs/billing/1.0/product-catalog/product-catalog",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-copilot",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/chargebee-mcp",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/custom-mcp-server#api-key",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/data-lookup-agent#api-key",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/knowledge-base-agent",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent",
+    "https://www.chargebee.com/docs/billing/2.0/ai-in-chargebee/onboarding-agent#api-key",
+    "https://www.chargebee.com/docs/billing/2.0/developer-resources/api-explorer",
+    "https://www.chargebee.com/docs/billing/2.0/developer-resources/developer_resources",
+    "https://www.chargebee.com/docs/billing/2.0/entitlements/entitlements",
+    "https://www.chargebee.com/docs/billing/2.0/entitlements/features-overview",
+    "https://www.chargebee.com/docs/billing/2.0/getting-started/accessing_chargebee",
+    "https://www.chargebee.com/docs/billing/2.0/getting-started/setting-up-and-managing-sandbox-sites",
+    "https://www.chargebee.com/docs/billing/2.0/getting-started/sites-intro#live-site",
+    "https://www.chargebee.com/docs/billing/2.0/getting-started/sites-intro#test-site",
+    "https://www.chargebee.com/docs/billing/2.0/hosted-capabilities/hosted-checkout",
+    "https://www.chargebee.com/docs/billing/2.0/kb/getting-started/chargebee-apis-documentation",
+    "https://www.chargebee.com/docs/billing/2.0/kb/getting-started/error-should-be-in-valid-date-format-via-api",
+    "https://www.chargebee.com/docs/billing/2.0/kb/getting-started/how-to-contact-chargebees-support-team?utm_source=api-doc&utm_medium=cta&utm_campaign=support",
+    "https://www.chargebee.com/docs/billing/2.0/kb/getting-started/how-to-contact-chargebees-support-team?utm_source=user-doc&utm_medium=cta&utm_campaign=support",
+    "https://www.chargebee.com/docs/billing/2.0/kb/manage-your-chargebee-account/who-do-i-contact-for-getting-developer-assistance",
+    "https://www.chargebee.com/docs/billing/2.0/kb/platform/updating-the-backend-chargebeetypescript-lib-to-version-2220",
+    "https://www.chargebee.com/docs/billing/2.0/mobile-subscriptions/omnichannel-subscription-overview",
+    "https://www.chargebee.com/docs/billing/2.0/multi-business-entity/mbe",
+    "https://www.chargebee.com/docs/billing/2.0/product-catalog/product-catalog",
+    "https://www.chargebee.com/docs/billing/2.0/site-configuration/account_settings",
+    "https://www.chargebee.com/docs/billing/2.0/site-configuration/api_keys#full-access-key",
+    "https://www.chargebee.com/docs/cpq/overview",
+    "https://www.chargebee.com/docs/growth/getting-started/chargebee-growth-overview",
+    "https://www.chargebee.com/docs/payments/2.0/payment-methods/payment-method-overview",
+    "https://www.chargebee.com/docs/reveal/introduction/overview",
+    "https://www.chargebee.com/docs/revrec/getting-started-with-revrec/about-revrec",
+    "https://www.chargebee.com/entitlement-management/",
+    "https://www.chargebee.com/events/beelieve/sf/2026/livestream/",
+    "https://www.chargebee.com/growth/",
+    "https://www.chargebee.com/help/api-updates/",
+    "https://www.chargebee.com/implementation/",
+    "https://www.chargebee.com/integrations/",
+    "https://www.chargebee.com/partners/",
+    "https://www.chargebee.com/payment-gateways/",
+    "https://www.chargebee.com/pricing/",
+    "https://www.chargebee.com/quote-to-cash-and-beyond/",
+    "https://www.chargebee.com/receivables/",
+    "https://www.chargebee.com/recurring-billing-invoicing/metered-usage-billing/",
+    "https://www.chargebee.com/recurring-payments/chargebee-reveal/",
+    "https://www.chargebee.com/recurring-payments/checkout-experience/",
+    "https://www.chargebee.com/recurring-payments/payment-methods/",
+    "https://www.chargebee.com/resources/",
+    "https://www.chargebee.com/resources/glossaries/",
+    "https://www.chargebee.com/resources/guides/",
+    "https://www.chargebee.com/resources/zero-to-one-million-arr-journey/",
+    "https://www.chargebee.com/retention/",
+    "https://www.chargebee.com/revenue-recognition-software/",
+    "https://www.chargebee.com/saas-billing/",
+    "https://www.chargebee.com/saas-reporting/",
+    "https://www.chargebee.com/schedule-a-demo/",
+    "https://www.chargebee.com/security/",
+    "https://www.chargebee.com/solutions/industry/business-services/",
+    "https://www.chargebee.com/solutions/industry/e-learning/",
+    "https://www.chargebee.com/solutions/industry/e-publishing/",
+    "https://www.chargebee.com/solutions/industry/gen-ai/",
+    "https://www.chargebee.com/solutions/moving-upmarket/",
+    "https://www.chargebee.com/solutions/role/ceo/",
+    "https://www.chargebee.com/solutions/role/finance/",
+    "https://www.chargebee.com/solutions/role/rev-ops/",
+    "https://www.chargebee.com/solutions/strategy/expand-globally/",
+    "https://www.chargebee.com/solutions/strategy/roll-new-pricing/",
+    "https://www.chargebee.com/solutions/strategy/self-service-subscription-business/",
+    "https://www.chargebee.com/subscription-academy/",
+    "https://www.chargebee.com/subscription-ecommerce/",
+    "https://www.chargebee.com/subscription-management/",
+    "https://www.chargebee.com/subscription-management/create-manage-plans/",
+    "https://www.chargebee.com/time-machine/",
+    "https://www.chargebee.com/trial-signup/",
+    "https://www.chargebee.com/tutorials",
+    "https://www.chargebee.com/tutorials/chargebee-init-nextjs-integration/",
+    "https://www.chargebee.com/tutorials/quickstart/",
+    "https://www.chargebee.com/webinars/",
+    "https://www.gartner.com/reviews/market/recurring-billing-applications",
+    "https://www.gartner.com/reviews/product/chargebee?marketSeoName=recurring-billing-applications",
+    "https://www.githubstatus.com/",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=cb",
+    "https://www.postman.com/chargebee/chargebee-partners/overview",
+    "https://www.rfc-editor.org/rfc/rfc9110#name-user-agent",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://your-site.chargebee.com/api/v1/subscriptions",
+    "https://{site}.chargebee.com/api/v1/subscriptions",
+    "https://{site}.chargebee.com/api/v2",
+    "https://{site}.chargebee.com/api/v2/customers"
+  ]
+}

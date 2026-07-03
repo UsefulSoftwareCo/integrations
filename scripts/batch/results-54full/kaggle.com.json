@@ -1,0 +1,501 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "kaggle.com",
+    "detect": {
+      "domain": "kaggle.com",
+      "found": [
+        "llms.txt",
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://www.kaggle.com/"
+          ],
+          "authorizationEndpoint": "https://www.kaggle.com/api/v1/oauth2/authorize",
+          "tokenEndpoint": "https://www.kaggle.com/api/v1/oauth2/token",
+          "scopes": [
+            "resources.admin:*"
+          ],
+          "registrationEndpoint": "https://www.kaggle.com/api/v1/oauth2/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:31:11.989Z",
+    "summary": "Kaggle exposes an OAuth 2.0 provider API, a remote MCP server at https://www.kaggle.com/mcp, and an official Kaggle CLI authenticated by OAuth or Kaggle-issued tokens/API credentials.",
+    "description": "Kaggle is an online platform for data science and machine learning where users work with datasets, notebooks, models, benchmarks, and competitions. It also provides programmatic access to those resources through its public API tooling and MCP server.",
+    "credentials": {
+      "kaggle_api_token": {
+        "type": "api_key",
+        "label": "Kaggle API token",
+        "generateUrl": "https://www.kaggle.com/settings/api",
+        "setup": "In [Kaggle API settings](https://www.kaggle.com/settings/api), choose **Create New Token**. Kaggle downloads a `kaggle.json` file containing your API credentials. For CLI use, place that file at `~/.kaggle/kaggle.json` (Linux/macOS) or `C:\\Users\\<Windows-username>\\.kaggle\\kaggle.json` as described in [Public API docs](https://www.kaggle.com/getting-started/524433)."
+      },
+      "kaggle_mcp_bearer": {
+        "type": "bearer",
+        "label": "Kaggle MCP token",
+        "generateUrl": "https://www.kaggle.com/settings",
+        "setup": "In [Kaggle Settings](https://www.kaggle.com/settings), generate a new token and copy it. The [MCP docs](https://www.kaggle.com/docs/mcp) say the token should begin with `KGAT`. Send it as `Authorization: Bearer <token>` when your MCP client cannot do OAuth 2.0."
+      },
+      "kaggle_oauth_client": {
+        "type": "oauth2",
+        "label": "Kaggle OAuth client",
+        "generateUrl": "https://www.kaggle.com/api/v1/oauth2/register",
+        "setup": "Register or obtain a Kaggle OAuth client to use the Authorization Code flow. The [OAuth 2.0 Provider API docs](https://www.kaggle.com/docs/oauth-provider-api) say public clients should request a pre-configured client ID from the Kaggle team, and organization clients should register as `org:<organization-slug>`. Use the authorization endpoint `https://www.kaggle.com/api/v1/oauth2/authorize` and token endpoint `https://www.kaggle.com/api/v1/oauth2/token`. Public clients use PKCE; organization clients authenticate token exchange with HTTP Basic using the org owner's API key.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "kaggle-mcp-server",
+        "name": "Kaggle MCP Server",
+        "type": "mcp",
+        "docs": "https://www.kaggle.com/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.kaggle.com/docs/mcp",
+            "https://www.kaggle.com/docs/oauth-provider-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kaggle_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/docs/mcp",
+                  "https://www.kaggle.com/docs/oauth-provider-api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kaggle_mcp_bearer",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/docs/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.kaggle.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "kaggle-cli",
+        "name": "Kaggle CLI",
+        "type": "cli",
+        "docs": "https://github.com/Kaggle/kaggle-cli/blob/main/docs/README.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.kaggle.com/docs/api",
+            "https://www.kaggle.com/getting-started/524433",
+            "https://github.com/Kaggle/kaggle-cli/blob/main/docs/README.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kaggle_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "KAGGLE_USERNAME",
+                      "KAGGLE_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/getting-started/524433",
+                  "https://www.kaggle.com/docs/api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kaggle_oauth_client",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "kaggle auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/docs/api"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "pypi",
+            "identifier": "kaggle"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "kaggle-cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "kaggle"
+      },
+      {
+        "slug": "kaggle-oauth-2-0-provider-api",
+        "name": "Kaggle OAuth 2.0 Provider API",
+        "type": "http",
+        "docs": "https://www.kaggle.com/docs/oauth-provider-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.kaggle.com/docs/oauth-provider-api",
+            "https://www.kaggle.com/api/v1/oauth2/authorize",
+            "https://www.kaggle.com/api/v1/oauth2/token",
+            "https://www.kaggle.com/api/v1/oauth2/register"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kaggle_oauth_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.kaggle.com/docs/oauth-provider-api",
+                  "https://www.kaggle.com/api/v1/oauth2/authorize",
+                  "https://www.kaggle.com/api/v1/oauth2/token",
+                  "https://www.kaggle.com/api/v1/oauth2/register"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.kaggle.com/api/v1/oauth2"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:31:11.990Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 128159,
+    "completion_tokens": 1591,
+    "total_tokens": 129750
+  },
+  "visited": [
+    "https://dev.to/taw/how-to-access-kaggle-data-from-command-line-4hgd",
+    "https://github.com/Kaggle/kaggle-api",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/README.md",
+    "https://github.com/Kaggle/kagglehub/blob/main/README.md",
+    "https://kaggle.com/llms.txt",
+    "https://www.kaggle.com/code/afi1289/turning-ml-models-into-apis-in-python",
+    "https://www.kaggle.com/code/donkeys/kaggle-python-api",
+    "https://www.kaggle.com/code/mohamedabidi97/build-your-data-api-now",
+    "https://www.kaggle.com/code/rtatman/careercon-intro-to-apis",
+    "https://www.kaggle.com/discussions/getting-started/532626",
+    "https://www.kaggle.com/discussions/product-announcements",
+    "https://www.kaggle.com/docs",
+    "https://www.kaggle.com/docs/api",
+    "https://www.kaggle.com/docs/datasets",
+    "https://www.kaggle.com/docs/mcp",
+    "https://www.kaggle.com/docs/notebooks",
+    "https://www.kaggle.com/docs/oauth-provider-api",
+    "https://www.kaggle.com/getting-started/524433",
+    "https://www.kaggle.com/product-announcements/673011",
+    "https://www.kaggle.com/stevemessick/discussion",
+    "https://www.linkedin.com/posts/kaggle_kaggles-community-has-written-hundreds-of-activity-7467236609667674113-spFn"
+  ],
+  "grounding": [
+    "http://localhost:8080/callback?code=",
+    "https://agents.dev.kaggle.net/tasks/limagoog-20260612163257-ae1407dd",
+    "https://archiveprogram.github.com",
+    "https://chat.kaggle.net/kaggle/pl/yspw6y6smtgfjydrs5zn8he1ba",
+    "https://dev.to/taw/how-to-access-kaggle-data-from-command-line-4hgd",
+    "https://docs.github.com",
+    "https://docs.github.com/",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+    "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+    "https://docs.pola.rs/api/python/stable/reference/dataframe/index.html",
+    "https://docs.pola.rs/api/python/stable/reference/lazyframe/index.html",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#change-the-default-cache-folder",
+    "https://github.com/#start-of-content",
+    "https://github.com/#user-content-fn-1-5d2a038700a8dbf5ac724c43393690f5",
+    "https://github.com/#user-content-fn-2-5d2a038700a8dbf5ac724c43393690f5",
+    "https://github.com/#user-content-fn-3-5d2a038700a8dbf5ac724c43393690f5",
+    "https://github.com/#user-content-fn-4-5d2a038700a8dbf5ac724c43393690f5",
+    "https://github.com/Kaggle",
+    "https://github.com/Kaggle/kaggle-api",
+    "https://github.com/Kaggle/kaggle-cli",
+    "https://github.com/Kaggle/kaggle-cli/actions",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/README.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/benchmarks.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/competitions.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/configuration.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/datasets.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/forums.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/kernels.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/model_variations.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/model_variations_versions.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/models.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/output_format.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/tutorials.md",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/tutorials.md#tutorial-create-a-dataset",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/tutorials.md#tutorial-create-a-model",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/tutorials.md#tutorial-create-a-model-variation",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/tutorials.md#tutorial-create-a-model-variation-version",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/tutorials.md#tutorial-find-and-download-a-dataset",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/tutorials.md#tutorial-how-to-submit-to-a-code-competition",
+    "https://github.com/Kaggle/kaggle-cli/blob/main/docs/tutorials.md#tutorial-how-to-submit-to-a-competition",
+    "https://github.com/Kaggle/kaggle-cli/branches",
+    "https://github.com/Kaggle/kaggle-cli/commit/5a549dcdd6ca414720017baa97aa8fed08b68fd4",
+    "https://github.com/Kaggle/kaggle-cli/commit/86fbd6a52c69b03522e3fea716dbdd00269a815a",
+    "https://github.com/Kaggle/kaggle-cli/commit/a430f0bddc6ad4002cd0cdc821d80000da85a1d1",
+    "https://github.com/Kaggle/kaggle-cli/commit/af3deabf25ddccf1dba1f2d8a3f55b02f5e9525e",
+    "https://github.com/Kaggle/kaggle-cli/commit/fd4ac6cb5e1670f6a7e5e0160c7a57aca739e4a6",
+    "https://github.com/Kaggle/kaggle-cli/commits/main/",
+    "https://github.com/Kaggle/kaggle-cli/commits/main/docs/README.md",
+    "https://github.com/Kaggle/kaggle-cli/commits?author=adityabavadekar",
+    "https://github.com/Kaggle/kaggle-cli/commits?author=stevemessick",
+    "https://github.com/Kaggle/kaggle-cli/issues",
+    "https://github.com/Kaggle/kaggle-cli/projects",
+    "https://github.com/Kaggle/kaggle-cli/pull/1061",
+    "https://github.com/Kaggle/kaggle-cli/pull/1062",
+    "https://github.com/Kaggle/kaggle-cli/pull/1083",
+    "https://github.com/Kaggle/kaggle-cli/pull/1089",
+    "https://github.com/Kaggle/kaggle-cli/pull/742",
+    "https://github.com/Kaggle/kaggle-cli/pulls",
+    "https://github.com/Kaggle/kaggle-cli/pulse",
+    "https://github.com/Kaggle/kaggle-cli/raw/refs/heads/main/docs/README.md",
+    "https://github.com/Kaggle/kaggle-cli/security",
+    "https://github.com/Kaggle/kaggle-cli/tags",
+    "https://github.com/Kaggle/kaggle-cli/tree/main",
+    "https://github.com/Kaggle/kaggle-cli/tree/main/.github/workflows",
+    "https://github.com/Kaggle/kaggle-cli/tree/main/docs",
+    "https://github.com/Kaggle/kaggle-cli/tree/main/skills",
+    "https://github.com/Kaggle/kaggle-cli/tree/main/src/kaggle",
+    "https://github.com/Kaggle/kaggle-cli/tree/main/tests",
+    "https://github.com/Kaggle/kaggle-cli/wiki",
+    "https://github.com/Kaggle/kagglehub",
+    "https://github.com/Kaggle/kagglehub/actions",
+    "https://github.com/Kaggle/kagglehub/blob/main/README.md",
+    "https://github.com/Kaggle/kagglehub/commit/0d5a1ea6c8f5e5af3bc32a8cb8e1eb675c1df790",
+    "https://github.com/Kaggle/kagglehub/commits/main/README.md",
+    "https://github.com/Kaggle/kagglehub/commits?author=gautam-e",
+    "https://github.com/Kaggle/kagglehub/issues",
+    "https://github.com/Kaggle/kagglehub/pull/292",
+    "https://github.com/Kaggle/kagglehub/pulls",
+    "https://github.com/Kaggle/kagglehub/pulse",
+    "https://github.com/Kaggle/kagglehub/raw/refs/heads/main/README.md",
+    "https://github.com/Kaggle/kagglehub/security",
+    "https://github.com/Kaggle/kagglehub/tree/main",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2FKaggle%2Fkaggle-cli",
+    "https://github.com/login?return_to=%2FKaggle%2Fkagglehub",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FKaggle%2Fkaggle-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FKaggle%2Fkaggle-cli%2Fblob%2Fmain%2Fdocs%2FREADME.md",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FKaggle%2Fkagglehub%2Fblob%2Fmain%2FREADME.md",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fblob%2Fshow&source=header-repo&source_repo=Kaggle%2Fkaggle-cli",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fblob%2Fshow&source=header-repo&source_repo=Kaggle%2Fkagglehub",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=Kaggle%2Fkaggle-cli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.community/",
+    "https://huggingface.co/docs/datasets/main/en/package_reference/main_classes#datasets.Dataset",
+    "https://kaggle.com/llms.txt",
+    "https://maintainers.github.com",
+    "https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html",
+    "https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html",
+    "https://pandas.pydata.org/docs/reference/api/pandas.read_feather.html",
+    "https://pandas.pydata.org/docs/reference/api/pandas.read_json.html",
+    "https://pandas.pydata.org/docs/reference/api/pandas.read_parquet.html",
+    "https://pandas.pydata.org/docs/reference/api/pandas.read_sql_query.html",
+    "https://pandas.pydata.org/docs/reference/api/pandas.read_xml.html",
+    "https://pandas.pydata.org/docs/reference/frame.html",
+    "https://pypi.org/project/pip/",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://support.github.com?tags=dotcom-footer",
+    "https://www.githubstatus.com/",
+    "https://www.googlecloudcommunity.com/gc/Cloud-Hub/How-do-I-add-secrets-in-Google-Colab-Enterprise/m-p/784866",
+    "https://www.kaggle.com/",
+    "https://www.kaggle.com/#",
+    "https://www.kaggle.com/#auth",
+    "https://www.kaggle.com/#oauth-authorization-flow",
+    "https://www.kaggle.com/#oauth-client-types",
+    "https://www.kaggle.com/#oauth-discovery",
+    "https://www.kaggle.com/#oauth-errors",
+    "https://www.kaggle.com/#oauth-quick-start",
+    "https://www.kaggle.com/#oauth-request-encoding",
+    "https://www.kaggle.com/#oauth-scopes",
+    "https://www.kaggle.com/#oauth-scopes-appendix",
+    "https://www.kaggle.com/#oauth-security",
+    "https://www.kaggle.com/#oauth-token-management",
+    "https://www.kaggle.com/#oauth-using-tokens",
+    "https://www.kaggle.com/#rate-limits",
+    "https://www.kaggle.com/#site-content",
+    "https://www.kaggle.com/#tools",
+    "https://www.kaggle.com/.well-known/oauth-authorization-server",
+    "https://www.kaggle.com/.well-known/oauth-protected-resource",
+    "https://www.kaggle.com/account/login",
+    "https://www.kaggle.com/account/login?phase=startRegisterTab&returnUrl=%2Fdiscussions%2Fgetting-started%2F524433",
+    "https://www.kaggle.com/account/login?phase=startRegisterTab&returnUrl=%2Fdocs%2Fapi",
+    "https://www.kaggle.com/account/login?phase=startRegisterTab&returnUrl=%2Fdocs%2Fmcp",
+    "https://www.kaggle.com/account/login?phase=startRegisterTab&returnUrl=%2Fdocs%2Foauth-provider-api",
+    "https://www.kaggle.com/account/login?phase=startSignInTab&returnUrl=%2Fdiscussions%2Fgetting-started%2F524433",
+    "https://www.kaggle.com/account/login?phase=startSignInTab&returnUrl=%2Fdocs%2Fapi",
+    "https://www.kaggle.com/account/login?phase=startSignInTab&returnUrl=%2Fdocs%2Fmcp",
+    "https://www.kaggle.com/account/login?phase=startSignInTab&returnUrl=%2Fdocs%2Foauth-provider-api",
+    "https://www.kaggle.com/api/v1/datasets/list",
+    "https://www.kaggle.com/api/v1/oauth2/authorize",
+    "https://www.kaggle.com/api/v1/oauth2/introspect",
+    "https://www.kaggle.com/api/v1/oauth2/token",
+    "https://www.kaggle.com/benchmarks",
+    "https://www.kaggle.com/code",
+    "https://www.kaggle.com/code/afi1289/turning-ml-models-into-apis-in-python",
+    "https://www.kaggle.com/code/donkeys/kaggle-python-api",
+    "https://www.kaggle.com/code/mohamedabidi97/build-your-data-api-now",
+    "https://www.kaggle.com/code/rtatman/careercon-intro-to-apis",
+    "https://www.kaggle.com/competitions",
+    "https://www.kaggle.com/cookies",
+    "https://www.kaggle.com/datasets",
+    "https://www.kaggle.com/datasets/",
+    "https://www.kaggle.com/discussions/getting-started",
+    "https://www.kaggle.com/discussions/getting-started/532626",
+    "https://www.kaggle.com/discussions/product-announcements",
+    "https://www.kaggle.com/discussions/product-feedback",
+    "https://www.kaggle.com/discussions?tags=13102-Beginner",
+    "https://www.kaggle.com/discussions?tags=13103-Intermediate",
+    "https://www.kaggle.com/docs",
+    "https://www.kaggle.com/docs/api",
+    "https://www.kaggle.com/docs/benchmarks",
+    "https://www.kaggle.com/docs/competitions",
+    "https://www.kaggle.com/docs/competitions-setup",
+    "https://www.kaggle.com/docs/datasets",
+    "https://www.kaggle.com/docs/efficient-gpu-usage",
+    "https://www.kaggle.com/docs/getting-started",
+    "https://www.kaggle.com/docs/groups",
+    "https://www.kaggle.com/docs/mcp",
+    "https://www.kaggle.com/docs/models",
+    "https://www.kaggle.com/docs/notebooks",
+    "https://www.kaggle.com/docs/oauth-provider-api",
+    "https://www.kaggle.com/docs/organizations",
+    "https://www.kaggle.com/docs/packages",
+    "https://www.kaggle.com/docs/tpu",
+    "https://www.kaggle.com/game-arena",
+    "https://www.kaggle.com/getting-started/524433",
+    "https://www.kaggle.com/learn",
+    "https://www.kaggle.com/mcp",
+    "https://www.kaggle.com/models",
+    "https://www.kaggle.com/models/google/bert/tensorFlow2/answer-equivalence-bem",
+    "https://www.kaggle.com/product-announcements/673011",
+    "https://www.kaggle.com/ritikkumar38",
+    "https://www.kaggle.com/sandiledesmondmfazi",
+    "https://www.kaggle.com/settings",
+    "https://www.kaggle.com/settings/api",
+    "https://www.kaggle.com/stevemessick/discussion",
+    "https://www.linkedin.com/posts/kaggle_kaggles-community-has-written-hundreds-of-activity-7467236609667674113-spFn"
+  ]
+}

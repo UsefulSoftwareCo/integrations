@@ -1,0 +1,737 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "keycloak.org",
+    "detect": {
+      "domain": "keycloak.org",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:32:27.880Z",
+    "summary": "Keycloak exposes a tenant-hosted Admin REST API, OIDC/OAuth2 endpoint set, and Client Registration Service plus bundled `kcreg` CLI; authentication is primarily bearer access tokens, with client registration also accepting initial access tokens, registration access tokens, or HTTP Basic client credentials, while the public-client installation endpoint can be unauthenticated.",
+    "credentials": {
+      "kc_admin_bearer": {
+        "type": "bearer",
+        "label": "Keycloak bearer access token for admin or client-registration APIs",
+        "setup": "Create a confidential client or use a user/service account in your Keycloak realm, then obtain an access token from the realm token endpoint described in the [OpenID Connect endpoints guide](https://www.keycloak.org/securing-apps/oidc-layers). For admin or client-registration access, grant the needed realm-management roles as described in [Using the client registration service](https://www.keycloak.org/securing-apps/client-registration#_authentication) and [Automating client registration with the CLI](https://www.keycloak.org/securing-apps/client-registration-cli)."
+      },
+      "kc_initial_access_token": {
+        "type": "bearer",
+        "label": "Keycloak initial access token",
+        "generateUrl": "https://www.keycloak.org/securing-apps/client-registration#_authentication",
+        "setup": "In the Admin Console for a realm, open **Clients** → **Initial access token**, click **Create**, optionally set expiration and client count limits, then copy the token value immediately; Keycloak only shows it once. Use it as `Authorization: bearer ...` for the client registration service as documented in [Using the client registration service](https://www.keycloak.org/securing-apps/client-registration#_authentication)."
+      },
+      "kc_client_basic": {
+        "type": "basic",
+        "label": "Keycloak confidential client ID and client secret",
+        "generateUrl": "https://www.keycloak.org/securing-apps/client-registration-cli",
+        "setup": "In your realm, create or open a confidential client and enable client authentication, then use the client ID and its secret from the client's **Credentials** tab. The client registration docs show this can be used with HTTP Basic auth for the installation provider, and the CLI guide shows passing the secret with `kcreg config credentials --secret`. See [Using the client registration service](https://www.keycloak.org/securing-apps/client-registration#_authentication) and [Automating client registration with the CLI](https://www.keycloak.org/securing-apps/client-registration-cli)."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "keycloak-admin-rest-api",
+        "name": "Keycloak Admin REST API",
+        "type": "http",
+        "docs": "https://www.keycloak.org/docs-api/latest/rest-api/index.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.keycloak.org/docs-api/latest/rest-api/index.html",
+            "https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kc_admin_bearer",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.keycloak.org/securing-apps/oidc-layers",
+                  "https://www.keycloak.org/docs-api/latest/rest-api/index.html"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml",
+        "specAlternates": [
+          "https://www.keycloak.org/docs-api/latest/rest-api/openapi.json"
+        ],
+        "url": "{base url}/admin/realms",
+        "variables": [
+          {
+            "name": "base url",
+            "description": "Base URL of your Keycloak server instance, for example `http://localhost:8080` per the docs."
+          }
+        ]
+      },
+      {
+        "slug": "keycloak-openid-connect-endpoints",
+        "name": "Keycloak OpenID Connect endpoints",
+        "type": "http",
+        "docs": "https://www.keycloak.org/securing-apps/oidc-layers",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.keycloak.org/securing-apps/oidc-layers"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "{base url}/realms/{realm-name}",
+        "variables": [
+          {
+            "name": "base url",
+            "description": "Base URL of your Keycloak server instance, for example `http://localhost:8080`."
+          },
+          {
+            "name": "realm-name",
+            "description": "Realm name in your Keycloak server."
+          }
+        ]
+      },
+      {
+        "slug": "keycloak-client-registration-service",
+        "name": "Keycloak Client Registration Service",
+        "type": "http",
+        "docs": "https://www.keycloak.org/securing-apps/client-registration",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.keycloak.org/securing-apps/client-registration",
+            "https://www.keycloak.org/securing-apps/client-registration#_authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "kc_admin_bearer",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.keycloak.org/securing-apps/client-registration#_authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kc_initial_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.keycloak.org/securing-apps/client-registration#_authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kc_initial_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.keycloak.org/securing-apps/client-registration#_authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "kc_client_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.keycloak.org/securing-apps/client-registration#_authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "{base url}/realms/{realm}/clients-registrations/{provider}",
+        "variables": [
+          {
+            "name": "base url",
+            "description": "Base URL of your Keycloak server instance."
+          },
+          {
+            "name": "realm",
+            "description": "Realm name."
+          },
+          {
+            "name": "provider",
+            "description": "One of `default`, `install`, `openid-connect`, or `saml2-entity-descriptor`."
+          }
+        ]
+      },
+      {
+        "slug": "keycloak-installation-provider-endpoint-for-public-clients",
+        "name": "Keycloak installation provider endpoint for public clients",
+        "type": "http",
+        "docs": "https://www.keycloak.org/securing-apps/client-registration",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.keycloak.org/securing-apps/client-registration#_authentication"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://www.keycloak.org/securing-apps/client-registration#_authentication"
+            ]
+          }
+        },
+        "url": "{base url}/realms/{realm}/clients-registrations/install/{client id}",
+        "variables": [
+          {
+            "name": "base url",
+            "description": "Base URL of your Keycloak server instance."
+          },
+          {
+            "name": "realm",
+            "description": "Realm name."
+          },
+          {
+            "name": "client id",
+            "description": "Client identifier."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:32:27.881Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 355762,
+    "completion_tokens": 2628,
+    "total_tokens": 358390
+  },
+  "visited": [
+    "https://forum.keycloak.org/t/differentiation-authorization-services-and-uma/11443",
+    "https://forum.keycloak.org/t/full-documentation-of-account-management-rest-api/15026",
+    "https://forum.keycloak.org/t/http-error-411-length-required-when-using-kcadm-sh/10390",
+    "https://forum.keycloak.org/t/i-cant-find-documentation-for-the-keycloak-api/20604",
+    "https://forum.keycloak.org/t/i-cant-find-documentation-for-the-keycloak-api/20604/4",
+    "https://forum.keycloak.org/t/is-there-a-way-to-activate-login-events-from-cli/5868",
+    "https://forum.keycloak.org/t/keycloak-authorization-apis-to-create-policies-permissions-and-resources/15496",
+    "https://forum.keycloak.org/t/openapi-specification-for-keycloak-rest-apis/5872",
+    "https://www.keycloak.org/2024/03/keycloak-2400-released",
+    "https://www.keycloak.org/2024/06/realm-config-manamagemtn-tools-survey",
+    "https://www.keycloak.org/2025/09/keycloak-2640-released",
+    "https://www.keycloak.org/docs-api/21.1.2/rest-api/",
+    "https://www.keycloak.org/docs-api/latest/index.html",
+    "https://www.keycloak.org/docs-api/latest/javadocs/org/keycloak/authorization/client/resource/package-summary.html",
+    "https://www.keycloak.org/docs-api/latest/rest-api/index.html",
+    "https://www.keycloak.org/docs-api/latest/rest-api/openapi.json",
+    "https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml",
+    "https://www.keycloak.org/docs/25.0.6/securing_apps/index.html",
+    "https://www.keycloak.org/docs/latest/authorization_services/index.html",
+    "https://www.keycloak.org/docs/latest/server_admin/index.html",
+    "https://www.keycloak.org/docs/latest/server_development/index.html",
+    "https://www.keycloak.org/documentation",
+    "https://www.keycloak.org/migration/migrating-to-quarkus",
+    "https://www.keycloak.org/rest-api/index.html",
+    "https://www.keycloak.org/securing-apps/account-service",
+    "https://www.keycloak.org/securing-apps/client-registration",
+    "https://www.keycloak.org/securing-apps/client-registration#_authentication",
+    "https://www.keycloak.org/securing-apps/client-registration-cli",
+    "https://www.keycloak.org/securing-apps/client-registration-cli#logging-in",
+    "https://www.keycloak.org/securing-apps/mcp-authz-server",
+    "https://www.keycloak.org/securing-apps/oidc-layers",
+    "https://www.keycloak.org/server/configuration",
+    "https://www.reddit.com/r/mcp/comments/1ogb1ye/api_graphql_openapi_swagger_docs_mcp_server/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "http://127.0.0.1",
+    "http://localhost:8080",
+    "http://localhost:8080/admin/realms",
+    "http://localhost:8080/realms/master/clients-registrations/default",
+    "http://localhost:8080/realms/master/protocol/openid-connect/token",
+    "http://localhost:8080/realms/{realm-name}/.well-known/openid-configuration",
+    "http://localhost:8980/myapp/",
+    "https://code.visualstudio.com/",
+    "https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-00",
+    "https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13",
+    "https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-14",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-4.3",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-4.4",
+    "https://datatracker.ietf.org/doc/html/rfc7009",
+    "https://datatracker.ietf.org/doc/html/rfc7517",
+    "https://datatracker.ietf.org/doc/html/rfc7591",
+    "https://datatracker.ietf.org/doc/html/rfc7592",
+    "https://datatracker.ietf.org/doc/html/rfc7662",
+    "https://datatracker.ietf.org/doc/html/rfc8414",
+    "https://datatracker.ietf.org/doc/html/rfc8628",
+    "https://datatracker.ietf.org/doc/html/rfc8707",
+    "https://datatracker.ietf.org/doc/html/rfc9700#name-implicit-grant",
+    "https://datatracker.ietf.org/doc/html/rfc9700#name-resource-owner-password-cre",
+    "https://datatracker.ietf.org/doc/html/rfc9728",
+    "https://docs.wildfly.org/37/WildFly_Elytron_Security.html#Keycloak_Integration",
+    "https://example.com/mcp",
+    "https://forum.keycloak.org/t/differentiation-authorization-services-and-uma/11443",
+    "https://forum.keycloak.org/t/full-documentation-of-account-management-rest-api/15026",
+    "https://forum.keycloak.org/t/http-error-411-length-required-when-using-kcadm-sh/10390",
+    "https://forum.keycloak.org/t/i-cant-find-documentation-for-the-keycloak-api/20604",
+    "https://forum.keycloak.org/t/i-cant-find-documentation-for-the-keycloak-api/20604/4",
+    "https://forum.keycloak.org/t/is-there-a-way-to-activate-login-events-from-cli/5868",
+    "https://forum.keycloak.org/t/keycloak-authorization-apis-to-create-policies-permissions-and-resources/15496",
+    "https://forum.keycloak.org/t/openapi-specification-for-keycloak-rest-apis/5872",
+    "https://github.com/keycloak/keycloak/discussions/8898",
+    "https://github.com/keycloak/keycloak/tree/main/docs/guides/securing-apps/client-registration.adoc",
+    "https://github.com/modelcontextprotocol/inspector",
+    "https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization",
+    "https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization",
+    "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization",
+    "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#client-registration-approaches",
+    "https://modelcontextprotocol.io/specification/draft/basic/authorization#standards-compliance",
+    "https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html",
+    "https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint",
+    "https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth",
+    "https://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth",
+    "https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint",
+    "https://openid.net/specs/openid-connect-core-1_0.html#UserInfo",
+    "https://openid.net/specs/openid-connect-discovery-1_0.html",
+    "https://openid.net/specs/openid-connect-registration-1_0.html",
+    "https://vscode.dev/mcp-client",
+    "https://www.keycloa",
+    "https://www.keycloak.org/#AbstractPolicyRepresentation",
+    "https://www.keycloak.org/#Access",
+    "https://www.keycloak.org/#AccessToken",
+    "https://www.keycloak.org/#AdminEventRepresentation",
+    "https://www.keycloak.org/#AnyType",
+    "https://www.keycloak.org/#ApplicationRepresentation",
+    "https://www.keycloak.org/#ApplicationRepresentationClaims",
+    "https://www.keycloak.org/#AuthDetailsRepresentation",
+    "https://www.keycloak.org/#AuthenticationExecutionExportRepresentation",
+    "https://www.keycloak.org/#AuthenticationExecutionInfoRepresentation",
+    "https://www.keycloak.org/#AuthenticationExecutionRepresentation",
+    "https://www.keycloak.org/#AuthenticationFlowRepresentation",
+    "https://www.keycloak.org/#AuthenticatorConfigInfoRepresentation",
+    "https://www.keycloak.org/#AuthenticatorConfigRepresentation",
+    "https://www.keycloak.org/#Authorization",
+    "https://www.keycloak.org/#AuthorizationDetailsJSONRepresentation",
+    "https://www.keycloak.org/#AuthorizationSchema",
+    "https://www.keycloak.org/#BruteForceStrategy",
+    "https://www.keycloak.org/#CertificateRepresentation",
+    "https://www.keycloak.org/#ClaimRepresentation",
+    "https://www.keycloak.org/#ClientInitialAccessCreatePresentation",
+    "https://www.keycloak.org/#ClientInitialAccessPresentation",
+    "https://www.keycloak.org/#ClientMappingsRepresentation",
+    "https://www.keycloak.org/#ClientPoliciesRepresentation",
+    "https://www.keycloak.org/#ClientPolicyConditionRepresentation",
+    "https://www.keycloak.org/#ClientPolicyExecutorRepresentation",
+    "https://www.keycloak.org/#ClientPolicyRepresentation",
+    "https://www.keycloak.org/#ClientProfileRepresentation",
+    "https://www.keycloak.org/#ClientProfilesRepresentation",
+    "https://www.keycloak.org/#ClientRepresentation",
+    "https://www.keycloak.org/#ClientScopeRepresentation",
+    "https://www.keycloak.org/#ClientTemplateRepresentation",
+    "https://www.keycloak.org/#ClientTypeRepresentation",
+    "https://www.keycloak.org/#ClientTypesRepresentation",
+    "https://www.keycloak.org/#ComponentExportRepresentation",
+    "https://www.keycloak.org/#ComponentRepresentation",
+    "https://www.keycloak.org/#ComponentTypeRepresentation",
+    "https://www.keycloak.org/#Composites",
+    "https://www.keycloak.org/#ConfigPropertyRepresentation",
+    "https://www.keycloak.org/#Confirmation",
+    "https://www.keycloak.org/#CredentialRepresentation",
+    "https://www.keycloak.org/#DecisionEffect",
+    "https://www.keycloak.org/#DecisionStrategy",
+    "https://www.keycloak.org/#ErrorRepresentation",
+    "https://www.keycloak.org/#EvaluationResultRepresentation",
+    "https://www.keycloak.org/#EventRepresentation",
+    "https://www.keycloak.org/#FederatedIdentityRepresentation",
+    "https://www.keycloak.org/#GlobalRequestResult",
+    "https://www.keycloak.org/#GroupRepresentation",
+    "https://www.keycloak.org/#IDToken",
+    "https://www.keycloak.org/#IdentityProviderMapperRepresentation",
+    "https://www.keycloak.org/#IdentityProviderMapperTypeRepresentation",
+    "https://www.keycloak.org/#IdentityProviderRepresentation",
+    "https://www.keycloak.org/#KeyMetadataRepresentation",
+    "https://www.keycloak.org/#KeyStoreConfig",
+    "https://www.keycloak.org/#KeyUse",
+    "https://www.keycloak.org/#KeysMetadataRepresentation",
+    "https://www.keycloak.org/#Logic",
+    "https://www.keycloak.org/#ManagementPermissionReference",
+    "https://www.keycloak.org/#MappingsRepresentation",
+    "https://www.keycloak.org/#MemberRepresentation",
+    "https://www.keycloak.org/#MembershipType",
+    "https://www.keycloak.org/#OAuthClientRepresentation",
+    "https://www.keycloak.org/#OrganizationDomainRepresentation",
+    "https://www.keycloak.org/#OrganizationInvitationRepresentation",
+    "https://www.keycloak.org/#OrganizationRepresentation",
+    "https://www.keycloak.org/#Permission",
+    "https://www.keycloak.org/#PolicyEnforcementMode",
+    "https://www.keycloak.org/#PolicyEvaluationRequest",
+    "https://www.keycloak.org/#PolicyEvaluationResponse",
+    "https://www.keycloak.org/#PolicyProviderRepresentation",
+    "https://www.keycloak.org/#PolicyRepresentation",
+    "https://www.keycloak.org/#PolicyResultRepresentation",
+    "https://www.keycloak.org/#PropertyConfig",
+    "https://www.keycloak.org/#ProtocolMapperEvaluationRepresentation",
+    "https://www.keycloak.org/#ProtocolMapperRepresentation",
+    "https://www.keycloak.org/#PublishedRealmRepresentation",
+    "https://www.keycloak.org/#RealmEventsConfigRepresentation",
+    "https://www.keycloak.org/#RealmRepresentation",
+    "https://www.keycloak.org/#RequiredActionConfigInfoRepresentation",
+    "https://www.keycloak.org/#RequiredActionConfigRepresentation",
+    "https://www.keycloak.org/#RequiredActionProviderRepresentation",
+    "https://www.keycloak.org/#ResourceOwnerRepresentation",
+    "https://www.keycloak.org/#ResourceRepresentation",
+    "https://www.keycloak.org/#ResourceRepresentationOwner",
+    "https://www.keycloak.org/#ResourceServerRepresentation",
+    "https://www.keycloak.org/#ResourceType",
+    "https://www.keycloak.org/#RoleRepresentation",
+    "https://www.keycloak.org/#RolesRepresentation",
+    "https://www.keycloak.org/#ScopeMappingRepresentation",
+    "https://www.keycloak.org/#ScopeRepresentation",
+    "https://www.keycloak.org/#SocialLinkRepresentation",
+    "https://www.keycloak.org/#Status",
+    "https://www.keycloak.org/#StepExecutionStatus",
+    "https://www.keycloak.org/#UPAttribute",
+    "https://www.keycloak.org/#UPAttributePermissions",
+    "https://www.keycloak.org/#UPAttributeRequired",
+    "https://www.keycloak.org/#UPAttributeSelector",
+    "https://www.keycloak.org/#UPConfig",
+    "https://www.keycloak.org/#UPGroup",
+    "https://www.keycloak.org/#UnmanagedAttributePolicy",
+    "https://www.keycloak.org/#UserConsentRepresentation",
+    "https://www.keycloak.org/#UserFederationMapperRepresentation",
+    "https://www.keycloak.org/#UserFederationProviderRepresentation",
+    "https://www.keycloak.org/#UserProfileAttributeGroupMetadata",
+    "https://www.keycloak.org/#UserProfileAttributeMetadata",
+    "https://www.keycloak.org/#UserProfileMetadata",
+    "https://www.keycloak.org/#UserRepresentation",
+    "https://www.keycloak.org/#UserSessionRepresentation",
+    "https://www.keycloak.org/#WorkflowConcurrencyRepresentation",
+    "https://www.keycloak.org/#WorkflowRepresentation",
+    "https://www.keycloak.org/#WorkflowScheduleRepresentation",
+    "https://www.keycloak.org/#WorkflowStateRepresentation",
+    "https://www.keycloak.org/#WorkflowStepRepresentation",
+    "https://www.keycloak.org/#_attack_detection",
+    "https://www.keycloak.org/#_authentication",
+    "https://www.keycloak.org/#_authentication-flows",
+    "https://www.keycloak.org/#_authentication-sessions",
+    "https://www.keycloak.org/#_authentication_management",
+    "https://www.keycloak.org/#_authorization_code",
+    "https://www.keycloak.org/#_backchannel_authentication_endpoint",
+    "https://www.keycloak.org/#_bearer_token",
+    "https://www.keycloak.org/#_browser_flow",
+    "https://www.keycloak.org/#_client-policy-auth-flow",
+    "https://www.keycloak.org/#_client_attribute_certificate",
+    "https://www.keycloak.org/#_client_initial_access",
+    "https://www.keycloak.org/#_client_initiated_backchannel_authentication_grant",
+    "https://www.keycloak.org/#_client_registration_policies",
+    "https://www.keycloak.org/#_client_registration_policy",
+    "https://www.keycloak.org/#_client_role_mappings",
+    "https://www.keycloak.org/#_client_scopes",
+    "https://www.keycloak.org/#_clients",
+    "https://www.keycloak.org/#_component",
+    "https://www.keycloak.org/#_composite-roles",
+    "https://www.keycloak.org/#_configuring-realms",
+    "https://www.keycloak.org/#_configuring_a_user_for_client_registration_cli",
+    "https://www.keycloak.org/#_cross_origin_resource_sharing_cors",
+    "https://www.keycloak.org/#_default",
+    "https://www.keycloak.org/#_default_roles",
+    "https://www.keycloak.org/#_defining-ui-annotations",
+    "https://www.keycloak.org/#_device_authorization_grant",
+    "https://www.keycloak.org/#_email",
+    "https://www.keycloak.org/#_example_using_curl",
+    "https://www.keycloak.org/#_example_using_java_client_registration_api",
+    "https://www.keycloak.org/#_groups",
+    "https://www.keycloak.org/#_identity_broker",
+    "https://www.keycloak.org/#_identity_providers",
+    "https://www.keycloak.org/#_initial_access_token",
+    "https://www.keycloak.org/#_kerberos",
+    "https://www.keycloak.org/#_key",
+    "https://www.keycloak.org/#_keycloak_adapter_configuration",
+    "https://www.keycloak.org/#_keycloak_representations",
+    "https://www.keycloak.org/#_ldap",
+    "https://www.keycloak.org/#_ldap_connection_pool",
+    "https://www.keycloak.org/#_ldap_mappers",
+    "https://www.keycloak.org/#_ldap_password_hashing",
+    "https://www.keycloak.org/#_ldap_password_policy",
+    "https://www.keycloak.org/#_ldap_troubleshooting",
+    "https://www.keycloak.org/#_mapping-acr-to-loa-realm",
+    "https://www.keycloak.org/#_offline-access",
+    "https://www.keycloak.org/#_openapi_definitions",
+    "https://www.keycloak.org/#_openid_connect_dynamic_client_registration",
+    "https://www.keycloak.org/#_organizations",
+    "https://www.keycloak.org/#_overview",
+    "https://www.keycloak.org/#_passkeys-conditional-ui",
+    "https://www.keycloak.org/#_password-policies",
+    "https://www.keycloak.org/#_protocol_mappers",
+    "https://www.keycloak.org/#_realms_admin",
+    "https://www.keycloak.org/#_recovery-codes",
+    "https://www.keycloak.org/#_registration-rc-client-flows",
+    "https://www.keycloak.org/#_registration_access_token",
+    "https://www.keycloak.org/#_resources",
+    "https://www.keycloak.org/#_revocation-policy",
+    "https://www.keycloak.org/#_role_mapper",
+    "https://www.keycloak.org/#_role_scope_mappings",
+    "https://www.keycloak.org/#_roles",
+    "https://www.keycloak.org/#_roles_by_id",
+    "https://www.keycloak.org/#_saml_entity_descriptors",
+    "https://www.keycloak.org/#_scope_mappings",
+    "https://www.keycloak.org/#_ssl_modes",
+    "https://www.keycloak.org/#_sssd",
+    "https://www.keycloak.org/#_step-up-authentication-saml",
+    "https://www.keycloak.org/#_step-up-flow",
+    "https://www.keycloak.org/#_themes",
+    "https://www.keycloak.org/#_timeouts",
+    "https://www.keycloak.org/#_transient-session",
+    "https://www.keycloak.org/#_understanding-managed-and-unmanaged-attributes",
+    "https://www.keycloak.org/#_update-email-workflow",
+    "https://www.keycloak.org/#_uri_scheme",
+    "https://www.keycloak.org/#_user-profile-json-configuration",
+    "https://www.keycloak.org/#_user-storage-federation",
+    "https://www.keycloak.org/#_user_locale_selection",
+    "https://www.keycloak.org/#_user_session_limits",
+    "https://www.keycloak.org/#_users",
+    "https://www.keycloak.org/#_using-internationalized-messages",
+    "https://www.keycloak.org/#_validating-attributes",
+    "https://www.keycloak.org/#_version_information",
+    "https://www.keycloak.org/#_webauthn-authenticator-setup",
+    "https://www.keycloak.org/#_webauthn_aia",
+    "https://www.keycloak.org/#_webauthn_loginless",
+    "https://www.keycloak.org/#_webauthn_passwordless",
+    "https://www.keycloak.org/#_workflows",
+    "https://www.keycloak.org/#_working_with_alternative_configurations",
+    "https://www.keycloak.org/#_x509",
+    "https://www.keycloak.org/#_x509-config",
+    "https://www.keycloak.org/#adding-a-generated-key-pair",
+    "https://www.keycloak.org/#adding-a-provider",
+    "https://www.keycloak.org/#adding-an-existing-key-pair-and-certificate",
+    "https://www.keycloak.org/#adding-recovery-codes-to-the-browser-flow",
+    "https://www.keycloak.org/#adding-x-509-client-certificate-authentication-to-a-direct-grant-flow",
+    "https://www.keycloak.org/#administering-sessions",
+    "https://www.keycloak.org/#assembly-managing-users_server_administration_guide",
+    "https://www.keycloak.org/#assigning-permissions-using-roles-and-groups",
+    "https://www.keycloak.org/#attestation-statement-verification",
+    "https://www.keycloak.org/#attribute-search",
+    "https://www.keycloak.org/#authenticate-with-webauthn-authenticator",
+    "https://www.keycloak.org/#authentication-in-more-browser-tabs",
+    "https://www.keycloak.org/#available-conditions",
+    "https://www.keycloak.org/#basic-keycloak-operations",
+    "https://www.keycloak.org/#built-in-flows",
+    "https://www.keycloak.org/#check-recovery-codes-required-action-is-enabled",
+    "https://www.keycloak.org/#compromised-keys",
+    "https://www.keycloak.org/#con-aia-available-actions_server_administration_guide",
+    "https://www.keycloak.org/#con-aia-parameterized_server_administration_guide",
+    "https://www.keycloak.org/#con-aia-reauth_server_administration_guide",
+    "https://www.keycloak.org/#con-aia_server_administration_guide",
+    "https://www.keycloak.org/#con-client-roles_server_administration_guide",
+    "https://www.keycloak.org/#con-comparing-groups-roles_server_administration_guide",
+    "https://www.keycloak.org/#con-required-actions_server_administration_guide",
+    "https://www.keycloak.org/#con-user-impersonation_server_administration_guide",
+    "https://www.keycloak.org/#con-user-registration_server_administration_guide",
+    "https://www.keycloak.org/#conditions-in-conditional-flows",
+    "https://www.keycloak.org/#configure-the-recovery-codes-required-action",
+    "https://www.keycloak.org/#configuring-a-federated-sssd-store",
+    "https://www.keycloak.org/#configuring-authentication_server_administration_guide",
+    "https://www.keycloak.org/#configuring-federated-ldap-storage",
+    "https://www.keycloak.org/#connecting-to-ldap-over-ssl",
+    "https://www.keycloak.org/#controlling-login-options",
+    "https://www.keycloak.org/#core-concepts-and-terms",
+    "https://www.keycloak.org/#creating-a-password-less-browser-login-flow",
+    "https://www.keycloak.org/#creating-first-admin_server_administration_guide",
+    "https://www.keycloak.org/#creating-flows",
+    "https://www.keycloak.org/#creating-the-account-on-the-local-host",
+    "https://www.keycloak.org/#creating-the-account-remotely",
+    "https://www.keycloak.org/#creating-the-recovery-codes-credential",
+    "https://www.keycloak.org/#credential-delegation",
+    "https://www.keycloak.org/#cross-realm-trust",
+    "https://www.keycloak.org/#custom-providers",
+    "https://www.keycloak.org/#customizing-how-uis-are-rendered",
+    "https://www.keycloak.org/#dealing-with-provider-failures",
+    "https://www.keycloak.org/#default-search",
+    "https://www.keycloak.org/#deleting-your-account",
+    "https://www.keycloak.org/#disabling-keys",
+    "https://www.keycloak.org/#edit-mode",
+    "https://www.keycloak.org/#enabling-forgot-password",
+    "https://www.keycloak.org/#enabling-internationalization",
+    "https://www.keycloak.org/#enabling-progressive-profiling",
+    "https://www.keycloak.org/#enabling-remember-me",
+    "https://www.keycloak.org/#enabling-the-delete-account-capability",
+    "https://www.keycloak.org/#enabling-the-sssd-federation-provider",
+    "https://www.keycloak.org/#example-setups",
+    "https://www.keycloak.org/#explicitly-denyallow-access-in-conditional-flows",
+    "https://www.keycloak.org/#features",
+    "https://www.keycloak.org/#features-2",
+    "https://www.keycloak.org/#freeipaidm-server",
+    "https://www.keycloak.org/#giving-a-user-the-delete-account-role",
+    "https://www.keycloak.org/#hotp-configuration-options",
+    "https://www.keycloak.org/#keycloak-features-and-concepts",
+    "https://www.keycloak.org/#loading-keys-from-a-java-keystore",
+    "https://www.keycloak.org/#making-keys-passive",
+    "https://www.keycloak.org/#managing-attribute-groups",
+    "https://www.keycloak.org/#managing-attributes",
+    "https://www.keycloak.org/#managing-the-user-profile",
+    "https://www.keycloak.org/#managing-user-sessions",
+    "https://www.keycloak.org/#managing-webauthn-as-an-administrator",
+    "https://www.keycloak.org/#managing-webauthn-credentials-as-a-user",
+    "https://www.keycloak.org/#models",
+    "https://www.keycloak.org/#one-time-password-otp-policies",
+    "https://www.keycloak.org/#other-configuration-options",
+    "https://www.keycloak.org/#passkeys-authentication-with-modal-ui",
+    "https://www.keycloak.org/#passkeys_server_administration_guide",
+    "https://www.keycloak.org/#password-policy-types",
+    "https://www.keycloak.org/#proc-allow-user-to-delete-account_server_administration_guide",
+    "https://www.keycloak.org/#proc-assigning-role-mappings_server_administration_guide",
+    "https://www.keycloak.org/#proc-creating-a-realm_server_administration_guide",
+    "https://www.keycloak.org/#proc-creating-realm-roles_server_administration_guide",
+    "https://www.keycloak.org/#proc-creating-user_server_administration_guide",
+    "https://www.keycloak.org/#proc-deleting-user_server_administration_guide",
+    "https://www.keycloak.org/#proc-enabling-recaptcha_server_administration_guide",
+    "https://www.keycloak.org/#proc-enabling-terms-conditions_server_administration_guide",
+    "https://www.keycloak.org/#proc-enabling-user-registration_server_administration_guide",
+    "https://www.keycloak.org/#proc-managing-groups_server_administration_guide",
+    "https://www.keycloak.org/#proc-registering-new-user_server_administration_guide",
+    "https://www.keycloak.org/#proc-requiring-tac-agreement-at-registration_server_administration_guide",
+    "https://www.keycloak.org/#proc-searching-user_server_administration_guide",
+    "https://www.keycloak.org/#proc-setting-default-required-actions_server_administration_guide",
+    "https://www.keycloak.org/#proc-setting-password-user_server_administration_guide",
+    "https://www.keycloak.org/#proc-setting-required-actions_server_administration_guide",
+    "https://www.keycloak.org/#proc-specifying-default-groups_server_administration_guide",
+    "https://www.keycloak.org/#proc_creating-otp_server_administration_guide",
+    "https://www.keycloak.org/#procedure_recaptcha",
+    "https://www.keycloak.org/#procedure_recaptcha_enterprise",
+    "https://www.keycloak.org/#realm_keys",
+    "https://www.keycloak.org/#ref-personal-data-collected_server_administration_guide",
+    "https://www.keycloak.org/#ref-user-credentials_server_administration_guide",
+    "https://www.keycloak.org/#requesting-a-user-reset-a-password",
+    "https://www.keycloak.org/#rotating-keys",
+    "https://www.keycloak.org/#rotating-keys-by-extracting-a-certificate",
+    "https://www.keycloak.org/#script-authenticator",
+    "https://www.keycloak.org/#setup",
+    "https://www.keycloak.org/#setup-4",
+    "https://www.keycloak.org/#setup-and-configuration-of-client-machines",
+    "https://www.keycloak.org/#setup-and-configuration-of-keycloak-server",
+    "https://www.keycloak.org/#setup-of-kerberos-server",
+    "https://www.keycloak.org/#signing-out-all-active-sessions",
+    "https://www.keycloak.org/#sssd-and-d-bus",
+    "https://www.keycloak.org/#storage-mode",
+    "https://www.keycloak.org/#synchronizing-ldap-users-to-keycloak",
+    "https://www.keycloak.org/#the-master-realm",
+    "https://www.keycloak.org/#time-based-or-counter-based-one-time-passwords",
+    "https://www.keycloak.org/#totp-configuration-options",
+    "https://www.keycloak.org/#troubleshooting",
+    "https://www.keycloak.org/#twofa-conditional-workflow-examples",
+    "https://www.keycloak.org/#understanding-the-default-configuration",
+    "https://www.keycloak.org/#understanding-the-user-profile-contexts",
+    "https://www.keycloak.org/#user-profile",
+    "https://www.keycloak.org/#using-the-admin-console",
+    "https://www.keycloak.org/#viewing-client-sessions",
+    "https://www.keycloak.org/#viewing-user-sessions",
+    "https://www.keycloak.org/#webauthn_server_administration_guide",
+    "https://www.keycloak.org/#xoauth2-email-configuration-with-third-party-vendors",
+    "https://www.keycloak.org/2024/03/keycloak-2400-released",
+    "https://www.keycloak.org/2024/06/realm-config-manamagemtn-tools-survey",
+    "https://www.keycloak.org/2025/09/keycloak-2640-released",
+    "https://www.keycloak.org/blog",
+    "https://www.keycloak.org/community",
+    "https://www.keycloak.org/docs-api/21.1.2/rest-api/",
+    "https://www.keycloak.org/docs-api/latest/index.html",
+    "https://www.keycloak.org/docs-api/latest/javadocs/index.html",
+    "https://www.keycloak.org/docs-api/latest/javadocs/org/keycloak/authorization/client/resource/package-summary.html",
+    "https://www.keycloak.org/docs-api/latest/rest-api/index.html",
+    "https://www.keycloak.org/docs-api/latest/rest-api/openapi.json",
+    "https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml",
+    "https://www.keycloak.org/docs/25.0.6/securing_apps/index.html",
+    "https://www.keycloak.org/docs/latest/authorization_services/index.html",
+    "https://www.keycloak.org/docs/latest/release_notes/index.html",
+    "https://www.keycloak.org/docs/latest/server_admin/",
+    "https://www.keycloak.org/docs/latest/server_admin/#_account-service",
+    "https://www.keycloak.org/docs/latest/server_admin/#_client_initiated_backchannel_authentication_grant",
+    "https://www.keycloak.org/docs/latest/server_admin/#_client_policies",
+    "https://www.keycloak.org/docs/latest/server_admin/#_using_lightweight_access_token",
+    "https://www.keycloak.org/docs/latest/server_admin/#rp-initiated-logout",
+    "https://www.keycloak.org/docs/latest/server_admin/#ssrf",
+    "https://www.keycloak.org/docs/latest/server_admin/#viewing-user-sessions",
+    "https://www.keycloak.org/docs/latest/server_admin/index.html",
+    "https://www.keycloak.org/docs/latest/server_development/index.html",
+    "https://www.keycloak.org/docs/latest/upgrading/index.html",
+    "https://www.keycloak.org/documentation",
+    "https://www.keycloak.org/documentation-archive.html",
+    "https://www.keycloak.org/downloads",
+    "https://www.keycloak.org/guides",
+    "https://www.keycloak.org/guides#getting-started",
+    "https://www.keycloak.org/guides#securing-apps",
+    "https://www.keycloak.org/guides#server",
+    "https://www.keycloak.org/javadocs/index.html",
+    "https://www.keycloak.org/migration/migrating-to-quarkus",
+    "https://www.keycloak.org/openapi.json",
+    "https://www.keycloak.org/openapi.yaml",
+    "https://www.keycloak.org/rest-api/index.html",
+    "https://www.keycloak.org/securing-apps/account-service",
+    "https://www.keycloak.org/securing-apps/client-registration",
+    "https://www.keycloak.org/securing-apps/client-registration#_authentication",
+    "https://www.keycloak.org/securing-apps/client-registration-cli",
+    "https://www.keycloak.org/securing-apps/client-registration-cli#logging-in",
+    "https://www.keycloak.org/securing-apps/mcp-authz-server",
+    "https://www.keycloak.org/securing-apps/oidc-layers",
+    "https://www.keycloak.org/server/configuration",
+    "https://www.keycloak.org/server/containers",
+    "https://www.linuxfoundation.org/trademark-usage",
+    "https://www.reddit.com/r/mcp/comments/1ogb1ye/api_graphql_openapi_swagger_docs_mcp_server/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

@@ -1,0 +1,610 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "storyblok.com",
+    "detect": {
+      "domain": "storyblok.com",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:58:56.972Z",
+    "summary": "Storyblok exposes a REST Content Delivery API, a GraphQL delivery API, a REST Management API, a hosted MCP server, and a Node-based CLI; delivery surfaces use per-space content API tokens, while management/MCP/CLI use personal access tokens.",
+    "description": "Storyblok is a headless CMS with a visual editor for creating, managing, and delivering structured content across digital channels. It provides APIs and tooling for content delivery, content management, and agent-driven workflows.",
+    "credentials": {
+      "content_api_key": {
+        "type": "api_key",
+        "label": "Content Delivery API access token",
+        "generateUrl": "https://www.storyblok.com/faq/where-to-find-my-content-delivery-api-key",
+        "setup": "In the Storyblok app, open your space and go to `Settings` → `API Keys` / `Access Tokens` to copy an existing Content Delivery token or create a new one. Storyblok documents these as read-only tokens for the Content Delivery and GraphQL APIs; the FAQ says you can find the API key in the space settings under the `API Keys` tab and create new keys with different scopes there. See [Where to find my Content Delivery API Key?](https://www.storyblok.com/faq/where-to-find-my-content-delivery-api-key) and [Access Tokens](https://www.storyblok.com/docs/concepts/access-tokens)."
+      },
+      "personal_access_token": {
+        "type": "bearer",
+        "label": "Personal Access Token (management token)",
+        "generateUrl": "https://app.storyblok.com/#/me/account?tab=token",
+        "setup": "Sign in to the Storyblok app and open [My Account → Personal access tokens](https://app.storyblok.com/#/me/account?tab=token) to create a Personal Access Token. Storyblok's docs and MCP setup identify this as the management token used for the Management API and MCP server; the MCP docs recommend using a scoped personal access token to limit access. See [Field plugin development](https://www.storyblok.com/docs/plugins/field-plugins/development) and [MCP Server](https://mcp.labs.storyblok.com/)."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "content-delivery-api-v2",
+        "name": "Content Delivery API v2",
+        "type": "http",
+        "docs": "https://www.storyblok.com/docs/api/content-delivery/v2",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.storyblok.com/docs/api/content-delivery/v2",
+            "https://www.storyblok.com/docs/concepts/access-tokens",
+            "https://www.storyblok.com/faq/where-to-find-my-content-delivery-api-key"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "content_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.storyblok.com/docs/api/content-delivery/v2"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.storyblok.com/v2/cdn"
+      },
+      {
+        "slug": "graphql-api",
+        "name": "GraphQL API",
+        "type": "graphql",
+        "docs": "https://www.storyblok.com/docs/api/graphql",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.storyblok.com/docs/api/graphql",
+            "https://www.storyblok.com/docs/concepts/access-tokens"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "content_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.storyblok.com/docs/api/graphql"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "https://gapi.storyblok.com/v1/api"
+      },
+      {
+        "slug": "management-api",
+        "name": "Management API",
+        "type": "http",
+        "docs": "https://www.storyblok.com/docs/api/management",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.storyblok.com/docs/api/management",
+            "https://www.storyblok.com/docs/plugins/field-plugins/development"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "personal_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.storyblok.com/docs/api/management",
+                  "https://www.storyblok.com/docs/plugins/field-plugins/development"
+                ]
+              }
+            }
+          ]
+        },
+        "variables": [
+          {
+            "name": "region",
+            "description": "The Management API base URL depends on the space's server location/region; Storyblok's introduction page says different regional endpoints are available."
+          }
+        ]
+      },
+      {
+        "slug": "storyblok-mcp-server",
+        "name": "Storyblok MCP Server",
+        "type": "mcp",
+        "docs": "https://mcp.labs.storyblok.com/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://mcp.labs.storyblok.com/",
+            "https://www.storyblok.com/lp/mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "personal_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://mcp.labs.storyblok.com/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.labs.storyblok.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "storyblok-cli",
+        "name": "Storyblok CLI",
+        "type": "cli",
+        "docs": "https://www.storyblok.com/docs/libraries/storyblok-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.storyblok.com/docs/libraries/storyblok-cli",
+            "https://www.storyblok.com/mp/introducing-storyblok-cli-v4",
+            "https://www.storyblok.com/docs/plugins/field-plugins/development"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "personal_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "STORYBLOK_PERSONAL_ACCESS_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.storyblok.com/docs/plugins/field-plugins/development",
+                  "https://www.storyblok.com/docs/libraries/storyblok-cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "storyblok",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "storyblok"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:58:56.972Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 362840,
+    "completion_tokens": 1899,
+    "total_tokens": 364739
+  },
+  "visited": [
+    "https://mcp.labs.storyblok.com/",
+    "https://storyblok.com/docs/api/management/access-tokens",
+    "https://www.facebook.com/storyblok/posts/mcp-is-an-x-ray-not-a-cure-mcp-exposes-whats-already-true-about-your-api-whether/1581746910628745/",
+    "https://www.storyblok.com/docs/api",
+    "https://www.storyblok.com/docs/api/content-delivery/v2",
+    "https://www.storyblok.com/docs/api/graphql",
+    "https://www.storyblok.com/docs/api/management",
+    "https://www.storyblok.com/docs/api/management/access-tokens/create-an-access-token",
+    "https://www.storyblok.com/docs/api/management/spaces/update-a-space",
+    "https://www.storyblok.com/docs/concepts/access-tokens",
+    "https://www.storyblok.com/docs/libraries/js/app-extension-auth-helper",
+    "https://www.storyblok.com/docs/libraries/storyblok-cli",
+    "https://www.storyblok.com/docs/plugins/field-plugins/development",
+    "https://www.storyblok.com/docs/plugins/oauth-authorization-flow",
+    "https://www.storyblok.com/faq/how-to-use-storyblok-create-demo-cli",
+    "https://www.storyblok.com/faq/where-to-find-my-content-delivery-api-key",
+    "https://www.storyblok.com/llms.txt",
+    "https://www.storyblok.com/lp/mcp-server",
+    "https://www.storyblok.com/mp/introducing-storyblok-cli-v4",
+    "https://www.storyblok.com/mp/mcp-server",
+    "https://www.storyblok.com/mp/storyblok-cli-v4-11-0-config-file-logging-system-and-more",
+    "https://www.storyblok.com/tp/add-graphql-to-remix-app",
+    "https://www.storyblok.com/tp/deploy-next-spa-with-storyblok-to-layer0",
+    "https://www.storyblok.com/tp/storyblok-graphql-react-apollo"
+  ],
+  "grounding": [
+    "https://app.storyblok.com/#!/?partner=1",
+    "https://app.storyblok.com/#/",
+    "https://app.storyblok.com/#/login",
+    "https://app.storyblok.com/#/me/account?tab=token",
+    "https://app.storyblok.com/#/signup",
+    "https://bsky.app/profile/storyblok.com",
+    "https://github.com/storyblok/monoblok/issues",
+    "https://github.com/storyblok/storyblok-cli/?tab=readme-ov-file#contributing",
+    "https://github.com/storyblok/storyblok-cli/blob/next/src/README.md#api",
+    "https://mcp.labs.storyblok.com/",
+    "https://mcp.labs.storyblok.com/#",
+    "https://mcp.labs.storyblok.com/#mcp-client-setup",
+    "https://mcp.labs.storyblok.com/#overview",
+    "https://mcp.labs.storyblok.com/#role-based-access",
+    "https://mcp.labs.storyblok.com/#tools",
+    "https://mcp.labs.storyblok.com/#workflow",
+    "https://mcp.labs.storyblok.com/install",
+    "https://mcp.labs.storyblok.com/mcp",
+    "https://storyblok.com/docs/api/management/access-tokens",
+    "https://uptime.storyblok.com",
+    "https://www.facebook.com/storyblok/",
+    "https://www.facebook.com/storyblok/posts/mcp-is-an-x-ray-not-a-cure-mcp-exposes-whats-already-true-about-your-api-whether/1581746910628745/",
+    "https://www.instagram.com/storybloklife/",
+    "https://www.linkedin.com/company/storyblok",
+    "https://www.reddit.com/r/storyblok_com/",
+    "https://www.storybl",
+    "https://www.storyblok.com",
+    "https://www.storyblok.com/",
+    "https://www.storyblok.com/#_top",
+    "https://www.storyblok.com/#features-you-will-love-✨",
+    "https://www.storyblok.com/#how-it-works",
+    "https://www.storyblok.com/#main",
+    "https://www.storyblok.com/#migrating-from-v3-in-one-minute-🕒",
+    "https://www.storyblok.com/#the-window-to-get-ahead-is-now",
+    "https://www.storyblok.com/#what-is-the-model-context-protocol-mcp",
+    "https://www.storyblok.com/#what-is-the-storyblok-mcp-server",
+    "https://www.storyblok.com/#what-this-unlocks-in-practice",
+    "https://www.storyblok.com/#why-structured-content-is-the-foundation-agentic-ai-needs",
+    "https://www.storyblok.com/about",
+    "https://www.storyblok.com/app-store",
+    "https://www.storyblok.com/authors/alvaro-saburido",
+    "https://www.storyblok.com/authors/anastasia-khomych",
+    "https://www.storyblok.com/authors/daniel-mendoza",
+    "https://www.storyblok.com/authors/gillian-mays",
+    "https://www.storyblok.com/authors/julius-hemingway",
+    "https://www.storyblok.com/authors/keren-burns",
+    "https://www.storyblok.com/authors/olena-teselko",
+    "https://www.storyblok.com/authors/ronny-shani",
+    "https://www.storyblok.com/authors/surjit-bharath",
+    "https://www.storyblok.com/blog",
+    "https://www.storyblok.com/blog/",
+    "https://www.storyblok.com/blog/developers",
+    "https://www.storyblok.com/blog/marketing",
+    "https://www.storyblok.com/case-studies",
+    "https://www.storyblok.com/case-studies/",
+    "https://www.storyblok.com/changelog",
+    "https://www.storyblok.com/cl/scoped-personal-access-tokens",
+    "https://www.storyblok.com/cookie-settings",
+    "https://www.storyblok.com/docs",
+    "https://www.storyblok.com/docs/",
+    "https://www.storyblok.com/docs/api",
+    "https://www.storyblok.com/docs/api/content-delivery/v2",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/assets/get-signed-url",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/datasources/retrieve-a-single-datasource",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/datasources/retrieve-multiple-datasource-entries",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/datasources/retrieve-multiple-datasources",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/datasources/the-datasource-entry-object",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/datasources/the-datasource-object",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/experiments/retrieve-running-experiments",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/experiments/the-experiments-object",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/examples/filtering-stories-by-a-boolean-value",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/examples/filtering-stories-by-defining-a-value-range",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/field-level-translation",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-all-in-array",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-any-in-array",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-gt-date",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-gt-float",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-gt-int",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-in",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-is",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-like",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-lt-date",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-lt-float",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-lt-int",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-not-in",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-not-like",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/links/retrieve-multiple-links",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/links/retrieve-single-link",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/links/the-link-object",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/links/the-links-object",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/spaces/retrieve-current-space",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/spaces/the-space-object",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-an-edited-version-of-a-story-from-a-release",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-localized-stories-by-uuid",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-from-a-folder",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-in-a-particular-language",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/sorting-by-fields-associated-with-a-story-type",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/sorting-by-story-object-property",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-a-single-story",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-multiple-stories",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/stories/the-story-object",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/tags/retrieve-multiple-tags",
+    "https://www.storyblok.com/docs/api/content-delivery/v2/tags/the-tag-object",
+    "https://www.storyblok.com/docs/api/graphql",
+    "https://www.storyblok.com/docs/api/management",
+    "https://www.storyblok.com/docs/api/management/access-tokens",
+    "https://www.storyblok.com/docs/api/management/access-tokens/create-an-access-token",
+    "https://www.storyblok.com/docs/api/management/access-tokens/delete-an-access-token",
+    "https://www.storyblok.com/docs/api/management/access-tokens/retrieve-multiple-access-tokens",
+    "https://www.storyblok.com/docs/api/management/access-tokens/the-access-token-object",
+    "https://www.storyblok.com/docs/api/management/access-tokens/update-an-access-token",
+    "https://www.storyblok.com/docs/api/management/activities",
+    "https://www.storyblok.com/docs/api/management/activities/retrieve-a-single-activity",
+    "https://www.storyblok.com/docs/api/management/activities/retrieve-multiple-activities",
+    "https://www.storyblok.com/docs/api/management/activities/the-activity-object",
+    "https://www.storyblok.com/docs/api/management/activities/the-trackable-object",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/ai-style-group-object",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/organizations/create-ai-style-group-organization",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/organizations/delete-ai-style-group-organization",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/organizations/retrieve-default-ai-style-groups-organization",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/organizations/retrieve-multiple-ai-style-groups-organization",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/organizations/retrieve-single-ai-style-group-organization",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/organizations/set-default-ai-style-groups-organization",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/organizations/update-ai-style-group-organization",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/spaces/create-ai-style-group-space",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/spaces/delete-ai-style-group-space",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/spaces/retrieve-default-ai-style-groups-space",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/spaces/retrieve-multiple-ai-style-groups-space",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/spaces/retrieve-single-ai-style-group-space",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/spaces/set-default-ai-style-groups-space",
+    "https://www.storyblok.com/docs/api/management/ai-style-groups/spaces/update-ai-style-group-space",
+    "https://www.storyblok.com/docs/api/management/ai-translate/ai-languages",
+    "https://www.storyblok.com/docs/api/management/approvals",
+    "https://www.storyblok.com/docs/api/management/approvals/create-approval",
+    "https://www.storyblok.com/docs/api/management/approvals/create-release-approval",
+    "https://www.storyblok.com/docs/api/management/approvals/delete-an-approval",
+    "https://www.storyblok.com/docs/api/management/approvals/retrieve-a-single-approval",
+    "https://www.storyblok.com/docs/api/management/approvals/retrieve-multiple-approvals",
+    "https://www.storyblok.com/docs/api/management/approvals/the-approval-object",
+    "https://www.storyblok.com/docs/api/management/asset-folders",
+    "https://www.storyblok.com/docs/api/management/asset-folders/create-an-asset-folder",
+    "https://www.storyblok.com/docs/api/management/asset-folders/delete-an-asset-folder",
+    "https://www.storyblok.com/docs/api/management/asset-folders/retrieve-a-single-asset-folder",
+    "https://www.storyblok.com/docs/api/management/asset-folders/retrieve-multiple-asset-folders",
+    "https://www.storyblok.com/docs/api/management/asset-folders/the-asset-folder-object",
+    "https://www.storyblok.com/docs/api/management/asset-folders/update-an-asset-folder",
+    "https://www.storyblok.com/docs/api/management/assets",
+    "https://www.storyblok.com/docs/api/management/assets/bulk-moving-of-assets",
+    "https://www.storyblok.com/docs/api/management/assets/bulk-restoration-of-deleted-assets",
+    "https://www.storyblok.com/docs/api/management/assets/delete-an-asset",
+    "https://www.storyblok.com/docs/api/management/assets/delete-multiple-assets",
+    "https://www.storyblok.com/docs/api/management/assets/finish-upload",
+    "https://www.storyblok.com/docs/api/management/assets/get-signed-response",
+    "https://www.storyblok.com/docs/api/management/assets/retrieve-multiple-assets",
+    "https://www.storyblok.com/docs/api/management/assets/retrieve-one-asset",
+    "https://www.storyblok.com/docs/api/management/assets/the-asset-object",
+    "https://www.storyblok.com/docs/api/management/assets/update-asset",
+    "https://www.storyblok.com/docs/api/management/assets/upload-and-replace-assets",
+    "https://www.storyblok.com/docs/api/management/branch-deployments",
+    "https://www.storyblok.com/docs/api/management/branch-deployments/create-a-branch-deployment",
+    "https://www.storyblok.com/docs/api/management/collaborators",
+    "https://www.storyblok.com/docs/api/management/collaborators/add-a-collaborator",
+    "https://www.storyblok.com/docs/api/management/collaborators/add-a-user-with-sso",
+    "https://www.storyblok.com/docs/api/management/collaborators/delete-a-collaborator",
+    "https://www.storyblok.com/docs/api/management/collaborators/retrieve-multiple-collaborators",
+    "https://www.storyblok.com/docs/api/management/collaborators/the-collaborator-object",
+    "https://www.storyblok.com/docs/api/management/collaborators/update-a-collaborator-roles-and-permissions",
+    "https://www.storyblok.com/docs/api/management/component-folders",
+    "https://www.storyblok.com/docs/api/management/component-folders/create-a-component-folder",
+    "https://www.storyblok.com/docs/api/management/component-folders/delete-a-component-folder",
+    "https://www.storyblok.com/docs/api/management/component-folders/retrieve-a-single-component-folder",
+    "https://www.storyblok.com/docs/api/management/component-folders/retrieve-multiple-component-folders",
+    "https://www.storyblok.com/docs/api/management/component-folders/the-component-folder-object",
+    "https://www.storyblok.com/docs/api/management/component-folders/update-a-component-folder",
+    "https://www.storyblok.com/docs/api/management/components",
+    "https://www.storyblok.com/docs/api/management/components/create-a-component",
+    "https://www.storyblok.com/docs/api/management/components/delete-a-component",
+    "https://www.storyblok.com/docs/api/management/components/possible-field-types",
+    "https://www.storyblok.com/docs/api/management/components/restore-a-component-version",
+    "https://www.storyblok.com/docs/api/management/components/retrieve-a-single-component",
+    "https://www.storyblok.com/docs/api/management/components/retrieve-a-single-component-version",
+    "https://www.storyblok.com/docs/api/management/spaces/update-a-space",
+    "https://www.storyblok.com/docs/concepts",
+    "https://www.storyblok.com/docs/concepts/",
+    "https://www.storyblok.com/docs/concepts/access-tokens",
+    "https://www.storyblok.com/docs/concepts/assets",
+    "https://www.storyblok.com/docs/concepts/backups",
+    "https://www.storyblok.com/docs/concepts/blocks",
+    "https://www.storyblok.com/docs/concepts/blueprints",
+    "https://www.storyblok.com/docs/concepts/caching",
+    "https://www.storyblok.com/docs/concepts/cms-migration",
+    "https://www.storyblok.com/docs/concepts/content-modeling",
+    "https://www.storyblok.com/docs/concepts/datasources",
+    "https://www.storyblok.com/docs/concepts/e-commerce",
+    "https://www.storyblok.com/docs/concepts/experiments",
+    "https://www.storyblok.com/docs/concepts/fields",
+    "https://www.storyblok.com/docs/concepts/flowmotion",
+    "https://www.storyblok.com/docs/concepts/internationalization",
+    "https://www.storyblok.com/docs/concepts/references",
+    "https://www.storyblok.com/docs/concepts/roles",
+    "https://www.storyblok.com/docs/concepts/visual-editor",
+    "https://www.storyblok.com/docs/concepts/webhooks",
+    "https://www.storyblok.com/docs/editor-guides/",
+    "https://www.storyblok.com/docs/guides",
+    "https://www.storyblok.com/docs/guides/angular",
+    "https://www.storyblok.com/docs/guides/angular/content-modeling",
+    "https://www.storyblok.com/docs/guides/angular/dynamic-routing",
+    "https://www.storyblok.com/docs/guides/angular/internationalization",
+    "https://www.storyblok.com/docs/guides/angular/visual-preview",
+    "https://www.storyblok.com/docs/guides/astro",
+    "https://www.storyblok.com/docs/guides/astro/",
+    "https://www.storyblok.com/docs/guides/astro/content-modeling",
+    "https://www.storyblok.com/docs/guides/astro/dynamic-routing",
+    "https://www.storyblok.com/docs/guides/astro/internationalization",
+    "https://www.storyblok.com/docs/guides/astro/visual-preview",
+    "https://www.storyblok.com/docs/guides/eleventy/",
+    "https://www.storyblok.com/docs/guides/nextjs",
+    "https://www.storyblok.com/docs/guides/nextjs/",
+    "https://www.storyblok.com/docs/guides/nextjs/content-modeling",
+    "https://www.storyblok.com/docs/guides/nextjs/dynamic-routing",
+    "https://www.storyblok.com/docs/guides/nextjs/internationalization",
+    "https://www.storyblok.com/docs/guides/nextjs/visual-preview",
+    "https://www.storyblok.com/docs/guides/nuxt",
+    "https://www.storyblok.com/docs/guides/nuxt/",
+    "https://www.storyblok.com/docs/guides/nuxt/content-modeling",
+    "https://www.storyblok.com/docs/guides/nuxt/dynamic-routing",
+    "https://www.storyblok.com/docs/guides/nuxt/internationalization",
+    "https://www.storyblok.com/docs/guides/nuxt/visual-preview",
+    "https://www.storyblok.com/docs/guides/react",
+    "https://www.storyblok.com/docs/guides/react/",
+    "https://www.storyblok.com/docs/guides/react/content-modeling",
+    "https://www.storyblok.com/docs/guides/react/dynamic-routing",
+    "https://www.storyblok.com/docs/guides/react/visual-preview",
+    "https://www.storyblok.com/docs/guides/svelte",
+    "https://www.storyblok.com/docs/guides/svelte/content-modeling",
+    "https://www.storyblok.com/docs/guides/svelte/dynamic-routing",
+    "https://www.storyblok.com/docs/guides/svelte/visual-preview",
+    "https://www.storyblok.com/docs/guides/symfony",
+    "https://www.storyblok.com/docs/guides/symfony/content-modeling",
+    "https://www.storyblok.com/docs/guides/symfony/dynamic-routing",
+    "https://www.storyblok.com/docs/guides/symfony/internationalization",
+    "https://www.storyblok.com/docs/guides/symfony/visual-preview",
+    "https://www.storyblok.com/docs/guides/vue",
+    "https://www.storyblok.com/docs/guides/vue/",
+    "https://www.storyblok.com/docs/guides/vue/content-modeling",
+    "https://www.storyblok.com/docs/guides/vue/dynamic-routing",
+    "https://www.storyblok.com/docs/guides/vue/visual-preview",
+    "https://www.storyblok.com/docs/libraries/js/app-extension-auth-helper",
+    "https://www.storyblok.com/docs/libraries/storyblok-cli",
+    "https://www.storyblok.com/docs/manuals",
+    "https://www.storyblok.com/docs/plugins/field-plugins/development",
+    "https://www.storyblok.com/docs/plugins/oauth-authorization-flow",
+    "https://www.storyblok.com/ecosystem",
+    "https://www.storyblok.com/enterprises",
+    "https://www.storyblok.com/events",
+    "https://www.storyblok.com/events/",
+    "https://www.storyblok.com/faq/how-to-use-storyblok-create-demo-cli",
+    "https://www.storyblok.com/faq/where-to-find-my-content-delivery-api-key",
+    "https://www.storyblok.com/faqs",
+    "https://www.storyblok.com/fs/enterprise-contact",
+    "https://www.storyblok.com/jobs",
+    "https://www.storyblok.com/join-discord",
+    "https://www.storyblok.com/joyconf",
+    "https://www.storyblok.com/legal/legal-notice",
+    "https://www.storyblok.com/legal/privacy-policy",
+    "https://www.storyblok.com/legal/terms",
+    "https://www.storyblok.com/legal/terms#15-trial-use-free-use-beta-features",
+    "https://www.storyblok.com/llms.txt",
+    "https://www.storyblok.com/lp/accessibility",
+    "https://www.storyblok.com/lp/ai-knowledge-hub",
+    "https://www.storyblok.com/lp/ai-search",
+    "https://www.storyblok.com/lp/ai-suite",
+    "https://www.storyblok.com/lp/cms-roi-calculator",
+    "https://www.storyblok.com/lp/content-competitive-edge",
+    "https://www.storyblok.com/lp/developers",
+    "https://www.storyblok.com/lp/labs",
+    "https://www.storyblok.com/lp/mach-alliance",
+    "https://www.storyblok.com/lp/mcp-server",
+    "https://www.storyblok.com/lp/sustainability",
+    "https://www.storyblok.com/lp/whitepapers",
+    "https://www.storyblok.com/lp/whitepapers/",
+    "https://www.storyblok.com/marketers",
+    "https://www.storyblok.com/mp/ai-tools-for-seo-content-marketers",
+    "https://www.storyblok.com/mp/announcing-storyblok-angular-sdk",
+    "https://www.storyblok.com/mp/hidden-cost-flat-mcp-tool-lists",
+    "https://www.storyblok.com/mp/introducing-storyblok-cli-v4",
+    "https://www.storyblok.com/mp/mcp-server",
+    "https://www.storyblok.com/mp/mcp-server-practical-guide",
+    "https://www.storyblok.com/mp/netlify-storyblok-content-management-delivery",
+    "https://www.storyblok.com/mp/sanity-alternative",
+    "https://www.storyblok.com/mp/storyblok-cli-v4-11-0-config-file-logging-system-and-more",
+    "https://www.storyblok.com/mp/storyblok-vs-optimizely",
+    "https://www.storyblok.com/mp/sunset-unscoped-personal-access-tokens",
+    "https://www.storyblok.com/mp/unplanned-cms-migration",
+    "https://www.storyblok.com/mp/why-marketers-should-know-what-a-vector-database-is",
+    "https://www.storyblok.com/partners",
+    "https://www.storyblok.com/partners/",
+    "https://www.storyblok.com/partners/partner-resources",
+    "https://www.storyblok.com/partners/solution",
+    "https://www.storyblok.com/platform",
+    "https://www.storyblok.com/press",
+    "https://www.storyblok.com/pricing",
+    "https://www.storyblok.com/pricing/",
+    "https://www.storyblok.com/roadmap",
+    "https://www.storyblok.com/search",
+    "https://www.storyblok.com/technologies",
+    "https://www.storyblok.com/tp/add-graphql-to-remix-app",
+    "https://www.storyblok.com/tp/deploy-next-spa-with-storyblok-to-layer0",
+    "https://www.storyblok.com/tp/headless-cms-explained",
+    "https://www.storyblok.com/tp/storyblok-graphql-react-apollo",
+    "https://www.storyblok.com/trust-center",
+    "https://www.storyblok.com/trust-center/service-support",
+    "https://www.storyblok.com/tutorials",
+    "https://www.storyblok.com/why-storyblok",
+    "https://www.twitch.tv/storyblok",
+    "https://www.x.com/storyblok",
+    "https://www.youtube.com/c/Storyblok-com"
+  ]
+}

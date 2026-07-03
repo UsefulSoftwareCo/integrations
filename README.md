@@ -207,4 +207,4 @@ all live in `normalize.ts`.
 
 Early and moving fast (`v0.0.1`) — schema and routes may change.
 
-[MIT](LICENSE) © Useful Software Co.
+[MIT](LICENSE) © Rhys Sullivan

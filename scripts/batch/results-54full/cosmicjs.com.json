@@ -1,0 +1,724 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "cosmicjs.com",
+    "detect": {
+      "domain": "cosmicjs.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:15:17.500Z",
+    "summary": "Cosmic exposes a bucket-scoped REST API, an agent-onboarding REST API on dapi.cosmicjs.com, hosted MCP endpoints for bucket and agent scopes, and an npm-distributed CLI; auth uses bucket read/write keys, personal access tokens, and agent keys depending on surface.",
+    "description": "Cosmic is a headless CMS and AI-enabled content platform for managing structured content, media, and related workflows. Users create projects and buckets in the Cosmic dashboard, then access that content through APIs, MCP, and tooling.",
+    "credentials": {
+      "bucket_read_key": {
+        "type": "api_key",
+        "label": "Bucket read key",
+        "generateUrl": "https://app.cosmicjs.com/login",
+        "setup": "Log in to the [Cosmic dashboard](https://app.cosmicjs.com/login), open your bucket, then go to **Settings → API Access** to copy the bucket slug and `read_key`. This key is for read-only bucket access.",
+        "acquisition": "manual"
+      },
+      "cosmic_pat": {
+        "type": "bearer",
+        "label": "Personal Access Token",
+        "generateUrl": "https://app.cosmicjs.com/account/api-tokens",
+        "setup": "Open [Account Settings → API Tokens](https://app.cosmicjs.com/account/api-tokens) in the Cosmic dashboard and create a token. Tokens use the `cos_` prefix and carry your full account permissions. This is the recommended auth for scripts, CI/CD, CLI login with `--token`, and dashboard-level API access.",
+        "acquisition": "manual"
+      },
+      "agent_key": {
+        "type": "bearer",
+        "label": "Agent key",
+        "generateUrl": "https://www.cosmicjs.com/docs/api/agents",
+        "setup": "Create an agent-scoped signup session by calling [`POST /v3/agents/sign-up`](https://www.cosmicjs.com/docs/api/agents#sign-up) on `https://dapi.cosmicjs.com`. The response includes an `agent_key` with the `agk_` prefix. Store it securely; it authenticates only the agent-flow endpoints and MCP agent scope.",
+        "acquisition": "manual"
+      },
+      "agent_access_token": {
+        "type": "jwt",
+        "label": "Agent signup access token",
+        "generateUrl": "https://www.cosmicjs.com/docs/api/agents",
+        "setup": "Call [`POST /v3/agents/sign-up`](https://www.cosmicjs.com/docs/api/agents#sign-up) to provision an agent-created project. The response includes an `access_token` JWT for the shadow user. Refresh it by calling [`GET /v3/agents/status`](https://www.cosmicjs.com/docs/api/agents#status) with your `agent_key`; after verification, [`POST /v3/agents/verify`](https://www.cosmicjs.com/docs/api/agents#verify) returns a fresh longer-lived token. This token is for standard dashboard API calls on the agent-created project.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "cosmic-bucket-rest-api",
+        "name": "Cosmic Bucket REST API",
+        "type": "http",
+        "docs": "https://www.cosmicjs.com/docs/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.cosmicjs.com/docs/api/index.md",
+            "https://www.cosmicjs.com/docs/api/authentication.md",
+            "https://www.cosmicjs.com/docs/api/objects.md",
+            "https://cosmicjs.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "read_key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.cosmicjs.com/docs/api/authentication.md",
+                  "https://www.cosmicjs.com/docs/api/objects.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.cosmicjs.com/docs/api/authentication.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.cosmicjs.com/v3/buckets/{bucket-slug}",
+        "variables": [
+          {
+            "name": "bucket-slug",
+            "resolveFrom": "Bucket Settings → API Access",
+            "description": "Bucket slug shown in the dashboard for the target bucket."
+          }
+        ]
+      },
+      {
+        "slug": "cosmic-agents-rest-api",
+        "name": "Cosmic Agents REST API",
+        "type": "http",
+        "docs": "https://www.cosmicjs.com/docs/api/agents",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.cosmicjs.com/docs/api/agents.md",
+            "https://www.cosmicjs.com/docs/api/authentication.md",
+            "https://www.cosmicjs.com/docs/agent-skills.md",
+            "https://cosmicjs.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "agent_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.cosmicjs.com/docs/api/agents.md",
+                  "https://www.cosmicjs.com/docs/api/authentication.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://dapi.cosmicjs.com/v3/agents",
+        "notes": "`POST /v3/agents/sign-up` is explicitly unauthenticated, while `POST /v3/agents/verify` and `GET /v3/agents/status` require the `agent_key` bearer token."
+      },
+      {
+        "slug": "cosmic-hosted-mcp-bucket-scope",
+        "name": "Cosmic Hosted MCP (bucket scope)",
+        "type": "mcp",
+        "docs": "https://www.cosmicjs.com/docs/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.cosmicjs.com/docs/mcp-server.md",
+            "https://www.npmjs.com/package/@cosmicjs/mcp",
+            "https://cosmicjs.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.cosmicjs.com/docs/mcp-server.md",
+                  "https://www.npmjs.com/package/@cosmicjs/mcp"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.cosmicjs.com/docs/mcp-server.md",
+                  "https://www.npmjs.com/package/@cosmicjs/mcp"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Cosmic-Write-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.cosmicjs.com/docs/mcp-server.md",
+                  "https://www.npmjs.com/package/@cosmicjs/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.cosmicjs.com/v1/buckets/{your-bucket-slug}",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "your-bucket-slug",
+            "resolveFrom": "Bucket Settings → API Access",
+            "description": "Bucket slug for the bucket the MCP server should access."
+          }
+        ]
+      },
+      {
+        "slug": "cosmic-hosted-mcp-agent-scope",
+        "name": "Cosmic Hosted MCP (agent scope)",
+        "type": "mcp",
+        "docs": "https://www.cosmicjs.com/docs/agent-skills",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.cosmicjs.com/docs/agent-skills.md",
+            "https://www.cosmicjs.com/docs/mcp-server.md",
+            "https://cosmicjs.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "agent_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.cosmicjs.com/docs/agent-skills.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.cosmicjs.com/v1/agent",
+        "transports": [
+          "streamable-http"
+        ],
+        "notes": "Within this MCP scope, `cosmic_agent_signup` is documented as requiring no auth, but `cosmic_agent_verify` and `cosmic_agent_status` require `Authorization: Bearer agk_...`."
+      },
+      {
+        "slug": "cosmic-cli",
+        "name": "Cosmic CLI",
+        "type": "cli",
+        "docs": "https://www.npmjs.com/package/@cosmicjs/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.npmjs.com/package/@cosmicjs/cli",
+            "https://www.cosmicjs.com/docs/agent-skills.md",
+            "https://www.cosmicjs.com/cms-for-developers"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cosmic_pat",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "cosmic login --token cos_YOUR_TOKEN",
+                    "env": [
+                      "COSMIC_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.npmjs.com/package/@cosmicjs/cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "agent_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "cosmic agent-signup --email <email> --project <name> --agent-id <id>; cosmic agent-verify <code>; cosmic agent-status"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.npmjs.com/package/@cosmicjs/cli",
+                  "https://www.cosmicjs.com/docs/agent-skills.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "cosmic use --bucket=<bucket> --read-key=<read-key> --write-key=<write-key>"
+                  }
+                },
+                {
+                  "id": "bucket_read_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "cosmic use --bucket=<bucket> --read-key=<read-key> --write-key=<write-key>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.npmjs.com/package/@cosmicjs/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@cosmicjs/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "cosmic"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:15:17.500Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 99038,
+    "completion_tokens": 2674,
+    "total_tokens": 101712
+  },
+  "visited": [
+    "https://cosmicjs.com/llms.txt",
+    "https://www.cosmicjs.com/blog/how-to-build-a-react-website-powered-by-the-cosmic-js-graphql-api",
+    "https://www.cosmicjs.com/blog/introducing-the-graphql-api",
+    "https://www.cosmicjs.com/blog/new-graphql-api-release",
+    "https://www.cosmicjs.com/blog/video-install-and-deploy-a-graphql-powered-app-in-5-minutes-using-the-cosmic-cli-jg6r574u",
+    "https://www.cosmicjs.com/cms-for-developers",
+    "https://www.cosmicjs.com/docs/agent-skills.md",
+    "https://www.cosmicjs.com/docs/api/agents.md",
+    "https://www.cosmicjs.com/docs/api/authentication.md",
+    "https://www.cosmicjs.com/docs/api/index.md",
+    "https://www.cosmicjs.com/docs/api/objects.md",
+    "https://www.cosmicjs.com/docs/mcp-server.md",
+    "https://www.cosmicjs.com/docs/quickstart.md",
+    "https://www.npmjs.com/package/@cosmicjs/cli",
+    "https://www.npmjs.com/package/@cosmicjs/mcp",
+    "https://www.npmjs.com/package/@cosmicjs/sdk",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://api.cosmicjs.com",
+    "http://api.cosmicjs.com/v3/status",
+    "http://cosmicstatus.com",
+    "http://graphql.org/",
+    "http://localhost:3000",
+    "http://localhost:3000/v1/buckets/{slug}",
+    "http://status.npmjs.org/",
+    "https://api.cosmicjs.com/v1/creative-agency/object/about?hide",
+    "https://api.cosmicjs.com/v1/creative-agency/object/about?hide_metafields=true&pretty=true",
+    "https://api.cosmicjs.com/v3/buckets/${BUCKET_SLUG}/objects",
+    "https://api.cosmicjs.com/v3/buckets/${BUCKET_SLUG}/objects/:id",
+    "https://api.cosmicjs.com/v3/buckets/{bucket-slug}/objects",
+    "https://app.cosmicjs.com",
+    "https://app.cosmicjs.com/account/api-tokens",
+    "https://app.cosmicjs.com/claim?token=agk_",
+    "https://app.cosmicjs.com/login",
+    "https://app.cosmicjs.com/projects/new",
+    "https://app.cosmicjs.com/signup",
+    "https://app.cosmicjs.com/signup?utm_landing_page=%2Fblog%2Fintroducing-the-graphql-api",
+    "https://app.cosmicjs.com/signup?utm_landing_page=%2Fblog%2Fnew-graphql-api-release",
+    "https://app.cosmicjs.com/signup?utm_landing_page=%2Fcms-for-developers",
+    "https://app.cosmicjs.com/signup?utm_source=cosmicjs.com&utm_medium=website&utm_campaign=main-nav&utm_content=signup-cta&utm_landing_page=%2Fblog%2Fintroducing-the-graphql-api",
+    "https://app.cosmicjs.com/signup?utm_source=cosmicjs.com&utm_medium=website&utm_campaign=main-nav&utm_content=signup-cta&utm_landing_page=%2Fblog%2Fnew-graphql-api-release",
+    "https://app.cosmicjs.com/signup?utm_source=cosmicjs.com&utm_medium=website&utm_campaign=main-nav&utm_content=signup-cta&utm_landing_page=%2Fcms-for-developers",
+    "https://aws.amazon.com/lambda/",
+    "https://bun.sh",
+    "https://bundlephobia.com/package/%40cosmicjs%2Fmcp",
+    "https://calendly.com/tonyspiro/cosmic-intro",
+    "https://cdn.cosmicjs.com/02670ac0-38ef-11ed-adfd-ddb1795c6ac6-add-a-headless-cms-to-astro-in-3-easy-steps.png",
+    "https://cdn.cosmicjs.com/19c2e290-9135",
+    "https://cdn.cosmicjs.com/product-hero.jpg",
+    "https://cosmicjs.com/community",
+    "https://cosmicjs.com/docs",
+    "https://cosmicjs.com/docs/api",
+    "https://cosmicjs.com/docs/cli",
+    "https://cosmicjs.com/docs/mcp",
+    "https://cosmicjs.com/docs/sdk",
+    "https://cosmicjs.com/llms.txt",
+    "https://cosmicstatus.com/",
+    "https://dapi.cosmicjs.com",
+    "https://dapi.cosmicjs.com/v3",
+    "https://dapi.cosmicjs.com/v3/agents/sign-up",
+    "https://dapi.cosmicjs.com/v3/agents/status",
+    "https://dapi.cosmicjs.com/v3/agents/verify",
+    "https://dapi.cosmicjs.com/v3/ai/agents/AGENT_ID/messages",
+    "https://dapi.cosmicjs.com/v3/users/get",
+    "https://discord.com/invite/MSCwQ7D6Mg",
+    "https://discord.gg/MSCwQ7D6Mg",
+    "https://discord.gg/cosmic",
+    "https://docs.cosmicjs.com/",
+    "https://docs.cosmicjs.com/api-reference/available-methods#graphql",
+    "https://docs.cosmicjs.com/graphql-api/",
+    "https://docs.cosmicjs.com/graphql-api/#playground",
+    "https://docs.cosmicjs.com/graphql-api/methods-overview.html#mutations",
+    "https://docs.cosmicjs.com/graphql-api/methods-overview.html#queries",
+    "https://docs.npmjs.com",
+    "https://example.com/hook",
+    "https://example.com/image.jpg",
+    "https://github.blog/tag/npm/",
+    "https://github.com/advisories",
+    "https://github.com/changesets/changesets",
+    "https://github.com/cosmicjs",
+    "https://github.com/cosmicjs/cli/blob/HEAD/docs/CLI_REFERENCE.md",
+    "https://github.com/cosmicjs/cosmic-mcp/issues",
+    "https://github.com/cosmicjs/cosmic-sdk-js",
+    "https://github.com/cosmicjs/cosmic-sdk-js/blob/HEAD/LICENSE",
+    "https://github.com/cosmicjs/cosmic-sdk-js/blob/HEAD/docs/AI_VIDEO_GENERATION.md",
+    "https://github.com/cosmicjs/cosmic-sdk-js/issues",
+    "https://github.com/cosmicjs/cosmic-sdk-js/pulls",
+    "https://github.com/cosmicjs/cosmic-sdk-swift",
+    "https://github.com/cosmicjs/cosmic-sdk-swift.git",
+    "https://github.com/cosmicjs/mcp",
+    "https://github.com/cosmicjs/mcp.git",
+    "https://github.com/cosmicjs/mcp/blob/HEAD/.github/workflows/deploy.yml",
+    "https://github.com/cosmicjs/mcp/blob/HEAD/.github/workflows/publish.yml",
+    "https://github.com/cosmicjs/mcp/issues",
+    "https://github.com/cosmicjs/mcp/pulls",
+    "https://github.com/npm/feedback",
+    "https://imgix.cosmicjs.com/02670ac0-38ef-11ed-adfd-ddb1795c6ac6-add-a-headless-cms-to-astro-in-3-easy-steps.png",
+    "https://imgix.cosmicjs.com/123asdf",
+    "https://imgix.cosmicjs.com/19c2e290-9135",
+    "https://imgix.cosmicjs.com/1c8531f0-97fb-11ed-81d8-8f0123e10511-A-photo-of-Michelangelos-sculpture-of-David-wearing-headphones-djing.webp",
+    "https://imgix.cosmicjs.com/7886dc10-f248-11e6-b422-43c28e5dfa6b-graphql.jpg",
+    "https://imgix.cosmicjs.com/88af5360-773e-11e9-bdd0-2fb2b1d856d9-graphql-lambda.jpg",
+    "https://imgix.cosmicjs.com/your-image-url.jpg",
+    "https://mcp.cosmicjs.com",
+    "https://mcp.cosmicjs.com/v1/agent",
+    "https://mcp.cosmicjs.com/v1/buckets/your-bucket-slug",
+    "https://mcp.cosmicjs.com/v1/buckets/{bucket-slug}",
+    "https://mcp.cosmicjs.com/v1/buckets/{your-bucket-slug}",
+    "https://new.url",
+    "https://nodejs.org/en",
+    "https://npmgraph.js.org/?q=%40cosmicjs%2Fmcp",
+    "https://snyk.io/advisor/npm-package/%40cosmicjs%2Fmcp",
+    "https://socket.dev/npm/package/%40cosmicjs%2Fmcp",
+    "https://socket.dev/npm/package/%40cosmicjs%2Fsdk",
+    "https://store.cosmicjs.com",
+    "https://twitter.com/cosmic_js",
+    "https://www.cosmicjs.com",
+    "https://www.cosmicjs.com/",
+    "https://www.cosmicjs.com/#agent-skills-for-cursor-claude-code-and-copilot",
+    "https://www.cosmicjs.com/#ai-agents-built-into-the-platform",
+    "https://www.cosmicjs.com/#cli-for-bucket-management",
+    "https://www.cosmicjs.com/#event-triggered-workflows",
+    "https://www.cosmicjs.com/#framework-compatibility",
+    "https://www.cosmicjs.com/#mcp-server-for-ai-native-development",
+    "https://www.cosmicjs.com/#multi-bucket-architecture",
+    "https://www.cosmicjs.com/#pricing-for-developer-teams",
+    "https://www.cosmicjs.com/#rest-api-that-stays-out-of-your-way",
+    "https://www.cosmicjs.com/#start-building-in-minutes",
+    "https://www.cosmicjs.com/#typescript-sdk-with-full-type-safety",
+    "https://www.cosmicjs.com/#webhooks",
+    "https://www.cosmicjs.com/#what-cosmic-gives-developers",
+    "https://www.cosmicjs.com/#what-developers-say",
+    "https://www.cosmicjs.com/#why-most-cmss-are-not-built-for-developers",
+    "https://www.cosmicjs.com/about",
+    "https://www.cosmicjs.com/ai",
+    "https://www.cosmicjs.com/ai/agents",
+    "https://www.cosmicjs.com/ai/workflows",
+    "https://www.cosmicjs.com/blog",
+    "https://www.cosmicjs.com/blog/authors/tony-spiro",
+    "https://www.cosmicjs.com/blog/category/changelog",
+    "https://www.cosmicjs.com/blog/category/company-news",
+    "https://www.cosmicjs.com/blog/cosmic-rundown-ascii-art-claude-rollercoaster-clickhouse-langfuse",
+    "https://www.cosmicjs.com/blog/hacker-news-digest-ai-agents-hallucinations-community-norms",
+    "https://www.cosmicjs.com/blog/how-to-build-a-react-website-powered-by-the-cosmic-js-graphql-api",
+    "https://www.cosmicjs.com/blog/increased-free-token-limits-enhanced-project-tools-and-improved-navigation",
+    "https://www.cosmicjs.com/blog/introducing-the-cosmic-ai-platform",
+    "https://www.cosmicjs.com/blog/introducing-the-graphql-api",
+    "https://www.cosmicjs.com/blog/new-graphql-api-release",
+    "https://www.cosmicjs.com/blog/nextjs-15-vs-16-building-modern-blogs-in-the-turbopack-era",
+    "https://www.cosmicjs.com/blog/video-install-and-deploy-a-graphql-powered-app-in-5-minutes-using-the-cosmic-cli-jg6r574u",
+    "https://www.cosmicjs.com/blog/web-dev-rundown-c3-programming-language-posse-publishing",
+    "https://www.cosmicjs.com/blog/web-dev-rundown-canceled-book-deal-tech-privacy-compiler-best-practices",
+    "https://www.cosmicjs.com/blog/web-dev-rundown-openworkers-browser-engines-bluetooth-security",
+    "https://www.cosmicjs.com/brand",
+    "https://www.cosmicjs.com/changelog",
+    "https://www.cosmicjs.com/cms-for-developers",
+    "https://www.cosmicjs.com/community",
+    "https://www.cosmicjs.com/compare/contentful",
+    "https://www.cosmicjs.com/compare/sanity",
+    "https://www.cosmicjs.com/compare/strapi",
+    "https://www.cosmicjs.com/contact",
+    "https://www.cosmicjs.com/contact#sales-form",
+    "https://www.cosmicjs.com/cookie-policy",
+    "https://www.cosmicjs.com/customers",
+    "https://www.cosmicjs.com/docs",
+    "https://www.cosmicjs.com/docs/agent-skills.md",
+    "https://www.cosmicjs.com/docs/api",
+    "https://www.cosmicjs.com/docs/api/agents.md",
+    "https://www.cosmicjs.com/docs/api/ai#extend-video",
+    "https://www.cosmicjs.com/docs/api/ai#generate-audio",
+    "https://www.cosmicjs.com/docs/api/ai#generate-image",
+    "https://www.cosmicjs.com/docs/api/ai#generate-text",
+    "https://www.cosmicjs.com/docs/api/ai#generate-video",
+    "https://www.cosmicjs.com/docs/api/ai.md",
+    "https://www.cosmicjs.com/docs/api/authentication.md",
+    "https://www.cosmicjs.com/docs/api/errors.md",
+    "https://www.cosmicjs.com/docs/api/index.md",
+    "https://www.cosmicjs.com/docs/api/localization.md",
+    "https://www.cosmicjs.com/docs/api/media.md",
+    "https://www.cosmicjs.com/docs/api/metafields.md",
+    "https://www.cosmicjs.com/docs/api/object-types.md",
+    "https://www.cosmicjs.com/docs/api/objects#batch-operations",
+    "https://www.cosmicjs.com/docs/api/objects#create-an-object",
+    "https://www.cosmicjs.com/docs/api/objects#delete-an-object",
+    "https://www.cosmicjs.com/docs/api/objects#get-a-single-object-by-slug",
+    "https://www.cosmicjs.com/docs/api/objects#get-objects",
+    "https://www.cosmicjs.com/docs/api/objects#update-an-object",
+    "https://www.cosmicjs.com/docs/api/objects.md",
+    "https://www.cosmicjs.com/docs/api/queries.md",
+    "https://www.cosmicjs.com/docs/api/request-limits.md",
+    "https://www.cosmicjs.com/docs/api/revisions.md",
+    "https://www.cosmicjs.com/docs/api/rich-text.md",
+    "https://www.cosmicjs.com/docs/api/webhooks.md",
+    "https://www.cosmicjs.com/docs/chrome-extension.md",
+    "https://www.cosmicjs.com/docs/dashboard/account.md",
+    "https://www.cosmicjs.com/docs/dashboard/ai.md",
+    "https://www.cosmicjs.com/docs/dashboard/ai/agents.md",
+    "https://www.cosmicjs.com/docs/dashboard/ai/workflows.md",
+    "https://www.cosmicjs.com/docs/dashboard/application-workflows.md",
+    "https://www.cosmicjs.com/docs/dashboard/buckets.md",
+    "https://www.cosmicjs.com/docs/dashboard/cosmic-pages.md",
+    "https://www.cosmicjs.com/docs/dashboard/index.md",
+    "https://www.cosmicjs.com/docs/dashboard/projects.md",
+    "https://www.cosmicjs.com/docs/dashboard/search.md",
+    "https://www.cosmicjs.com/docs/dashboard/workspaces.md",
+    "https://www.cosmicjs.com/docs/examples.md",
+    "https://www.cosmicjs.com/docs/frameworks",
+    "https://www.cosmicjs.com/docs/frameworks/index.md",
+    "https://www.cosmicjs.com/docs/index.md",
+    "https://www.cosmicjs.com/docs/llms-full.txt",
+    "https://www.cosmicjs.com/docs/mcp-server",
+    "https://www.cosmicjs.com/docs/mcp-server.md",
+    "https://www.cosmicjs.com/docs/quickstart",
+    "https://www.cosmicjs.com/docs/quickstart.md",
+    "https://www.cosmicjs.com/enterprise",
+    "https://www.cosmicjs.com/features",
+    "https://www.cosmicjs.com/features#api",
+    "https://www.cosmicjs.com/features#cli",
+    "https://www.cosmicjs.com/guide/cms-comparison",
+    "https://www.cosmicjs.com/headless-cms",
+    "https://www.cosmicjs.com/headless-cms-for-astro",
+    "https://www.cosmicjs.com/headless-cms-for-nextjs",
+    "https://www.cosmicjs.com/headless-cms-for-nuxt",
+    "https://www.cosmicjs.com/headless-cms-for-react",
+    "https://www.cosmicjs.com/headless-cms-for-remix",
+    "https://www.cosmicjs.com/headless-cms-for-svelte",
+    "https://www.cosmicjs.com/headless-cms-for-vue",
+    "https://www.cosmicjs.com/insights",
+    "https://www.cosmicjs.com/integrations",
+    "https://www.cosmicjs.com/marketplace/agents",
+    "https://www.cosmicjs.com/partners",
+    "https://www.cosmicjs.com/pricing",
+    "https://www.cosmicjs.com/privacy-policy",
+    "https://www.cosmicjs.com/referrals",
+    "https://www.cosmicjs.com/security",
+    "https://www.cosmicjs.com/services",
+    "https://www.cosmicjs.com/showcase",
+    "https://www.cosmicjs.com/solutions",
+    "https://www.cosmicjs.com/terms-of-service",
+    "https://www.cosmicmailer.com/subscribe",
+    "https://www.npmjs.com/",
+    "https://www.npmjs.com/#agents",
+    "https://www.npmjs.com/#ai-generation",
+    "https://www.npmjs.com/#ai-models",
+    "https://www.npmjs.com/#authentication",
+    "https://www.npmjs.com/#automate-mode",
+    "https://www.npmjs.com/#billing",
+    "https://www.npmjs.com/#build-mode",
+    "https://www.npmjs.com/#configuration",
+    "https://www.npmjs.com/#content-mode",
+    "https://www.npmjs.com/#context--navigation",
+    "https://www.npmjs.com/#core-commands",
+    "https://www.npmjs.com/#deployments",
+    "https://www.npmjs.com/#domains",
+    "https://www.npmjs.com/#examples",
+    "https://www.npmjs.com/#features",
+    "https://www.npmjs.com/#installation",
+    "https://www.npmjs.com/#interactive-chat-mode",
+    "https://www.npmjs.com/#interactive-shell",
+    "https://www.npmjs.com/#main",
+    "https://www.npmjs.com/#media",
+    "https://www.npmjs.com/#media-folders",
+    "https://www.npmjs.com/#objects",
+    "https://www.npmjs.com/#quick-start",
+    "https://www.npmjs.com/#repositories",
+    "https://www.npmjs.com/#search",
+    "https://www.npmjs.com/#shortcut-commands",
+    "https://www.npmjs.com/#signin",
+    "https://www.npmjs.com/#support",
+    "https://www.npmjs.com/#team",
+    "https://www.npmjs.com/#testing",
+    "https://www.npmjs.com/#types",
+    "https://www.npmjs.com/#update-mode",
+    "https://www.npmjs.com/#webhooks",
+    "https://www.npmjs.com/#workflows",
+    "https://www.npmjs.com/?activeTab=code",
+    "https://www.npmjs.com/?activeTab=dependencies",
+    "https://www.npmjs.com/?activeTab=dependents",
+    "https://www.npmjs.com/?activeTab=readme",
+    "https://www.npmjs.com/?activeTab=versions",
+    "https://www.npmjs.com/about",
+    "https://www.npmjs.com/login",
+    "https://www.npmjs.com/package/@changesets/cli",
+    "https://www.npmjs.com/package/@cosmicjs/cli",
+    "https://www.npmjs.com/package/@cosmicjs/mcp",
+    "https://www.npmjs.com/package/@cosmicjs/sdk",
+    "https://www.npmjs.com/policies/",
+    "https://www.npmjs.com/policies/conduct",
+    "https://www.npmjs.com/policies/privacy",
+    "https://www.npmjs.com/policies/terms",
+    "https://www.npmjs.com/press",
+    "https://www.npmjs.com/products",
+    "https://www.npmjs.com/products/pro",
+    "https://www.npmjs.com/products/teams",
+    "https://www.npmjs.com/search?q=keywords:ai",
+    "https://www.npmjs.com/search?q=keywords:api",
+    "https://www.npmjs.com/search?q=keywords:cms",
+    "https://www.npmjs.com/search?q=keywords:content",
+    "https://www.npmjs.com/search?q=keywords:cosmic",
+    "https://www.npmjs.com/search?q=keywords:headless-cms",
+    "https://www.npmjs.com/search?q=keywords:headlesscms",
+    "https://www.npmjs.com/search?q=keywords:mcp",
+    "https://www.npmjs.com/search?q=keywords:model-context-protocol",
+    "https://www.npmjs.com/search?q=keywords:nextjs",
+    "https://www.npmjs.com/search?q=keywords:node",
+    "https://www.npmjs.com/search?q=keywords:react",
+    "https://www.npmjs.com/search?q=keywords:reactjs",
+    "https://www.npmjs.com/search?q=keywords:vue",
+    "https://www.npmjs.com/search?q=keywords:vuejs",
+    "https://www.npmjs.com/signup",
+    "https://www.npmjs.com/support",
+    "https://www.npmjs.com/support?inquire=security&security-inquire=malware&package=%40cosmicjs%2Fmcp&version=1.5.0",
+    "https://www.youtube.com/@CosmicJS",
+    "https://www.youtube.com/cosmicjs",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://x.com/cosmicjs"
+  ]
+}

@@ -1,0 +1,685 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "bugsnag.com",
+    "detect": {
+      "domain": "bugsnag.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:11:01.647Z",
+    "summary": "Bugsnag exposes five authenticated HTTP APIs (Data Access via `Authorization: token <Personal Auth Token>`; Build, Error Reporting, Session Tracking, Trace, and Upload via project API keys) plus an authenticated Bugsnag CLI and SmartBear MCP access (remote via SmartBear OAuth, local via `BUGSNAG_AUTH_TOKEN` and optional `BUGSNAG_PROJECT_API_KEY`).",
+    "credentials": {
+      "bugsnag_pat": {
+        "type": "bearer",
+        "label": "BugSnag Personal Auth Token",
+        "generateUrl": "https://app.bugsnag.com/settings/smartbear-software/my-account/auth-tokens",
+        "setup": "In the BugSnag dashboard, open [My Account Auth Tokens](https://app.bugsnag.com/settings/smartbear-software/my-account/auth-tokens) and generate a new Personal Auth Token. Use it in API calls as an `Authorization` header with the `token` prefix, for example `Authorization: token YOUR_AUTH_TOKEN`. This token is also used by BugSnag tools in the local SmartBear MCP server via `BUGSNAG_AUTH_TOKEN`.",
+        "acquisition": "manual"
+      },
+      "bugsnag_project_api_key": {
+        "type": "api_key",
+        "label": "BugSnag project API key",
+        "setup": "Open your project's settings in the BugSnag dashboard; the CLI docs state you can find the API key in your project settings (`g` then `s`). Use this key for build creation, event/session reporting, trace submission, and symbol/mapping uploads. In the local SmartBear MCP server, you can also set it as `BUGSNAG_PROJECT_API_KEY` to scope BugSnag tools to a single project.",
+        "acquisition": "manual"
+      },
+      "smartbear_oauth": {
+        "type": "oauth2",
+        "label": "SmartBear account OAuth login for remote MCP",
+        "setup": "Configure your MCP client to connect to the hosted BugSnag remote MCP endpoint from [Remote MCP Servers](https://developer.smartbear.com/smartbear-mcp/docs/remote-mcp-servers). On first connection, the client opens a browser window for you to sign in with your SmartBear account and authorize access. The MCP client stores and refreshes the token automatically; there is no manual token creation page documented for this flow.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "bugsnag-data-access-api",
+        "name": "BugSnag Data Access API",
+        "type": "http",
+        "docs": "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.smartbear.com/bugsnag/docs/getting-started",
+            "https://developer.smartbear.com/bugsnag/docs/data-access",
+            "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bugsnag_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api",
+                  "https://developer.smartbear.com/smartbear-mcp/docs/local-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.bugsnag.com"
+      },
+      {
+        "slug": "bugsnag-build-api",
+        "name": "BugSnag Build API",
+        "type": "http",
+        "docs": "https://developer.smartbear.com/bugsnag/docs/bugsnag-build-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.smartbear.com/bugsnag/docs/getting-started",
+            "https://developer.smartbear.com/bugsnag/docs/release-tracking",
+            "https://developer.smartbear.com/bugsnag/docs/bugsnag-build-api",
+            "https://docs.bugsnag.com/build-integrations/bugsnag-cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bugsnag_project_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "apiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.smartbear.com/bugsnag/docs/release-tracking",
+                  "https://docs.bugsnag.com/build-integrations/bugsnag-cli/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://build.bugsnag.com"
+      },
+      {
+        "slug": "bugsnag-error-reporting-api",
+        "name": "BugSnag Error Reporting API",
+        "type": "http",
+        "docs": "https://developer.smartbear.com/bugsnag/docs/bugsnag-error-reporting-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.smartbear.com/bugsnag/docs/getting-started",
+            "https://developer.smartbear.com/bugsnag/docs/reporting-events-and-sessions",
+            "https://developer.smartbear.com/bugsnag/docs/bugsnag-error-reporting-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bugsnag_project_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.smartbear.com/bugsnag/docs/reporting-events-and-sessions"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://notify.bugsnag.com"
+      },
+      {
+        "slug": "bugsnag-session-tracking-api",
+        "name": "BugSnag Session Tracking API",
+        "type": "http",
+        "docs": "https://developer.smartbear.com/bugsnag/docs/bugsnag-session-tracking-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.smartbear.com/bugsnag/docs/getting-started",
+            "https://developer.smartbear.com/bugsnag/docs/reporting-events-and-sessions",
+            "https://developer.smartbear.com/bugsnag/docs/bugsnag-session-tracking-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bugsnag_project_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.smartbear.com/bugsnag/docs/reporting-events-and-sessions"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://sessions.bugsnag.com"
+      },
+      {
+        "slug": "bugsnag-trace-api",
+        "name": "BugSnag Trace API",
+        "type": "http",
+        "docs": "https://developer.smartbear.com/bugsnag/docs/bugsnag-trace-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.smartbear.com/bugsnag/docs/getting-started",
+            "https://developer.smartbear.com/bugsnag/docs/reporting-traces",
+            "https://developer.smartbear.com/bugsnag/docs/bugsnag-trace-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bugsnag_project_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.smartbear.com/bugsnag/docs/reporting-traces"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://otlp.bugsnag.com"
+      },
+      {
+        "slug": "bugsnag-upload-api",
+        "name": "BugSnag Upload API",
+        "type": "http",
+        "docs": "https://developer.smartbear.com/bugsnag/docs/bugsnag-upload-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.smartbear.com/bugsnag/docs/getting-started",
+            "https://developer.smartbear.com/bugsnag/docs/uploading-symbols-and-mappings",
+            "https://developer.smartbear.com/bugsnag/docs/bugsnag-upload-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "bugsnag_project_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.smartbear.com/bugsnag/docs/uploading-symbols-and-mappings"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://upload.bugsnag.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:11:01.648Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 337836,
+    "completion_tokens": 2559,
+    "total_tokens": 340395
+  },
+  "visited": [
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-build-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-build-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-error-reporting-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-error-reporting-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-session-tracking-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-session-tracking-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-trace-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-trace-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-upload-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-upload-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/data-access",
+    "https://developer.smartbear.com/bugsnag/docs/getting-started",
+    "https://developer.smartbear.com/bugsnag/docs/release-tracking",
+    "https://developer.smartbear.com/bugsnag/docs/reporting-events-and-sessions",
+    "https://developer.smartbear.com/bugsnag/docs/reporting-traces",
+    "https://developer.smartbear.com/bugsnag/docs/uploading-symbols-and-mappings",
+    "https://developer.smartbear.com/smartbear-mcp",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/getting-started",
+    "https://developer.smartbear.com/smartbear-mcp/docs/local-server",
+    "https://developer.smartbear.com/smartbear-mcp/docs/mcp-server-capabilities",
+    "https://developer.smartbear.com/smartbear-mcp/docs/remote-mcp-servers",
+    "https://docs.bugsnag.com/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/create-build/",
+    "https://docs.bugsnag.com/whats-new/2025/",
+    "https://github.com/SmartBear/smartbear-mcp",
+    "https://github.com/yoanbernabeu/bugsnag-cli"
+  ],
+  "grounding": [
+    "http://www.rubydoc.info/gems/bugsnag-api/Bugsnag/Api/Client",
+    "https://*.example.com",
+    "https://6sense.com/privacy-policy/",
+    "https://api.bearq.smartbear.com",
+    "https://api.bugsnag.com",
+    "https://api.bugsnag.smartbear.com",
+    "https://api.reflect.run/v1",
+    "https://api.zephyrscale.smartbear.com/v2",
+    "https://app.bugsnag.com",
+    "https://app.bugsnag.com/",
+    "https://app.bugsnag.com/settings/smartbear-software/my-account/auth-tokens",
+    "https://app.bugsnag.com/user/new",
+    "https://app.bugsnag.smartbear.com",
+    "https://app.bugsnag.smartbear.com/",
+    "https://app.pactflow.io/settings/api-tokens",
+    "https://app.reflect.run/registration",
+    "https://app.reflect.run/settings/account",
+    "https://app.swaggerhub.com/settings/apiKey",
+    "https://archiveprogram.github.com",
+    "https://bearq.smartbear.com",
+    "https://bugsnag.mcp.smartbear.com/mcp",
+    "https://build.bugsnag.com",
+    "https://build.bugsnag.smartbear.com",
+    "https://build.{{your-domain}}",
+    "https://business.safety.google/privacy/",
+    "https://developer.android.com/guide/app-bundle",
+    "https://developer.android.com/ndk/",
+    "https://developer.android.com/studio/build/shrink-code.html",
+    "https://developer.smartbear.com/bugsnag",
+    "https://developer.smartbear.com/bugsnag/",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-build-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-build-api#/Build/Notify%20of%20a%20build",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-build-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-build-api/swagger-ui",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api#/Errors/updateErrorOnProject",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-data-access-api/swagger-ui",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-error-reporting-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-error-reporting-api#/Notify/sendErrorReports",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-error-reporting-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-error-reporting-api/swagger-ui",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-session-tracking-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-session-tracking-api#/Session/reportSessionStarting",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-session-tracking-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-session-tracking-api/swagger-ui",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-trace-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-trace-api#/Traces/post_traces_v1",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-trace-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-trace-api/swagger-ui",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-upload-api",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-upload-api/elements",
+    "https://developer.smartbear.com/bugsnag/docs/bugsnag-upload-api/swagger-ui",
+    "https://developer.smartbear.com/bugsnag/docs/data-access",
+    "https://developer.smartbear.com/bugsnag/docs/data-access#ruby-api-toolkit",
+    "https://developer.smartbear.com/bugsnag/docs/getting-started",
+    "https://developer.smartbear.com/bugsnag/docs/release-tracking",
+    "https://developer.smartbear.com/bugsnag/docs/release-tracking#base-server-url",
+    "https://developer.smartbear.com/bugsnag/docs/release-tracking#build-tooling",
+    "https://developer.smartbear.com/bugsnag/docs/release-tracking#c-url-example",
+    "https://developer.smartbear.com/bugsnag/docs/release-tracking#matching-error-events-and-sessions-to-builds",
+    "https://developer.smartbear.com/bugsnag/docs/release-tracking#updating-build-data",
+    "https://developer.smartbear.com/bugsnag/docs/reporting-events-and-sessions",
+    "https://developer.smartbear.com/bugsnag/docs/reporting-events-and-sessions#base-server-url",
+    "https://developer.smartbear.com/bugsnag/docs/reporting-traces",
+    "https://developer.smartbear.com/bugsnag/docs/traces-base-server-url",
+    "https://developer.smartbear.com/bugsnag/docs/traces-otel-service-names",
+    "https://developer.smartbear.com/bugsnag/docs/traces-resource-attributes",
+    "https://developer.smartbear.com/bugsnag/docs/upload-breakpad-symbol",
+    "https://developer.smartbear.com/bugsnag/docs/upload-dart-symbol",
+    "https://developer.smartbear.com/bugsnag/docs/upload-dsym",
+    "https://developer.smartbear.com/bugsnag/docs/upload-linux",
+    "https://developer.smartbear.com/bugsnag/docs/upload-ndk-symbol",
+    "https://developer.smartbear.com/bugsnag/docs/upload-nintendo-switch-symbol",
+    "https://developer.smartbear.com/bugsnag/docs/upload-proguard",
+    "https://developer.smartbear.com/bugsnag/docs/upload-react-native-source-map",
+    "https://developer.smartbear.com/bugsnag/docs/upload-sourcemap",
+    "https://developer.smartbear.com/bugsnag/docs/uploading-symbols-and-mappings",
+    "https://developer.smartbear.com/bugsnag/docs/uploading-symbols-and-mappings#base-server-url",
+    "https://developer.smartbear.com/bugsnag/docs/uploading-symbols-and-mappings#build-tooling",
+    "https://developer.smartbear.com/bugsnag/docs/uploading-symbols-and-mappings#getting-started",
+    "https://developer.smartbear.com/smartbear-mcp",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bearq-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#available-resources",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#available-tools",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#configuration-notes",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#event",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-build",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-current-project",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-error",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-event-details",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-event-details-from-dashboard-url",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-events-on-an-error",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-network-endpoint-groupings",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-release",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-span-group",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#get-trace",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#list-project-errors",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#list-project-event-filters",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#list-projects",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#list-releases",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#list-span-groups",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#list-spans",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#list-trace-fields",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#set-network-endpoint-groupings",
+    "https://developer.smartbear.com/smartbear-mcp/docs/bugsnag-integration#update-error",
+    "https://developer.smartbear.com/smartbear-mcp/docs/collaborator-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/contract-testing-with-pactflow",
+    "https://developer.smartbear.com/smartbear-mcp/docs/getting-started",
+    "https://developer.smartbear.com/smartbear-mcp/docs/getting-started#comparison",
+    "https://developer.smartbear.com/smartbear-mcp/docs/getting-started#next-steps",
+    "https://developer.smartbear.com/smartbear-mcp/docs/getting-started#which-should-i-use",
+    "https://developer.smartbear.com/smartbear-mcp/docs/local-server",
+    "https://developer.smartbear.com/smartbear-mcp/docs/mcp-server",
+    "https://developer.smartbear.com/smartbear-mcp/docs/mcp-server#deployment-modes",
+    "https://developer.smartbear.com/smartbear-mcp/docs/mcp-server#example-debugging-with-bug-snag-and-copilot",
+    "https://developer.smartbear.com/smartbear-mcp/docs/mcp-server#next-steps",
+    "https://developer.smartbear.com/smartbear-mcp/docs/mcp-server#what-is-the-model-context-protocol",
+    "https://developer.smartbear.com/smartbear-mcp/docs/mcp-server-capabilities",
+    "https://developer.smartbear.com/smartbear-mcp/docs/qmetry-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/qtm4j-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/reflect-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/remote-bugsnag",
+    "https://developer.smartbear.com/smartbear-mcp/docs/remote-mcp-servers",
+    "https://developer.smartbear.com/smartbear-mcp/docs/remote-mcp-servers#authentication",
+    "https://developer.smartbear.com/smartbear-mcp/docs/remote-mcp-servers#available-remote-servers",
+    "https://developer.smartbear.com/smartbear-mcp/docs/remote-mcp-servers#connecting-multiple-servers",
+    "https://developer.smartbear.com/smartbear-mcp/docs/remote-swagger",
+    "https://developer.smartbear.com/smartbear-mcp/docs/remote-zephyr",
+    "https://developer.smartbear.com/smartbear-mcp/docs/swagger-portal-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/swagger-studio-integration",
+    "https://developer.smartbear.com/smartbear-mcp/docs/zephyr-integration",
+    "https://docs.bugsnag.com/",
+    "https://docs.bugsnag.com/#",
+    "https://docs.bugsnag.com/#android-app-bundles-aabs",
+    "https://docs.bugsnag.com/#android-ndk-mapping-files",
+    "https://docs.bugsnag.com/#android-proguard-mapping-files",
+    "https://docs.bugsnag.com/#breakpad-symbols",
+    "https://docs.bugsnag.com/#bug-fixes",
+    "https://docs.bugsnag.com/#ch2-personal-data",
+    "https://docs.bugsnag.com/#ch2-settings",
+    "https://docs.bugsnag.com/#creating-builds",
+    "https://docs.bugsnag.com/#dart",
+    "https://docs.bugsnag.com/#december",
+    "https://docs.bugsnag.com/#dsyms",
+    "https://docs.bugsnag.com/#features",
+    "https://docs.bugsnag.com/#homebrew",
+    "https://docs.bugsnag.com/#improvements",
+    "https://docs.bugsnag.com/#install-script",
+    "https://docs.bugsnag.com/#installation",
+    "https://docs.bugsnag.com/#javascript-source-maps",
+    "https://docs.bugsnag.com/#manual-download",
+    "https://docs.bugsnag.com/#november",
+    "https://docs.bugsnag.com/#npm",
+    "https://docs.bugsnag.com/#october",
+    "https://docs.bugsnag.com/#react-native-symbols",
+    "https://docs.bugsnag.com/#september",
+    "https://docs.bugsnag.com/#support",
+    "https://docs.bugsnag.com/#symbol-mapping-file-uploads",
+    "https://docs.bugsnag.com/#unity-android-symbol-files",
+    "https://docs.bugsnag.com/../../api/",
+    "https://docs.bugsnag.com/./create-build/",
+    "https://docs.bugsnag.com/./upload-android-aab/",
+    "https://docs.bugsnag.com/./upload-android-ndk/",
+    "https://docs.bugsnag.com/./upload-android-proguard/",
+    "https://docs.bugsnag.com/./upload-breakpad/",
+    "https://docs.bugsnag.com/./upload-dart/",
+    "https://docs.bugsnag.com/./upload-dsym/",
+    "https://docs.bugsnag.com/./upload-js/",
+    "https://docs.bugsnag.com/./upload-rn-android/",
+    "https://docs.bugsnag.com/./upload-rn-ios/",
+    "https://docs.bugsnag.com/./upload-unity-android/",
+    "https://docs.bugsnag.com/./upload-xcode-archive/",
+    "https://docs.bugsnag.com/./upload-xcode-build/",
+    "https://docs.bugsnag.com/build-integrations/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/create-build/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-android-aab/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-android-ndk/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-android-proguard/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-breakpad/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-dart/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-dsym/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-js/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-js/#options-code-bundle-id",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-linux/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-rn-android/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-rn-ios/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-rn-sourcemaps/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-rn/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-unity-android/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-unity-ios/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-xcode-archive/",
+    "https://docs.bugsnag.com/build-integrations/bugsnag-cli/upload-xcode-build/",
+    "https://docs.bugsnag.com/build-integrations/fastlane/",
+    "https://docs.bugsnag.com/enterprise/",
+    "https://docs.bugsnag.com/legal/privacy-policy/",
+    "https://docs.bugsnag.com/on-premise/",
+    "https://docs.bugsnag.com/performance/",
+    "https://docs.bugsnag.com/performance/distributed-tracing/",
+    "https://docs.bugsnag.com/performance/integration-guides/android/named-span-access/",
+    "https://docs.bugsnag.com/performance/integration-guides/react-native/expo/",
+    "https://docs.bugsnag.com/performance/integration-guides/react-native/named-span-access/",
+    "https://docs.bugsnag.com/performance/integration-guides/react-native/named-span-access/#cross-layer-span-access",
+    "https://docs.bugsnag.com/performance/performance-score/",
+    "https://docs.bugsnag.com/platforms/",
+    "https://docs.bugsnag.com/platforms/android/reporting-app-hangs/",
+    "https://docs.bugsnag.com/platforms/kotlin-multiplatform/",
+    "https://docs.bugsnag.com/platforms/react-native/vega-os/",
+    "https://docs.bugsnag.com/product/",
+    "https://docs.bugsnag.com/product/error-grouping/#discriminator",
+    "https://docs.bugsnag.com/product/error-status-and-actions/#error-statuses",
+    "https://docs.bugsnag.com/product/releases/#what-should-i-do-if-its-not-possible-for-me-to-set-the-version-in-my-notifier-library",
+    "https://docs.bugsnag.com/product/releases/releases-dashboard/",
+    "https://docs.bugsnag.com/product/searching-dashboard/#advanced-search",
+    "https://docs.bugsnag.com/product/stability/",
+    "https://docs.bugsnag.com/security/",
+    "https://docs.bugsnag.com/support/",
+    "https://docs.bugsnag.com/whats-new/",
+    "https://docs.bugsnag.com/whats-new/#april",
+    "https://docs.bugsnag.com/whats-new/#february",
+    "https://docs.bugsnag.com/whats-new/#january",
+    "https://docs.bugsnag.com/whats-new/#june",
+    "https://docs.bugsnag.com/whats-new/#march",
+    "https://docs.bugsnag.com/whats-new/#may",
+    "https://docs.bugsnag.com/whats-new/2025/",
+    "https://docs.bugsnag.com/whats-new/2026/",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.unity3d.com/Manual/IL2CPP.html",
+    "https://documents.marketo.com/toutapp/privacy",
+    "https://enterprise-updates.bugsnag.com/bugsnag-on-premise-v5-2509-2-324960",
+    "https://enterprise-updates.bugsnag.com/bugsnag-on-premise-v5-2511-1-327536",
+    "https://example.com/js",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/SmartBear",
+    "https://github.com/SmartBear/smartbear-mcp",
+    "https://github.com/SmartBear/smartbear-mcp/actions",
+    "https://github.com/SmartBear/smartbear-mcp/blob/main/.cspell.json",
+    "https://github.com/SmartBear/smartbear-mcp/branches",
+    "https://github.com/SmartBear/smartbear-mcp/commit/344b7f656bf6adcf7a2a92df790859a0147f63d6",
+    "https://github.com/SmartBear/smartbear-mcp/commit/3a43e80a866e63120ed5fa750342558fb94f52bc",
+    "https://github.com/SmartBear/smartbear-mcp/commit/78831fbc050a47c21f4f2391db7503c0c39adc7d",
+    "https://github.com/SmartBear/smartbear-mcp/commit/79ceb8da105bb5fb37a5a9a87a39585bfe2efbe4",
+    "https://github.com/SmartBear/smartbear-mcp/commit/c1c402294cc61a2b82f604e257ffa60e19d3b338",
+    "https://github.com/SmartBear/smartbear-mcp/commit/c2a4e95cf145ce2bc310c9b04ee6eedecb526f4a",
+    "https://github.com/SmartBear/smartbear-mcp/commit/f39b5db08b60482c19f856136b3125fadf02e901",
+    "https://github.com/SmartBear/smartbear-mcp/commits/main/",
+    "https://github.com/SmartBear/smartbear-mcp/commits?author=szymon-pleszkun-sb",
+    "https://github.com/SmartBear/smartbear-mcp/issues",
+    "https://github.com/SmartBear/smartbear-mcp/pull/457",
+    "https://github.com/SmartBear/smartbear-mcp/pull/501",
+    "https://github.com/SmartBear/smartbear-mcp/pull/528",
+    "https://github.com/SmartBear/smartbear-mcp/pull/538",
+    "https://github.com/SmartBear/smartbear-mcp/pull/554",
+    "https://github.com/SmartBear/smartbear-mcp/pull/560",
+    "https://github.com/SmartBear/smartbear-mcp/pulls",
+    "https://github.com/SmartBear/smartbear-mcp/pulse",
+    "https://github.com/SmartBear/smartbear-mcp/security",
+    "https://github.com/SmartBear/smartbear-mcp/tags",
+    "https://github.com/SmartBear/smartbear-mcp/tree/main/.github",
+    "https://github.com/SmartBear/smartbear-mcp/tree/main/assets",
+    "https://github.com/SmartBear/smartbear-mcp/tree/main/docs",
+    "https://github.com/SmartBear/smartbear-mcp/tree/main/packaging",
+    "https://github.com/SmartBear/smartbear-mcp/tree/main/scripts",
+    "https://github.com/SmartBear/smartbear-mcp/tree/main/src",
+    "https://github.com/accelerator",
+    "https://github.com/bugsnag/bugsnag-android/releases/tag/v6.19.0",
+    "https://github.com/bugsnag/bugsnag-android/releases/tag/v6.20.0",
+    "https://github.com/bugsnag/bugsnag-api-ruby/",
+    "https://github.com/bugsnag/bugsnag-cli",
+    "https://github.com/bugsnag/bugsnag-cli/blob/master/CHANGELOG.md",
+    "https://github.com/bugsnag/bugsnag-cli/releases",
+    "https://github.com/bugsnag/bugsnag-cli/releases/v3.10.2",
+    "https://github.com/bugsnag/bugsnag-cocoa/releases/tag/v6.34.0",
+    "https://github.com/bugsnag/bugsnag-unreal/releases/tag/v2.1.0",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2FSmartBear%2Fsmartbear-mcp",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FSmartBear%2Fsmartbear-mcp",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/owner/repo",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=SmartBear%2Fsmartbear-mcp",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.com/yoanbernabeu/bugsnag-cli",
+    "https://maintainers.github.com",
+    "https://modelcontextprotocol.io/introduction",
+    "https://notify.bugsnag.com",
+    "https://notify.bugsnag.smartbear.com",
+    "https://notify.{{your-domain}}",
+    "https://opentelemetry.io/",
+    "https://opentelemetry.io/docs/specs/otel/protocol/",
+    "https://otlp.bugsnag.com",
+    "https://otlp.bugsnag.smartbear.com",
+    "https://policies.google.com/privacy",
+    "https://privacy.microsoft.com/en-gb/privacystatement",
+    "https://qtmcloud.qmetry.com",
+    "https://r8.googlesource.com/r8#d8-dexer-and-r8-shrinker",
+    "https://raw.githubusercontent.com/bugsnag/bugsnag-cli/main/install.sh",
+    "https://securitylab.github.com",
+    "https://sessions.bugsnag.com",
+    "https://sessions.bugsnag.smartbear.com",
+    "https://sessions.{{your-domain}}",
+    "https://skills.github.com",
+    "https://smartbear.com/insight-hub",
+    "https://smartbear.com/insight-hub/pricing/",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://support.smartbear.com/qmetry-test-management-for-jira-cloud/docs/en/user-guide/qmetry-open-api.html",
+    "https://support.smartbear.com/zephyr/docs/en/rest-api/api-access-tokens-management.html",
+    "https://swagger.mcp.smartbear.com/mcp",
+    "https://syd-qtmcloud.qmetry.com",
+    "https://testmanagement.qmetry.com",
+    "https://testmanagement.qmetry.com/#/integration/open-api",
+    "https://try.platform.smartbear.com/?product=ApiHub",
+    "https://upload.bugsnag.com",
+    "https://upload.bugsnag.smartbear.com",
+    "https://upload.{{your-domain}}",
+    "https://virtserver.swaggerhub.com/smartbear-public/bugsnag-build-api/1",
+    "https://virtserver.swaggerhub.com/smartbear-public/bugsnag-data-access-api/2",
+    "https://virtserver.swaggerhub.com/smartbear-public/bugsnag-error-reporting-api/1",
+    "https://virtserver.swaggerhub.com/smartbear-public/bugsnag-session-tracking-api/1",
+    "https://virtserver.swaggerhub.com/smartbear-public/bugsnag-trace-api/1",
+    "https://virtserver.swaggerhub.com/smartbear-public/bugsnag-upload-api/1",
+    "https://virtserver.swaggerhub.com/smartbear/bugsnag-data-access-api/2",
+    "https://www.cookiehub.com/legal/privacy-policy",
+    "https://www.drift.com/privacy-policy/",
+    "https://www.guardsquare.com/en/dexguard",
+    "https://www.linkedin.com/legal/privacy-policy",
+    "https://www.npmjs.com/package/@bugsnag/cli",
+    "https://www.reddit.com/policies/privacy-policy",
+    "https://your-tenant.pactflow.io",
+    "https://your.build.server/",
+    "https://zephyr.mcp.smartbear.com/mcp"
+  ]
+}

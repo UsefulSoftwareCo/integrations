@@ -1,0 +1,196 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "posthog.com",
+    "detect": {
+      "domain": "posthog.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T10:01:40.496Z",
+    "summary": "PostHog exposes one private/public HTTP API, plus a hosted MCP server; API auth uses personal API keys, project tokens for public ingestion/eval, or OAuth, while MCP uses hosted login via the PostHog wizard.",
+    "credentials": {
+      "posthog_personal_api_key": {
+        "type": "bearer",
+        "label": "Personal API key",
+        "generateUrl": "https://app.posthog.com/settings/user/api-keys",
+        "setup": "In PostHog, open your account settings and create a [Personal API key](https://app.posthog.com/settings/user/api-keys). Use this for private API access from your own scripts or automations. PostHog documents that private endpoints accept personal API keys, and the API docs point to the schema download at [API schema](https://app.posthog.com/api/schema/).",
+        "acquisition": "manual"
+      },
+      "posthog_project_token": {
+        "type": "bearer",
+        "label": "Project token",
+        "generateUrl": "https://app.posthog.com/project/settings",
+        "setup": "Open your project settings and copy the project token from [Project settings](https://app.posthog.com/project/settings). This token is used for public ingestion and feature-flag evaluation endpoints, not for private API access.",
+        "acquisition": "manual"
+      },
+      "posthog_oauth": {
+        "type": "oauth2",
+        "label": "OAuth access token",
+        "generateUrl": "https://posthog.com/docs/api/oauth.md",
+        "setup": "Use PostHog OAuth when you are building an app that other PostHog users will install. Follow the OAuth docs at [OAuth](https://posthog.com/docs/api/oauth.md) to register your app and have users grant scoped access. PostHog’s API docs state OAuth is the alternative to personal API keys for private endpoints.",
+        "acquisition": "manual"
+      },
+      "posthog_mcp_login": {
+        "type": "oauth2",
+        "label": "PostHog authenticated account via MCP login",
+        "generateUrl": "https://posthog.com/docs/model-context-protocol.md",
+        "setup": "For the hosted MCP server, install the integration with the PostHog Wizard using `npx @posthog/wizard mcp add`. The wizard handles login and routes you to the correct region (US or EU) automatically; the MCP docs note the server is at `https://mcp.posthog.com/mcp`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "posthog-mcp-server",
+        "name": "PostHog MCP server",
+        "type": "mcp",
+        "docs": "https://posthog.com/docs/model-context-protocol.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://posthog.com/docs/model-context-protocol.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "posthog_mcp_login",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/model-context-protocol.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.posthog.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "posthog-mcp-traffic-tools",
+        "name": "PostHog MCP traffic tools",
+        "type": "mcp",
+        "docs": "https://posthog.com/docs/web-analytics/query-traffic-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://posthog.com/docs/web-analytics/query-traffic-mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://posthog.com/docs/web-analytics/query-traffic-mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "posthog-api",
+        "name": "PostHog API",
+        "type": "http",
+        "docs": "https://posthog.com/docs/api.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://posthog.com/docs/api.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "posthog_personal_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "personalApiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/api.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "posthog_project_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "scheme": "token",
+                    "paramName": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/api.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "posthog_oauth",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/api.md"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T10:01:40.497Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 45802,
+    "completion_tokens": 1258,
+    "total_tokens": 47060
+  },
+  "visited": [
+    "https://composio.dev/auth/posthog",
+    "https://github.com/PostHog/posthog.com/blob/master/contents/docs/error-tracking/_snippets/cli/authenticate.mdx",
+    "https://posthog.com/docs/api",
+    "https://posthog.com/docs/api.md",
+    "https://posthog.com/docs/error-tracking/_snippets/cli/authenticate.mdx",
+    "https://posthog.com/docs/integrations/v0",
+    "https://posthog.com/docs/model-context-protocol",
+    "https://posthog.com/docs/model-context-protocol#manual-install",
+    "https://posthog.com/docs/model-context-protocol.md",
+    "https://posthog.com/docs/web-analytics/query-traffic-mcp",
+    "https://posthog.com/llms.txt"
+  ]
+}

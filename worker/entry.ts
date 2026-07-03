@@ -12,29 +12,36 @@
 import type { SSRManifest } from "astro";
 import { App } from "astro/app";
 import { handle } from "@astrojs/cloudflare/handler";
-import { apiHandler } from "./api.ts";
-import { setChat, setWebBackend, discoverWithProgress } from "./operations.ts";
+import resvgWasmModule from "@resvg/resvg-wasm/index_bg.wasm?module";
+import yogaWasmModule from "satori/yoga.wasm?module";
+import { apiContext, apiHandler } from "./api.ts";
+import { canonicalRedirect } from "./canonical.ts";
+import { sitemapSurfacesResponse } from "./sitemap-surfaces.ts";
+import { discoveryDoc } from "./discovery-doc.ts";
+import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
-import { registrableDomain } from "../src/lib/favicon.ts";
+import { isJunkDomain, registrableDomain } from "../src/lib/favicon.ts";
+import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
 import type { Surface } from "../src/lib/surface-view.ts";
+import type { Credential } from "../src/lib/surface-view.ts";
 import type { EdgeCaches, Env, ExecutionContext } from "./env.ts";
 import { McpDurableObject } from "./mcp-do.ts";
 
 // Bump when detect/discover output shape or logic changes, so the edge Cache API
 // (which survives deploys) stops serving results produced by the old code.
-const CACHE_VERSION = "14"; // 14: v3 payload (slugs, http surface type, split mechanics)
+const CACHE_VERSION = "18"; // 18: search + surface API operations
 
-// The discovery-loop model. gpt-5.4-mini drives the agentic tool-calling loop
-// (search/sitemap/scrape/report) — ~1s per tool-decision turn on chat/completions.
-// (Note: gpt-5.x rejects `reasoning_effort` alongside function tools here, so we
-// don't set it.) gpt-4o-mini is a cheaper alternative.
-const OPENAI_MODEL = "gpt-5.4-mini";
+// The discovery-loop model. gpt-5.4 drives the agentic tool-calling loop
+// (search/sitemap/scrape/report). (Note: gpt-5.x rejects `reasoning_effort`
+// alongside function tools here, so we don't set it.)
+const OPENAI_MODEL = "gpt-5.4";
 
 // Spend cap: OpenAI spend is bounded by the usage limit on the OpenAI project/key.
 // To route through Cloudflare AI Gateway instead, point this at the gateway's
 // OpenAI endpoint (needs "Authenticated Gateway" off, or a cf-aig-authorization token):
 //   `https://gateway.ai.cloudflare.com/v1/<account>/<gateway>/openai/chat/completions`
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const ogRuntime = { yoga: yogaWasmModule, resvg: resvgWasmModule };
 
 interface OpenAiToolCall {
   id: string;
@@ -77,49 +84,135 @@ function wireAi(env: Env): void {
   });
 }
 
-/** A surface's locator — the stable thing it points at, independent of its
- * display name. Used to carry slugs across re-discovery. */
-const locatorOf = (s: Surface): string | undefined => {
-  const loc = s.type === "cli" ? (s.command ?? s.packages?.[0]?.identifier) : (s.url ?? s.spec);
-  return loc ? `${s.type}|${loc.toLowerCase()}` : undefined;
-};
-
-/** Slug continuity: a fresh result's surface that matches a PRIOR surface by
- * locator keeps the prior slug, even if the model renamed it — /{domain}/{slug}/
- * links never break across re-runs. Collisions re-suffix deterministically. */
-function preserveSlugs(surfaces: Surface[], prior: Surface[]): void {
-  const bySlugLoc = new Map<string, string>();
-  for (const p of prior) {
-    const loc = locatorOf(p);
-    if (loc && p.slug) bySlugLoc.set(loc, p.slug);
-  }
-  const taken = new Set<string>();
-  for (const s of surfaces) {
-    const loc = locatorOf(s);
-    const inherited = loc ? bySlugLoc.get(loc) : undefined;
-    let slug = inherited ?? s.slug;
-    const base = slug;
-    for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
-    s.slug = slug;
-    taken.add(slug);
-  }
+/** Prior surfaces for a domain: the same stored-or-baseline document the domain
+ * page renders, whose slugs the prerendered pages already link to. */
+async function priorSurfaces(env: Env, origin: string, domain: string): Promise<Surface[]> {
+  return (await discoveryDoc(env, origin, domain))?.surfaces ?? [];
 }
 
-/** Prior surfaces for a domain: the stored KV result, else the static-catalog
- * baseline (whose slugs the prerendered pages already link to). */
-async function priorSurfaces(env: Env, origin: string, domain: string): Promise<Surface[]> {
-  try {
-    const raw = await env.DISCOVERY.get(domain);
-    if (raw) {
-      const stored = JSON.parse(raw) as { result?: { surfaces?: Surface[] } };
-      if (stored.result?.surfaces?.length) return stored.result.surfaces;
-    }
-    const res = await env.ASSETS.fetch(`${origin}/disc/${encodeURIComponent(domain)}.json`);
-    if (res.ok) return ((await res.json()) as { surfaces?: Surface[] }).surfaces ?? [];
-  } catch {
-    /* no priors — fresh slugs stand */
+let ogFontsPromise: Promise<OgFonts> | null = null;
+const assetBuffer = async (env: Env, origin: string, path: string): Promise<ArrayBuffer> => {
+  const res = await env.ASSETS.fetch(`${origin}${path}`);
+  if (!res.ok) throw new Error(`missing asset: ${path}`);
+  return res.arrayBuffer();
+};
+
+function ogFonts(env: Env, origin: string): Promise<OgFonts> {
+  ogFontsPromise ??= Promise.all([
+    assetBuffer(env, origin, "/fonts/geist-400.woff"),
+    assetBuffer(env, origin, "/fonts/geist-500.woff"),
+    assetBuffer(env, origin, "/fonts/geist-600.woff"),
+    assetBuffer(env, origin, "/fonts/geist-mono-400.woff"),
+    assetBuffer(env, origin, "/fonts/geist-mono-500.woff"),
+    assetBuffer(env, origin, "/fonts/geist-mono-600.woff"),
+  ]).then(([geist400, geist500, geist600, mono400, mono500, mono600]) => ({
+    geist400,
+    geist500,
+    geist600,
+    mono400,
+    mono500,
+    mono600,
+  }));
+  return ogFontsPromise;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
-  return [];
+  return btoa(binary);
+}
+
+async function faviconData(origin: string, domain: string): Promise<OgImageData | null> {
+  const res = await fetch(`${origin}/logo/${encodeURIComponent(domain)}?sz=128`).catch(() => null);
+  const contentType = res?.headers.get("content-type") ?? "";
+  if (!res?.ok || !contentType.toLowerCase().startsWith("image/")) return null;
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  return { contentType, dataUri: `data:${contentType};base64,${bytesToBase64(bytes)}` };
+}
+
+async function ogResponse(request: Request, env: Env, ctx: ExecutionContext, cacheVersion: string): Promise<Response | null> {
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+  const url = new URL(request.url);
+  const meta = ogMeta(url);
+  if (!meta) return null;
+  const started = Date.now();
+  const cache = (caches as unknown as EdgeCaches).default;
+  const keyUrl = new URL(url.origin + url.pathname);
+  keyUrl.searchParams.set("__cv", cacheVersion);
+  const cacheKey = new Request(keyUrl.toString(), { method: "GET" });
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    track(env, ctx, request, "og_render", {
+      kind: meta.kind,
+      ...(meta.domain && { domain: meta.domain }),
+      status: cached.status,
+      duration_ms: Date.now() - started,
+      cache_hit: true,
+    });
+    return cached;
+  }
+
+  const png = async () => {
+    const fonts = await ogFonts(env, url.origin);
+    if (url.pathname === "/og.png") {
+      return renderOgPng({ kind: "home" }, fonts, ogRuntime);
+    }
+
+    const match = /^\/og\/([^/]+)(?:\/([^/]+))?\.png$/.exec(url.pathname);
+    if (!match) return null;
+    const domain = registrableDomain(decodeURIComponent(match[1]).trim().toLowerCase());
+    if (!domain) return null;
+    const doc = await discoveryDoc(env, url.origin, domain);
+    if (!doc?.surfaces?.length) return null;
+
+    const favicon = await faviconData(url.origin, domain);
+    const slug = match[2] ? decodeURIComponent(match[2]) : "";
+    if (!slug) {
+      return renderOgPng({ kind: "domain", domain, doc, favicon }, fonts, ogRuntime);
+    }
+
+    const surface = doc.surfaces.find((s) => s.slug === slug);
+    if (!surface) return null;
+    return renderOgPng(
+      { kind: "surface", domain, surface, credentials: (doc.credentials ?? {}) as Record<string, Credential>, favicon },
+      fonts,
+      ogRuntime,
+    );
+  };
+
+  const body = await png();
+  if (!body) {
+    track(env, ctx, request, "og_render", {
+      kind: meta.kind,
+      ...(meta.domain && { domain: meta.domain }),
+      status: 404,
+      duration_ms: Date.now() - started,
+      cache_hit: false,
+    });
+    return new Response(null, { status: 404 });
+  }
+  const bodyBuffer = body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength) as ArrayBuffer;
+  const cacheable = new Response(bodyBuffer, {
+    headers: {
+      "content-type": "image/png",
+      "cache-control": "public, max-age=86400",
+    },
+  });
+  ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
+  track(env, ctx, request, "og_render", {
+    kind: meta.kind,
+    ...(meta.domain && { domain: meta.domain }),
+    status: 200,
+    duration_ms: Date.now() - started,
+    cache_hit: false,
+  });
+  if (request.method === "HEAD") {
+    return new Response(null, { headers: cacheable.headers });
+  }
+  return cacheable;
 }
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -127,6 +220,79 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
     status,
     headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", ...headers },
   });
+
+const truncate = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max));
+
+function apiEndpoint(pathname: string): string | undefined {
+  if (pathname === "/openapi.json") return "openapi";
+  const m = /^\/api\/[^/]+\/(detect|discover|surface)\/?$/.exec(pathname);
+  return m?.[1];
+}
+
+async function mcpRequestMeta(request: Request): Promise<{ method?: string; tool?: string }> {
+  if (request.method !== "POST") return {};
+  try {
+    const body = (await request.clone().json()) as { method?: string; params?: { name?: string } };
+    const method = typeof body.method === "string" ? body.method : undefined;
+    const tool = method === "tools/call" && typeof body.params?.name === "string" ? body.params.name : undefined;
+    return { ...(method && { method }), ...(tool && { tool }) };
+  } catch {
+    return {};
+  }
+}
+
+function ogMeta(url: URL): { kind: "home" | "domain" | "surface"; domain?: string } | null {
+  if (url.pathname === "/og.png") return { kind: "home" };
+  const match = /^\/og\/([^/]+)(?:\/([^/]+))?\.png$/.exec(url.pathname);
+  if (!match) return null;
+  const domain = registrableDomain(decodeURIComponent(match[1]).trim().toLowerCase());
+  if (!domain) return null;
+  return match[2] ? { kind: "surface", domain } : { kind: "domain", domain };
+}
+
+function discoveryCounts(result: {
+  surfaces?: readonly unknown[] | unknown[];
+  credentials?: Readonly<Record<string, unknown>> | Record<string, unknown>;
+  usedLlm?: boolean;
+}) {
+  return {
+    surfaces_count: Array.isArray(result.surfaces) ? result.surfaces.length : 0,
+    credentials_count: result.credentials ? Object.keys(result.credentials).length : 0,
+    used_llm: !!result.usedLlm,
+  };
+}
+
+async function healthz(env: Env): Promise<Response> {
+  const kv = await Promise.race([
+    env.DISCOVERY.get("stripe.com"),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+  ])
+    .then(() => "ok" as const)
+    .catch(() => "slow" as const);
+  const body: Record<string, unknown> = { ok: true, version: CACHE_VERSION };
+  if (kv === "slow") body.kv = "slow";
+  return json(body, 200, { "cache-control": "no-store" });
+}
+
+const TRAILING_SLASH_SKIP_PREFIXES = ["/api/", "/og/", "/_i/", "/logo/"];
+
+function trailingSlashRedirect(request: Request, url: URL): Response | null {
+  if (request.method !== "GET" || url.pathname.endsWith("/")) return null;
+  if (TRAILING_SLASH_SKIP_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) return null;
+  const segments = url.pathname.split("/").filter(Boolean);
+  if (segments.length < 1 || segments.length > 2) return null;
+  // Page paths here are /{domain} and /{domain}/{slug} — the first segment is
+  // dotted (gitlab.com), so "dot = file" is wrong. A path is page-like when
+  // its first segment parses as a registrable domain and its last segment
+  // isn't a file (no dot, or the whole segment IS the domain).
+  const first = segments[0];
+  const last = segments[segments.length - 1];
+  if (!registrableDomain(first)) return null;
+  if (last !== first && last.includes(".")) return null;
+  const target = new URL(url);
+  target.pathname = `${url.pathname}/`;
+  return Response.redirect(target.toString(), 301);
+}
 
 /** Fire-and-forget server-side PostHog capture. Browser pageviews come from
  * posthog-js (src/lib/analytics.ts); this covers the callers that never run
@@ -163,7 +329,32 @@ export function createExports(manifest: SSRManifest) {
   const app = new App(manifest);
 
   const fetchHandler = async (request: Request, env: Env, ctx: ExecutionContext): Promise<Response> => {
+    try {
+      return await handleRequest(request, env, ctx, manifest, app);
+    } catch (err) {
+      const message = truncate(err instanceof Error ? err.message : String(err), 200);
+      const stack = truncate(err instanceof Error ? (err.stack ?? "") : "", 300);
+      track(env, ctx, request, "worker_exception", { message, stack });
+      throw err;
+    }
+  };
+
+  return { default: { fetch: fetchHandler }, McpDurableObject };
+}
+
+async function handleRequest(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  manifest: SSRManifest,
+  app: App,
+): Promise<Response> {
     const url = new URL(request.url);
+    // Host canonicalization: www / workers.dev serve 301s to the apex
+    // (except /healthz, which monitors may hit on any host).
+    const canonical = canonicalRedirect(request);
+    if (canonical) return canonical;
+    if (url.pathname === "/sitemap-surfaces.xml") return sitemapSurfacesResponse();
     wireAi(env);
 
     // First-party analytics proxy — posthog-js points api_host here (see
@@ -186,8 +377,13 @@ export function createExports(manifest: SSRManifest) {
     // MCP server — point Claude/Cursor at /mcp. Routed through a single Durable
     // Object so the session map persists across stateless Worker requests.
     if (url.pathname === "/mcp") {
-      track(env, ctx, request, "mcp_request");
+      const mcpMeta = await mcpRequestMeta(request);
+      track(env, ctx, request, "mcp_request", mcpMeta);
       return env.MCP.get(env.MCP.idFromName("mcp")).fetch(request);
+    }
+
+    if (url.pathname === "/healthz" && request.method === "GET") {
+      return healthz(env);
     }
 
     // Logo proxy — the single logo source for executor clients (and anything
@@ -249,8 +445,33 @@ export function createExports(manifest: SSRManifest) {
       return res;
     }
 
+    if (url.pathname === "/og.png" || url.pathname.startsWith("/og/")) {
+      try {
+        const res = await ogResponse(request, env, ctx, CACHE_VERSION);
+        if (res) return res;
+      } catch (err) {
+        track(env, ctx, request, "og_error", {
+          path: url.pathname,
+          message: truncate(err instanceof Error ? err.message : String(err), 200),
+        });
+      }
+      return new Response(null, { status: 404 });
+    }
+
     // Self-describe via the same discovery format the catalog indexes: point at
     // our own OpenAPI + MCP endpoint.
+    // Renamed docs page — the old path may be linked/indexed.
+    if (url.pathname === "/own-your-page" || url.pathname === "/own-your-page/") {
+      return Response.redirect(new URL("/publishing/", url.origin).toString(), 301);
+    }
+    // Our own well-known documents — served from the Worker because the assets
+    // layer skips dotfile paths. Content lives in public/.well-known/ for
+    // provenance; these routes mirror it.
+    if (["/.well-known/integrations.json", "/.well-known/mcp/server-card.json"].includes(url.pathname)) {
+      const res = await env.ASSETS.fetch(url.origin + url.pathname);
+      if (res.ok) return res;
+      return json({ error: "not found" }, 404);
+    }
     if (url.pathname === "/.well-known/api-catalog") {
       return json(
         {
@@ -267,8 +488,8 @@ export function createExports(manifest: SSRManifest) {
     }
 
     // Stored discovery — the durable KV result for a domain, written on the
-    // last completion. The domain page reads this at render/mount and merges it
-    // with the static catalog. 404 when nothing has been discovered yet.
+    // last completion. The domain page reads this at render/mount and uses it
+    // as the only render source. 404 when nothing has been discovered yet.
     const storedMatch = /^\/api\/([^/]+)\/discovery\/?$/.exec(url.pathname);
     if (storedMatch) {
       const domain = decodeURIComponent(storedMatch[1]).trim().toLowerCase();
@@ -296,13 +517,30 @@ export function createExports(manifest: SSRManifest) {
       const enc = new TextEncoder();
       const send = (event: string, data: unknown) => writer.write(enc.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
 
+      // Cached results are free to serve; an uncached run costs an LLM loop —
+      // cap those per client IP. 429 before the stream starts.
+      const cachedProbe = await cache.match(cacheKey);
+      if (!cachedProbe && env.DISCOVER_LIMITER) {
+        const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+        const { success } = await env.DISCOVER_LIMITER.limit({ key: ip });
+        if (!success) {
+          track(env, ctx, request, "discovery_ratelimited", { domain });
+          return json({ error: "rate limited — try again in a minute" }, 429, { "retry-after": "60" });
+        }
+      }
       const producer = (async () => {
+        const started = Date.now();
         try {
           const cached = await cache.match(cacheKey);
-          track(env, ctx, request, "discovery_run", { domain, cached: !!cached });
           if (cached) {
-            const result = (await cached.json()) as { domain?: string };
+            const result = (await cached.json()) as { domain?: string; surfaces?: unknown[]; credentials?: Record<string, unknown>; usedLlm?: boolean };
             await send("done", result);
+            track(env, ctx, request, "discovery_run", {
+              domain,
+              outcome: "cached",
+              duration_ms: Date.now() - started,
+              ...discoveryCounts(result),
+            });
             // Backfill KV so a cache-served result still lands in durable storage.
             if (result.domain) {
               ctx.waitUntil(env.DISCOVERY.put(result.domain, JSON.stringify({ result, discoveredAt: new Date().toISOString(), model: OPENAI_MODEL })));
@@ -316,6 +554,12 @@ export function createExports(manifest: SSRManifest) {
             });
             if (Array.isArray(result.surfaces)) preserveSlugs(result.surfaces as Surface[], prior);
             await send("done", result);
+            track(env, ctx, request, "discovery_run", {
+              domain,
+              outcome: "done",
+              duration_ms: Date.now() - started,
+              ...discoveryCounts(result),
+            });
             const toCache = new Response(JSON.stringify(result), {
               headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=86400" },
             });
@@ -325,7 +569,12 @@ export function createExports(manifest: SSRManifest) {
               ctx.waitUntil(env.DISCOVERY.put(result.domain, JSON.stringify({ result, discoveredAt: new Date().toISOString(), model: OPENAI_MODEL })));
             }
           }
-        } catch {
+        } catch (err) {
+          track(env, ctx, request, "discovery_error", {
+            domain,
+            message: truncate(err instanceof Error ? err.message : String(err), 200),
+            duration_ms: Date.now() - started,
+          });
           await send("error", { message: "Discovery failed." });
         } finally {
           await writer.close();
@@ -343,10 +592,15 @@ export function createExports(manifest: SSRManifest) {
       });
     }
 
-    // Dynamic API (the Effect HttpApi) — detect, discover + the OpenAPI doc.
+    // Dynamic API (the Effect HttpApi) — catalog search, surface docs, detect,
+    // discover + the OpenAPI doc.
     // Other /api/* paths (e.g. the static /api/domains.json) fall through to Astro.
-    if (url.pathname === "/openapi.json" || /^\/api\/[^/]+\/(?:detect|discover)\/?$/.test(url.pathname)) {
-      track(env, ctx, request, "api_request");
+    if (
+      url.pathname === "/openapi.json" ||
+      url.pathname === "/api/search" ||
+      /^\/api\/[^/]+\/(?:detect|discover|surface)\/?$/.test(url.pathname)
+    ) {
+      const endpoint = apiEndpoint(url.pathname);
       const cache = (caches as unknown as EdgeCaches).default;
       // Version the cache key so a deploy that bumps CACHE_VERSION orphans stale
       // entries (the Cache API otherwise survives deploys).
@@ -354,13 +608,28 @@ export function createExports(manifest: SSRManifest) {
       keyUrl.searchParams.set("__cv", CACHE_VERSION);
       const cacheKey = new Request(keyUrl.toString(), { method: "GET" });
       const cached = await cache.match(cacheKey);
-      if (cached) return cached;
-      const res = await apiHandler(request);
-      if (request.method === "GET" && res.status === 200) {
+      if (cached) {
+        track(env, ctx, request, "api_request", { ...(endpoint && { endpoint }), cache_hit: true, status: cached.status });
+        return cached;
+      }
+      // Uncached /discover runs the LLM loop — same per-IP cap as the stream.
+      if (url.pathname.includes("/discover") && env.DISCOVER_LIMITER) {
+        const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+        const { success } = await env.DISCOVER_LIMITER.limit({ key: ip });
+        if (!success) {
+          track(env, ctx, request, "discovery_ratelimited", { path: url.pathname });
+          track(env, ctx, request, "api_request", { ...(endpoint && { endpoint }), cache_hit: false, status: 429 });
+          return json({ error: "rate limited — try again in a minute" }, 429, { "retry-after": "60" });
+        }
+      }
+      const res = await apiHandler(request, apiContext(env, url.origin));
+      track(env, ctx, request, "api_request", { ...(endpoint && { endpoint }), cache_hit: false, status: res.status });
+      const maxAge = url.pathname.includes("/discover") ? 86400 : url.pathname.includes("/surface") ? 60 : 3600;
+      if (request.method === "GET" && (res.status === 200 || (url.pathname.includes("/surface") && res.status === 404))) {
         const out = new Response(res.clone().body, res);
-        // discover runs the LLM agent — cache a day; detect/openapi are cheap — an hour.
-        out.headers.set("cache-control", url.pathname.includes("/discover") ? "public, max-age=86400" : "public, max-age=3600");
-        ctx.waitUntil(cache.put(cacheKey, out.clone()));
+        // discover runs the LLM agent — cache a day; surface matches /api/{domain}/discovery; the rest are cheap — an hour.
+        out.headers.set("cache-control", `public, max-age=${maxAge}`);
+        if (res.status === 200) ctx.waitUntil(cache.put(cacheKey, out.clone()));
         return out;
       }
       return res;
@@ -381,6 +650,16 @@ export function createExports(manifest: SSRManifest) {
       track(env, ctx, request, "data_fetch");
     }
 
+    // /ssr/{domain}/ is the INTERNAL render target below — never a public URL.
+    // Direct hits redirect to the one canonical path.
+    const ssrLeak = /^\/ssr\/([^/]+)\/?$/.exec(url.pathname);
+    if (ssrLeak) {
+      return Response.redirect(new URL(`/${ssrLeak[1]}/`, url.origin).toString(), 301);
+    }
+
+    const slashRedirect = trailingSlashRedirect(request, url);
+    if (slashRedirect) return slashRedirect;
+
     // Domain page with a STORED discovery → SSR it with the map baked in
     // (src/pages/ssr/[domain].astro) instead of the prerendered asset, so
     // returning visitors don't get the idle-button flash while the island
@@ -388,7 +667,7 @@ export function createExports(manifest: SSRManifest) {
     const domainMatch = /^\/([^/]+)\/?$/.exec(url.pathname);
     if (request.method === "GET" && domainMatch && domainMatch[1].includes(".")) {
       const domain = decodeURIComponent(domainMatch[1]).trim().toLowerCase();
-      if (await env.DISCOVERY.get(domain)) {
+      if (!isJunkDomain(domain) && await env.DISCOVERY.get(domain)) {
         const ssrUrl = new URL(`/ssr/${encodeURIComponent(domain)}/`, url.origin);
         return handle(manifest, app, new Request(ssrUrl, request) as never, env as never, ctx as never);
       }
@@ -397,9 +676,6 @@ export function createExports(manifest: SSRManifest) {
     // Everything else is Astro: prerendered pages/data served from ASSETS, and
     // the on-demand routes (surface detail pages) rendered in this Worker.
     return handle(manifest, app, request as never, env as never, ctx as never);
-  };
-
-  return { default: { fetch: fetchHandler }, McpDurableObject };
 }
 
 export { McpDurableObject };

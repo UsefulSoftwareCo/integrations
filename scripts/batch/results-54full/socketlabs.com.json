@@ -1,0 +1,339 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "socketlabs.com",
+    "detect": {
+      "domain": "socketlabs.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:54:20.627Z",
+    "summary": "SocketLabs exposes two documented HTTP integration surfaces: a general account/reporting/configuration API on `api.socketlabs.com` and a separate email Injection API on `inject-cx.socketlabs.com`, both using SocketLabs-issued API keys; no public GraphQL, MCP, or CLI surfaces were found.",
+    "description": "SocketLabs provides email delivery and analytics services, including outbound email sending, reporting, suppression management, and event/webhook-related features. Its platform is used to send and monitor email programmatically and through its control panel.",
+    "credentials": {
+      "socketlabs_api_key": {
+        "type": "api_key",
+        "label": "SocketLabs API key",
+        "generateUrl": "https://portal.socketlabs.com/x/smtp-api/key-manager",
+        "setup": "In the SocketLabs portal, open [API Key Management](https://portal.socketlabs.com/x/smtp-api/key-manager) and create a key with the `SocketLabs Api` API Access option enabled. The docs say this key is used for the SocketLabs API and is sent in the `Authorization` header, usually as `Bearer YOUR-API-KEY`.",
+        "acquisition": "manual"
+      },
+      "socketlabs_injection_key": {
+        "type": "api_key",
+        "label": "SocketLabs Injection API key",
+        "generateUrl": "https://api.socketlabs.com/v2/subaccount/:subaccountId/credentials/injection-api",
+        "setup": "Create or use a SocketLabs API key first. Then call the Injection API key creation endpoint documented at [Injection API](https://help.socketlabs.com/docs/email/v2/injection-api?hsLang=en): `POST https://api.socketlabs.com/v2/subaccount/:subaccountId/credentials/injection-api` with your SocketLabs API bearer token. The response returns an injection `apiKey`, `serverId`, and `gateway` such as `https://inject-cx.socketlabs.com/api/v1/email`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "socketlabs-api",
+        "name": "SocketLabs API",
+        "type": "http",
+        "docs": "https://docs.socketlabs.com/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.socketlabs.com/",
+            "https://help.socketlabs.com/docs/introduction-to-our-apis",
+            "https://help.socketlabs.com/docs/email/v2/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "socketlabs_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.socketlabs.com/",
+                  "https://help.socketlabs.com/docs/email/v2/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "socketlabs_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.socketlabs.com/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.socketlabs.com/v1",
+        "notes": "Docs describe a single HTTP API suite covering configuration, reporting, suppression, event webhooks management, and marketing features. The docs page shows example v1 URLs (for example `https://api.socketlabs.com/v1/servers/12345/search/...`), while the help-center auth page also shows v2 examples under the same host."
+      },
+      {
+        "slug": "socketlabs-injection-api",
+        "name": "SocketLabs Injection API",
+        "type": "http",
+        "docs": "https://help.socketlabs.com/docs/email/v2/injection-api?hsLang=en",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.socketlabs.com/docs/introduction-to-our-apis",
+            "https://help.socketlabs.com/docs/email/v2/injection-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "socketlabs_injection_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.socketlabs.com/docs/email/v2/injection-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://inject-cx.socketlabs.com/api/v1/email",
+        "notes": "The send endpoint example authenticates with fields in the JSON body: `serverId` and `APIKey`. The docs show these are obtained by first creating an Injection API key via the SocketLabs API. This is an HTTP email injection surface distinct from the management/reporting API."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:54:20.627Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 113020,
+    "completion_tokens": 1223,
+    "total_tokens": 114243
+  },
+  "visited": [
+    "https://docs.socketlabs.com/",
+    "https://docs.socketlabs.com/openapi.json",
+    "https://help.socketlabs.com/docs/email/v2/authentication",
+    "https://help.socketlabs.com/docs/email/v2/injection-api",
+    "https://help.socketlabs.com/docs/how-to-fix-error-only-one-usage-of-each-socket-address-protocolnetwork-addressport-is-normally-permitted",
+    "https://help.socketlabs.com/docs/introduction-to-our-apis",
+    "https://www.socketlabs.com/hub/API/",
+    "https://www.socketlabs.com/hub/developer/"
+  ],
+  "grounding": [
+    "https://api.socketlabs.com/",
+    "https://api.socketlabs.com/v1/servers/12345/search/?filters=status=eq:active&isActive=eq:true",
+    "https://api.socketlabs.com/v2/subaccount/12345/credentials/injection-api",
+    "https://api.socketlabs.com/v2/subaccount/:subaccountId/credentials/injection-api",
+    "https://cp.socketlabs.com/servers/x/plan/upgrade#/",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization#Directives",
+    "https://docs.socketlabs.com/",
+    "https://docs.socketlabs.com/#00166e83-9e84-47f8-86cd-724be3f01acb",
+    "https://docs.socketlabs.com/#12cdca1e-840b-4156-a9e2-958449e98c33",
+    "https://docs.socketlabs.com/#1ffb945c-1b3a-4cfb-a4b2-32e0275f3936",
+    "https://docs.socketlabs.com/#4462f210-0456-4966-bd6a-26148819ac01",
+    "https://docs.socketlabs.com/#5455d1b4-7532-483d-bdad-476fa647c57f",
+    "https://docs.socketlabs.com/#86ef1dc8-a956-41d7-a8ca-4d7391377e26",
+    "https://docs.socketlabs.com/#998247dc-aba7-4662-980c-0e84e9d706a4",
+    "https://docs.socketlabs.com/#a1172152-03f6-45a7-abc9-dccf743e4e2d",
+    "https://docs.socketlabs.com/#a5426bf3-16e5-428b-a2e4-24a1a235ded4",
+    "https://docs.socketlabs.com/#b11506e2-a47c-484f-a0ee-5b4471905196",
+    "https://docs.socketlabs.com/#b586312a-328e-4889-8485-e39df5fe352e",
+    "https://docs.socketlabs.com/#cf807626-5084-4ee1-b04d-f4bce9f3f81d",
+    "https://docs.socketlabs.com/#d03ae64c-b87a-4e3b-bbf6-3cea892dd4b2",
+    "https://docs.socketlabs.com/#d5d3d212-731a-48ec-81bf-4906190fcdad",
+    "https://docs.socketlabs.com/#e28ea8b9-1f03-42e7-b51c-a65084fbe7c5",
+    "https://docs.socketlabs.com/#intro",
+    "https://docs.socketlabs.com/openapi.json",
+    "https://en.wikipedia.org/wiki/ISO_8601#Time_offsets_from_UTC",
+    "https://help.socketlabs.com/#main-content",
+    "https://help.socketlabs.com/docs",
+    "https://help.socketlabs.com/docs/advanced?hsLang=en#main-content",
+    "https://help.socketlabs.com/docs/advanced?hsLang=en#security",
+    "https://help.socketlabs.com/docs/complex-sender?hsLang=en",
+    "https://help.socketlabs.com/docs/deliverability?hsLang=en",
+    "https://help.socketlabs.com/docs/dns-authentication?hsLang=en#dkim",
+    "https://help.socketlabs.com/docs/dns-authentication?hsLang=en#main-content",
+    "https://help.socketlabs.com/docs/dns-authentication?hsLang=en#spf-and-custom-bounce-domain",
+    "https://help.socketlabs.com/docs/email/v2/account-level-event-webhook?hsLang=en",
+    "https://help.socketlabs.com/docs/email/v2/authentication",
+    "https://help.socketlabs.com/docs/email/v2/authentication?hsLang=en",
+    "https://help.socketlabs.com/docs/email/v2/creating-ip-pools?hsLang=en",
+    "https://help.socketlabs.com/docs/email/v2/creating-subaccounts?hsLang=en",
+    "https://help.socketlabs.com/docs/email/v2/injection-api",
+    "https://help.socketlabs.com/docs/email/v2/injection-api?hsLang=en",
+    "https://help.socketlabs.com/docs/email/v2/smtp?hsLang=en",
+    "https://help.socketlabs.com/docs/email/v2/subaccount-custom-bounce-domain-authentication?hsLang=en",
+    "https://help.socketlabs.com/docs/email/v2/subaccount-dkim-authentication?hsLang=en",
+    "https://help.socketlabs.com/docs/email/v2/subaccount-engagement-tracking?hsLang=en",
+    "https://help.socketlabs.com/docs/event-webhooks-authentication-and-access?hsLang=en",
+    "https://help.socketlabs.com/docs/for-developers?hsLang=en",
+    "https://help.socketlabs.com/docs/for-developers?hsLang=en#event-webhooks",
+    "https://help.socketlabs.com/docs/for-developers?hsLang=en#main-content",
+    "https://help.socketlabs.com/docs/fundamentals?hsLang=en#frequently-asked-questions",
+    "https://help.socketlabs.com/docs/fundamentals?hsLang=en#main-content",
+    "https://help.socketlabs.com/docs/fundamentals?hsLang=en#reports",
+    "https://help.socketlabs.com/docs/fundamentals?hsLang=en#streamscore",
+    "https://help.socketlabs.com/docs/how-to-fix-error-only-one-usage-of-each-socket-address-protocolnetwork-addressport-is-normally-permitted",
+    "https://help.socketlabs.com/docs/hurricane-mta?hsLang=en#advanced-hurricane-usage",
+    "https://help.socketlabs.com/docs/hurricane-mta?hsLang=en#basic-hurricane-usage",
+    "https://help.socketlabs.com/docs/hurricane-mta?hsLang=en#getting-started-with-hurricane",
+    "https://help.socketlabs.com/docs/hurricane-mta?hsLang=en#hurricane-maintenance",
+    "https://help.socketlabs.com/docs/hurricane-mta?hsLang=en#main-content",
+    "https://help.socketlabs.com/docs/hurricane-mta?hsLang=en#troubleshooting",
+    "https://help.socketlabs.com/docs/hurricane-mta?hsLang=en#upgrading-hurricane",
+    "https://help.socketlabs.com/docs/integrations?hsLang=en#languages-and-frameworks",
+    "https://help.socketlabs.com/docs/integrations?hsLang=en#mail-clients",
+    "https://help.socketlabs.com/docs/integrations?hsLang=en#mail-servers",
+    "https://help.socketlabs.com/docs/integrations?hsLang=en#main-content",
+    "https://help.socketlabs.com/docs/integrations?hsLang=en#web-clients-and-plug-ins",
+    "https://help.socketlabs.com/docs/introduction-to-our-apis",
+    "https://help.socketlabs.com/docs/kb-tickets/new",
+    "https://help.socketlabs.com/docs/kb-tickets/new?hsLang=en",
+    "https://help.socketlabs.com/docs/marketing-tools?hsLang=en#main-content",
+    "https://help.socketlabs.com/docs/marketing-tools?hsLang=en#tips-and-tricks",
+    "https://help.socketlabs.com/docs/spotlight-email-analytics?hsLang=en",
+    "https://help.socketlabs.com/docs/troubleshooting?hsLang=en#main-content",
+    "https://help.socketlabs.com/docs/troubleshooting?hsLang=en#socketlabs-inbound-smtp-gateway-errors",
+    "https://help.socketlabs.com/docs/troubleshooting?hsLang=en#socketlabs-outbound-smtp-errors",
+    "https://help.socketlabs.com/docs?hsLang=en",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/JkM2-6qcW6N1vHY6lZ3lGW6m1jtC4wW7MRN322snGDvWVGW8S8N_c25pGNyW8dtY3R7C6Js9W31dGxk4hPYhpW3c08xj25Mbt_W5lTd9z1BmhmBV-61Sx67bSwxW3sLbPQ7MnFmWW9gsXW030b8y3W1pXSzH7ll2j2N6JW0gr2QDYBW9l8X_S8z3KRPW2HMdcM2-gvWyW1fpMMb1Xt1DqW4L4qXp8DvCQYW708by28cdR3BW4-z0-p9gZyYRN6gddt-rr36LW6R71xp57nlgBW4tRKZT5Bdw45W6gvvSV4w9r5_f2Jx69l04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/JkM2-6qcW6N1vHY6lZ3lHW5yVyzz8KWR5_W4HPkl_3zX54ZW5vvm7H5TS41DW755_Mf3NHlQCW1Bk0nK4H6srpN75r0njvrQnFW8MLjCk31Y7_5W7BXtXn65rXg1W8395rr9gHV7BW4hn3BB6rW_-3W4CP0Kc3KdkhfW2vG6S55BRYzcW7-tC6J4LxWDrW3J9L-j8M7fQDW62Zp_q8Y0ZclW7lxwf_3Js87jW8fC6lJ6Hl2FGW79cxWn6N_ZtlW7w4mfX4zv9PxVHnsM_6H7BKlN3h2h126L-PPW2bwyz81vmkJKf1r6xdM04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/JkM2-6qcW6N1vHY6lZ3lRVgDMJh5LZ_XXW6mXxYQ7rGqBKW2S3k2c76zHyqW4G_wny7j2d49MpMcfnDKmV8W8SY0gg2_TYjLW7fSfbm2xxfXYVPFc291-C-KsW20Dc2p8G73svN6Nvh30jwQv_W10-gny1Lt96QW5h90B13JKdTcW1NQwlC6kxJjlW834Ckh5g63l_W1ChLB73QnR2WN7N7P5CJktlDN403K1FHBLtGN6xKNFxk3q-HW6VHH3G98K3jZW17DtGF904NQJW8whPT52MrDlpW87HMp08dq-5Sf86s-0j04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/JkM2-6qcW6N1vHY6lZ3pSW1-1WSt2h7-y9W8JHQt_1Xkl4YW7MWX4R3t-WgGW37w6l27hyvCFW8ZBQ7G27KF9mW1W47w32RqD01N47RyDX-85z5W47GP7N5--dTJW6JQ7Zj5Fl4p8MR42YzJ1qGJW23jRGr1nZBPMW42rSL_2qjp6PN5S-MynXgf6hW6C1r_D5SDfWnW52nWvZ5MKbjKW7M1NTR5ZFY0gW19JNpZ6Cd7hxN6mt5mMZdqqlW5sG3mg2jQrC7W3-801g84HN3MW4mtJpg6NZk3_W2dT8lw1YFsl5f5mwkwl04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/JkM2-6qcW6N1vHY6lZ3plVqMw5k2Bf_V-W7BT9py5P1kcMW7q7crV1vNXYNW2SGtrv3923lyN2WpbCW72CcFW92Hf_714PHckW3H5sj64L9M7fW5nWz5j5PnBjXW71RKH1700JthW2mjqQ84hV5P8W6VyYN38zn-ksW6bcDrQ5C6c68N6g3R1yW1h55W24LcR18G5Nm6W4KhVN918X86yW8nzd3q12Xs9WW4cwHZb15d8znW4ktyrP5kFt_0N93JHkFwL9KjW1h3rcW41rdbLN6d28jjzqTFLW3BW1DH944x85f1k5FJ204",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/JkM2-6qcW6N1vHY6lZ3pwW1N6Y-G7bnjybW8kgHgc5MTrd9VjYD4v58Mh08W6h1QxL3wzxfKW9drV8X4TQV5_Vj1QxC6sVQ7sW79-mtb91XLMNN7XFjyJ7Z8VYW3bZtB022nCZ2W52M5wS6QhZ0GV_h4Tl6mSDJ8VYDNkC5XFmWjW3XBLfx4z3R_rW1N7wv81Ymk9PW8g39T483_0mwW1kcHkb60__nRW3JChZm2SHv5-W45yVZP7SPYlHW5jtG1w6bQfzFN8N8SY1H3cbvW3yY_MK3z8-8bVT0_j34phdZkdt9mQv04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jl22-6qcW7lCdLW6lZ3kBW2dcD-k58LnXdW8wYRTZ9khTqbW3-sBh81gfj5gVKHjs_7sZx60W2MXwHc7RBHK2W3s4Rq-2SkShLMFDcxVfsmfzW4qMYRc1MmrkNN71PMc6lCR69W1Llk1Q2xJcSYW28X9Ry26lB8wMnRkR1JPvljV5sTsZ5dgyVKW2GNKNv5C11_dW1fqfpP5s6dZvW5Yyy8f4GMXrwW8BPVRK3b2YM8W8ySL_Z12LRTpW4PWRNx8h0x_NW7B9MD37x3n_hVd_C-l8fFtvHW3VwfHW4Lx0xlW5fNfqk1m5DPcVySx4S2NJ9lbf82fgmT04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jl22-6qcW7lCdLW6lZ3kZW2k-4YN1_NPCjVh2Y8N17Wq_LN1RvSl_g5JpwW6ydTkX6h2xTjW3J35fS2v3Z28W7DYrDv8C3SZwVfbWCt7jgfXqW4b9fj31rmZR2W1nLLPx2gkcq_W7bd1Ns6jH706W5fNcH47T8B1GN1PlHBw2g4m-W2rMKT56llz4vW6WxvDP8DQ--vW9hnrXP6Yz6brW4mTpSD70j1_lW3FkGVf62RzCgW3jH8Xk8gNN36W5wtLz731spB5W2jPQzy3hWv2pW8sV97M2Mn54FW1KzWg-7p1YvpW7JkhWQ771BcBW5JjX2x3yBYf8f2GXQ7Y04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jl22-6qcW7lCdLW6lZ3lYW4cCYXx8TD6cyW10jZhM1ST2G4W2XKKWQ8CfXDcW7bW-tp6tHYVsW6G__tV7T42QzW5sLYTr1JRXbmN4dsKz6-pCJ7W3WzxqK5XMXhfW4__bL-2cRyW8W7R7_7q8LzYs1W61NJQB8wqt3SW3Xgc117qMBbyN5whL8V_CS1tW3wntwY6GL7GTVZz0gx7TZn5SW49W2C58m9Yt-V628Sm7qgxVQW2X5VWb3RqBjPW6F5wYK5vNFWlF4ZjYKFwp1gN7NjCc0xxNRRW14VcsZ7JVscLV16fBn8XTQqhW2lHjLy6bG-d-f967Cs804",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jl22-6qcW7lCdLW6lZ3lxW4Gc7Fy2VVtL2W96d2Rc8vwkwqN8lVBC75Z74hW4YdGbr3ZK_W4W8CPfL38_LdpXW2y5QRs1nLL0dVJkdRw32zDwfW88FKBd49PHy4W6rJlp038FDclW8yWy4_4Rn-xjW4S76Dk6-p3NyW3yVc5m27FtHFW6z0_4Q4Stg9TW4-N-_X770jfcW7qjNqP3gB01wW8CThKr94H3gPVshBbp32Xtw6W1-S_rG6sD-WvW4qJ0kr6J0J6mW7V3whV77dkbGN1395cvt891mW3WYLCm16CRfyW1ScyVD6lsy6_W3Qyygh5CpGp_f224lYR04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jl22-6qcW7lCdLW6lZ3m6W7zVQjt6Md-xyW8bbSTx4rKT0LW7SrX6D1VSq6mW7W0H-65Tl2VZW8XQk-926HC3zW7Gc4wy8NBc2VW5ZWHVb78ktNxW4Z98KD40pKFJW4xF9Js8_4mWbW8fRZnl26rx0qW6xfQLm5L49t8W2_YGny5gPdd3W2njhTW8wN6F-W2ypKnL76YGZ2W3L6xhD3QbW0VW2X1QKP768DSmW9bLRQv4FrMBxW2WWG4k356CvPW8qmlS43f4-jMW7BvRLh2bFkYrW6wL3sL17WlRvW7q4njb6mcHC8W93qvmc1BnLFTW3kGBMQ7TDZHkf4BvRlH04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jl22-6qcW7lCdLW6lZ3mfW4nJ_FB6zhVB0VVgQrh4nMKv1W4Wn3Gq1r6ZskW3wxG7Z4FPvdDW5YNLHC7Kw15dW7xg_rt3H2fS-W4Fl6cn5mN5BjW33d1cq7ZG1cpW9hdl-12HvscPN4P_64VP5yK6W6rVfbk66k56KMvDRZCx0b96W18P-DQ1lHRxCW5-s4SQ5w3GnRN5-Hh9mrHp63W193-rS3DQcwVW7BKxn71GLJj3W2n2bGY2vBWYSW7WwCRK6HpnzWW4fnwkD17qFcVW1G3m0K8dyT2jW2n-T046RJ5q6W6wCPkL2kT9RwW2ht5Gn2zjk5Zf5BtXqj04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jl22-6qcW7lCdLW6lZ3nfW4lSZYF4DZSBKW6RJ2g93tkb6tW5MlBkz4XnyCpW6wxTBH2nPH0VW5nn8W6461NhCW6v5YKF4px3GpW2jBRq-7gJNknW94XvH34nP3GLN2nJR1nQYk1nW2t758_2173mQN5ztzn3kF_rJW2yK-xQ6ZyLQZW93-c_T1SWMRJW7lhh2T6d60krW6sCjWl9dBm29W8mJrpx7t1ZV-W1GHVVw3DH2NdVf8w5m42f2d_Vjdlrs1PmYkzW2Z9fxG6PwBGDW1D4JcG76JyGZW37t7cp7GQ_XbW9lf5Sn5fRZsmW1x48MP8Ndbbmf22hqgR04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jl22-6qcW7lCdLW6lZ3pHW7W3sgv3CSJCJW4Yxs879hXZpxW8zs7dG7bXXdHW4qhSmg3stKbmVkhLW42k_w_tN7sxLYmGQMj-W2VxSYb4sLMJXW8XPVcL6KTm-WN4BbymYjblYrW3VrJcH5H7Nx5VX0NmF2NH0G5W2_bGDF1k1yXkW7l-mhm1MrbqyW3fKDlL5zJHmSW4fy_QJ7GgQLsVfLxv51g0kw9W2r3P4_8yFdRgW6GB0BH1x-s7_N8dvV7jP2KgTV6jrY35whqwNW2rJ9BQ64k58cW5bhGmd8BLw3QW1lN4pm2P_kwXW6RcgnW4nxf-bf5X8LxR04",
+    "https://help.socketlabs.com/e3t/Ctc/ZS+50013/cC2w004/Jll2-6qcW7Y8-PT6lZ3lZW5bsw-l5vrdPXW3L13_X2pZQ5dVxTTCV7Qb9k8W6_k6Gq44P9b3W2fshk78fWLTTW1_NTc13YF8LkN2H7K7KjJ9cYW8GtqFK7cxs-wVMJV8P1ZzWWsW18wTKQ8VmcM-W3Rg-JN4kDHB-N2swp68C9XHgW104BPx8jVVcDW1tx2Qk2CfH7jVZWBTj5vfynZW4pLvNN6-0rB7W1CLYGC18hFfQN8Hs0TJ6GntCW1yMdSQ6hW12LW36-YwX31nWSMVwQ4y44KxytPF7Xs5kg18GkW1WM-2Y4WXC4kW7nyHHY3t4M5-W7q_cXr61kxb3W8VCQL921LZfJf7vysBz04",
+    "https://inject-cx.socketlabs.com/api/v1/email",
+    "https://portal.socketlabs.com/",
+    "https://portal.socketlabs.com/x/smtp-api/key-manager",
+    "https://socketlabs.com/hub/developer",
+    "https://socketlabs.com/pricing",
+    "https://status.socketlabs.com/",
+    "https://tools.socketlabs.com/",
+    "https://tools.socketlabs.com/css/inliner",
+    "https://tools.socketlabs.com/dkim/generator",
+    "https://tools.socketlabs.com/dmarc/generator",
+    "https://tools.socketlabs.com/dns/lookup",
+    "https://tools.socketlabs.com/mta-sts/verify",
+    "https://tools.socketlabs.com/text-encoding/quoted-printable",
+    "https://www.iso.org/iso-8601-date-and-time-format.html",
+    "https://www.socketlabs.com/#",
+    "https://www.socketlabs.com/#content",
+    "https://www.socketlabs.com/about/",
+    "https://www.socketlabs.com/api/",
+    "https://www.socketlabs.com/blog/",
+    "https://www.socketlabs.com/case-studies",
+    "https://www.socketlabs.com/case-studies/apsis-and-socketlabs/",
+    "https://www.socketlabs.com/case-studies/combining-email-technology-and-technique-to-drive-business-results/",
+    "https://www.socketlabs.com/case-studies/helping-it-optimize-transactional-email/",
+    "https://www.socketlabs.com/case-studies/how-an-email-switch-delivers-strategic-impact/",
+    "https://www.socketlabs.com/case-studies/signupcom-success-story/",
+    "https://www.socketlabs.com/complex-demo",
+    "https://www.socketlabs.com/complex-demo/",
+    "https://www.socketlabs.com/email-redundancy-infrastructure/",
+    "https://www.socketlabs.com/email-relay/",
+    "https://www.socketlabs.com/guides/",
+    "https://www.socketlabs.com/hub/API/",
+    "https://www.socketlabs.com/hub/SMTP/",
+    "https://www.socketlabs.com/hub/api/",
+    "https://www.socketlabs.com/hub/crm/",
+    "https://www.socketlabs.com/hub/customer-success/",
+    "https://www.socketlabs.com/hub/deliverability/",
+    "https://www.socketlabs.com/hub/developer/",
+    "https://www.socketlabs.com/hub/email-observability/",
+    "https://www.socketlabs.com/hub/email/",
+    "https://www.socketlabs.com/hub/flying-blind/",
+    "https://www.socketlabs.com/hub/guided-insights/",
+    "https://www.socketlabs.com/hub/healthcare/",
+    "https://www.socketlabs.com/hub/hospitality/",
+    "https://www.socketlabs.com/hub/it-admin/",
+    "https://www.socketlabs.com/hub/mailbox-provider-requirements/",
+    "https://www.socketlabs.com/hub/managing-multiple-email-streams/",
+    "https://www.socketlabs.com/hub/managing-new-senders/",
+    "https://www.socketlabs.com/hub/managing-warm-up/",
+    "https://www.socketlabs.com/hub/marketing-automation/",
+    "https://www.socketlabs.com/hub/monitoring-compliance-with-mailbox-provider-requirements/",
+    "https://www.socketlabs.com/hub/problematic-senders/",
+    "https://www.socketlabs.com/hub/product/",
+    "https://www.socketlabs.com/hub/real-estate/",
+    "https://www.socketlabs.com/hub/rule-engine/",
+    "https://www.socketlabs.com/hub/sending-overview/",
+    "https://www.socketlabs.com/hub/socketlabs-security-center/",
+    "https://www.socketlabs.com/hub/spotlight-diagnostics/",
+    "https://www.socketlabs.com/hub/spotlight-email-reporting/",
+    "https://www.socketlabs.com/hub/spotlight-for-education/",
+    "https://www.socketlabs.com/hub/spotlight-for-enterprise/",
+    "https://www.socketlabs.com/hub/spotlight-for-mailgun/",
+    "https://www.socketlabs.com/hub/spotlight-for-sendgrid/",
+    "https://www.socketlabs.com/hub/spotlight-for-socketlabs/",
+    "https://www.socketlabs.com/hub/streammonitor/",
+    "https://www.socketlabs.com/hub/streamscore/",
+    "https://www.socketlabs.com/hub/subaccount-management/",
+    "https://www.socketlabs.com/hub/user-permissions/",
+    "https://www.socketlabs.com/jobs/",
+    "https://www.socketlabs.com/office-hours/",
+    "https://www.socketlabs.com/on-premises-options/",
+    "https://www.socketlabs.com/pricing/",
+    "https://www.socketlabs.com/pricing/#simple",
+    "https://www.socketlabs.com/product-updates/",
+    "https://www.socketlabs.com/roundtable/",
+    "https://www.socketlabs.com/send-email-golang/",
+    "https://www.socketlabs.com/send-email-java/",
+    "https://www.socketlabs.com/send-email-net/",
+    "https://www.socketlabs.com/send-email-nodejs/",
+    "https://www.socketlabs.com/send-email-php/",
+    "https://www.socketlabs.com/send-email-python/",
+    "https://www.socketlabs.com/send-email-ruby/",
+    "https://www.socketlabs.com/socketlabs-monthly-newsletter/",
+    "https://www.socketlabs.com/spotlight-email-analytics-for-sparkpost-bird/",
+    "https://www.socketlabs.com/wp-content/uploads/2025/02/Getting-Started_Mailgun.pdf",
+    "https://www.socketlabs.com/wp-content/uploads/2025/02/Getting-Started_SG.pdf",
+    "https://www.socketlabs.com/wp-content/uploads/pdf/ComplexSenderQuickstartGuide.pdf"
+  ]
+}

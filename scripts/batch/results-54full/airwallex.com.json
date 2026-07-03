@@ -1,0 +1,861 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "airwallex.com",
+    "detect": {
+      "domain": "airwallex.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:01:12.726Z",
+    "summary": "Airwallex exposes a REST API, three MCP servers (Developer sandbox, Docs, and AgentOS production), and a beta CLI; auth is via API key + client ID, partner OAuth apps, or user OAuth depending on the surface.",
+    "description": "Airwallex is a financial platform for businesses that supports payments, treasury, accounts, payouts, cards, and embedded finance use cases. It provides tools for integrating these capabilities in sandbox and production environments.",
+    "credentials": {
+      "api_key_client": {
+        "type": "compound",
+        "label": "Client ID + API key",
+        "generateUrl": "https://www.airwallex.com/docs/developer-tools/api/manage-api-keys",
+        "setup": "In the [Airwallex web app](https://airwallex.com/app/), go to **Settings > Developer > API keys**. Generate either an admin API key or a scoped API key for your organization/account, then copy the API key and note the associated `Client ID` shown in the Developer app. Airwallex uses this pair to obtain an access token via the Authentication API. Only users with Owner, Admin, or Developer access to the Developer app can manage API keys.",
+        "acquisition": "manual"
+      },
+      "partner_oauth_app": {
+        "type": "oauth2",
+        "label": "Partner OAuth client (client ID + client secret)",
+        "generateUrl": "https://www.airwallex.com/docs/developer-tools/partner-connections/get-started",
+        "setup": "Request credentials from the Airwallex partner integrations team at [partner-integration@airwallex.com](mailto:partner-integration@airwallex.com). You will need a `client_id`, `client_secret`, approved scopes, and a redirect URI. After receiving credentials, create your listing in the Airwallex web app Connections area as described in [Get started](https://www.airwallex.com/docs/developer-tools/partner-connections/get-started).",
+        "acquisition": "manual"
+      },
+      "sandbox_oauth_user": {
+        "type": "oauth2",
+        "label": "Airwallex sandbox OAuth authorization",
+        "generateUrl": "https://demo.airwallex.com/signup/sandbox",
+        "setup": "Create a sandbox account at [Airwallex Sandbox signup](https://demo.airwallex.com/signup/sandbox), then connect from your MCP client or the Airwallex CLI and complete the browser-based OAuth flow. For CLI access use `airwallex auth login`; for the Developer MCP, point your MCP client at `https://mcp-demo.airwallex.com/developer` and approve the Airwallex OAuth consent flow.",
+        "acquisition": "manual"
+      },
+      "prod_oauth_user": {
+        "type": "oauth2",
+        "label": "Airwallex production OAuth authorization",
+        "generateUrl": "https://airwallex.com/app/login",
+        "setup": "Sign in to the [Airwallex web app](https://airwallex.com/app/login) with an account that can grant OAuth consent. Owner, Admin, or Finance Admin users can authorize the Airwallex CLI and AgentOS/production MCP flows. Then run the relevant client login flow, such as `airwallex auth login --prod`, or connect the MCP endpoint `https://mcp.airwallex.com/mcp` from your MCP client and complete the OAuth flow in the browser.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "airwallex-rest-api",
+        "name": "Airwallex REST API",
+        "type": "http",
+        "docs": "https://www.airwallex.com/docs/developer-tools/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.airwallex.com/docs/developer-tools/api",
+            "https://www.airwallex.com/docs/api/authentication/api_access/login"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "api_key_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-client-id"
+                  }
+                },
+                {
+                  "id": "api_key_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-key"
+                  }
+                },
+                {
+                  "id": "api_key_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.airwallex.com/docs/developer-tools/api",
+                  "https://www.airwallex.com/docs/api/authentication/api_access/login"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "partner_oauth_app",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.airwallex.com/docs/developer-tools/partner-connections/get-started",
+                  "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-scopes"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.airwallex.com/api/v1/",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/json"
+            },
+            "description": "Required on authentication/login requests shown in Airwallex examples."
+          }
+        ]
+      },
+      {
+        "slug": "airwallex-developer-mcp",
+        "name": "Airwallex Developer MCP",
+        "type": "mcp",
+        "docs": "https://www.airwallex.com/docs/developer-tools/ai/developer-connector",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.airwallex.com/docs/developer-tools/ai/developer-connector",
+            "https://www.airwallex.com/docs/developer-tools/ai/agentos.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sandbox_oauth_user",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.airwallex.com/docs/developer-tools/ai/developer-connector",
+                  "https://www.airwallex.com/docs/developer-tools/ai/agentos.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "api_key_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.airwallex.com/docs/developer-tools/ai/agentos.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp-demo.airwallex.com/developer",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "airwallex-docs-mcp",
+        "name": "Airwallex Docs MCP",
+        "type": "mcp",
+        "docs": "https://www.airwallex.com/docs/developer-tools/ai/developer-connector",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.airwallex.com/docs/developer-tools/ai/developer-connector"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://www.airwallex.com/docs/developer-tools/ai/developer-connector"
+            ]
+          }
+        },
+        "url": "https://mcp-demo.airwallex.com/docs",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "airwallex-agentos-mcp",
+        "name": "Airwallex AgentOS MCP",
+        "type": "mcp",
+        "docs": "https://www.airwallex.com/docs/developer-tools/ai/agentos",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.airwallex.com/docs/developer-tools/ai/agentos.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "prod_oauth_user",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.airwallex.com/docs/developer-tools/ai/agentos.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.airwallex.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "airwallex-cli",
+        "name": "Airwallex CLI",
+        "type": "cli",
+        "docs": "https://www.airwallex.com/docs/developer-tools/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.airwallex.com/docs/developer-tools/cli",
+            "https://www.airwallex.com/docs/developer-tools/cli.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sandbox_oauth_user",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "airwallex auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.airwallex.com/docs/developer-tools/cli",
+                  "https://www.airwallex.com/docs/developer-tools/cli.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "prod_oauth_user",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "airwallex auth login --prod"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.airwallex.com/docs/developer-tools/cli",
+                  "https://www.airwallex.com/docs/developer-tools/cli.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "other",
+            "identifier": "install script: https://static.airwallex.com/developer-tools/airwallex-cli/install.sh",
+            "runtimeHint": "macOS/Linux shell"
+          }
+        ],
+        "command": "airwallex"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:01:12.727Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 134823,
+    "completion_tokens": 2434,
+    "total_tokens": 137257
+  },
+  "visited": [
+    "https://airwallex.com/llms.txt",
+    "https://mcp-demo.airwallex.com/developer",
+    "https://www.airwallex.com/docs/api",
+    "https://www.airwallex.com/docs/api/authentication/api_access/login",
+    "https://www.airwallex.com/docs/api/introduction",
+    "https://www.airwallex.com/docs/developer-tools/ai",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos.md",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos.md#airwallex-agentos-mcp",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos/build-with-agentos",
+    "https://www.airwallex.com/docs/developer-tools/ai/developer-connector",
+    "https://www.airwallex.com/docs/developer-tools/ai/developer-connector.md",
+    "https://www.airwallex.com/docs/developer-tools/ai/developer-mcp",
+    "https://www.airwallex.com/docs/developer-tools/ai/docs-mcp",
+    "https://www.airwallex.com/docs/developer-tools/api",
+    "https://www.airwallex.com/docs/developer-tools/api/manage-api-keys",
+    "https://www.airwallex.com/docs/developer-tools/cli",
+    "https://www.airwallex.com/docs/developer-tools/cli.md",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/get-started",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/implement-your-authorization-flow",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-permissions",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-scopes",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration"
+  ],
+  "grounding": [
+    "http://www.w3.org/2000/svg",
+    "https://airwallex.com/app/",
+    "https://airwallex.com/app/integrations/home",
+    "https://airwallex.com/llms.txt",
+    "https://api-demo.airwallex.com/api/v1/",
+    "https://api-demo.airwallex.com/api/v1/authentication/login",
+    "https://api-demo.airwallex.com/api/v1/balances/current",
+    "https://api-demo.airwallex.com/api/v1/fx/quotes/create",
+    "https://api-demo.airwallex.com/api/v1/issuing/cards/create",
+    "https://api-demo.airwallex.com/api/v1/transfers/6f63544d-afec-40a7-ad3a-22fa6639bca6",
+    "https://api-demo.airwallex.com/api/v1/transfers/create",
+    "https://api.airwallex.com/api/v1/",
+    "https://demo.airwallex.com/app/login/sandbox?region=global",
+    "https://demo.airwallex.com/signup/sandbox",
+    "https://demo.airwallex.com/signup/us/sandbox",
+    "https://en.wikipedia.org/wiki/ISO_3166-2",
+    "https://github.com/airwallex/airwallex-marketplace",
+    "https://github.com/airwallex/airwallex-marketplace/tree/master/plugins/airwallex-agentos/skills/awx-best-practices",
+    "https://github.com/airwallex/airwallex-marketplace/tree/master/plugins/airwallex-agentos/skills/beneficiary-creation",
+    "https://github.com/airwallex/airwallex-marketplace/tree/master/plugins/airwallex-agentos/skills/card-provisioning",
+    "https://github.com/airwallex/airwallex-marketplace/tree/master/plugins/airwallex-agentos/skills/contract-to-billing",
+    "https://github.com/airwallex/airwallex-marketplace/tree/master/plugins/airwallex-agentos/skills/manage-cashflow",
+    "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/740716433/?random=1782987437505&amp;cv=11&amp;fst=1782987437505&amp;bg=ffffff&amp;guid=ON&amp;async=1&amp;gtm=45be66u1z878802382za20gzb78802382zd78802382xea&amp;gcd=13l3l3l3l1l1&amp;dma=0&amp;tag_exp=115938466~115938468~118897921~118897931~119027224~119576881~119576885~119576891~119576895&amp;u_w=1920&amp;u_h=1080&amp;url=https%3A%2F%2Fwww.airwallex.com%2Fdocs%2Fapi%2Fintroduction&amp;rcb=18&amp;frm=0&amp;tiba=Airwallex%20Docs&amp;hn=www.googleadservices.com&amp;npa=0&amp;pscdl=noapi&amp;auid=1541532052.1782987437&amp;uaa=x86&amp;uab=64&amp;uafvl=Not%253BA%253DBrand%3B8.0.0.0%7CChromium%3B150.0.7871.46%7CGoogle%2520Chrome%3B150.0.7871.46&amp;uamb=0&amp;uam=&amp;uap=Linux&amp;uapv=&amp;uaw=0&amp;_tu=CA&amp;ept=9&amp;rfmt=3&amp;fmt=4",
+    "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/740716433/?random=1783008968089&amp;cv=11&amp;fst=1783008968089&amp;bg=ffffff&amp;guid=ON&amp;async=1&amp;gtm=45be66u1z878802382za20gzb78802382zd78802382xea&amp;gcd=13l3l3l3l1l1&amp;dma=0&amp;tag_exp=115938466~115938468~118131809~118395334~119027224~119576881~119576885~119576891~119576895&amp;u_w=1920&amp;u_h=1080&amp;url=https%3A%2F%2Fwww.airwallex.com%2Fdocs%2Fapi%2Fintroduction&amp;rcb=3&amp;frm=0&amp;tiba=Airwallex%20Docs&amp;hn=www.googleadservices.com&amp;npa=0&amp;pscdl=noapi&amp;auid=971124099.1783008968&amp;uaa=x86&amp;uab=64&amp;uafvl=Not%253BA%253DBrand%3B8.0.0.0%7CChromium%3B150.0.7871.46%7CGoogle%2520Chrome%3B150.0.7871.46&amp;uamb=0&amp;uam=&amp;uap=Linux&amp;uapv=&amp;uaw=0&amp;_tu=CA&amp;ept=9&amp;rfmt=3&amp;fmt=4",
+    "https://help.airwallex.com/hc",
+    "https://help.airwallex.com/hc/en-gb/articles/10490274623375-Global-Entity-Management-Overview",
+    "https://help.airwallex.com/hc/en-gb/requests/new",
+    "https://js.partnerstack.com/v1/",
+    "https://llmstxt.org/",
+    "https://mcp-demo.airwallex.com/developer",
+    "https://mcp-demo.airwallex.com/docs",
+    "https://mcp.airwallex.com/mcp",
+    "https://security.airwallex.com/",
+    "https://static.airwallex.com/developer-tools/airwallex-cli/install.sh",
+    "https://static.airwallex.com/webapp/fraud/device-fingerprint/sardine-iframe.html?sessionKey=3eb2547ba9adcf47605fadf235f038b7e191f007&amp;flowName=corporate+site&amp;flowType=login&amp;__domain__=https%3A%2F%2Fwww.airwallex.com&amp;partnerId=7f486174",
+    "https://static.airwallex.com/webapp/fraud/device-fingerprint/sardine-iframe.html?sessionKey=59fafc44eecbbc2214c067c08bd4dcc134294bfb&amp;flowName=corporate+site&amp;flowType=login&amp;__domain__=https%3A%2F%2Fwww.airwallex.com&amp;partnerId=7f486174",
+    "https://static.airwallex.com/webapp/fraud/device-fingerprint/webapp.js",
+    "https://status.airwallex.com",
+    "https://www.airwallex.com",
+    "https://www.airwallex.com/#accounts",
+    "https://www.airwallex.com/#admin-api-keys",
+    "https://www.airwallex.com/#agent-usage",
+    "https://www.airwallex.com/#agentos",
+    "https://www.airwallex.com/#airwallex-agentos-mcp",
+    "https://www.airwallex.com/#airwallex-developer-mcp",
+    "https://www.airwallex.com/#authenticate",
+    "https://www.airwallex.com/#available-mcp-tools",
+    "https://www.airwallex.com/#before-you-begin",
+    "https://www.airwallex.com/#benefits",
+    "https://www.airwallex.com/#billing",
+    "https://www.airwallex.com/#deauthorize-and-uninstall",
+    "https://www.airwallex.com/#determine-scopes-and-permissions",
+    "https://www.airwallex.com/#developer-connectors",
+    "https://www.airwallex.com/#developer-mcp-vs.-docs-mcp",
+    "https://www.airwallex.com/#docs-ai-assistant",
+    "https://www.airwallex.com/#impact-of-role-changes-on-connections",
+    "https://www.airwallex.com/#install",
+    "https://www.airwallex.com/#install-agentos",
+    "https://www.airwallex.com/#install-developer-mcp",
+    "https://www.airwallex.com/#install-docs-mcp",
+    "https://www.airwallex.com/#limitations",
+    "https://www.airwallex.com/#next-steps",
+    "https://www.airwallex.com/#notifications",
+    "https://www.airwallex.com/#oauth-consent-lifecycle",
+    "https://www.airwallex.com/#other-agents",
+    "https://www.airwallex.com/#plain-text-documentation",
+    "https://www.airwallex.com/#planning-for-role-based-access",
+    "https://www.airwallex.com/#request-authentication-credentials",
+    "https://www.airwallex.com/#scoped-api-keys",
+    "https://www.airwallex.com/#scopes-reference",
+    "https://www.airwallex.com/#secure-your-api-keys",
+    "https://www.airwallex.com/#see-also",
+    "https://www.airwallex.com/#skills",
+    "https://www.airwallex.com/#telemetry",
+    "https://www.airwallex.com/#troubleshooting",
+    "https://www.airwallex.com/#use-the-cli-with-ai-agents",
+    "https://www.airwallex.com/#user-roles-that-can-grant-oauth-consent",
+    "https://www.airwallex.com/#verify-your-connection",
+    "https://www.airwallex.com/#which-agentos-connector-do-i-need",
+    "https://www.airwallex.com/#who-can-install",
+    "https://www.airwallex.com/#who-it",
+    "https://www.airwallex.com/app/login",
+    "https://www.airwallex.com/blog/10-key-business-metrics-every-startup-founder-needs-to-know",
+    "https://www.airwallex.com/blog/2024-mid-year-mission-update",
+    "https://www.airwallex.com/blog/4-habits-of-highly-successful-ecommerce-businesses",
+    "https://www.airwallex.com/blog/EIN-from-outside-the-united-states",
+    "https://www.airwallex.com/blog/New-Chapter-Series-F",
+    "https://www.airwallex.com/blog/a-guide-how-to-expand-your-business-internationally",
+    "https://www.airwallex.com/blog/a-message-from-our-co-founder-and-ceo",
+    "https://www.airwallex.com/blog/accounts-payable-automation",
+    "https://www.airwallex.com/blog/ach-payment",
+    "https://www.airwallex.com/blog/ach-transfers-explained",
+    "https://www.airwallex.com/blog/ach-vs-wire",
+    "https://www.airwallex.com/blog/advantages-of-using-the-mid-market-exchange-rate",
+    "https://www.airwallex.com/blog/ai-corporate-card-dispute-processing",
+    "https://www.airwallex.com/blog/airwallex-helps-streetwear-brand-young-goat-spread-their-message-globally",
+    "https://www.airwallex.com/blog/airwallex-partners-with-brandbassador",
+    "https://www.airwallex.com/blog/b2b-payments-guide",
+    "https://www.airwallex.com/blog/best-online-marketplaces-for-selling-internationally",
+    "https://www.airwallex.com/blog/best-payment-gateways-for-international-ecommerce",
+    "https://www.airwallex.com/blog/best-time-to-use-virtual-payment-cards",
+    "https://www.airwallex.com/blog/biometric-payments",
+    "https://www.airwallex.com/blog/break-even-analysis",
+    "https://www.airwallex.com/blog/building-a-culture-of-compliance-that-empowers-businesses-grow",
+    "https://www.airwallex.com/blog/building-business-culture",
+    "https://www.airwallex.com/blog/building-customer-trust-with-payment-security",
+    "https://www.airwallex.com/blog/card-issuing-for-business",
+    "https://www.airwallex.com/blog/chaps-vs-bacs-payments-whats-the-difference",
+    "https://www.airwallex.com/blog/chargeback-insurance",
+    "https://www.airwallex.com/blog/checkout-champ-integration-airwallex",
+    "https://www.airwallex.com/blog/checkout-conversion-killers-and-how-to-avoid-them-e-commerce-success",
+    "https://www.airwallex.com/blog/choosing-your-north-star-metric",
+    "https://www.airwallex.com/blog/cny-vs-cnh-whats-the-difference",
+    "https://www.airwallex.com/blog/compare-interchange-plus-vs-flat-rate-pricing-models",
+    "https://www.airwallex.com/blog/constant-product-innovation-is-critical-to-finding-market-fit",
+    "https://www.airwallex.com/blog/credit-card-networks",
+    "https://www.airwallex.com/blog/cross-border-fees",
+    "https://www.airwallex.com/blog/cross-border-payments-and-transactions",
+    "https://www.airwallex.com/blog/cross-border-payments-checklist",
+    "https://www.airwallex.com/blog/cross-border-selling",
+    "https://www.airwallex.com/blog/customer-lifetime-value-ecommerce",
+    "https://www.airwallex.com/blog/differences-between-virtual-debit-cards-and-credit-cards",
+    "https://www.airwallex.com/blog/digital-business-bank-account-benefits",
+    "https://www.airwallex.com/blog/do-i-need-a-business-bank-account",
+    "https://www.airwallex.com/blog/ecommerce-international-expansion-strategy",
+    "https://www.airwallex.com/blog/ecommerce-key-performance-indicators",
+    "https://www.airwallex.com/blog/ecommerce-payment-gateway",
+    "https://www.airwallex.com/blog/ecommerce-payment-processing-what-is-it-how-it-works",
+    "https://www.airwallex.com/blog/ecommerce-personalisation",
+    "https://www.airwallex.com/blog/ecommerce-subscriptions",
+    "https://www.airwallex.com/blog/embedded-finance-card-issuing",
+    "https://www.airwallex.com/blog/embedded-finance-what-is-it-and-how-it-works",
+    "https://www.airwallex.com/blog/employee-expense-fraud",
+    "https://www.airwallex.com/blog/end-to-end-payment-systems-for-travel",
+    "https://www.airwallex.com/blog/equity-vs-debt-the-different-ways-to-fund-your-startup",
+    "https://www.airwallex.com/blog/erp-payment-integration",
+    "https://www.airwallex.com/blog/expense-accounts",
+    "https://www.airwallex.com/blog/expense-reimbursements",
+    "https://www.airwallex.com/blog/foreign-exchange-risk",
+    "https://www.airwallex.com/blog/foreign-transaction-fees",
+    "https://www.airwallex.com/blog/funding-options-available-to-businesses-now",
+    "https://www.airwallex.com/blog/funding-rounds",
+    "https://www.airwallex.com/blog/funnelish-ecommerce-sales-tips",
+    "https://www.airwallex.com/blog/funnels-vs-flywheels",
+    "https://www.airwallex.com/blog/gaming-payment-gateways-airwallex",
+    "https://www.airwallex.com/blog/global-ecommerce-calendar",
+    "https://www.airwallex.com/blog/guide-to-payment-gateway-integrations",
+    "https://www.airwallex.com/blog/how-do-interchange-rates-differ-between-credit-and-debit-cards",
+    "https://www.airwallex.com/blog/how-encryption-safeguards-payment-data",
+    "https://www.airwallex.com/blog/how-fintechs-are-using-embedded-finance",
+    "https://www.airwallex.com/blog/how-international-wire-transfers-work",
+    "https://www.airwallex.com/blog/how-long-do-international-bank-transfers-take",
+    "https://www.airwallex.com/blog/how-our-security-and-compliance-works-to-protect-your-transactions",
+    "https://www.airwallex.com/blog/how-to-avoid-international-transaction-fees",
+    "https://www.airwallex.com/blog/how-to-calculate-burn-rate",
+    "https://www.airwallex.com/blog/how-to-calculate-cost-of-sales-for-your-business",
+    "https://www.airwallex.com/blog/how-to-calculate-ltv-cac",
+    "https://www.airwallex.com/blog/how-to-calculate-opportunity-cost",
+    "https://www.airwallex.com/blog/how-to-calculate-roi",
+    "https://www.airwallex.com/blog/how-to-choose-the-best-corporate-card-for-your-business",
+    "https://www.airwallex.com/blog/how-to-create-payment-gateway",
+    "https://www.airwallex.com/blog/how-to-find-angel-investors",
+    "https://www.airwallex.com/blog/how-to-find-product-market-fit",
+    "https://www.airwallex.com/blog/how-to-get-the-best-foreign-exchange-rate",
+    "https://www.airwallex.com/blog/how-to-hire-for-success-when-youre-an-unknown-startup",
+    "https://www.airwallex.com/blog/how-to-improve-cashflow-management-for-your-business",
+    "https://www.airwallex.com/blog/how-to-master-inventory-management",
+    "https://www.airwallex.com/blog/how-to-minimise-foreign-exchange-costs",
+    "https://www.airwallex.com/blog/how-to-open-a-business-bank-account-in-the-uk",
+    "https://www.airwallex.com/blog/how-to-open-a-business-bank-account-in-the-united-states",
+    "https://www.airwallex.com/blog/how-to-optimise-your-payment-process-for-global-success",
+    "https://www.airwallex.com/blog/how-to-price-your-product",
+    "https://www.airwallex.com/blog/how-to-put-business-expense-management-on-autopilot",
+    "https://www.airwallex.com/blog/how-to-reduce-the-cost-of-payment-processing",
+    "https://www.airwallex.com/blog/how-to-run-a-board-meeting",
+    "https://www.airwallex.com/blog/how-to-save-money-on-cross-border-payments",
+    "https://www.airwallex.com/blog/how-to-scale-your-ecommerce-business",
+    "https://www.airwallex.com/blog/how-to-sell-internationally-on-amazon-from-the-uk",
+    "https://www.airwallex.com/blog/how-to-send-an-invoice",
+    "https://www.airwallex.com/blog/how-to-set-up-online-payments",
+    "https://www.airwallex.com/blog/how-to-shift-your-products-online-in-8-easy-steps",
+    "https://www.airwallex.com/blog/how-to-switch-your-business-bank-account-in-the-uk",
+    "https://www.airwallex.com/blog/how-tokenization-works",
+    "https://www.airwallex.com/blog/how-we-are-keeping-abreast-of-changes-in-the-world-of-economic-sanctions",
+    "https://www.airwallex.com/blog/how-wire-transfer-fees-can-impact-your-bottom-line",
+    "https://www.airwallex.com/blog/how-your-online-business-can-accept-apple-pay",
+    "https://www.airwallex.com/blog/iban-number",
+    "https://www.airwallex.com/blog/integrated-payments",
+    "https://www.airwallex.com/blog/interchange-fees-explained",
+    "https://www.airwallex.com/blog/international-ecommerce",
+    "https://www.airwallex.com/blog/international-roas-guide",
+    "https://www.airwallex.com/blog/introducing-batch-transfers",
+    "https://www.airwallex.com/blog/introducing-bill-pay",
+    "https://www.airwallex.com/blog/introducing-connected-account-console",
+    "https://www.airwallex.com/blog/invoice-processing",
+    "https://www.airwallex.com/blog/is-airwallex-safe",
+    "https://www.airwallex.com/blog/launch-market-sell-your-product-internationally",
+    "https://www.airwallex.com/blog/leading-leaders-naomi-simson",
+    "https://www.airwallex.com/blog/legal-considerations-before-expanding-overseas",
+    "https://www.airwallex.com/blog/machine-learning-payment-fraud-detection",
+    "https://www.airwallex.com/blog/managing-accounts-payable-process",
+    "https://www.airwallex.com/blog/marketplace-payment-processing",
+    "https://www.airwallex.com/blog/marketplace-security-regulation",
+    "https://www.airwallex.com/blog/merchant-account",
+    "https://www.airwallex.com/blog/mission-update",
+    "https://www.airwallex.com/blog/monthly-recurring-revenue",
+    "https://www.airwallex.com/blog/multi-currency-payment-gateway",
+    "https://www.airwallex.com/blog/my-2024-reflections",
+    "https://www.airwallex.com/blog/naomi-simson-cashflow-confidence",
+    "https://www.airwallex.com/blog/naomi-simson-customer-obsession",
+    "https://www.airwallex.com/blog/navigate-tariffs-and-FX-volatility",
+    "https://www.airwallex.com/blog/net-revenue-retention",
+    "https://www.airwallex.com/blog/offshore-bank-account",
+    "https://www.airwallex.com/blog/online-payment-fraud-detection",
+    "https://www.airwallex.com/blog/open-banking-apis-what-are-they-how-do-they-work",
+    "https://www.airwallex.com/blog/payback-periods",
+    "https://www.airwallex.com/blog/payment-api",
+    "https://www.airwallex.com/blog/payment-gateway-fees",
+    "https://www.airwallex.com/blog/payment-gateway-vs-payment-processor",
+    "https://www.airwallex.com/blog/payment-gateways-what-is-it-how-it-works",
+    "https://www.airwallex.com/blog/payment-industry-trends",
+    "https://www.airwallex.com/blog/payment-links-guide",
+    "https://www.airwallex.com/blog/payment-methods-for-small-business",
+    "https://www.airwallex.com/blog/payment-processing-industry-statistics",
+    "https://www.airwallex.com/blog/payment-processing-what-is-it-how-it-works",
+    "https://www.airwallex.com/blog/payment-processor",
+    "https://www.airwallex.com/blog/payment-rails",
+    "https://www.airwallex.com/blog/payment-service-provider",
+    "https://www.airwallex.com/blog/payment-tokenization-a-guide-for-merchants",
+    "https://www.airwallex.com/blog/prevent-chargebacks",
+    "https://www.airwallex.com/blog/pricing-strategies-for-saas-businesses",
+    "https://www.airwallex.com/blog/profit-margins-startup",
+    "https://www.airwallex.com/blog/protecting-your-online-store-from-fraud",
+    "https://www.airwallex.com/blog/psd3-everything-you-need-to-know",
+    "https://www.airwallex.com/blog/push-vs-pull-payments",
+    "https://www.airwallex.com/blog/reaching-new-heights-in-2023",
+    "https://www.airwallex.com/blog/reaching-unicorn-status-during-a-pandemic-with-larry-gadea-founder-and-ceo",
+    "https://www.airwallex.com/blog/recurring-payments",
+    "https://www.airwallex.com/blog/redefining-financial-innovation-for-a-global-economy",
+    "https://www.airwallex.com/blog/reduce-google-facebook-and-linkedin-ad-spend",
+    "https://www.airwallex.com/blog/remittance-advice",
+    "https://www.airwallex.com/blog/retained-earnings-what-is-it",
+    "https://www.airwallex.com/blog/revenue-streams-embedded-finance-marketplaces",
+    "https://www.airwallex.com/blog/revolutionising-travel-payments",
+    "https://www.airwallex.com/blog/risks-associated-with-different-payment-methods",
+    "https://www.airwallex.com/blog/scaling-embedded-finance",
+    "https://www.airwallex.com/blog/scaling-marketplace-globally",
+    "https://www.airwallex.com/blog/sell-internationally-with-shopify",
+    "https://www.airwallex.com/blog/sepa-payments",
+    "https://www.airwallex.com/blog/set-up-us-entity-for-your-ecommerce-business",
+    "https://www.airwallex.com/blog/shifted-perspective-in-conversation-lando-norris",
+    "https://www.airwallex.com/blog/single-use-virtual-cards-for-travel-agents",
+    "https://www.airwallex.com/blog/strong-customer-authentication-a-guide-for-merchants",
+    "https://www.airwallex.com/blog/subscription-payment-processing",
+    "https://www.airwallex.com/blog/supercharge-your-paypal-business-account",
+    "https://www.airwallex.com/blog/swift-alternatives-for-businesses",
+    "https://www.airwallex.com/blog/swift-bic-number-code",
+    "https://www.airwallex.com/blog/tariffs-business-impact",
+    "https://www.airwallex.com/blog/telegraphic-transfer",
+    "https://www.airwallex.com/blog/the-art-of-startup-fundraising-2022",
+    "https://www.airwallex.com/blog/the-benefits-of-virtual-payment-cards",
+    "https://www.airwallex.com/blog/the-best-d2c-platforms-for-international-ecommerce",
+    "https://www.airwallex.com/blog/the-complete-guide-to-e-commerce-accounting-selling-across-borders",
+    "https://www.airwallex.com/blog/the-easiest-way-to-calculate-an-fx-rate",
+    "https://www.airwallex.com/blog/the-pain-free-guide-to-business-expense-management",
+    "https://www.airwallex.com/blog/the-ultimate-guide-to-paying-overseas-suppliers",
+    "https://www.airwallex.com/blog/the-ultimate-tech-stack-for-ecommerce-businesses-2023",
+    "https://www.airwallex.com/blog/third-party-payment-processors",
+    "https://www.airwallex.com/blog/top-cross-border-ecommerce-markets-2022",
+    "https://www.airwallex.com/blog/track-business-expenses",
+    "https://www.airwallex.com/blog/transferring-money-to-international-bank-account",
+    "https://www.airwallex.com/blog/travel-payment-processing",
+    "https://www.airwallex.com/blog/uk-businesses-plan-to-expand-international-presence-in-2022",
+    "https://www.airwallex.com/blog/ultimate-guide-to-managing-your-business-software-stack",
+    "https://www.airwallex.com/blog/understanding-pci-dss-compliance",
+    "https://www.airwallex.com/blog/understanding-the-mid-market-exchange-rate",
+    "https://www.airwallex.com/blog/venture-capital-vs-crowdfunding",
+    "https://www.airwallex.com/blog/virtual-cards-benefits-and-disadvantages",
+    "https://www.airwallex.com/blog/virtual-cards-vs-physical-cards",
+    "https://www.airwallex.com/blog/visa-interchange-rates-everything-you-need-to-know",
+    "https://www.airwallex.com/blog/what-are-accounts-payable",
+    "https://www.airwallex.com/blog/what-are-corporate-cards",
+    "https://www.airwallex.com/blog/what-are-embedded-payments",
+    "https://www.airwallex.com/blog/what-are-liquid-assets",
+    "https://www.airwallex.com/blog/what-are-merchant-category-codes",
+    "https://www.airwallex.com/blog/what-are-the-factors-that-influence-interchange-rates",
+    "https://www.airwallex.com/blog/what-are-the-key-components-of-an-effective-company-expense-policy",
+    "https://www.airwallex.com/blog/what-are-the-key-features-to-look-for-in-a-payment-processor",
+    "https://www.airwallex.com/blog/what-are-the-security-features-to-look-for-in-a-payment-processor",
+    "https://www.airwallex.com/blog/what-every-employee-should-know-about-your-corporate-card-policy",
+    "https://www.airwallex.com/blog/what-factors-affect-transfer-speed-in-international-money-exchange",
+    "https://www.airwallex.com/blog/what-is-3d-secure-authentication",
+    "https://www.airwallex.com/blog/what-is-a-card-issuer",
+    "https://www.airwallex.com/blog/what-is-a-chargeback-fee",
+    "https://www.airwallex.com/blog/what-is-a-digital-wallet",
+    "https://www.airwallex.com/blog/what-is-a-direct-deposit",
+    "https://www.airwallex.com/blog/what-is-a-merchant-acquirer",
+    "https://www.airwallex.com/blog/what-is-a-payment-acquirer-and-how-does-it-affect-your-business",
+    "https://www.airwallex.com/blog/what-is-a-payment-facilitator",
+    "https://www.airwallex.com/blog/what-is-a-payroll-system",
+    "https://www.airwallex.com/blog/what-is-a-prepaid-card",
+    "https://www.airwallex.com/blog/what-is-a-sort-code-and-account-number",
+    "https://www.airwallex.com/blog/what-is-a-virtual-card-how-they-work",
+    "https://www.airwallex.com/blog/what-is-accounting-reconciliation",
+    "https://www.airwallex.com/blog/what-is-accounts-receivable",
+    "https://www.airwallex.com/blog/what-is-an-arn-number",
+    "https://www.airwallex.com/blog/what-is-an-eft",
+    "https://www.airwallex.com/blog/what-is-an-invoice",
+    "https://www.airwallex.com/blog/what-is-banking-as-a-service",
+    "https://www.airwallex.com/blog/what-is-bin-sponsorship",
+    "https://www.airwallex.com/blog/what-is-credit-card-processing",
+    "https://www.airwallex.com/blog/what-is-entity-management",
+    "https://www.airwallex.com/blog/what-is-interchange",
+    "https://www.airwallex.com/blog/what-is-open-banking",
+    "https://www.airwallex.com/blog/what-is-payment-orchestration",
+    "https://www.airwallex.com/blog/what-is-payroll-processing",
+    "https://www.airwallex.com/blog/what-is-the-difference-between-a-merchant-acquirer-and-a-payment-processor",
+    "https://www.airwallex.com/blog/what-is-the-interbank-exchange-rate",
+    "https://www.airwallex.com/blog/what-is-the-interbank-rate",
+    "https://www.airwallex.com/blog/what-is-the-merchant-discount-rate",
+    "https://www.airwallex.com/blog/what-is-the-swift-payment-network",
+    "https://www.airwallex.com/blog/what-to-look-for-in-a-business-mentor-11-powerful-qualities",
+    "https://www.airwallex.com/blog/what-you-need-to-know-about-debit-card-interchange-rates",
+    "https://www.airwallex.com/blog/what-you-need-to-know-about-hidden-payment-fees",
+    "https://www.airwallex.com/blog/why-embedded-finance-will-make-your-product-stickier",
+    "https://www.airwallex.com/blog/why-every-business-needs-user-access-management",
+    "https://www.airwallex.com/blog/why-your-bank-transfer-is-delayed",
+    "https://www.airwallex.com/blog/wire-transfers-what-is-it-how-they-work",
+    "https://www.airwallex.com/blog/working-capital",
+    "https://www.airwallex.com/blog/xero-best-practices-for-ecommerce-businesses",
+    "https://www.airwallex.com/blog/your-guide-to-amazon-pay",
+    "https://www.airwallex.com/business-account",
+    "https://www.airwallex.com/business-account/cards/corporate-cards",
+    "https://www.airwallex.com/business-account/global-accounts",
+    "https://www.airwallex.com/business-account/transfers",
+    "https://www.airwallex.com/docs",
+    "https://www.airwallex.com/docs/",
+    "https://www.airwallex.com/docs/accounts/overview",
+    "https://www.airwallex.com/docs/api",
+    "https://www.airwallex.com/docs/api/authentication/api_access/login",
+    "https://www.airwallex.com/docs/api/billing/billing_checkouts/cancel",
+    "https://www.airwallex.com/docs/api/billing/billing_checkouts/create",
+    "https://www.airwallex.com/docs/api/billing/billing_checkouts/list",
+    "https://www.airwallex.com/docs/api/billing/billing_checkouts/retrieve",
+    "https://www.airwallex.com/docs/api/billing/billing_checkouts/update",
+    "https://www.airwallex.com/docs/api/billing/billing_customers/create",
+    "https://www.airwallex.com/docs/api/billing/billing_customers/list",
+    "https://www.airwallex.com/docs/api/billing/billing_customers/retrieve",
+    "https://www.airwallex.com/docs/api/billing/billing_customers/update",
+    "https://www.airwallex.com/docs/api/billing/billing_transactions/list",
+    "https://www.airwallex.com/docs/api/billing/billing_transactions/retrieve",
+    "https://www.airwallex.com/docs/api/billing/coupons/create",
+    "https://www.airwallex.com/docs/api/billing/coupons/list",
+    "https://www.airwallex.com/docs/api/billing/coupons/retrieve",
+    "https://www.airwallex.com/docs/api/billing/coupons/update",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/add_line_items_billing_credit_notes",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/create",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/delete_billing_credit_notes",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/delete_line_items_billing_credit_notes",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/finalize_billing_credit_notes",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/line_items",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/list",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/retrieve",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/retrieve_line_items",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/update_billing_credit_notes",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/update_line_items_billing_credit_notes",
+    "https://www.airwallex.com/docs/api/billing/credit_notes/void_billing_credit_notes",
+    "https://www.airwallex.com/docs/api/billing/invoices/add_line_items",
+    "https://www.airwallex.com/docs/api/billing/invoices/create",
+    "https://www.airwallex.com/docs/api/billing/invoices/delete",
+    "https://www.airwallex.com/docs/api/billing/invoices/delete_line_items",
+    "https://www.airwallex.com/docs/api/billing/invoices/finalize",
+    "https://www.airwallex.com/docs/api/billing/invoices/line_items",
+    "https://www.airwallex.com/docs/api/billing/invoices/list",
+    "https://www.airwallex.com/docs/api/billing/invoices/mark_as_paid",
+    "https://www.airwallex.com/docs/api/billing/invoices/preview",
+    "https://www.airwallex.com/docs/api/billing/invoices/retrieve",
+    "https://www.airwallex.com/docs/api/billing/invoices/retrieve_line_items",
+    "https://www.airwallex.com/docs/api/billing/invoices/update",
+    "https://www.airwallex.com/docs/api/billing/invoices/update_line_items",
+    "https://www.airwallex.com/docs/api/billing/invoices/void",
+    "https://www.airwallex.com/docs/api/billing/payment_sources/create",
+    "https://www.airwallex.com/docs/api/billing/payment_sources/list",
+    "https://www.airwallex.com/docs/api/billing/payment_sources/retrieve",
+    "https://www.airwallex.com/docs/api/billing/prices/create",
+    "https://www.airwallex.com/docs/api/billing/prices/list",
+    "https://www.airwallex.com/docs/api/billing/prices/retrieve",
+    "https://www.airwallex.com/docs/api/errors",
+    "https://www.airwallex.com/docs/api/introduction",
+    "https://www.airwallex.com/docs/api/scale/accounts/detail",
+    "https://www.airwallex.com/docs/api/versioning",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/agentos-claude-desktop-connector.png",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/agentos-claude-desktop-plugin.png",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/agentos-cursor-plugin.png",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/claude-web-connector-custom.png?width=50%",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/claude-web-connector-detail.png?width=70%",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/claude-web-connector-search.png?width=70%",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/lovable-mcp-config.png?height=500",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/lovable-oauth-flow.png?height=500",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/mcp-oauth-cursor-consent-page.png?width=50%",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/mcp-oauth-login-page.png?width=80%",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/mcp-oauth-scopes-page.png?width=80%",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/replit-mcp-config.png?height=500",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/replit-oauth-flow.png?height=500",
+    "https://www.airwallex.com/docs/assets/developer-tools/ai/v0-mcp-config.png?height=500",
+    "https://www.airwallex.com/docs/banking-as-a-service/overview",
+    "https://www.airwallex.com/docs/billing/overview",
+    "https://www.airwallex.com/docs/connected-accounts/overview",
+    "https://www.airwallex.com/docs/developer-tools/ai",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos#safety-and-responsibility",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos.md",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos.md#airwallex-agentos-mcp",
+    "https://www.airwallex.com/docs/developer-tools/ai/agentos/build-with-agentos",
+    "https://www.airwallex.com/docs/developer-tools/ai/build-with-ai",
+    "https://www.airwallex.com/docs/developer-tools/ai/build-with-ai.md",
+    "https://www.airwallex.com/docs/developer-tools/ai/developer-connector",
+    "https://www.airwallex.com/docs/developer-tools/ai/developer-connector.md",
+    "https://www.airwallex.com/docs/developer-tools/ai/developer-mcp",
+    "https://www.airwallex.com/docs/developer-tools/ai/docs-mcp",
+    "https://www.airwallex.com/docs/developer-tools/api",
+    "https://www.airwallex.com/docs/developer-tools/api/api-key-scopes",
+    "https://www.airwallex.com/docs/developer-tools/api/ip-whitelisting",
+    "https://www.airwallex.com/docs/developer-tools/api/manage-api-keys",
+    "https://www.airwallex.com/docs/developer-tools/api/quickstart-with-postman",
+    "https://www.airwallex.com/docs/developer-tools/api/rate-limits",
+    "https://www.airwallex.com/docs/developer-tools/cli",
+    "https://www.airwallex.com/docs/developer-tools/cli.md",
+    "https://www.airwallex.com/docs/developer-tools/open-banking/airwallex-open-banking-overview",
+    "https://www.airwallex.com/docs/developer-tools/open-banking/api-integration-summary",
+    "https://www.airwallex.com/docs/developer-tools/overview",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/get-started",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/implement-your-authorization-flow",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/implement-your-authorization-flow/existing-customers",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/implement-your-authorization-flow/new-airwallex-customers",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/integration-guides",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/notifications-and-workflow-automation",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-permissions",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-permissions#user-roles-that-can-grant-oauth-consent",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-permissions#user-roles-that-can-grant-oauth-consent.md",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-scopes",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-scopes#scope-name-mapping",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/oauth-scopes.md",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/partners-overview",
+    "https://www.airwallex.com/docs/developer-tools/partner-connections/troubleshooting-oauth-errors",
+    "https://www.airwallex.com/docs/developer-tools/release-phases",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/connected-accounts",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/deposits",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/issuing",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/linked-accounts",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/payments",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/payouts",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/risk",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/sandbox-environment-overview",
+    "https://www.airwallex.com/docs/developer-tools/sandbox-environment/sandbox-settings",
+    "https://www.airwallex.com/docs/developer-tools/sdks",
+    "https://www.airwallex.com/docs/developer-tools/security/pgp-public-key-to-encrypt-card-data",
+    "https://www.airwallex.com/docs/developer-tools/security/securing-connections-to-airwallex",
+    "https://www.airwallex.com/docs/developer-tools/webhooks/listen-for-webhook-events",
+    "https://www.airwallex.com/docs/developer-tools/webhooks/listen-for-webhook-events/account",
+    "https://www.airwallex.com/docs/developer-tools/webhooks/listen-for-webhook-events/billing",
+    "https://www.airwallex.com/docs/developer-tools/webhooks/view-and-re-trigger-webhook-events",
+    "https://www.airwallex.com/docs/developer-tools/webhooks/webhooks-overview",
+    "https://www.airwallex.com/docs/developer-tools__sandbox-environment-overview",
+    "https://www.airwallex.com/docs/global-treasury/overview",
+    "https://www.airwallex.com/docs/issuing/overview",
+    "https://www.airwallex.com/docs/js",
+    "https://www.airwallex.com/docs/llms.txt",
+    "https://www.airwallex.com/docs/payments-for-platforms/overview",
+    "https://www.airwallex.com/docs/payments/overview",
+    "https://www.airwallex.com/docs/payouts/overview",
+    "https://www.airwallex.com/docs/spend/overview",
+    "https://www.airwallex.com/docs/transactional-fx/overview",
+    "https://www.airwallex.com/integrations",
+    "https://www.airwallex.com/payments",
+    "https://www.airwallex.com/payments/checkout",
+    "https://www.airwallex.com/payments/payment-links",
+    "https://www.airwallex.com/payments/payment-plugins",
+    "https://www.airwallex.com/platform-api-and-embedded-finance",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/accounts",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/banking-as-a-service",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/connected-accounts",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/global-treasury",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/issuing",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/payments",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/payments-for-platforms",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/payouts",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/subscription-management",
+    "https://www.airwallex.com/platform-api-and-embedded-finance/transactional-fx",
+    "https://www.airwallex.com/solutions/ecommerce",
+    "https://www.airwallex.com/solutions/marketplaces",
+    "https://www.airwallex.com/solutions/saas",
+    "https://www.airwallex.com/solutions/software",
+    "https://www.airwallex.com/solutions/travel",
+    "https://www.airwallex.com/solutions/wholesale",
+    "https://www.airwallex.com/spend-management",
+    "https://www.airwallex.com/spend-management/bill-pay",
+    "https://www.airwallex.com/spend-management/cards",
+    "https://www.airwallex.com/spend-management/cards/business-debit-cards",
+    "https://www.airwallex.com/spend-management/cards/virtual-cards",
+    "https://www.airwallex.com/spend-management/expense-management",
+    "https://www.airwallex.com/terms",
+    "https://www.airwallex.com/terms/cookie-policy",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.googletagmanager.com/gtag/destination?id=AW-740716433&amp;cx=c&amp;gtm=4e66u1",
+    "https://www.googletagmanager.com/gtag/js?id=DC-15640667",
+    "https://www.googletagmanager.com/gtag/js?id=G-J1TGSTQ102&amp;cx=c&amp;gtm=4e66u1",
+    "https://www.googletagmanager.com/gtm.js?id",
+    "https://www.googletagmanager.com/gtm.js?id=",
+    "https://www.googletagmanager.com/gtm.js?id=GTM-KHZBJZCL",
+    "https://www.googletagmanager.com/gtm.js?id=GTM-NJXVXZH&amp;gtm_auth=&amp;gtm_preview=&amp;gtm_cookies_win=x",
+    "https://www.googletagmanager.com/ns.html?id=GTM-NJXVXZH&gtm_auth=&gtm_preview=&gtm_cookies_win=x",
+    "https://www.iso.org/iso-4217-currency-codes.html",
+    "https://www.kapa.ai"
+  ]
+}

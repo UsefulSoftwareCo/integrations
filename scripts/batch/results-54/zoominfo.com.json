@@ -1,0 +1,433 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "zoominfo.com",
+    "detect": {
+      "domain": "zoominfo.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T18:50:02.571Z",
+    "summary": "Found 4 developer integration surfaces for zoominfo.com: 2 HTTP APIs (current ZoomInfo APIs and deprecated Legacy API) and 2 MCP servers (ZoomInfo MCP and docs MCP); current APIs use OAuth bearer tokens from DevPortal apps, while the legacy API uses PKI or username/password to obtain JWTs.",
+    "credentials": {
+      "zi_oauth_app": {
+        "type": "oauth2_cc",
+        "label": "ZoomInfo OAuth application (client ID + client secret)",
+        "generateUrl": "https://developer.zoominfo.com",
+        "setup": "Open the [ZoomInfo Developer Portal](https://developer.zoominfo.com). Create an app in DevPortal, choose the needed OAuth flow and scopes, then open the app to copy its `client_id` and `client_secret`. For server-to-server use, create a Client Credentials app and select an integration user as described in [Client Credentials Flow](https://docs.zoominfo.com/docs/client-credentials-flow). For MCP with Claude Code, create an `MCP App` as shown in [Using ZoomInfo MCP with Claude Code](https://docs.zoominfo.com/docs/using-zoominfo-mcp-with-claude-code).",
+        "acquisition": "manual"
+      },
+      "zi_bearer_token": {
+        "type": "bearer",
+        "label": "ZoomInfo OAuth bearer access token",
+        "generateUrl": "https://developer.zoominfo.com",
+        "setup": "The easiest path for testing is in the [ZoomInfo Developer Portal](https://developer.zoominfo.com): find your app and use the **Bearer Token** → **Generate** action as documented in [Generate Access Tokens in DevPortal](https://docs.zoominfo.com/docs/generate-bearer-token-in-devportal). For production, mint the token via OAuth using your DevPortal app, e.g. exchange `client_id` and `client_secret` at `POST https://api.zoominfo.com/gtm/oauth/v1/token` as shown in [Client Credentials Flow](https://docs.zoominfo.com/docs/client-credentials-flow).",
+        "acquisition": "manual"
+      },
+      "zi_legacy_pki": {
+        "type": "signature",
+        "label": "ZoomInfo legacy API PKI keypair (client ID + private key for JWT signing)",
+        "generateUrl": "https://api-docs.zoominfo.com/",
+        "setup": "For the legacy API, sign in to the ZoomInfo GUI with admin credentials that have API access, then go to `Admin Portal` → `API` and click **Generate New Key**. ZoomInfo provides a `Client ID` and `Private Key`, which you use with ZoomInfo's JWT helper libraries to generate a one-hour JWT, as documented in [ZoomInfo API - Legacy](https://api-docs.zoominfo.com/).",
+        "acquisition": "manual"
+      },
+      "zi_legacy_userpass": {
+        "type": "basic",
+        "label": "ZoomInfo legacy API username and password",
+        "generateUrl": "https://api-docs.zoominfo.com/",
+        "setup": "For the legacy API, use a ZoomInfo account username and password with API access, then call the legacy Authentication endpoint to obtain a one-hour JWT, as documented in [ZoomInfo API - Legacy](https://api-docs.zoominfo.com/). This is a legacy authentication path; ZoomInfo recommends the PKI method for that legacy API.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "zoominfo-apis",
+        "name": "ZoomInfo APIs",
+        "type": "http",
+        "docs": "https://docs.zoominfo.com/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.zoominfo.com/reference",
+            "https://docs.zoominfo.com/docs/authorization",
+            "https://docs.zoominfo.com/docs/client-credentials-flow",
+            "https://docs.zoominfo.com/docs/generate-bearer-token-in-devportal"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zi_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.zoominfo.com/docs/authorization",
+                  "https://docs.zoominfo.com/docs/client-credentials-flow",
+                  "https://docs.zoominfo.com/docs/generate-bearer-token-in-devportal"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.zoominfo.com"
+      },
+      {
+        "slug": "zoominfo-mcp-server",
+        "name": "ZoomInfo MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.zoominfo.com/docs/zi-api-mcp-overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.zoominfo.com/docs/zi-api-mcp-overview",
+            "https://docs.zoominfo.com/docs/using-zoominfo-mcp-with-claude-code"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zi_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.zoominfo.com/docs/using-zoominfo-mcp-with-claude-code",
+                  "https://docs.zoominfo.com/docs/zi-api-mcp-overview"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.zoominfo.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "zoominfo-docs-mcp-server",
+        "name": "ZoomInfo Docs MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.zoominfo.com/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.zoominfo.com/docs/mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "zoominfo-api-legacy",
+        "name": "ZoomInfo API - Legacy",
+        "type": "http",
+        "docs": "https://api-docs.zoominfo.com/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api-docs.zoominfo.com/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zi_legacy_pki",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api-docs.zoominfo.com/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "zi_legacy_userpass",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api-docs.zoominfo.com/"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T18:50:02.572Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 93470,
+    "completion_tokens": 1676,
+    "total_tokens": 95146
+  },
+  "visited": [
+    "https://api-docs.zoominfo.com/",
+    "https://composio.dev/toolkits/zoominfo",
+    "https://docs.zoominfo.com/docs/app-creation-developer-portal-guide",
+    "https://docs.zoominfo.com/docs/authorization",
+    "https://docs.zoominfo.com/docs/client-credentials-flow",
+    "https://docs.zoominfo.com/docs/generate-bearer-token-in-devportal",
+    "https://docs.zoominfo.com/docs/mcp",
+    "https://docs.zoominfo.com/docs/using-zoominfo-mcp-with-claude-code",
+    "https://docs.zoominfo.com/docs/zi-api-mcp-overview",
+    "https://docs.zoominfo.com/openapi.json",
+    "https://docs.zoominfo.com/reference",
+    "https://docs.zoominfo.com/swagger.json",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zoominfo.com/llms.txt"
+  ],
+  "grounding": [
+    "http://localhost:8080/callback",
+    "https://api-docs.zoominfo.com/",
+    "https://api-docs.zoominfo.com/#00c2d0c8-d0f6-4904-a5b1-495675e13189",
+    "https://api-docs.zoominfo.com/#0a3012d3-546c-45bd-9a3c-d014b93ce47e",
+    "https://api-docs.zoominfo.com/#20219386-4c34-485e-a859-c697d64f2ae9",
+    "https://api-docs.zoominfo.com/#4c495fb6-68df-44bb-8703-0616f81cfdcb",
+    "https://api-docs.zoominfo.com/#51969d05-46ca-404e-8455-66ff066229d6",
+    "https://api-docs.zoominfo.com/#8631bd5c-4435-4fb4-9d4f-91b73cf7e89e",
+    "https://api-docs.zoominfo.com/#9e5ec7b8-5cef-40ee-86f3-105be2194fe7",
+    "https://api-docs.zoominfo.com/#ea1ebd5d-8b4a-412f-a8c8-3d8b8e123407",
+    "https://api-docs.zoominfo.com/#ec3704c0-8898-4ba7-baf4-c45b46ef80d3",
+    "https://api-docs.zoominfo.com/#efe7b4b8-1ef2-4fcd-a20f-9da68f6b2055",
+    "https://api-docs.zoominfo.com/#intro",
+    "https://api.zoominfo.com/gtm/oauth/v1/token",
+    "https://composio.dev/toolkits/zoominfo",
+    "https://datatracker.ietf.org/doc/html/rfc6749",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-4.1",
+    "https://datatracker.ietf.org/doc/html/rfc6750",
+    "https://datatracker.ietf.org/doc/html/rfc6750#section-2",
+    "https://developer.zoominfo.com",
+    "https://docs.zoominfo.com",
+    "https://docs.zoominfo.com/#-additional-resources",
+    "https://docs.zoominfo.com/#-api-workflow",
+    "https://docs.zoominfo.com/#-available-data-types",
+    "https://docs.zoominfo.com/#-best-practices",
+    "https://docs.zoominfo.com/#-data-api---overview",
+    "https://docs.zoominfo.com/#-http-status-codes",
+    "https://docs.zoominfo.com/#additional-authorization-guides",
+    "https://docs.zoominfo.com/#authentication-errors",
+    "https://docs.zoominfo.com/#business-development",
+    "https://docs.zoominfo.com/#cant-connect",
+    "https://docs.zoominfo.com/#connect-to-the-zoominfo-mcp",
+    "https://docs.zoominfo.com/#content",
+    "https://docs.zoominfo.com/#copy-token-and-start-calling-zoominfo-apis",
+    "https://docs.zoominfo.com/#create-an-mcp-application",
+    "https://docs.zoominfo.com/#data--privacy",
+    "https://docs.zoominfo.com/#enriching",
+    "https://docs.zoominfo.com/#example-questions",
+    "https://docs.zoominfo.com/#exchange-client-credentials-for-access-token",
+    "https://docs.zoominfo.com/#find-companies-and-contacts",
+    "https://docs.zoominfo.com/#find-your-app-in-the-dev-portal",
+    "https://docs.zoominfo.com/#find-your-app-in-the-devportal",
+    "https://docs.zoominfo.com/#finding",
+    "https://docs.zoominfo.com/#generate-an-access-token",
+    "https://docs.zoominfo.com/#generate-bearer-token",
+    "https://docs.zoominfo.com/#get-detailed-profiles",
+    "https://docs.zoominfo.com/#getting-started",
+    "https://docs.zoominfo.com/#limited-data-showing",
+    "https://docs.zoominfo.com/#marketing",
+    "https://docs.zoominfo.com/#no-results-returned",
+    "https://docs.zoominfo.com/#oauth-authorization",
+    "https://docs.zoominfo.com/#oauth-authorization-flows",
+    "https://docs.zoominfo.com/#prerequisites",
+    "https://docs.zoominfo.com/#recruiting",
+    "https://docs.zoominfo.com/#researching",
+    "https://docs.zoominfo.com/#sales",
+    "https://docs.zoominfo.com/#setup",
+    "https://docs.zoominfo.com/#supported-ai-assistants",
+    "https://docs.zoominfo.com/#testing-your-mcp-setup",
+    "https://docs.zoominfo.com/#tips-for-best-results",
+    "https://docs.zoominfo.com/#tools-at-a-glance",
+    "https://docs.zoominfo.com/#troubleshooting",
+    "https://docs.zoominfo.com/#understanding-credits",
+    "https://docs.zoominfo.com/#what-can-you-do",
+    "https://docs.zoominfo.com/#what-is-mcp",
+    "https://docs.zoominfo.com/#what-is-zoominfo-mcp",
+    "https://docs.zoominfo.com/#zoominfo-api-scopes-and-endpoints",
+    "https://docs.zoominfo.com/#zoominfo-apis-mcp-server-setup",
+    "https://docs.zoominfo.com/docs",
+    "https://docs.zoominfo.com/docs/api-conventions",
+    "https://docs.zoominfo.com/docs/app-creation-developer-portal-guide",
+    "https://docs.zoominfo.com/docs/authentication#/",
+    "https://docs.zoominfo.com/docs/authorization",
+    "https://docs.zoominfo.com/docs/authorization-code-flow-with-pkce",
+    "https://docs.zoominfo.com/docs/client-credentials-flow",
+    "https://docs.zoominfo.com/docs/credit-usage-and-limits",
+    "https://docs.zoominfo.com/docs/credit-usage-and-limits#/",
+    "https://docs.zoominfo.com/docs/error-handling",
+    "https://docs.zoominfo.com/docs/general-overview",
+    "https://docs.zoominfo.com/docs/generate-bearer-token-in-devportal",
+    "https://docs.zoominfo.com/docs/mcp",
+    "https://docs.zoominfo.com/docs/pagination-batching-and-bulk",
+    "https://docs.zoominfo.com/docs/rate-limits",
+    "https://docs.zoominfo.com/docs/refresh-token-flow",
+    "https://docs.zoominfo.com/docs/using-zoominfo-mcp-with-claude-code",
+    "https://docs.zoominfo.com/docs/webhooks-and-events",
+    "https://docs.zoominfo.com/docs/zi-api-mcp-overview",
+    "https://docs.zoominfo.com/docs/zoominfo-insights-api",
+    "https://docs.zoominfo.com/docs/zoominfo-oauth-20-scopes",
+    "https://docs.zoominfo.com/llms.txt",
+    "https://docs.zoominfo.com/mcp",
+    "https://docs.zoominfo.com/openapi.json",
+    "https://docs.zoominfo.com/recipes",
+    "https://docs.zoominfo.com/reference",
+    "https://docs.zoominfo.com/reference/accountsummaryinterface_askaccountsummaryquestion",
+    "https://docs.zoominfo.com/reference/accountsummaryinterface_getaccountsummary",
+    "https://docs.zoominfo.com/reference/agentteamscontroller_getagentteamdetails",
+    "https://docs.zoominfo.com/reference/agentteamscontroller_getagentteamrun",
+    "https://docs.zoominfo.com/reference/agentteamscontroller_listagentteamruns",
+    "https://docs.zoominfo.com/reference/agentteamscontroller_listagentteams",
+    "https://docs.zoominfo.com/reference/agentteamscontroller_runagentteam",
+    "https://docs.zoominfo.com/reference/audienceinterface_createaudience",
+    "https://docs.zoominfo.com/reference/audienceinterface_deleteaudience",
+    "https://docs.zoominfo.com/reference/audienceinterface_getaudience",
+    "https://docs.zoominfo.com/reference/audienceinterface_getaudiences",
+    "https://docs.zoominfo.com/reference/audienceinterface_getaudienceupload",
+    "https://docs.zoominfo.com/reference/audienceinterface_updateaudience",
+    "https://docs.zoominfo.com/reference/audienceinterface_uploadaudience",
+    "https://docs.zoominfo.com/reference/audiences_createaudience",
+    "https://docs.zoominfo.com/reference/audiences_deleteaudience",
+    "https://docs.zoominfo.com/reference/audiences_enrichaudience",
+    "https://docs.zoominfo.com/reference/audiences_getaudience",
+    "https://docs.zoominfo.com/reference/audiences_getaudiencefiltermetadata",
+    "https://docs.zoominfo.com/reference/audiences_getjobstatus",
+    "https://docs.zoominfo.com/reference/audiences_listaudiences",
+    "https://docs.zoominfo.com/reference/audiences_patchaudience",
+    "https://docs.zoominfo.com/reference/audiences_upsertmatchcriteria",
+    "https://docs.zoominfo.com/reference/columns_addcolumns",
+    "https://docs.zoominfo.com/reference/columns_deletecolumn",
+    "https://docs.zoominfo.com/reference/columns_getsupporteddatadependencies",
+    "https://docs.zoominfo.com/reference/columns_patchcolumn",
+    "https://docs.zoominfo.com/reference/companylookalikesinterface_companylookalikes",
+    "https://docs.zoominfo.com/reference/contactlookalikesinterface_getcontactlookalikes",
+    "https://docs.zoominfo.com/reference/contactrecommendationsinterface_getcontactrecommendations",
+    "https://docs.zoominfo.com/reference/customerbuyerpersonainterface_archivecustomerbuyerpersona",
+    "https://docs.zoominfo.com/reference/customerbuyerpersonainterface_deletecustomerbuyerpersona",
+    "https://docs.zoominfo.com/reference/customerbuyerpersonainterface_getcustomerbuyerpersona",
+    "https://docs.zoominfo.com/reference/customerbuyerpersonainterface_listcustomerbuyerpersonas",
+    "https://docs.zoominfo.com/reference/customerbuyerpersonainterface_unarchivecustomerbuyerpersona",
+    "https://docs.zoominfo.com/reference/customerbuyerpersonainterface_upsertcustomerbuyerpersona",
+    "https://docs.zoominfo.com/reference/customercompetitorsinterface_archivecustomercompetitor",
+    "https://docs.zoominfo.com/reference/customercompetitorsinterface_deletecustomercompetitor",
+    "https://docs.zoominfo.com/reference/customercompetitorsinterface_getcustomercompetitor",
+    "https://docs.zoominfo.com/reference/customercompetitorsinterface_listcustomercompetitors",
+    "https://docs.zoominfo.com/reference/customercompetitorsinterface_unarchivecustomercompetitor",
+    "https://docs.zoominfo.com/reference/customercompetitorsinterface_upsertcustomercompetitor",
+    "https://docs.zoominfo.com/reference/customeridealcompanysegmentinterface_archiveidealcompanysegment",
+    "https://docs.zoominfo.com/reference/customeridealcompanysegmentinterface_deleteidealcompanysegment",
+    "https://docs.zoominfo.com/reference/customeridealcompanysegmentinterface_getidealcompanysegment",
+    "https://docs.zoominfo.com/reference/customeridealcompanysegmentinterface_listidealcompanysegments",
+    "https://docs.zoominfo.com/reference/customeridealcompanysegmentinterface_unarchiveidealcompanysegment",
+    "https://docs.zoominfo.com/reference/customeridealcompanysegmentinterface_upsertidealcompanysegment",
+    "https://docs.zoominfo.com/reference/customersettingsinterface_deletecustomersettings",
+    "https://docs.zoominfo.com/reference/customersettingsinterface_getcustomersettings",
+    "https://docs.zoominfo.com/reference/customersettingsinterface_upsertcustomersettings",
+    "https://docs.zoominfo.com/reference/e",
+    "https://docs.zoominfo.com/reference/engagementscontroller_deletecontentinteractionengagement",
+    "https://docs.zoominfo.com/reference/engagementscontroller_getcontentinteractionengagement",
+    "https://docs.zoominfo.com/reference/engagementscontroller_upsertcontentinteractions",
+    "https://docs.zoominfo.com/reference/enrich",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichcompany",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichcontact",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichcorporatehierarchy",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichhashtag",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichintent",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichnews",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichorgchart",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichscoop",
+    "https://docs.zoominfo.com/reference/enrichinterface_enrichtechnology",
+    "https://docs.zoominfo.com/reference/folders_createfolder",
+    "https://docs.zoominfo.com/reference/folders_deletefolder",
+    "https://docs.zoominfo.com/reference/folders_getfolderbyid",
+    "https://docs.zoominfo.com/reference/folders_listfolders",
+    "https://docs.zoominfo.com/reference/folders_updatefolder",
+    "https://docs.zoominfo.com/reference/insightsinterface_getcompanyinsightsbytype",
+    "https://docs.zoominfo.com/reference/lookupenrichinterface_lookupenrich",
+    "https://docs.zoominfo.com/reference/lookupinterface_lookup",
+    "https://docs.zoominfo.com/reference/lookupsearchinterface_lookupsearch",
+    "https://docs.zoominfo.com/reference/organizationofferingsinterface_archiveorganizationoffering",
+    "https://docs.zoominfo.com/reference/organizationofferingsinterface_deleteorganizationoffering",
+    "https://docs.zoominfo.com/reference/organizationofferingsinterface_getorganizationoffering",
+    "https://docs.zoominfo.com/reference/organizationofferingsinterface_listorganizationofferings",
+    "https://docs.zoominfo.com/reference/organizationofferingsinterface_unarchiveorganizationoffering",
+    "https://docs.zoominfo.com/reference/organizationofferingsinterface_upsertorganizationoffering",
+    "https://docs.zoominfo.com/reference/overview",
+    "https://docs.zoominfo.com/reference/pulsescontroller_listpulses",
+    "https://docs.zoominfo.com/reference/rows_deleterows",
+    "https://docs.zoominfo.com/reference/rows_getrowbyid",
+    "https://docs.zoominfo.com/reference/rows_listrows",
+    "https://docs.zoominfo.com/reference/rows_upsertrows",
+    "https://docs.zoominfo.com/reference/search",
+    "https://docs.zoominfo.com/reference/searchinterface_searchcompany",
+    "https://docs.zoominfo.com/reference/searchinterface_searchcontact",
+    "https://docs.zoominfo.com/reference/searchinterface_searchcontact#/",
+    "https://docs.zoominfo.com/reference/searchinterface_searchintent",
+    "https://docs.zoominfo.com/reference/searchinterface_searchnews",
+    "https://docs.zoominfo.com/reference/searchinterface_searchscoop",
+    "https://docs.zoominfo.com/reference/userinterface_userusage",
+    "https://docs.zoominfo.com/swagger.json",
+    "https://en.wikipedia.org/wiki/Unix_time",
+    "https://github.com/Zoominfo",
+    "https://mcp.zoominfo.com/mcp",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://www.zoominfo.com",
+    "https://www.zoominfo.com/about/contact",
+    "https://www.zoominfo.com/copilot",
+    "https://www.zoominfo.com/free-trial-contact-sales",
+    "https://www.zoominfo.com/gtm-workspace",
+    "https://www.zoominfo.com/legal/privacy-policy",
+    "https://www.zoominfo.com/legal/terms-of-use",
+    "https://www.zoominfo.com/llms.txt",
+    "https://www.zoominfo.com/partner",
+    "https://www.zoominfo.com/pricing",
+    "https://www.zoominfo.com/products/gtm-studio",
+    "https://www.zoominfo.com/s/search",
+    "https://www.zoominfo.com/trust-center",
+    "https://www.zoominfo.com/trust-center/responsible-ai",
+    "https://www.zoominfo.com/trust-center/your-privacy",
+    "https://zoominfo.com/llms.txt"
+  ]
+}

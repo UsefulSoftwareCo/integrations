@@ -1,0 +1,431 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "make.com",
+    "detect": {
+      "domain": "make.com",
+      "found": [
+        "llms.txt",
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://make.com"
+          ],
+          "authorizationEndpoint": "https://www.make.com/oauth/v2/authorize",
+          "tokenEndpoint": "https://www.make.com/oauth/v2/token",
+          "registrationEndpoint": "https://www.make.com/oauth/v2/register/mcp",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:12:02.944Z",
+    "summary": "Make exposes one REST API, one MCP server, and a CLI; API auth is via API token or OAuth 2.0 client, MCP auth is via OAuth or MCP token, and CLI auth exists but mechanics weren’t pinned down.",
+    "credentials": {
+      "make_api_token": {
+        "type": "api_key",
+        "label": "Make API token",
+        "generateUrl": "https://www.make.com/profile/api-access",
+        "setup": "In your Make account, open your profile, go to **API access**, and click **Add token**. Choose the scopes you need, name the token, and save it. Use the token as `Authorization: Token <token>` for the Make API. The docs note that most API endpoints require the user authentication token with relevant scopes enabled.",
+        "acquisition": "manual"
+      },
+      "make_oauth_client": {
+        "type": "oauth2",
+        "label": "Make OAuth 2.0 client",
+        "generateUrl": "https://www.make.com/oauth/v2/register",
+        "setup": "Register an OAuth 2.0 client for your application in Make. The docs point to a dedicated client registration flow for API access, with scopes chosen during registration and used by the resulting OAuth 2.0 connection.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "make-api",
+        "name": "Make API",
+        "type": "http",
+        "docs": "https://developers.make.com/api-documentation",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.make.com/api-documentation",
+            "https://developers.make.com/api-documentation/authentication",
+            "https://developers.make.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "make_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/api-documentation/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "make_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/api-documentation/authentication"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "make-mcp-server",
+        "name": "Make MCP Server",
+        "type": "mcp",
+        "docs": "https://developers.make.com/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.make.com/mcp-server",
+            "https://developers.make.com/mcp-server/connect-using-oauth",
+            "https://developers.make.com/mcp-server/connect-using-mcp-token"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "make_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/mcp-server/connect-using-oauth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "make_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.make.com/mcp-server",
+                  "https://developers.make.com/mcp-server/connect-using-mcp-token"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.make.com",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ],
+        "requiredHeaders": [
+          {
+            "name": "Authorization",
+            "source": {
+              "kind": "static",
+              "value": "Bearer <MCP_TOKEN>"
+            },
+            "description": "Optional when using MCP token auth via HTTP headers."
+          }
+        ]
+      },
+      {
+        "slug": "make-cli",
+        "name": "Make CLI",
+        "type": "cli",
+        "docs": "https://developers.make.com/make-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.make.com/make-cli"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:12:02.944Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 103289,
+    "completion_tokens": 1130,
+    "total_tokens": 104419
+  },
+  "visited": [
+    "https://composio.dev/content/oauth-2-1-in-mcp",
+    "https://developers.make.com/api-documentation",
+    "https://developers.make.com/api-documentation/authentication",
+    "https://developers.make.com/api-documentation/authentication/requesting-an-oauth-2-0-client",
+    "https://developers.make.com/api-documentation/authentication/requesting-an-oauth-2.0-client",
+    "https://developers.make.com/llms.txt",
+    "https://developers.make.com/make-cli",
+    "https://developers.make.com/mcp-server",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token",
+    "https://developers.make.com/mcp-server/connect-using-oauth",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/"
+  ],
+  "grounding": [
+    "https://academy.make.com/",
+    "https://blog.cloudflare.com/remote-model-context-protocol-servers-mcp/#connect-to-remote-mcp-servers-from-mcp-clients-that-today-only-support-local-mcp",
+    "https://community.make.com/",
+    "https://composio.dev/content/oauth-2-1-in-mcp",
+    "https://developers.make.com/",
+    "https://developers.make.com/#access-control",
+    "https://developers.make.com/#authentication-token",
+    "https://developers.make.com/#available-transport-methods",
+    "https://developers.make.com/#connection-url",
+    "https://developers.make.com/#how-make-mcp-server-works",
+    "https://developers.make.com/#install-make-skills",
+    "https://developers.make.com/#oauth-2.0-connection",
+    "https://developers.make.com/#obtain-mcp-token",
+    "https://developers.make.com/#timeouts-for-tool-calls",
+    "https://developers.make.com/api-documentation",
+    "https://developers.make.com/api-documentation/api-reference",
+    "https://developers.make.com/api-documentation/api-reference.md",
+    "https://developers.make.com/api-documentation/api-reference/affiliate.md",
+    "https://developers.make.com/api-documentation/api-reference/ai-agents.md",
+    "https://developers.make.com/api-documentation/api-reference/ai-agents/context.md",
+    "https://developers.make.com/api-documentation/api-reference/ai-agents/llm-providers.md",
+    "https://developers.make.com/api-documentation/api-reference/analytics.md",
+    "https://developers.make.com/api-documentation/api-reference/audit-logs.md",
+    "https://developers.make.com/api-documentation/api-reference/cashier.md",
+    "https://developers.make.com/api-documentation/api-reference/connections.md",
+    "https://developers.make.com/api-documentation/api-reference/credential-requests.md",
+    "https://developers.make.com/api-documentation/api-reference/custom-functions.md",
+    "https://developers.make.com/api-documentation/api-reference/custom-properties.md",
+    "https://developers.make.com/api-documentation/api-reference/custom-properties/structure-items.md",
+    "https://developers.make.com/api-documentation/api-reference/data-stores.md",
+    "https://developers.make.com/api-documentation/api-reference/data-stores/data.md",
+    "https://developers.make.com/api-documentation/api-reference/data-structures.md",
+    "https://developers.make.com/api-documentation/api-reference/devices.md",
+    "https://developers.make.com/api-documentation/api-reference/devices/incomings.md",
+    "https://developers.make.com/api-documentation/api-reference/devices/outgoings.md",
+    "https://developers.make.com/api-documentation/api-reference/enums.md",
+    "https://developers.make.com/api-documentation/api-reference/general.md",
+    "https://developers.make.com/api-documentation/api-reference/hooks.md",
+    "https://developers.make.com/api-documentation/api-reference/hooks/incomings.md",
+    "https://developers.make.com/api-documentation/api-reference/hooks/logs.md",
+    "https://developers.make.com/api-documentation/api-reference/incomplete-executions.md",
+    "https://developers.make.com/api-documentation/api-reference/keys.md",
+    "https://developers.make.com/api-documentation/api-reference/mms.md",
+    "https://developers.make.com/api-documentation/api-reference/notifications.md",
+    "https://developers.make.com/api-documentation/api-reference/on-prem-agents.md",
+    "https://developers.make.com/api-documentation/api-reference/organizations.md",
+    "https://developers.make.com/api-documentation/api-reference/organizations/user-organization-roles.md",
+    "https://developers.make.com/api-documentation/api-reference/remote-procedures.md",
+    "https://developers.make.com/api-documentation/api-reference/scenarios-folders.md",
+    "https://developers.make.com/api-documentation/api-reference/scenarios.md",
+    "https://developers.make.com/api-documentation/api-reference/scenarios/blueprints.md",
+    "https://developers.make.com/api-documentation/api-reference/scenarios/consumptions.md",
+    "https://developers.make.com/api-documentation/api-reference/scenarios/custom-properties-data.md",
+    "https://developers.make.com/api-documentation/api-reference/scenarios/logs.md",
+    "https://developers.make.com/api-documentation/api-reference/scenarios/tools.md",
+    "https://developers.make.com/api-documentation/api-reference/sdk-apps.md",
+    "https://developers.make.com/api-documentation/api-reference/sdk-apps/connections.md",
+    "https://developers.make.com/api-documentation/api-reference/sdk-apps/functions.md",
+    "https://developers.make.com/api-documentation/api-reference/sdk-apps/invites.md",
+    "https://developers.make.com/api-documentation/api-reference/sdk-apps/modules.md",
+    "https://developers.make.com/api-documentation/api-reference/sdk-apps/rpcs.md",
+    "https://developers.make.com/api-documentation/api-reference/sdk-apps/webhooks.md",
+    "https://developers.make.com/api-documentation/api-reference/sso-certificates.md",
+    "https://developers.make.com/api-documentation/api-reference/teams.md",
+    "https://developers.make.com/api-documentation/api-reference/teams/user-team-roles.md",
+    "https://developers.make.com/api-documentation/api-reference/templates.md",
+    "https://developers.make.com/api-documentation/api-reference/templates/public.md",
+    "https://developers.make.com/api-documentation/api-reference/users.md",
+    "https://developers.make.com/api-documentation/api-reference/users/api-tokens.md",
+    "https://developers.make.com/api-documentation/api-reference/users/me.md",
+    "https://developers.make.com/api-documentation/api-reference/users/roles.md",
+    "https://developers.make.com/api-documentation/api-reference/users/unread-notifications.md",
+    "https://developers.make.com/api-documentation/api-reference/users/user-email-preferences-mailhub.md",
+    "https://developers.make.com/api-documentation/api-reference/users/user-organization-roles.md",
+    "https://developers.make.com/api-documentation/api-reference/users/user-team-notifications.md",
+    "https://developers.make.com/api-documentation/api-reference/users/user-team-roles.md",
+    "https://developers.make.com/api-documentation/authentication",
+    "https://developers.make.com/api-documentation/authentication.md",
+    "https://developers.make.com/api-documentation/authentication/api-scopes-overview",
+    "https://developers.make.com/api-documentation/authentication/api-scopes-overview.md",
+    "https://developers.make.com/api-documentation/authentication/authentication-managing",
+    "https://developers.make.com/api-documentation/authentication/authentication-managing.md",
+    "https://developers.make.com/api-documentation/authentication/create-authentication-token",
+    "https://developers.make.com/api-documentation/authentication/create-authentication-token.md",
+    "https://developers.make.com/api-documentation/authentication/oauth-flow",
+    "https://developers.make.com/api-documentation/authentication/oauth-flow.md",
+    "https://developers.make.com/api-documentation/authentication/oauth-flow/authorization-code-flow-with-pkce-public-clients.md",
+    "https://developers.make.com/api-documentation/authentication/oauth-flow/authorization-code-flow-with-refresh-token-confidential-clients.md",
+    "https://developers.make.com/api-documentation/authentication/oauth-flow/best-practices-and-error-handling.md",
+    "https://developers.make.com/api-documentation/authentication/oauth-flow/token-expiration.md",
+    "https://developers.make.com/api-documentation/authentication/requesting-an-oauth-2-0-client",
+    "https://developers.make.com/api-documentation/authentication/requesting-an-oauth-2.0-client",
+    "https://developers.make.com/api-documentation/authentication/requesting-an-oauth-2.0-client.md",
+    "https://developers.make.com/api-documentation/client-libraries",
+    "https://developers.make.com/api-documentation/client-libraries.md",
+    "https://developers.make.com/api-documentation/getting-started",
+    "https://developers.make.com/api-documentation/getting-started.md",
+    "https://developers.make.com/api-documentation/getting-started/api-structure.md",
+    "https://developers.make.com/api-documentation/getting-started/http-methods.md",
+    "https://developers.make.com/api-documentation/getting-started/making-your-first-api-request",
+    "https://developers.make.com/api-documentation/getting-started/making-your-first-api-request.md",
+    "https://developers.make.com/api-documentation/getting-started/rate-limiting.md",
+    "https://developers.make.com/api-documentation/getting-started/resources",
+    "https://developers.make.com/api-documentation/getting-started/resources.md",
+    "https://developers.make.com/api-documentation/pagination-sorting-filtering",
+    "https://developers.make.com/api-documentation/pagination-sorting-filtering.md",
+    "https://developers.make.com/api-documentation/pagination-sorting-filtering/filtering.md",
+    "https://developers.make.com/api-documentation/pagination-sorting-filtering/pagination-and-sorting.md",
+    "https://developers.make.com/api-documentation/readme.md",
+    "https://developers.make.com/api-documentation/troubleshooting",
+    "https://developers.make.com/api-documentation/troubleshooting.md",
+    "https://developers.make.com/api-documentation/troubleshooting/common-issues.md",
+    "https://developers.make.com/api-documentation/troubleshooting/http-status-codes.md",
+    "https://developers.make.com/custom-ap",
+    "https://developers.make.com/custom-apps-documentation/app-review/approved-app.md",
+    "https://developers.make.com/custom-apps-documentation/app-review/overview.md",
+    "https://developers.make.com/custom-apps-documentation/app-review/prerequisites.md",
+    "https://developers.make.com/custom-apps-documentation/app-review/request-app-review.md",
+    "https://developers.make.com/custom-apps-documentation/app-review/review-status.md",
+    "https://developers.make.com/custom-apps-documentation/best-practices/naming-conventions.md",
+    "https://developers.make.com/custom-apps-documentation/best-practices/naming-conventions/apps.md",
+    "https://developers.make.com/custom-apps-documentation/best-practices/naming-conventions/modules.md",
+    "https://developers.make.com/custom-apps-documentation/best-practices/naming-conventions/modules/modules-names.md",
+    "https://developers.make.com/custom-apps-documentation/best-practices/overview.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/app-logo.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/app-visibility.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/apps-environment.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/apps-environment/base.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/apps-environment/connection.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/apps-environment/module.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/create-your-app.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/error-handling.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/overview.md",
+    "https://developers.make.com/custom-apps-documentation/create-your-first-app/test-your-app.md",
+    "https://developers.make.com/custom-apps-documentation/debug-your-app/debugging-of-custom-iml-functions.md",
+    "https://developers.make.com/custom-apps-documentation/debug-your-app/debugging-of-pagination-in-list-search-modules.md",
+    "https://developers.make.com/custom-apps-documentation/debug-your-app/debugging-rpc.md",
+    "https://developers.make.com/custom-apps-documentation/debug-your-app/make-devtool.md",
+    "https://developers.make.com/custom-apps-documentation/debug-your-app/make-devtool/live-stream.md",
+    "https://developers.make.com/custom-apps-documentation/debug-your-app/make-devtool/scenario-debugger.md",
+    "https://developers.make.com/custom-apps-documentation/debug-your-app/make-devtool/tools.md",
+    "https://developers.make.com/custom-apps-documentation/debug-your-app/overview.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/how-to-read-the-documentation.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-a-test-http-call.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/configuration-of-vs-code.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/creating-an-app-in-vs-code.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/develop-apps-collaboratively.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/general-controls.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/generation-of-your-api-key.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/iml-tests.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/local-development-for-apps.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/local-development-for-apps/clone-make-app-to-local-workspace.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/local-development-for-apps/commit-the-changes-in-git-repository.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/local-development-for-apps/compare-changes-between-local-and-make-app.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/local-development-for-apps/create-a-new-app-origin.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/local-development-for-apps/deploy-changes-from-local-app-to-make-app.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/local-development-for-apps/develop-app-in-a-local-workspace-offline.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/local-development-for-apps/pull-changes-from-make-app.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/manage-testing-and-production-app-versions.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/apps-sdk/setting-apps-logo-in-vs-code.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/make-apps-editor/web-editor-features.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/readme.md",
+    "https://developers.make.com/custom-apps-documentation/get-started/useful-resources.md",
+    "https://developers.make.com/llms.txt",
+    "https://developers.make.com/make-cli",
+    "https://developers.make.com/make-cli/make-cli.md",
+    "https://developers.make.com/make-cli/make-cli/authenticate-the-make-cli",
+    "https://developers.make.com/make-cli/make-cli/install-the-make-cli",
+    "https://developers.make.com/make-cli/make-cli/make-cli-reference",
+    "https://developers.make.com/make-developer-hub.md",
+    "https://developers.make.com/mcp-server",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token.md",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token/scenarios-as-tools-access-control",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token/usage-with-chatgpt",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token/usage-with-claude-desktop",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token/usage-with-cursor",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token/usage-with-openai",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token/usage-with-openai-api",
+    "https://developers.make.com/mcp-server/connect-using-mcp-token/usage-with-vapi",
+    "https://developers.make.com/mcp-server/connect-using-oauth",
+    "https://developers.make.com/mcp-server/connect-using-oauth.md",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-chatgpt",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-claude",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-claude-code",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-cursor",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-gemini-cli",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-kiro",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-mistral-ai",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-warp",
+    "https://developers.make.com/mcp-server/connect-using-oauth/usage-with-windsurf",
+    "https://developers.make.com/mcp-server/make-mcp-server.md",
+    "https://developers.make.com/white-label-documentation",
+    "https://help.make.com/scenario-inputs-and-outputs",
+    "https://make.com/en/ticket",
+    "https://mcp.make.com",
+    "https://mcp.make.com/sse",
+    "https://skills.make.com/",
+    "https://status.make.com/?_gl=1*3mkssx*_gcl_au*NzE0NDM4NzM0LjE3MzY1MDcyOTk.*_ga*MTQ0NzQ1NjI5MC4xNzM2NTA3Mjk4*_ga_MY0CJTCDSF*MTczODA2NTA2MS4zNy4wLjE3MzgwNjUwNjEuNjAuMC4w",
+    "https://twitter.com/make_hq",
+    "https://www.celonis.com/privacy-notice/",
+    "https://www.facebook.com/itsMakeHQ/",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=1hrvjgtxJweadHEGZubd&utm_content=site_ipZgk",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=LXp8X1eBwkwrLIWrN9cg&utm_content=site_ipZgk",
+    "https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=yHSLDvK9bMDQI1lCXXt6&utm_content=site_ipZgk",
+    "https://www.instagram.com/itsmakehq/",
+    "https://www.linkedin.com/company/itsmakehq",
+    "https://www.make.com/en",
+    "https://www.make.com/en/help/home",
+    "https://www.make.com/en/pricing",
+    "https://www.make.com/en/ticket",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/"
+  ]
+}

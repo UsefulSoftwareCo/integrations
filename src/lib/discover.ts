@@ -11,7 +11,7 @@
  *   - Surface     (by `type`: http | graphql | mcp | cli)
  *   - Credential  (by `type`: Nango auth-mode vocabulary)
  *   - Mechanics   (by `source`: spec | well-known | metadata | http | cli | unknown)
- *   - Basis  (by `via`: detected | discovered)
+ *   - Basis  (by `via`: detected | discovered | declared)
  *
  * Surfaces get a server-assigned `slug` at record time (slugified name,
  * deduped) — identity and URL segment. The model never produces it; the wire
@@ -28,6 +28,8 @@
  * are injected, so it runs identically in the Worker, Bun, and tests.
  */
 import type { DetectionResult } from "./detect.ts";
+import { catalogSeeds } from "./catalog-seed.ts";
+import { validateSpecUrl, type SpecValidationResult } from "./spec-validate.ts";
 
 // ── injected model (OpenAI-style tool-calling) ────────────────────────────────
 
@@ -61,7 +63,8 @@ export interface WebBackend {
 /** How we learned a thing exists — a trust/verifiability axis. */
 export type Basis =
   | { via: "detected"; signal: string; verifiedAt?: string } // re-verifiable machine signal
-  | { via: "discovered"; evidence: string[] }; // doc URLs the agent read
+  | { via: "discovered"; evidence: string[] } // doc URLs the agent read
+  | { via: "declared"; source: string }; // owner-published integrations.json
 
 /** How ONE credential binds to a surface — where the binding resolves from. */
 export type Mechanics =
@@ -112,6 +115,7 @@ export interface Surface {
   auth: AuthStatus;
   // http / graphql:
   spec?: string; // OpenAPI URL, or "introspection" / SDL URL for graphql
+  specAlternates?: string[]; // same API, alternate machine-readable spec formats
   url?: string; // endpoint (required for graphql/mcp; http without spec)
   patch?: unknown; // securityScheme overrides
   // mcp:
@@ -127,6 +131,7 @@ export interface Surface {
 
 export interface DiscoveryResult {
   summary: string;
+  description?: string;
   credentials: Record<string, Credential>;
   surfaces: Surface[];
 }
@@ -176,6 +181,7 @@ const SURFACE_PROPS = {
   type: { type: "string", description: "http (REST/OpenAPI) | graphql | mcp | cli" },
   docs: { type: "string" },
   spec: { type: "string", description: "OpenAPI URL, or 'introspection'/SDL URL for graphql — a POINTER, never inline a spec" },
+  specAlternates: { type: "array", items: { type: "string" }, description: "Additional machine-readable spec documents for the SAME API in other formats (e.g. the YAML twin of a JSON OpenAPI doc)." },
   url: { type: "string", description: "endpoint/home URL — required for graphql & mcp" },
   transports: { type: "array", items: { type: "string" }, description: "mcp: streamable-http | sse" },
   packages: { type: "array", items: { type: "object", properties: { registryType: { type: "string" }, identifier: { type: "string" }, runtimeHint: { type: "string" } }, required: ["registryType", "identifier"], additionalProperties: false }, description: "cli: install packages" },
@@ -213,7 +219,15 @@ const TOOLS = [
     SURFACE_PROPS,
     ["name", "type"],
   ),
-  fn("finish", "Call when you've recorded every credential and surface. Provide a one-line summary of the service's integration surface.", { summary: { type: "string" } }, ["summary"]),
+  fn(
+    "finish",
+    "Call when you've recorded every credential and surface. Provide both the integration-surface summary and the service registry description.",
+    {
+      summary: { type: "string", description: "One-line overview of the service's integration surface." },
+      description: { type: "string", description: "1-2 sentences on what {domain}'s product/service actually does, for a registry listing. Plain, factual, no marketing superlatives." },
+    },
+    ["summary", "description"],
+  ),
 ];
 
 const SYSTEM =
@@ -228,9 +242,24 @@ const SYSTEM =
   "How to work — page by page:\n" +
   "- Start with web_search to find the key developer pages. Then read the most relevant with scrape_page — issue SEVERAL scrape_page calls in the SAME turn so they run in parallel; don't read one, wait, read the next.\n" +
   "- After a batch of reads, record_credential / record_surface for what those pages revealed before reading more. Pass `evidence` (the doc URLs you read) on each surface and auth entry.\n" +
+  "- Catalog facts are authoritative like detect signals: include a surface for each catalog fact, enrich it with docs/auth, and never contradict them.\n" +
   "- Capture spec/schema URLs as POINTERS; never inline a spec. Only state URLs/endpoints you actually saw. Never invent them.\n" +
+  "- `spec` must be a MACHINE-READABLE document URL (ends .json/.yaml/.yml, or contains openapi/swagger; graphql: SDL URL or 'introspection'). A docs portal or API-reference page is NOT a spec — leave spec unset and put the page in `docs`.\n" +
+  "- Map THE GIVEN DOMAIN only. If your searches keep landing on a DIFFERENT company's docs (a partner, a similarly-named product, a ?ref= link), do not map that company — conclude the given domain exposes nothing and finish with empty surfaces.\n" +
+  "- ATTRIBUTE BY WHAT A SURFACE TALKS TO, not where its docs live. A surface belongs to the domain its requests actually hit — a CLI's or SDK's target API host, an HTTP API's base URL, an MCP server's connect URL. If docs on the given domain describe a CLI/API whose endpoint is a DIFFERENT registrable domain (e.g. docs on foo.dev but the CLI and API call foo.io), that surface belongs to foo.io — do NOT record it here. Record under the given domain only surfaces whose endpoint is the given domain or a subdomain of it. When unsure of a CLI's endpoint, check its docs for the host it authenticates against.\n" +
+  "- A surface is something a developer INTEGRATES WITH. OAuth authorize/token/device endpoints, webhook delivery URLs, and status pages are NOT surfaces — OAuth mechanics belong in the credential's setup, webhooks in the API surface's notes. One API = one http surface, not one per endpoint.\n" +
+  "- Swagger UI / ReDoc / API-explorer pages are RENDERINGS of an API's docs — never separate surfaces. Record the one API surface with the real spec URL, and use the explorer page as `docs` at most.\n" +
+  "- Give every http surface its API BASE URL in `url` when the docs show one (e.g. https://api.example.com/v1) — most API reference pages state it. A docs-index/landing page is not a surface either; record the product APIs it links to.\n" +
+  "- example.com/org hosts in docs are placeholders from spec `servers` blocks, never real endpoints — use the templated form or omit the url.\n" +
+  "- Tenant-templated base URLs are valid locators — record them verbatim with placeholders ({account}.api.example.com, https://<your-instance>.example.com/api). An empty `url` because the host varies per tenant is wrong.\n" +
+  "- Web dashboards/consoles and CI integrations (GitHub Actions, marketplace apps) are NOT surfaces — only programmatic interfaces a developer or agent calls: HTTP/GraphQL APIs, MCP connect endpoints, CLIs. When in doubt ask: could a script call this? If not, omit it.\n" +
+  "- An mcp surface's `url` is the CONNECT ENDPOINT an MCP client would use (e.g. https://mcp.example.com/mcp), never a docs page about the server. If only a docs page exists, put it in `docs` and leave `url` unset.\n" +
+  "- Write each credential's `setup` around the EASIEST acquisition path. When a CLI login acquires it (`mint login`, `wrangler login`), setup says 'run `x login`' and the binding is mechanics 'cli' with that command — do NOT walk through raw OAuth authorize/token/register endpoints anywhere in setup.\n" +
   "- Exotic auth (AWS SigV4, GitHub-App JWT exchange) — name the credential `type` (signature/aws_sigv4/app/two_step) and write the flow in `setup`; you don't need to model its execution. Use mechanics.source 'http', 'cli', or 'unknown'.\n" +
-  "- When done, call finish with a one-line summary. Omit surface types that don't exist.";
+  "- Credentials are for DEVELOPER surfaces. An end-user app login (a consumer account for booking/shopping/streaming) is not an integration credential — omit it and the flows that need it.\n" +
+  "- Record only credentials THIS service issues. A third-party platform's token that the service consumes (a BigCommerce API token you paste into an integration) belongs to that platform's own entry — mention it in the surface notes at most.\n" +
+  "- A credential is something the user MINTS FOR THEMSELVES (their API key, their OAuth app). NEVER record shared, default, or example logins — a self-hosted product's factory password (admin/admin) is a security footgun, not a credential; use authStatus 'unknown' instead. Admin consoles of self-hosted installs are not public integration surfaces; omit them.\n" +
+  "- When done, call finish with `summary` (one-line integration-surface overview) and `description` (1-2 plain factual sentences describing what the service/product does, not its developer surface). Omit surface types that don't exist.";
 
 const MAX_STEPS = 16;
 const MAX_SCRAPES = 30; // runaway guard, not a doc cap
@@ -246,6 +275,8 @@ export async function discover(
   emit?: Emit,
 ): Promise<DiscoveryResult | null> {
   const seed = seedFacts(domain, detect);
+  const ownerDeclaration = ownerDeclarationPrompt(detect);
+  const catalogSeed = catalogSeeds(domain);
   const messages: unknown[] = [
     { role: "system", content: SYSTEM },
     {
@@ -254,6 +285,8 @@ export async function discover(
         `Service domain: ${domain}\n` +
         `Detected by automated probes: ${detect.found.length ? detect.found.join(", ") : "nothing"}.\n` +
         (seed.length ? `Seed facts (authoritative):\n- ${seed.join("\n- ")}\n` : "") +
+        (ownerDeclaration ? `${ownerDeclaration}\n` : "") +
+        (catalogSeed.length ? `Catalog facts (authoritative — from curated registries; verify and include these surfaces):\n- ${catalogSeed.join("\n- ")}\n` : "") +
         (web.canSearch ? `\nStart with web_search for "${domain}".` : `\nStart from https://${domain}/docs or https://developer.${domain}/.`),
     },
   ];
@@ -261,6 +294,7 @@ export async function discover(
   const credentials: Record<string, Credential> = {};
   const surfaces: Surface[] = [];
   const surfaceKeys = new Set<string>();
+  const specValidations = new Map<string, SpecValidationResult>();
   const visited: string[] = [];
   let scrapes = 0;
   const progress = (m: string) => emit?.({ kind: "progress", message: m });
@@ -299,6 +333,22 @@ export async function discover(
       case "record_surface": {
         const s = normalizeSurface(call.arguments);
         if (!s) return "Ignored: a surface needs at least type and name.";
+        if ((s.type === "http" || s.type === "graphql") && s.spec && isSpecUrl(s.spec)) {
+          const cached = specValidations.get(s.spec);
+          const result = cached ?? await validateSpecUrl(s.spec, s.type);
+          if (!cached) specValidations.set(s.spec, result);
+          if (result.ok === false) {
+            return `spec rejected: ${result.reason}. Either find the real machine-readable spec URL (look for a link to openapi.json/swagger.json/.yaml on the docs page), or re-record this surface WITHOUT spec and put that page URL in docs instead.`;
+          }
+          progress(`Validated spec ${hostPath(s.spec)} (${result.kind})`);
+        }
+        // Dangling credential references break the surface's whole auth story.
+        if (s.auth.status === "required") {
+          const missing = s.auth.entries.flatMap((e) => e.use.map((u) => u.id)).filter((id) => !credentials[id]);
+          if (missing.length) {
+            return `auth references undefined credential id(s): ${missing.join(", ")}. Call record_credential for each first (or use authStatus "unknown" if the credential isn't a real user-minted one), then re-record this surface.`;
+          }
+        }
         const key = `${s.type}|${(s.spec || s.url || s.name).toLowerCase()}`;
         if (surfaceKeys.has(key)) return `Already recorded ${s.name}.`;
         surfaceKeys.add(key);
@@ -313,8 +363,8 @@ export async function discover(
     }
   };
 
-  const finalize = (summary: string): DiscoveryResult =>
-    merge({ summary, credentials, surfaces }, detect, emit);
+  const finalize = (summary: string, description?: string): DiscoveryResult =>
+    merge({ summary, description, credentials, surfaces }, detect, emit);
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const turn = await chat(messages, TOOLS);
@@ -330,14 +380,18 @@ export async function discover(
     // call order so every tool_call gets its tool message. record_* emits stream
     // as each resolves.
     let finishSummary: string | undefined;
+    let finishDescription: string | undefined;
     const results = await Promise.all(
       turn.toolCalls.map((call) => (call.name === "finish" ? Promise.resolve("Done.") : runTool(call))),
     );
     turn.toolCalls.forEach((call, i) => {
-      if (call.name === "finish") finishSummary = typeof call.arguments.summary === "string" ? call.arguments.summary.trim() : "";
+      if (call.name === "finish") {
+        finishSummary = typeof call.arguments.summary === "string" ? call.arguments.summary.trim() : "";
+        finishDescription = typeof call.arguments.description === "string" ? call.arguments.description.trim() : undefined;
+      }
       messages.push({ role: "tool", tool_call_id: call.id, content: results[i] });
     });
-    if (finishSummary !== undefined) return finalize(finishSummary);
+    if (finishSummary !== undefined) return finalize(finishSummary, finishDescription);
   }
 
   // Hit the step cap without a finish. Ask once, no tools, for just a one-line
@@ -371,6 +425,17 @@ function seedFacts(domain: string, detect: DetectionResult): string[] {
   return facts;
 }
 
+function ownerDeclarationPrompt(detect: DetectionResult): string {
+  const declared = detect.integrationsJson;
+  if (!declared?.result) return "";
+  const json = JSON.stringify(declared.result, null, 2).slice(0, 20000);
+  return (
+    `Owner declaration from ${declared.url}:\n` +
+    "The site owner declares the following (respect it as their statement of intent; enrich with docs; where our verified knowledge conflicts, note the discrepancy in the surface notes rather than silently dropping either).\n" +
+    `${json}\n`
+  );
+}
+
 function hostPath(url: string): string {
   try {
     const u = new URL(url);
@@ -388,6 +453,10 @@ export function slugifyName(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function isSpecUrl(spec: string): boolean {
+  return /^https?:\/\//i.test(spec);
 }
 
 /** Server-assigned surface slug: slugified name, deduped within the result
@@ -505,6 +574,7 @@ function normalizeSurface(o: Record<string, unknown>): Surface | null {
     basis: normalizeBasis(o.evidence),
     auth: normalizeAuthStatus(o),
     spec: str(o.spec),
+    specAlternates: strArr(o.specAlternates).length ? strArr(o.specAlternates) : undefined,
     url: str(o.url),
     transports: strArr(o.transports).length ? strArr(o.transports) : undefined,
     packages: packages.length ? packages : undefined,
@@ -549,6 +619,118 @@ function normalizeVariables(v: unknown): Surface["variables"] {
   return out.length ? out : undefined;
 }
 
+function declaredBasis(source: string): Basis {
+  return { via: "declared", source };
+}
+
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function markDeclaredSurface(surface: Surface, source: string): Surface {
+  const basis = declaredBasis(source);
+  surface.basis = basis;
+  if (surface.auth.status === "none") {
+    surface.auth.basis = basis;
+  } else if (surface.auth.status === "required") {
+    for (const entry of surface.auth.entries) entry.basis = basis;
+  }
+  return surface;
+}
+
+function surfaceLocator(s: Surface): string {
+  const packageId = s.packages?.[0]?.identifier;
+  return `${s.type}|${(s.spec || s.url || s.command || packageId || s.name).toLowerCase()}`;
+}
+
+function entryKey(entry: AuthEntry): string {
+  return entry.use
+    .map((use) => `${use.id}:${JSON.stringify(use.mechanics)}`)
+    .sort()
+    .join("+");
+}
+
+function isDetectedBasis(basis: Basis | undefined): boolean {
+  return basis?.via === "detected";
+}
+
+function addNote(surface: Surface, note: string): void {
+  if (!note || surface.notes?.includes(note)) return;
+  surface.notes = surface.notes ? `${surface.notes}\n${note}` : note;
+}
+
+function mergeDeclaredAuth(existing: Surface, declared: Surface): void {
+  if (declared.auth.status === "unknown") return;
+  if (existing.auth.status === "unknown") {
+    existing.auth = declared.auth;
+    return;
+  }
+  if (existing.auth.status === "none" && declared.auth.status === "none") {
+    if (!isDetectedBasis(existing.auth.basis)) existing.auth.basis = declared.auth.basis;
+    return;
+  }
+  if (existing.auth.status === "required" && declared.auth.status === "required") {
+    const seen = new Map(existing.auth.entries.map((entry) => [entryKey(entry), entry]));
+    for (const entry of declared.auth.entries) {
+      const key = entryKey(entry);
+      const match = seen.get(key);
+      if (!match) {
+        existing.auth.entries.push(entry);
+      } else if (!isDetectedBasis(match.basis)) {
+        match.basis = entry.basis;
+      }
+    }
+    return;
+  }
+  addNote(existing, `Owner integrations.json declares auth status "${declared.auth.status}"; verified discovery kept "${existing.auth.status}".`);
+}
+
+function mergeDeclaredSurface(existing: Surface, declared: Surface): void {
+  if (!isDetectedBasis(existing.basis)) existing.basis = declared.basis;
+  for (const key of ["docs", "spec", "url", "command"] as const) {
+    const declaredValue = declared[key];
+    if (!declaredValue) continue;
+    if (!existing[key]) {
+      (existing as unknown as Record<string, unknown>)[key] = declaredValue;
+    } else if (existing[key] !== declaredValue) {
+      addNote(existing, `Owner integrations.json also declares ${key}: ${declaredValue}.`);
+    }
+  }
+  if (!existing.transports && declared.transports) existing.transports = declared.transports;
+  if (!existing.packages && declared.packages) existing.packages = declared.packages;
+  if (!existing.requiredHeaders && declared.requiredHeaders) existing.requiredHeaders = declared.requiredHeaders;
+  if (!existing.variables && declared.variables) existing.variables = declared.variables;
+  if (declared.notes) addNote(existing, declared.notes);
+  mergeDeclaredAuth(existing, declared);
+}
+
+function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): void {
+  const declared = detect.integrationsJson;
+  if (!declared?.result) return;
+  const source = declared.url;
+  for (const [id, credential] of Object.entries(declared.result.credentials ?? {})) {
+    if (!r.credentials[id]) {
+      r.credentials[id] = cloneJson(credential) as Credential;
+      emit?.({ kind: "credential", id, credential: r.credentials[id] });
+    }
+  }
+  const byLocator = new Map(r.surfaces.map((surface) => [surfaceLocator(surface), surface]));
+  for (const rawSurface of declared.result.surfaces ?? []) {
+    const surface = markDeclaredSurface(cloneJson(rawSurface) as Surface, source);
+    if (!surface.slug) surface.slug = assignSlug(surface.name || "Declared surface", r.surfaces);
+    const existing = byLocator.get(surfaceLocator(surface));
+    if (existing) {
+      mergeDeclaredSurface(existing, surface);
+      emit?.({ kind: "surface", surface: existing });
+      continue;
+    }
+    surface.slug = assignSlug(surface.slug || surface.name || "Declared surface", r.surfaces);
+    r.surfaces.push(surface);
+    byLocator.set(surfaceLocator(surface), surface);
+    emit?.({ kind: "surface", surface });
+  }
+}
+
 /** Overlay detect's deterministic signals as basis:"detected". A detected
  * OAuth credential, plus the MCP and OpenAPI surfaces detect found, are
  * authoritative; anything newly added is emitted so the client stays in sync. */
@@ -583,6 +765,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     const existing = r.surfaces.find((s) => s.type === "mcp" && s.url === mcp.url);
     if (existing) {
       existing.basis = { via: "detected", signal: "mcp:initialize", verifiedAt };
+      emit?.({ kind: "surface", surface: existing });
       continue;
     }
     const auth: AuthStatus =
@@ -600,12 +783,15 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     if (existing) {
       existing.basis = { via: "detected", signal: "openapi:schema", verifiedAt };
       if (!existing.spec) existing.spec = detect.apiSchema.url;
+      emit?.({ kind: "surface", surface: existing });
     } else if (!has((s) => s.type === "http")) {
       const s: Surface = { slug: assignSlug("OpenAPI", r.surfaces), name: "OpenAPI", type: "http", spec: detect.apiSchema.url, basis: { via: "detected", signal: "openapi:schema", verifiedAt }, auth: { status: "unknown" } };
       r.surfaces.push(s);
       emit?.({ kind: "surface", surface: s });
     }
   }
+
+  mergeDeclared(r, detect, emit);
 
   if (!r.summary && r.surfaces.length) {
     r.summary = `Exposes ${[...new Set(r.surfaces.map((s) => s.type))].join(", ")} for this service.`;

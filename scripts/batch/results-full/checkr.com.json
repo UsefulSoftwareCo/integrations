@@ -1,0 +1,524 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "checkr.com",
+    "detect": {
+      "domain": "checkr.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T16:20:20.096Z",
+    "summary": "Checkr exposes a REST API plus Customer MCP, Candidate MCP, Partner API, and Embeds; auth uses an API key, partner OAuth app credentials, MCP OAuth/DCR for customers, and Candidate MCP client credentials.",
+    "credentials": {
+      "checkr_api_key": {
+        "type": "api_key",
+        "label": "Checkr API key",
+        "generateUrl": "https://dashboard.checkr.com",
+        "setup": "Go to the [Checkr Dashboard](https://dashboard.checkr.com), open your developer/API settings, and create an API key for your account. Checkr’s docs call this out under Getting Started → “Get your API key”. Use it as the account-level credential for the REST API.",
+        "acquisition": "manual"
+      },
+      "checkr_partner_oauth_app": {
+        "type": "oauth2",
+        "label": "Checkr Partner OAuth application",
+        "generateUrl": "https://dashboard.checkr.com",
+        "setup": "In the Checkr partner dashboard, create a [Partner Application](https://dashboard.checkr.com) from Management → Applications → Add. Checkr generates a `client_id` and `client_secret` for the app; use these to let your customers connect their Checkr accounts to your platform.",
+        "acquisition": "manual"
+      },
+      "checkr_mcp_customer_oauth": {
+        "type": "oauth2",
+        "label": "Checkr customer OAuth for MCP",
+        "generateUrl": "https://mcp.checkr.com",
+        "setup": "For the Customer MCP server, start from your MCP client and connect to [https://mcp.checkr.com](https://mcp.checkr.com). Checkr uses OAuth Dynamic Client Registration, so the client obtains credentials at runtime during the MCP connection flow; no pre-provisioned secret is needed.",
+        "acquisition": "manual"
+      },
+      "checkr_mcp_candidate_client": {
+        "type": "oauth2_cc",
+        "label": "Checkr Candidate MCP client credentials",
+        "generateUrl": "https://dashboard.checkr.com",
+        "setup": "For the Candidate MCP server, provision OAuth client credentials in the [Checkr Dashboard](https://dashboard.checkr.com) as instructed in the MCP docs. Use the generated client credentials to authenticate your agent against the Candidate MCP server for a specific Checkr account.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "checkr-customer-mcp",
+        "name": "Checkr Customer MCP",
+        "type": "mcp",
+        "docs": "https://docs.checkr.com/mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.checkr.com/mcp/"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.checkr.com/mcp/"
+            ]
+          }
+        },
+        "url": "https://mcp.checkr.com",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "checkr-candidate-mcp",
+        "name": "Checkr Candidate MCP",
+        "type": "mcp",
+        "docs": "https://docs.checkr.com/mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.checkr.com/mcp/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "checkr_mcp_candidate_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.checkr.com/mcp/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.checkr.com/candidate-mcp/",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "checkr-partner-api",
+        "name": "Checkr Partner API",
+        "type": "http",
+        "docs": "https://docs.checkr.com/partners/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.checkr.com/partners/",
+            "https://docs.checkr.com/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "checkr_mcp_candidate_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.checkr.com/partners/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.checkr.com/"
+      },
+      {
+        "slug": "checkr-embeds-web-sdk",
+        "name": "Checkr Embeds Web SDK",
+        "type": "http",
+        "docs": "https://docs.checkr.com/embeds/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.checkr.com/embeds/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "checkr_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.checkr.com/embeds/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "checkr_mcp_candidate_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.checkr.com/embeds/"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T16:20:20.097Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 329081,
+    "completion_tokens": 1723,
+    "total_tokens": 330804
+  },
+  "visited": [
+    "https://apitracker.io/a/checkr",
+    "https://checkr.com/our-technology/background-check-api",
+    "https://checkr.com/our-technology/developer-integrations",
+    "https://docs.checkr.com/",
+    "https://docs.checkr.com/#section/Authentication",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Get-a-bearer-token",
+    "https://docs.checkr.com/#section/Getting-Started",
+    "https://docs.checkr.com/embeds/",
+    "https://docs.checkr.com/mcp/",
+    "https://docs.checkr.com/mcp/#tag/candidate-mcp",
+    "https://docs.checkr.com/mcp/#tag/customer-mcp",
+    "https://docs.checkr.com/partners/",
+    "https://docs.checkr.com/partners/#section/Getting-Started/Connect-your-customers-to-Checkr",
+    "https://github.com/checkr/oauth-docs"
+  ],
+  "grounding": [
+    "http://www.json.org/",
+    "https://YOUR-REDIRECT-URI.com/REDIRECT-ENDPOINT?scope=read_write&code=AUTHORIZATION_CODE",
+    "https://api.checkr-staging.com/",
+    "https://api.checkr-staging.com/v1",
+    "https://api.checkr.com/",
+    "https://api.checkr.com/oauth/tokens",
+    "https://api.checkr.com/v1",
+    "https://apitracker.io/a/checkr",
+    "https://archiveprogram.github.com",
+    "https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow",
+    "https://candidate.checkr.com/?utm_source=checkr.com&utm_campaign=nav",
+    "https://candidate.checkr.com/login",
+    "https://cdn.jsdelivr.net/npm/@checkr/web-sdk/dist/web-sdk.umd.js",
+    "https://checkr.com",
+    "https://checkr.com/#",
+    "https://checkr.com/background-check",
+    "https://checkr.com/background-check/civil-searches",
+    "https://checkr.com/background-check/credit-checks",
+    "https://checkr.com/background-check/criminal-background-checks",
+    "https://checkr.com/background-check/dot-background-check",
+    "https://checkr.com/background-check/education-verification",
+    "https://checkr.com/background-check/employment-drug-testing",
+    "https://checkr.com/background-check/employment-verification",
+    "https://checkr.com/background-check/health-screening-and-physicals",
+    "https://checkr.com/background-check/healthcare-sanctions",
+    "https://checkr.com/background-check/identity-verification",
+    "https://checkr.com/background-check/mvr",
+    "https://checkr.com/background-check/professional-license-verification",
+    "https://checkr.com/background-check/professional-reference-checks",
+    "https://checkr.com/become-a-partner",
+    "https://checkr.com/company",
+    "https://checkr.com/company/careers",
+    "https://checkr.com/company/partners",
+    "https://checkr.com/company/press",
+    "https://checkr.com/contact",
+    "https://checkr.com/contact-sales",
+    "https://checkr.com/help-center",
+    "https://checkr.com/international-background-checks",
+    "https://checkr.com/legal/customer-agreement",
+    "https://checkr.com/legal/privacy-policy",
+    "https://checkr.com/legal/privacy-policy#notice-to-california-residents",
+    "https://checkr.com/legal/terms-of-service",
+    "https://checkr.com/my-background-check",
+    "https://checkr.com/our-technology/background-check-api",
+    "https://checkr.com/our-technology/developer-integrations",
+    "https://checkr.com/policy-hub",
+    "https://checkr.com/pricing",
+    "https://checkr.com/products/continuous-checks",
+    "https://checkr.com/products/fraud-detection",
+    "https://checkr.com/resume-fraud",
+    "https://checkr.com/signup",
+    "https://checkr.com/sitemap_index.xml",
+    "https://checkr.com/support",
+    "https://checkr.com/trust-and-security",
+    "https://checkr.com/use-cases/enterprise",
+    "https://checkr.com/use-cases/financial-services",
+    "https://checkr.com/use-cases/gig-marketplace",
+    "https://checkr.com/use-cases/healthcare",
+    "https://checkr.com/use-cases/hospitality",
+    "https://checkr.com/use-cases/manufacturing",
+    "https://checkr.com/use-cases/professional-services",
+    "https://checkr.com/use-cases/real-estate",
+    "https://checkr.com/use-cases/retail",
+    "https://checkr.com/use-cases/small-business",
+    "https://checkr.com/use-cases/staffing",
+    "https://checkr.com/use-cases/startups",
+    "https://checkr.com/use-cases/technology",
+    "https://checkr.com/use-cases/transportation",
+    "https://checkr.com/use-cases/volunteers",
+    "https://checkr.com/workforce",
+    "https://checkr.org",
+    "https://checkrstatus.com/",
+    "https://checkrtrust.statuspage.io/",
+    "https://dashboard.checkr.com",
+    "https://dashboard.checkr.com/",
+    "https://dashboard.checkr.com/account/developer_settings",
+    "https://dashboard.checkr.com/login",
+    "https://dashboard.checkrhq-staging.net/",
+    "https://data.checkrstatus.com/",
+    "https://docs.checkr.com",
+    "https://docs.checkr.com/",
+    "https://docs.checkr.com/#",
+    "https://docs.checkr.com/#development",
+    "https://docs.checkr.com/#env-staging-javascript",
+    "https://docs.checkr.com/#env-staging-react",
+    "https://docs.checkr.com/#new-invitation-auth-1-javascript",
+    "https://docs.checkr.com/#new-invitation-auth-1-react",
+    "https://docs.checkr.com/#new-invitation-auth-2-direct-request",
+    "https://docs.checkr.com/#new-invitation-auth-2-javascript",
+    "https://docs.checkr.com/#new-invitation-auth-2-react",
+    "https://docs.checkr.com/#new-invitation-auth-2-request",
+    "https://docs.checkr.com/#new-invitation-fake-mode-javascript",
+    "https://docs.checkr.com/#new-invitation-fake-mode-react",
+    "https://docs.checkr.com/#redirect_uri",
+    "https://docs.checkr.com/#retrieve-an-access-token",
+    "https://docs.checkr.com/#section/Agent-Behavior-Expectations",
+    "https://docs.checkr.com/#section/At-a-glance",
+    "https://docs.checkr.com/#section/Authenticate-Your-Client",
+    "https://docs.checkr.com/#section/Authentication",
+    "https://docs.checkr.com/#section/Available-Tools",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Adapt-MCP-tools-to-OpenAI",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Adapting-to-your-stack",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Configuration",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Dependencies",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Entry-point",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Full-file",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Get-a-bearer-token",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Imports-and-client-setup",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Run-it",
+    "https://docs.checkr.com/#section/Building-Your-Own-Agent/Run-the-agent-loop",
+    "https://docs.checkr.com/#section/Choose-your-integration",
+    "https://docs.checkr.com/#section/Connect-to-the-MCP-Server",
+    "https://docs.checkr.com/#section/Connect-to-the-MCP-Server/Session-persistence",
+    "https://docs.checkr.com/#section/Demo-Videos",
+    "https://docs.checkr.com/#section/Demo-Videos/Claude-Integration",
+    "https://docs.checkr.com/#section/Demo-Videos/n8n-Automation",
+    "https://docs.checkr.com/#section/Example-Prompts",
+    "https://docs.checkr.com/#section/Get-Your-Credentials",
+    "https://docs.checkr.com/#section/Getting-Started",
+    "https://docs.checkr.com/#section/Getting-Started/Request-a-Staging-Account",
+    "https://docs.checkr.com/#section/Identify-the-Candidate",
+    "https://docs.checkr.com/#section/Introduction/Designing-your-workflow",
+    "https://docs.checkr.com/#section/Overview",
+    "https://docs.checkr.com/#section/Overview/What-the-candidate-sees",
+    "https://docs.checkr.com/#section/Retrieve-Report-Data",
+    "https://docs.checkr.com/#section/Retrieve-Report-Data/Sample-response",
+    "https://docs.checkr.com/#section/Session-Rules-and-Lifecycle",
+    "https://docs.checkr.com/#section/Session-Rules-and-Lifecycle/Ending-a-session",
+    "https://docs.checkr.com/#section/Session-Rules-and-Lifecycle/Rules-and-limits",
+    "https://docs.checkr.com/#section/Session-Rules-and-Lifecycle/When-to-start-a-new-session",
+    "https://docs.checkr.com/#section/Setup-Instructions",
+    "https://docs.checkr.com/#section/Setup-Instructions/Claude-(desktop",
+    "https://docs.checkr.com/#section/Setup-Instructions/Claude-(web",
+    "https://docs.checkr.com/#section/Setup-Instructions/Claude-Code",
+    "https://docs.checkr.com/#section/Setup-Instructions/Cursor",
+    "https://docs.checkr.com/#section/Setup-Instructions/Others",
+    "https://docs.checkr.com/#section/Setup-Instructions/Visual-Studio-Code",
+    "https://docs.checkr.com/#section/Webhooks",
+    "https://docs.checkr.com/#section/What-is-MCP",
+    "https://docs.checkr.com/#signup-auth-example-backend-javascript",
+    "https://docs.checkr.com/#signup-auth-javascript",
+    "https://docs.checkr.com/#signup-default-javascript",
+    "https://docs.checkr.com/#signup-default-react",
+    "https://docs.checkr.com/#signup-default-result",
+    "https://docs.checkr.com/#signup-modal-javascript",
+    "https://docs.checkr.com/#signup-modal-result",
+    "https://docs.checkr.com/#tag/SSN-Trace",
+    "https://docs.checkr.com/#tag/candidate-mcp",
+    "https://docs.checkr.com/#tag/customer-mcp",
+    "https://docs.checkr.com/#use-the-checkr-hosted-signup-flow",
+    "https://docs.checkr.com/./#section/Examples",
+    "https://docs.checkr.com/./#section/Getting-Started/Add-authentication/",
+    "https://docs.checkr.com/./#section/Getting-Started/Load-Checkr",
+    "https://docs.checkr.com/embeds",
+    "https://docs.checkr.com/embeds/",
+    "https://docs.checkr.com/mcp",
+    "https://docs.checkr.com/mcp/",
+    "https://docs.checkr.com/mcp/#tag/candidate-mcp",
+    "https://docs.checkr.com/mcp/#tag/customer-mcp",
+    "https://docs.checkr.com/partners",
+    "https://docs.checkr.com/partners/",
+    "https://docs.checkr.com/partners/#retrieve-an-access-token",
+    "https://docs.checkr.com/partners/#section/Getting-Started/Connect-your-customers-to-Checkr",
+    "https://docs.checkr.com/partners/#section/Getting-Started/Customer-account-credentialing",
+    "https://docs.checkrtrust.com/",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://en.wikipedia.org/wiki/Representational_state_transfer",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/checkr",
+    "https://github.com/checkr/oauth-docs",
+    "https://github.com/checkr/oauth-docs/actions",
+    "https://github.com/checkr/oauth-docs/blob/master/README.md",
+    "https://github.com/checkr/oauth-docs/blob/master/checkr_oauth_full_reference.md",
+    "https://github.com/checkr/oauth-docs/blob/master/checkr_packages_api.md",
+    "https://github.com/checkr/oauth-docs/blob/master/checkr_webhooks_api.md",
+    "https://github.com/checkr/oauth-docs/branches",
+    "https://github.com/checkr/oauth-docs/commit/33c61e81835d8080413b5c6180ef1aaf5198f9af",
+    "https://github.com/checkr/oauth-docs/commit/3dfedc32162cc091d4ce7625f5bd0652276e2ea9",
+    "https://github.com/checkr/oauth-docs/commit/451268e6018188f29f939f88789e2e1c376e1353",
+    "https://github.com/checkr/oauth-docs/commit/5fb8f6c7e05765b24c58c2908dfe9a7026c5ab49",
+    "https://github.com/checkr/oauth-docs/commit/98e73d943ebf88471970ba28a66f6fb1ff6f1c96",
+    "https://github.com/checkr/oauth-docs/commits/master/",
+    "https://github.com/checkr/oauth-docs/commits?author=capripot",
+    "https://github.com/checkr/oauth-docs/issues",
+    "https://github.com/checkr/oauth-docs/pull/12",
+    "https://github.com/checkr/oauth-docs/pulls",
+    "https://github.com/checkr/oauth-docs/pulse",
+    "https://github.com/checkr/oauth-docs/security",
+    "https://github.com/checkr/oauth-docs/tags",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fcheckr%2Foauth-docs",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fcheckr%2Foauth-docs",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=checkr%2Foauth-docs",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://global.checkrstatus.com/",
+    "https://help.checkr.com",
+    "https://help.checkr.com/hc/en-us",
+    "https://help.checkr.com/hc/en-us/categories/202502548-Customers",
+    "https://help.checkr.com/hc/en-us/sections/203637107-Compliance",
+    "https://help.checkr.com/hc/en-us/sections/203637147-Screening-Types",
+    "https://help.checkr.com/hc/en-us/sections/203794077-Getting-Started",
+    "https://help.checkr.com/hc/en-us/sections/360000081367-Adjudication-and-Review",
+    "https://help.checkr.com/hc/en-us/sections/360002119753-Checkr-Dashboard-User-Guide",
+    "https://learn.checkr.com",
+    "https://maintainers.github.com",
+    "https://mcp.checkr-staging.com",
+    "https://mcp.checkr-staging.com/candidate-mcp/",
+    "https://mcp.checkr.com",
+    "https://mcp.checkr.com/candidate-mcp/",
+    "https://mortgage.checkr.com/",
+    "https://partnerinc.com",
+    "https://partnerinc.com/assets/logo.png",
+    "https://partnerinc.com/checkr/callback?code={JWT}&state=79a3ead9-2768-477f-8eca-724890dcf8d6",
+    "https://partnerinc.com/integrations/checkr",
+    "https://partnerinc.com/webhooks/checkr",
+    "https://partners.checkr.com/authorize/%7Bclient_id%7D",
+    "https://partners.checkr.com/authorize/%7Bclient_id%7D/signin",
+    "https://partners.checkr.com/authorize/%7Bclient_id%7D/signup",
+    "https://partners.checkr.com/authorize/9340a19f5735e044b040178b",
+    "https://partners.checkr.com/authorize/:client_id/signin?scope=read_write",
+    "https://partners.checkr.com/authorize/:client_id/signup?scope=read_write",
+    "https://partners.checkr.com/authorize/{client",
+    "https://partners.checkr.com/authorize/{client_id}?redirect_uri=https://partnerinc.com/checkr/callback&state=79a3ead9-2768-477f-8eca-724890dcf8d6",
+    "https://partners.checkrhq-staging.net/authorize/%7Bclient_id%7D",
+    "https://partners.checkrhq-staging.net/authorize/%7Bclient_id%7D/signin",
+    "https://partners.checkrhq-staging.net/authorize/%7Bclient_id%7D/signup",
+    "https://partners.checkrhq-staging.net/authorize/{client",
+    "https://personal.checkr.com/",
+    "https://personal.checkr.com/auth/sign-in?utm_source=checkr.com&utm_campaign=nav",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://tenant.checkr.com/",
+    "https://truework.statuspage.io/",
+    "https://trust.checkr.com/",
+    "https://www.checkr.com",
+    "https://www.facebook.com/checkrio/",
+    "https://www.linkedin.com/company/checkr-com/",
+    "https://www.truework.com/docs/",
+    "https://www.youtube.com/channel/UCwu9nbqKG-KH7mRdblq4e3g"
+  ]
+}

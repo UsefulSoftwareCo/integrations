@@ -1,0 +1,528 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "context7.com",
+    "detect": {
+      "domain": "context7.com",
+      "found": [
+        "openapi-schema",
+        "auth"
+      ],
+      "apiSchema": {
+        "url": "https://context7.com/openapi.json",
+        "format": "openapi",
+        "version": "3.0.0"
+      },
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://context7.com"
+          ],
+          "authorizationEndpoint": "https://context7.com/api/oauth/authorize",
+          "tokenEndpoint": "https://context7.com/api/oauth/token",
+          "scopes": [
+            "profile",
+            "email"
+          ],
+          "registrationEndpoint": "https://context7.com/api/oauth/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token",
+            "urn:ietf:params:oauth:grant-type:jwt-bearer"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T18:50:09.151Z",
+    "summary": "Found 3 developer surfaces for context7.com: a REST HTTP API at `https://context7.com/api` (OpenAPI published but only docs-page pointer recorded due to tooling validation), a remote MCP server at `https://mcp.context7.com/mcp` with API-key or OAuth auth, and the `ctx7` npm CLI.",
+    "credentials": {
+      "context7_api_key": {
+        "type": "bearer",
+        "label": "Context7 API key",
+        "generateUrl": "https://context7.com/dashboard",
+        "setup": "Open the [Context7 dashboard](https://context7.com/dashboard) and create an API key. The docs say to use it as `Authorization: Bearer CONTEXT7_API_KEY` for the HTTP API, and MCP clients can pass it in the `CONTEXT7_API_KEY` header or via local CLI arguments. The overview/docs pages link to [Get an API Key](https://context7.com/dashboard) and the API guide points to [creating and managing API keys](https://context7.com/docs/howto/api-keys)."
+      },
+      "context7_oauth_client": {
+        "type": "oauth2",
+        "label": "Context7 OAuth client",
+        "generateUrl": "https://context7.com/api/oauth/register",
+        "setup": "For MCP clients that implement MCP OAuth, register an OAuth client against Context7's dynamic client registration endpoint at [OAuth register](https://context7.com/api/oauth/register). Then use Context7's authorization server endpoints: [authorize](https://context7.com/api/oauth/authorize) and `token` at `https://context7.com/api/oauth/token`. Seed facts show available scopes `profile` and `email`. This is the OAuth path documented for the remote MCP endpoint at `/mcp/oauth`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "context7-public-api",
+        "name": "Context7 Public API",
+        "type": "http",
+        "docs": "https://context7.com/docs/api-guide",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://context7.com/openapi.json",
+            "https://context7.com/docs/api-guide"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "context7_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://context7.com/openapi.json",
+                  "https://context7.com/docs/api-guide"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://context7.com/api"
+      },
+      {
+        "slug": "context7-mcp-server",
+        "name": "Context7 MCP Server",
+        "type": "mcp",
+        "docs": "https://context7.com/docs/resources/all-clients",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://context7.com/docs/resources/all-clients"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "context7_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "CONTEXT7_API_KEY"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://context7.com/docs/resources/all-clients"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "context7_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://context7.com/docs/resources/all-clients",
+                  "https://context7.com/api/oauth/authorize"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.context7.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "ctx7-cli",
+        "name": "ctx7 CLI",
+        "type": "cli",
+        "docs": "https://context7.com/docs/clients/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://context7.com/docs/clients/cli",
+            "https://context7.com/install"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "context7_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "ctx7 auth login",
+                    "env": [
+                      "CONTEXT7_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://context7.com/docs/clients/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "ctx7",
+            "runtimeHint": "Node.js 18+"
+          }
+        ],
+        "command": "ctx7"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T18:50:09.152Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 206346,
+    "completion_tokens": 1333,
+    "total_tokens": 207679
+  },
+  "visited": [
+    "https://context7.com/",
+    "https://context7.com/api/oauth/authorize",
+    "https://context7.com/api/oauth/register",
+    "https://context7.com/docs",
+    "https://context7.com/docs/api-guide",
+    "https://context7.com/docs/clients/cli",
+    "https://context7.com/docs/overview",
+    "https://context7.com/docs/resources/all-clients",
+    "https://context7.com/install",
+    "https://context7.com/openapi.json",
+    "https://context7.com/openapi.json#components/securitySchemes",
+    "https://github.com/upstash/context7",
+    "https://upstash.com/blog/context7-llmtxt-cursor",
+    "https://www.augmentcode.com/mcp/context7",
+    "https://www.reddit.com/r/ClaudeAI/comments/1oyqi8e/am_i_missing_something_with_the_context7_mcp_hype/",
+    "https://x.com/Context7AI"
+  ],
+  "grounding": [
+    "https://antigravity.google/docs/mcp",
+    "https://archiveprogram.github.com",
+    "https://chatgpt.com",
+    "https://code.claude.com/docs/en/mcp",
+    "https://code.visualstudio.com/docs/copilot/chat/mcp-servers",
+    "https://context7.com",
+    "https://context7.com/",
+    "https://context7.com/#-with-context7",
+    "https://context7.com/#-without-context7",
+    "https://context7.com/#1-enable-developer-mode",
+    "https://context7.com/#2-create-an-app",
+    "https://context7.com/#3-use-in-a-conversation",
+    "https://context7.com/#api-key",
+    "https://context7.com/#api-methods",
+    "https://context7.com/#authentication",
+    "https://context7.com/#be-specific-with-queries",
+    "https://context7.com/#best-practices",
+    "https://context7.com/#cache-responses",
+    "https://context7.com/#commands",
+    "https://context7.com/#complete-workflow-example",
+    "https://context7.com/#configure-via-kilo-code-ui",
+    "https://context7.com/#content-area",
+    "https://context7.com/#context7-plugin",
+    "https://context7.com/#ctx7-remove",
+    "https://context7.com/#ctx7-setup",
+    "https://context7.com/#error-handling",
+    "https://context7.com/#handle-rate-limits",
+    "https://context7.com/#installation",
+    "https://context7.com/#library-id-format",
+    "https://context7.com/#local-server-connection",
+    "https://context7.com/#local-server-connection-10",
+    "https://context7.com/#local-server-connection-11",
+    "https://context7.com/#local-server-connection-2",
+    "https://context7.com/#local-server-connection-3",
+    "https://context7.com/#local-server-connection-4",
+    "https://context7.com/#local-server-connection-5",
+    "https://context7.com/#local-server-connection-6",
+    "https://context7.com/#local-server-connection-7",
+    "https://context7.com/#local-server-connection-8",
+    "https://context7.com/#local-server-connection-9",
+    "https://context7.com/#manual-configuration",
+    "https://context7.com/#next-steps",
+    "https://context7.com/#oauth-authentication",
+    "https://context7.com/#query-library-documentation",
+    "https://context7.com/#rate-limits",
+    "https://context7.com/#remote-server-connection",
+    "https://context7.com/#remote-server-connection-10",
+    "https://context7.com/#remote-server-connection-11",
+    "https://context7.com/#remote-server-connection-2",
+    "https://context7.com/#remote-server-connection-3",
+    "https://context7.com/#remote-server-connection-4",
+    "https://context7.com/#remote-server-connection-5",
+    "https://context7.com/#remote-server-connection-6",
+    "https://context7.com/#remote-server-connection-7",
+    "https://context7.com/#remote-server-connection-8",
+    "https://context7.com/#remote-server-connection-9",
+    "https://context7.com/#sdk-and-libraries",
+    "https://context7.com/#setup",
+    "https://context7.com/#step-1-%E2%80%94-ctx7-library",
+    "https://context7.com/#step-1-—-ctx7-library",
+    "https://context7.com/#step-2-%E2%80%94-ctx7-docs",
+    "https://context7.com/#step-2-—-ctx7-docs",
+    "https://context7.com/#telemetry",
+    "https://context7.com/#use-specific-versions",
+    "https://context7.com/#using-cli",
+    "https://context7.com/#when-is-authentication-required",
+    "https://context7.com/./anomalyco/opencode",
+    "https://context7.com/./better-auth/better-auth",
+    "https://context7.com/./chartjs/chart.js",
+    "https://context7.com/./expo/expo",
+    "https://context7.com/./microsoft/playwright",
+    "https://context7.com/./reactjs/react.dev",
+    "https://context7.com/./supabase/supabase",
+    "https://context7.com/./tailwindlabs/tailwindcss.com",
+    "https://context7.com/./vercel/ai",
+    "https://context7.com/./vercel/next.js",
+    "https://context7.com/about",
+    "https://context7.com/add-library",
+    "https://context7.com/api",
+    "https://context7.com/api/oauth/authorize",
+    "https://context7.com/api/oauth/register",
+    "https://context7.com/api/v2/context",
+    "https://context7.com/api/v2/context?libraryId=/vercel/next.js&query=How%20to%20implement%20authentication%20with%20middleware",
+    "https://context7.com/api/v2/context?libraryId=/vercel/next.js&query=auth",
+    "https://context7.com/api/v2/context?libraryId=/vercel/next.js/v15.1.8&query=app%20router",
+    "https://context7.com/api/v2/context?libraryId=/vercel/next.js@v15.1.8&query=app%20router",
+    "https://context7.com/api/v2/context?libraryId=/websites/uploadcare_com&query=image%20transformations",
+    "https://context7.com/api/v2/libs/search",
+    "https://context7.com/chat?utm_source=header",
+    "https://context7.com/chat?utm_source=homepage",
+    "https://context7.com/contact",
+    "https://context7.com/dashboard",
+    "https://context7.com/docs",
+    "https://context7.com/docs/adding-libraries",
+    "https://context7.com/docs/agentic-tools/overview",
+    "https://context7.com/docs/api-guide",
+    "https://context7.com/docs/api-reference/add-library/add-a-confluence-space",
+    "https://context7.com/docs/api-reference/add-library/add-a-github-repository",
+    "https://context7.com/docs/api-reference/add-library/add-a-website",
+    "https://context7.com/docs/api-reference/add-library/add-an-llmstxt-file",
+    "https://context7.com/docs/api-reference/add-library/add-an-openapi-specification-by-url",
+    "https://context7.com/docs/api-reference/add-library/upload-an-openapi-specification-file",
+    "https://context7.com/docs/api-reference/context/get-documentation-context",
+    "https://context7.com/docs/api-reference/policies/get-teamspace-policies",
+    "https://context7.com/docs/api-reference/policies/update-teamspace-policies",
+    "https://context7.com/docs/api-reference/refresh/refresh-a-library",
+    "https://context7.com/docs/api-reference/search/search-for-libraries",
+    "https://context7.com/docs/clients/claude-code",
+    "https://context7.com/docs/clients/cli",
+    "https://context7.com/docs/clients/codex",
+    "https://context7.com/docs/clients/copilot-cli",
+    "https://context7.com/docs/clients/cursor",
+    "https://context7.com/docs/clients/opencode",
+    "https://context7.com/docs/clients/pi",
+    "https://context7.com/docs/clients/vscode",
+    "https://context7.com/docs/enterprise",
+    "https://context7.com/docs/howto/api-keys",
+    "https://context7.com/docs/howto/chat-widget",
+    "https://context7.com/docs/howto/claiming-libraries",
+    "https://context7.com/docs/howto/policies",
+    "https://context7.com/docs/howto/private-sources",
+    "https://context7.com/docs/howto/rules",
+    "https://context7.com/docs/howto/teamspace",
+    "https://context7.com/docs/howto/usage",
+    "https://context7.com/docs/howto/verification",
+    "https://context7.com/docs/installation",
+    "https://context7.com/docs/integrations/code-rabbit",
+    "https://context7.com/docs/integrations/factory-ai",
+    "https://context7.com/docs/integrations/github-actions",
+    "https://context7.com/docs/integrations/mastra",
+    "https://context7.com/docs/integrations/tembo",
+    "https://context7.com/docs/library-owners",
+    "https://context7.com/docs/library-updates",
+    "https://context7.com/docs/llms.txt",
+    "https://context7.com/docs/overview",
+    "https://context7.com/docs/plans-pricing",
+    "https://context7.com/docs/resources/all-clients",
+    "https://context7.com/docs/resources/developer",
+    "https://context7.com/docs/resources/troubleshooting",
+    "https://context7.com/docs/sdks/ts/commands/get-context",
+    "https://context7.com/docs/sdks/ts/commands/search-library",
+    "https://context7.com/docs/sdks/ts/getting-started",
+    "https://context7.com/docs/security/auth-and-access-control",
+    "https://context7.com/docs/security/best-practices",
+    "https://context7.com/docs/security/compliance-and-reporting",
+    "https://context7.com/docs/security/data-privacy",
+    "https://context7.com/docs/security/data-safety",
+    "https://context7.com/docs/security/infrastructure",
+    "https://context7.com/docs/security/overview",
+    "https://context7.com/docs/tips",
+    "https://context7.com/enterprise",
+    "https://context7.com/guides",
+    "https://context7.com/install",
+    "https://context7.com/openapi.json",
+    "https://context7.com/openapi.json#components/securitySchemes",
+    "https://context7.com/plans",
+    "https://context7.com/rankings",
+    "https://context7.com/tasklist?tab=website",
+    "https://context7.com/websites/uploadcare_com",
+    "https://cursor.com/docs/context/mcp",
+    "https://developers.openai.com/api/docs/guides/developer-mode",
+    "https://developers.openai.com/api/docs/mcp",
+    "https://developers.openai.com/codex/mcp",
+    "https://docs.devin.ai/desktop/cascade/mcp",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.roocode.com/features/mcp/using-mcp-in-roo",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/anomalyco/opencode",
+    "https://github.com/better-auth/better-auth",
+    "https://github.com/chartjs/chart.js",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/expo/expo",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fupstash%2Fcontext7",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fupstash%2Fcontext7",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/microsoft/playwright",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/reactjs/react.dev",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=upstash%2Fcontext7",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/supabase/supabase",
+    "https://github.com/tailwindlabs/tailwindcss.com",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/upstash",
+    "https://github.com/upstash/context7",
+    "https://github.com/upstash/context7#installation",
+    "https://github.com/upstash/context7/actions",
+    "https://github.com/upstash/context7/branches",
+    "https://github.com/upstash/context7/commit/18e6d4727bbcfb4001a8a17337b0f0f717f1b4fd",
+    "https://github.com/upstash/context7/commit/1aa3430bf67b5bb56ed637c537b6383",
+    "https://github.com/upstash/context7/commit/1aa3430bf67b5bb56ed637c537b6383a7bd2b8bd",
+    "https://github.com/upstash/context7/commit/75361160c7deac6c4b003161b408268e5a875af1",
+    "https://github.com/upstash/context7/commit/7a04a0484192d533534e59d193c8667b13c9339f",
+    "https://github.com/upstash/context7/commit/b1fb8b523263143db858d09698f9c67e3be79e33",
+    "https://github.com/upstash/context7/commit/c10f1167659e4809402ef7db75732a8987b2dc02",
+    "https://github.com/upstash/context7/commit/dbc4c78cca7771cdae4e31e614d0adb0f05c7b8b",
+    "https://github.com/upstash/context7/commit/e35cb61068fad12cafe011a6487a7a2092f66c1a",
+    "https://github.com/upstash/context7/commits/master/",
+    "https://github.com/upstash/context7/commits?author=claude",
+    "https://github.com/upstash/context7/commits?author=enesgules",
+    "https://github.com/upstash/context7/discussions",
+    "https://github.com/upstash/context7/edit/master/docs/api-guide.mdx",
+    "https://github.com/upstash/context7/edit/master/docs/clients/cli.mdx",
+    "https://github.com/upstash/context7/edit/master/docs/overview.mdx",
+    "https://github.com/upstash/context7/issues",
+    "https://github.com/upstash/context7/issues/790",
+    "https://github.com/upstash/context7/issues/new?title=Issue",
+    "https://github.com/upstash/context7/pull/1354",
+    "https://github.com/upstash/context7/pull/2554",
+    "https://github.com/upstash/context7/pull/2808",
+    "https://github.com/upstash/context7/pull/2839",
+    "https://github.com/upstash/context7/pulls",
+    "https://github.com/upstash/context7/pulse",
+    "https://github.com/upstash/context7/security",
+    "https://github.com/upstash/context7/tags",
+    "https://github.com/upstash/context7/tree/master/.agents/plugins",
+    "https://github.com/upstash/context7/tree/master/.changeset",
+    "https://github.com/upstash/context7/tree/master/.claude-plugin",
+    "https://github.com/upstash/context7/tree/master/.github",
+    "https://github.com/upstash/context7/tree/master/docs",
+    "https://github.com/upstash/context7/tree/master/i18n",
+    "https://github.com/upstash/context7/tree/master/packages",
+    "https://github.com/upstash/context7/tree/master/plugins",
+    "https://github.com/upstash/context7/tree/master/public",
+    "https://github.com/upstash/context7/tree/master/rules",
+    "https://github.com/upstash/context7/tree/master/skills",
+    "https://github.com/vercel/ai",
+    "https://github.com/vercel/next.js",
+    "https://github.com/vercel/next.js/blob/canary/docs/middleware.mdx",
+    "https://github.com/vercel/next.js/blob/canary/docs/middleware.mdx#_snippet_0",
+    "https://github.com/why-github",
+    "https://kilo.ai/docs/automate/mcp/using-in-kilo-code",
+    "https://kiro.dev/docs/mcp/configuration/",
+    "https://maintainers.github.com",
+    "https://marketplace.visualstudio.com/items?itemName=Upstash.context7-mcp",
+    "https://mcp.context7.com/mcp",
+    "https://mcp.context7.com/mcp/oauth",
+    "https://modelcontextprotocol.io/quickstart/user",
+    "https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization",
+    "https://opencode.ai/docs/mcp-servers",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://upstash.com",
+    "https://upstash.com/blog/context7-llmtxt-cursor",
+    "https://upstash.com/blog/tag/context7",
+    "https://upstash.com/discord",
+    "https://upstash.com/docs/common/help/legal",
+    "https://www.augmentcode.com/mcp/context7",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=context7",
+    "https://www.reddit.com/r/ClaudeAI/comments/1oyqi8e/am_i_missing_something_with_the_context7_mcp_hype/",
+    "https://x.com/Context7AI",
+    "https://x.com/context7ai"
+  ]
+}

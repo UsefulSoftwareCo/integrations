@@ -1,0 +1,189 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "monday.com",
+    "summary": "monday.com exposes a GraphQL API, a public GraphQL schema endpoint, and a hosted MCP server; authenticated operations use either a personal API token or OAuth 2.0 access token in the `Authorization: Bearer` header.",
+    "credentials": {
+      "monday_bearer_token": {
+        "type": "bearer",
+        "label": "monday.com personal API token or OAuth access token",
+        "setup": "Authenticate to monday.com with a bearer token sent as `Authorization: Bearer <token>`. The corpus confirms monday.com accepts either a personal API token or an OAuth access token for its API and MCP surfaces, but it does not include a user-facing page for minting a personal token or completing the OAuth app flow. For OAuth-based integrations, start from the monday.com developer documentation at [Developer Platform](https://developer.monday.com/) and [API Reference](https://developer.monday.com/api-reference).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "type": "http",
+        "spec": "https://monday.com/openapi.json",
+        "url": "https://api.monday.com",
+        "slug": "monday-com-api",
+        "name": "monday.com API",
+        "docs": "https://developer.monday.com/api-reference/reference/about-the-api-reference",
+        "basis": {
+          "via": "detected",
+          "signal": "openapi-schema"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "monday_bearer_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://monday.com/openapi.json"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The OpenAPI spec describes POST `https://api.monday.com/v2` as the single endpoint for GraphQL queries and mutations."
+      },
+      {
+        "type": "graphql",
+        "url": "https://api.monday.com/v2",
+        "spec": "https://api.monday.com/v2/get_schema",
+        "slug": "monday-com-graphql-api-v2",
+        "name": "monday.com GraphQL API v2",
+        "docs": "https://developer.monday.com/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://monday.com/.well-known/api-catalog",
+            "https://monday.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "monday_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://monday.com/openapi.json",
+                  "https://monday.com/.well-known/oauth-protected-resource"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The schema is available publicly at `GET /v2/get_schema`; operational GraphQL queries and mutations are served from `POST /v2`."
+      },
+      {
+        "type": "mcp",
+        "url": "https://mcp.monday.com/mcp",
+        "transports": [
+          "streamable-http"
+        ],
+        "slug": "monday-com-mcp-server",
+        "name": "monday.com MCP Server",
+        "docs": "https://developer.monday.com",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://monday.com/.well-known/mcp/server-card.json",
+            "https://monday.com/.well-known/agent-card.json",
+            "https://monday.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "monday_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://monday.com/.well-known/mcp/server-card.json",
+                  "https://monday.com/.well-known/agent-card.json",
+                  "https://monday.com/.well-known/oauth-protected-resource"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "The MCP server card says authentication is required and uses OAuth2; llms.txt recommends MCP as the preferred integration method."
+      }
+    ]
+  },
+  "checklist": {
+    "passed": false,
+    "checks": {
+      "noDefaultCredentialSetup": {
+        "passed": true,
+        "offenders": []
+      },
+      "outputUrlsInCorpus": {
+        "passed": true,
+        "offenders": []
+      },
+      "authUseIdsResolve": {
+        "passed": true,
+        "offenders": []
+      },
+      "cliMechanicsSetupHasNoOauthPath": {
+        "passed": true,
+        "offenders": []
+      },
+      "specUrlsLookMachineReadable": {
+        "passed": false,
+        "offenders": [
+          "https://api.monday.com/v2/get_schema"
+        ]
+      },
+      "noDuplicateSurfaceKeys": {
+        "passed": true,
+        "offenders": []
+      },
+      "noRequiredAuthWithEmptyEntries": {
+        "passed": true,
+        "offenders": []
+      }
+    }
+  },
+  "usage": {
+    "prompt_tokens": 20309,
+    "completion_tokens": 978,
+    "total_tokens": 21287,
+    "prompt_tokens_details": {
+      "cached_tokens": 8448,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "model": "gpt-5.4"
+}

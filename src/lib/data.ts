@@ -37,6 +37,8 @@ export interface IndexRecord {
   categories: string[];
   feeds: string[];
   popularity?: number;
+  /** Curated developer-tool domain (scripts/batch/seed-domains*.txt). */
+  devtool?: boolean;
 }
 
 export const index: IndexRecord[] = load("index.json", []);

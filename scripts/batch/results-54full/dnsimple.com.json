@@ -1,0 +1,419 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "dnsimple.com",
+    "detect": {
+      "domain": "dnsimple.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:17:14.705Z",
+    "summary": "DNSimple exposes a REST HTTP API v2 and an official DNSimple CLI; both use DNSimple-issued access tokens, and the API also documents HTTP Basic auth while OAuth 2.0 is used for app authorization and CLI browser login.",
+    "description": "DNSimple provides managed DNS hosting, domain registration, SSL certificate management, and related domain operations. It offers both a web application and developer tooling for automating account, domain, zone, and certificate workflows.",
+    "credentials": {
+      "api_token": {
+        "type": "bearer",
+        "label": "DNSimple API access token",
+        "generateUrl": "https://support.dnsimple.com/articles/api-access-token/",
+        "setup": "In the DNSimple app, open your account's API & Access page from [dnsimple.com/user](https://dnsimple.com/user) for production or [sandbox.dnsimple.com/user](https://sandbox.dnsimple.com/user) for sandbox, click **Add**, name the token, optionally choose scopes on eligible plans, then click **Generate token**. Copy the token immediately because it is shown only once. Use it as `Authorization: Bearer {TOKEN}`.",
+        "acquisition": "manual"
+      },
+      "oauth_app": {
+        "type": "oauth2",
+        "label": "DNSimple OAuth application (client ID and secret)",
+        "generateUrl": "https://support.dnsimple.com/articles/oauth-applications/",
+        "setup": "Register an OAuth application from the DNSimple app as described in [OAuth Applications](https://support.dnsimple.com/articles/oauth-applications/). DNSimple assigns a `client_id`; confidential web apps also receive a `client_secret`. Public clients use PKCE instead of a secret and may require contacting DNSimple support to enable public-client registration, per the [OAuth docs](https://developer.dnsimple.com/v2/oauth/).",
+        "acquisition": "manual"
+      },
+      "user_basic": {
+        "type": "basic",
+        "label": "DNSimple user email and password",
+        "setup": "Use your DNSimple account email and password. The API overview documents HTTP Basic Authentication with `EMAIL:PASSWORD`; if your account has two-factor authentication enabled, also send an OTP in the `X-Dnsimple-OTP` header. This is an end-user account credential rather than a recommended integration token; DNSimple prefers OAuth or access tokens.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "dnsimple-cli",
+        "name": "DNSimple CLI",
+        "type": "cli",
+        "docs": "https://developer.dnsimple.com/cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.dnsimple.com/cli/",
+            "https://support.dnsimple.com/articles/api-access-token/",
+            "https://developer.dnsimple.com/v2/oauth/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "dnsimple auth login --with-token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.dnsimple.com/cli/",
+                  "https://support.dnsimple.com/articles/api-access-token/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "dnsimple auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.dnsimple.com/cli/",
+                  "https://developer.dnsimple.com/v2/oauth/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "dnsimple/tap/dnsimple"
+          },
+          {
+            "registryType": "go",
+            "identifier": "github.com/dnsimple/cli/cmd/dnsimple",
+            "runtimeHint": "go"
+          }
+        ],
+        "command": "dnsimple"
+      },
+      {
+        "slug": "dnsimple-api-v2",
+        "name": "DNSimple API v2",
+        "type": "http",
+        "docs": "https://developer.dnsimple.com/v2/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.dnsimple.com/v2/",
+            "https://developer.dnsimple.com/v2/openapi.json",
+            "https://support.dnsimple.com/articles/api-access-token/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.dnsimple.com/v2/",
+                  "https://support.dnsimple.com/articles/api-access-token/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "user_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.dnsimple.com/v2/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.dnsimple.com/v2",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/json"
+            },
+            "description": "API v2 requests must be JSON-encoded unless otherwise specified."
+          }
+        ],
+        "variables": [
+          {
+            "name": "account",
+            "resolveFrom": "The account identifier is part of many API paths, e.g. `/{account}/domains`; list accounts or use whoami to determine it."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:17:14.705Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 91375,
+    "completion_tokens": 1845,
+    "total_tokens": 93220
+  },
+  "visited": [
+    "https://developer.dnsimple.com/cli/",
+    "https://developer.dnsimple.com/getting-started/",
+    "https://developer.dnsimple.com/v2/",
+    "https://developer.dnsimple.com/v2/oauth/",
+    "https://developer.dnsimple.com/v2/openapi.json",
+    "https://support.dnsimple.com/articles/api-access-token/",
+    "https://support.dnsimple.com/articles/api-documentation/",
+    "https://support.dnsimple.com/articles/oauth-applications/"
+  ],
+  "grounding": [
+    "http://127.0.0.1/callback",
+    "http://127.0.0.1:53241/callback",
+    "http://[::1",
+    "http://cli-beta.dnsimple.com/install.sh",
+    "http://dnsimplestatus.com/",
+    "http://oauth.net/",
+    "http://tools.ietf.org/html/rfc6749#section-3.1.1",
+    "http://tools.ietf.org/html/rfc6749#section-4",
+    "http://tools.ietf.org/html/rfc6749#section-4.1",
+    "http://tools.ietf.org/html/rfc6749#section-4.1.2.1",
+    "https://api.dnsimple.com/v2",
+    "https://api.dnsimple.com/v2/",
+    "https://api.dnsimple.com/v2/oauth/access_token",
+    "https://api.dnsimple.com/v2/whoami",
+    "https://api.sandbox.dnsimple.com/v2",
+    "https://blog.dnsimple.com/",
+    "https://cli-beta.dnsimple.com/install.ps1",
+    "https://developer.dnsimple.com",
+    "https://developer.dnsimple.com/",
+    "https://developer.dnsimple.com/#",
+    "https://developer.dnsimple.com/#account-scope",
+    "https://developer.dnsimple.com/#accounts",
+    "https://developer.dnsimple.com/#ai-focused-design",
+    "https://developer.dnsimple.com/#authentication",
+    "https://developer.dnsimple.com/#authorization",
+    "https://developer.dnsimple.com/#contacts",
+    "https://developer.dnsimple.com/#content-types",
+    "https://developer.dnsimple.com/#contexts-and-overrides",
+    "https://developer.dnsimple.com/#current-version",
+    "https://developer.dnsimple.com/#domains-and-zones",
+    "https://developer.dnsimple.com/#errors",
+    "https://developer.dnsimple.com/#filtering",
+    "https://developer.dnsimple.com/#installation",
+    "https://developer.dnsimple.com/#key-commands",
+    "https://developer.dnsimple.com/#more-examples",
+    "https://developer.dnsimple.com/#native-and-cli-apps-loopback-redirect-uris",
+    "https://developer.dnsimple.com/#output-formats",
+    "https://developer.dnsimple.com/#pagination",
+    "https://developer.dnsimple.com/#quick-start",
+    "https://developer.dnsimple.com/#rate-limiting",
+    "https://developer.dnsimple.com/#response-codes",
+    "https://developer.dnsimple.com/#responses",
+    "https://developer.dnsimple.com/#sandbox",
+    "https://developer.dnsimple.com/#shell-completion",
+    "https://developer.dnsimple.com/#sorting",
+    "https://developer.dnsimple.com/#ssl-certificates",
+    "https://developer.dnsimple.com/#testing",
+    "https://developer.dnsimple.com/#timestamps",
+    "https://developer.dnsimple.com/#token-login",
+    "https://developer.dnsimple.com/#url",
+    "https://developer.dnsimple.com/#web-application-flow",
+    "https://developer.dnsimple.com/cli/",
+    "https://developer.dnsimple.com/getting-started",
+    "https://developer.dnsimple.com/getting-started/",
+    "https://developer.dnsimple.com/javascript",
+    "https://developer.dnsimple.com/libraries/",
+    "https://developer.dnsimple.com/sandbox/",
+    "https://developer.dnsimple.com/tools/",
+    "https://developer.dnsimple.com/use-cases/",
+    "https://developer.dnsimple.com/v2/",
+    "https://developer.dnsimple.com/v2/#authentication",
+    "https://developer.dnsimple.com/v2/accounts/",
+    "https://developer.dnsimple.com/v2/accounts/#list-accounts",
+    "https://developer.dnsimple.com/v2/billing-charges/",
+    "https://developer.dnsimple.com/v2/certificates/",
+    "https://developer.dnsimple.com/v2/contacts/",
+    "https://developer.dnsimple.com/v2/dns-analytics/",
+    "https://developer.dnsimple.com/v2/domains/",
+    "https://developer.dnsimple.com/v2/domains/dnssec/",
+    "https://developer.dnsimple.com/v2/domains/email-forwards/",
+    "https://developer.dnsimple.com/v2/domains/pushes/",
+    "https://developer.dnsimple.com/v2/domains/research/",
+    "https://developer.dnsimple.com/v2/identity/",
+    "https://developer.dnsimple.com/v2/identity/#whoami",
+    "https://developer.dnsimple.com/v2/oauth/",
+    "https://developer.dnsimple.com/v2/openapi.json",
+    "https://developer.dnsimple.com/v2/openapi.yml",
+    "https://developer.dnsimple.com/v2/registrar/",
+    "https://developer.dnsimple.com/v2/registrar/auto-renewal/",
+    "https://developer.dnsimple.com/v2/registrar/delegation/",
+    "https://developer.dnsimple.com/v2/registrar/registrant-changes/",
+    "https://developer.dnsimple.com/v2/registrar/transfer-lock/",
+    "https://developer.dnsimple.com/v2/registrar/whois-privacy/",
+    "https://developer.dnsimple.com/v2/secondary-dns/",
+    "https://developer.dnsimple.com/v2/services/",
+    "https://developer.dnsimple.com/v2/services/domains/",
+    "https://developer.dnsimple.com/v2/templates/",
+    "https://developer.dnsimple.com/v2/templates/domains/",
+    "https://developer.dnsimple.com/v2/templates/records/",
+    "https://developer.dnsimple.com/v2/tlds/",
+    "https://developer.dnsimple.com/v2/vanity/",
+    "https://developer.dnsimple.com/v2/webhooks/events",
+    "https://developer.dnsimple.com/v2/webhooks/webhooks",
+    "https://developer.dnsimple.com/v2/webhooks/webhooks/",
+    "https://developer.dnsimple.com/v2/zones/",
+    "https://developer.dnsimple.com/v2/zones/batch-change-zone-records/",
+    "https://developer.dnsimple.com/v2/zones/ns-records/",
+    "https://developer.dnsimple.com/v2/zones/records/",
+    "https://dnsimple.com",
+    "https://dnsimple.com/",
+    "https://dnsimple.com/a/1234/domains",
+    "https://dnsimple.com/about",
+    "https://dnsimple.com/agencies",
+    "https://dnsimple.com/assets/dnsimple-logo.png",
+    "https://dnsimple.com/bank-hosting",
+    "https://dnsimple.com/benefits/control",
+    "https://dnsimple.com/benefits/integrations",
+    "https://dnsimple.com/benefits/reliability",
+    "https://dnsimple.com/benefits/security",
+    "https://dnsimple.com/benefits/simplicity",
+    "https://dnsimple.com/business",
+    "https://dnsimple.com/campaign/support?utm_source=developer&utm_medium=web&utm_content=cta-footer",
+    "https://dnsimple.com/campaign/support?utm_source=developer&utm_medium=web&utm_content=link-footer",
+    "https://dnsimple.com/campaign/support?utm_source=support&utm_medium=web&utm_content=cta-footer",
+    "https://dnsimple.com/campaign/support?utm_source=support&utm_medium=web&utm_content=link-footer",
+    "https://dnsimple.com/cli",
+    "https://dnsimple.com/compare-dnsimple",
+    "https://dnsimple.com/contact",
+    "https://dnsimple.com/customers",
+    "https://dnsimple.com/developers",
+    "https://dnsimple.com/dnsimple-vs-amazon-route-53",
+    "https://dnsimple.com/dnsimple-vs-bunnydns",
+    "https://dnsimple.com/dnsimple-vs-cloudflare",
+    "https://dnsimple.com/dnsimple-vs-cloudns",
+    "https://dnsimple.com/dnsimple-vs-godaddy",
+    "https://dnsimple.com/dnsimple-vs-googledns",
+    "https://dnsimple.com/dnsimple-vs-namecheap",
+    "https://dnsimple.com/dnsimple-vs-network-solutions",
+    "https://dnsimple.com/dnsimple-vs-porkbun",
+    "https://dnsimple.com/dnsimple-vs-self-hosting",
+    "https://dnsimple.com/enterprises",
+    "https://dnsimple.com/enterprises?utm_source=developer&utm_medium=web&utm_content=cta-header#contact-sales",
+    "https://dnsimple.com/enterprises?utm_source=support&utm_medium=web&utm_content=cta-header#contact-sales",
+    "https://dnsimple.com/feedback",
+    "https://dnsimple.com/how-to-avoid-dns-downtime",
+    "https://dnsimple.com/how-to-transfer-a-domain-without-downtime",
+    "https://dnsimple.com/insurance-hosting",
+    "https://dnsimple.com/integrated-dns-providers",
+    "https://dnsimple.com/oauth/authorize",
+    "https://dnsimple.com/policies",
+    "https://dnsimple.com/pricing",
+    "https://dnsimple.com/privacy",
+    "https://dnsimple.com/products/dns-hosting",
+    "https://dnsimple.com/products/domain-control-plane",
+    "https://dnsimple.com/products/domain-registration",
+    "https://dnsimple.com/products/domains",
+    "https://dnsimple.com/products/email-forwarding",
+    "https://dnsimple.com/products/ssl-certificates",
+    "https://dnsimple.com/resellers",
+    "https://dnsimple.com/sales",
+    "https://dnsimple.com/secondary-dns",
+    "https://dnsimple.com/signup",
+    "https://dnsimple.com/signup?utm_source=developer&utm_medium=web&utm_content=cta-header",
+    "https://dnsimple.com/signup?utm_source=support&utm_medium=web&utm_content=cta-header",
+    "https://dnsimple.com/terms",
+    "https://dnsimple.com/url-forwarding-301-redirect",
+    "https://dnsimple.com/user",
+    "https://dnsimple.com/webhooks",
+    "https://dnsimplestatus.com/",
+    "https://en.wikipedia.org/wiki/ISO_8601",
+    "https://example.com/dnsimple/webhook",
+    "https://github.com/dnsimple",
+    "https://github.com/dnsimple/cli.git",
+    "https://github.com/dnsimple/dnsimple-developer",
+    "https://github.com/dnsimple/dnsimple-developer/issues",
+    "https://github.com/dnsimple/homebrew-tap/releases/latest",
+    "https://sandbox.dnsimple.com/user",
+    "https://support.dnsimple.com",
+    "https://support.dnsimple.com/",
+    "https://support.dnsimple.com/#",
+    "https://support.dnsimple.com/#account-tokens-vs-user-tokens",
+    "https://support.dnsimple.com/#api-usage",
+    "https://support.dnsimple.com/#generating-an-account-access-token",
+    "https://support.dnsimple.com/#getting-to-the-api--access-page",
+    "https://support.dnsimple.com/#have-more-questions",
+    "https://support.dnsimple.com/#obtaining-the-generated-access-token",
+    "https://support.dnsimple.com/#removing-an-account-access-token",
+    "https://support.dnsimple.com/#video-walk-through",
+    "https://support.dnsimple.com/#viewing-and-editing-the-permissions-of-a-scoped-access-token",
+    "https://support.dnsimple.com/articles/account-invoice-history/#retrying",
+    "https://support.dnsimple.com/articles/api-access-token/",
+    "https://support.dnsimple.com/articles/api-access-token/#scoped-access-tokens",
+    "https://support.dnsimple.com/articles/api-documentation/",
+    "https://support.dnsimple.com/articles/api-rate-limit/",
+    "https://support.dnsimple.com/articles/dnsimple-cli/",
+    "https://support.dnsimple.com/articles/dnsimple-plans/",
+    "https://support.dnsimple.com/articles/domain-access-control/",
+    "https://support.dnsimple.com/articles/domain-research-api/",
+    "https://support.dnsimple.com/articles/oauth-applications/",
+    "https://support.dnsimple.com/categories/account/",
+    "https://support.dnsimple.com/categories/api/",
+    "https://support.dnsimple.com/categories/cli/",
+    "https://support.dnsimple.com/categories/connectors/",
+    "https://support.dnsimple.com/categories/contacts/",
+    "https://support.dnsimple.com/categories/dns/",
+    "https://support.dnsimple.com/categories/dnsimple/",
+    "https://support.dnsimple.com/categories/dnssec/",
+    "https://support.dnsimple.com/categories/domains-and-transfers/",
+    "https://support.dnsimple.com/categories/emails/",
+    "https://support.dnsimple.com/categories/enterprise/",
+    "https://support.dnsimple.com/categories/guides/",
+    "https://support.dnsimple.com/categories/integrations/",
+    "https://support.dnsimple.com/categories/name-servers/",
+    "https://support.dnsimple.com/categories/secondary-dns/",
+    "https://support.dnsimple.com/categories/services/",
+    "https://support.dnsimple.com/categories/ssl-certificates/",
+    "https://support.dnsimple.com/categories/templates/",
+    "https://support.dnsimple.com/categories/tlds/",
+    "https://support.dnsimple.com/categories/whois-privacy/",
+    "https://support.dnsimple.com/javascript",
+    "https://www.linkedin.com/company/dnsimple",
+    "https://www.rfc-editor.org/rfc/rfc7636",
+    "https://www.rfc-editor.org/rfc/rfc8252#section-7.3",
+    "https://www.youtube.com/user/dnsimple",
+    "https://x.com/dnsimple"
+  ]
+}

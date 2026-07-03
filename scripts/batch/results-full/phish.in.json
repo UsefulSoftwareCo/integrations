@@ -1,0 +1,301 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "phish.in",
+    "detect": {
+      "domain": "phish.in",
+      "found": [
+        "api-catalog",
+        "mcp",
+        "agent-card",
+        "agent-skills",
+        "llms.txt",
+        "auth"
+      ],
+      "apiCatalog": {
+        "rest": [
+          "https://phish.in"
+        ],
+        "openapi": [
+          "https://phish.in/api/v2/swagger_doc"
+        ],
+        "docs": [
+          "https://phish.in/api-docs",
+          "https://phish.in/llms.txt"
+        ],
+        "status": [],
+        "mcp": []
+      },
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://phish.in"
+          ],
+          "authorizationEndpoint": "https://phish.in/authorize",
+          "tokenEndpoint": "https://phish.in/token",
+          "scopes": [],
+          "registrationEndpoint": "https://phish.in/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "client_credentials"
+          ]
+        }
+      },
+      "mcp": [
+        {
+          "url": "https://phish.in/mcp",
+          "source": "server-card",
+          "auth": "none"
+        }
+      ],
+      "agentCard": {
+        "name": "phishin",
+        "url": "https://phish.in/mcp"
+      },
+      "agentSkills": {
+        "count": 16,
+        "names": [
+          "get_audio_track",
+          "get_playlist",
+          "get_show",
+          "get_song",
+          "get_tag",
+          "get_tour",
+          "get_venue",
+          "list_playlists",
+          "list_shows",
+          "list_songs",
+          "list_tags",
+          "list_tours",
+          "list_venues",
+          "list_years",
+          "search",
+          "stats"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T15:08:16.770Z",
+    "summary": "Phish.in exposes a public REST API v2 and public MCP server, plus a legacy API v1 that uses a bearer API key and an OAuth authorization server for client registration/login flows.",
+    "credentials": {
+      "phishin_api_key": {
+        "type": "bearer",
+        "label": "Phish.in API key",
+        "generateUrl": "https://phish.in/api-docs",
+        "setup": "Request an API key by emailing [phish.in.music@gmail.com](mailto:phish.in.music@gmail.com). The legacy API docs say to send requests with `Authorization: Bearer <your_api_key>` and `Accept: application/json`.",
+        "acquisition": "manual"
+      },
+      "phishin_oauth_client": {
+        "type": "oauth2",
+        "label": "Phish.in OAuth client",
+        "generateUrl": "https://phish.in/register",
+        "setup": "Register an OAuth client at [https://phish.in/register](https://phish.in/register). The service exposes an authorization server with `authorization_endpoint` at [https://phish.in/authorize](https://phish.in/authorize), `token_endpoint` at [https://phish.in/token](https://phish.in/token), and dynamic client registration at [https://phish.in/register](https://phish.in/register). The discovered metadata indicates `authorization_code` and `client_credentials` grants are supported, with PKCE `S256`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "phish-in-legacy-api-v1",
+        "name": "Phish.in legacy API v1",
+        "type": "http",
+        "docs": "https://phish.in/api-docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://phish.in/api-docs"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "phishin_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://phish.in/api-docs"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://phish.in/api/v1"
+      },
+      {
+        "slug": "phish-in-mcp-server",
+        "name": "Phish.in MCP server",
+        "type": "mcp",
+        "docs": "https://phish.in/api-docs",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T15:08:16.770Z"
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://phish.in/api-docs",
+              "https://phish.in/llms.txt"
+            ]
+          }
+        },
+        "url": "https://phish.in/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "phish-in-oauth-authorization-server",
+        "name": "Phish.in OAuth authorization server",
+        "type": "http",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://phish.in/.well-known/oauth-authorization-server",
+            "https://phish.in/login"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "phishin_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://phish.in/.well-known/oauth-authorization-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://phish.in"
+      },
+      {
+        "slug": "phish-in-api-v2",
+        "name": "Phish.in API v2",
+        "type": "http",
+        "docs": "https://phish.in/api-docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://phish.in/api-docs",
+            "https://phish.in/api/v2/swagger_doc"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://phish.in/api-docs",
+              "https://phish.in/api/v2/swagger_doc"
+            ]
+          }
+        },
+        "spec": "https://phish.in/api/v2/swagger_doc",
+        "url": "https://phish.in/api/v2"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T15:08:16.771Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 49459,
+    "completion_tokens": 1010,
+    "total_tokens": 50469
+  },
+  "visited": [
+    "https://dev.to/everyday_dev/integrate-any-llmstxt-into-your-mcp-with-stripe-as-the-example-j33",
+    "https://developer.webull.com/apis/docs/AI-friendly-Resources/llm/",
+    "https://docs.bump.sh/product-updates/",
+    "https://phish.in/.well-known/oauth-authorization-server",
+    "https://phish.in/api-docs",
+    "https://phish.in/api/v2/swagger_doc",
+    "https://phish.in/faq",
+    "https://phish.in/llms.txt",
+    "https://phish.in/login",
+    "https://phish.in/mcp",
+    "https://www.theneo.io/blog/llms-txt-mcp-api-discovery",
+    "https://www.youtube.com/watch?v=RaNDHWixeJI"
+  ],
+  "grounding": [
+    "https://bt.etree.org",
+    "https://chatgpt.com/apps/phish-in/asdk_app_6951d356aaec819184a53d81982be134",
+    "https://dev.to/everyday_dev/integrate-any-llmstxt-into-your-mcp-with-stripe-as-the-example-j33",
+    "https://developer.webull.com/apis/docs/AI-friendly-Resources/llm/",
+    "https://discord.gg/KZWFsNN",
+    "https://docs.bump.sh/product-updates/",
+    "https://docs.google.com/spreadsheets/d/1yAXu83gJBz08cW5OXoqNuN1IbvDXD2vCrDKj4zn1qmU",
+    "https://github.com/jcraigk/phishin",
+    "https://github.com/jcraigk/phishin/tree/main/app/api/api_v2",
+    "https://github.com/jcraigk/phishin/tree/main/app/controllers/api/v1",
+    "https://github.com/jcraigk/phishin/tree/main/app/javascript/components/",
+    "https://modelcontextprotocol.io/",
+    "https://petstore.swagger.io/?url=https%3A%2F%2Fphish.in/api/v2/swagger_doc",
+    "https://phish.com/#/faq/taping-guidelines",
+    "https://phish.in",
+    "https://phish.in/",
+    "https://phish.in/.well-known/oauth-authorization-server",
+    "https://phish.in/1993-04-01/llama?t=1:00",
+    "https://phish.in/api-docs",
+    "https://phish.in/api/v1/shows.json?per",
+    "https://phish.in/api/v1/songs/40.json",
+    "https://phish.in/api/v2/swagger_doc",
+    "https://phish.in/audio/000/017/963/17963.mp3",
+    "https://phish.in/authorize",
+    "https://phish.in/contact-info",
+    "https://phish.in/cover-art",
+    "https://phish.in/faq",
+    "https://phish.in/feeds/rss",
+    "https://phish.in/llms.txt",
+    "https://phish.in/login",
+    "https://phish.in/map",
+    "https://phish.in/mcp",
+    "https://phish.in/mcp/anthropic",
+    "https://phish.in/mcp/openai",
+    "https://phish.in/missing-content",
+    "https://phish.in/oauth/google",
+    "https://phish.in/playlists",
+    "https://phish.in/privacy",
+    "https://phish.in/register",
+    "https://phish.in/request-password-reset",
+    "https://phish.in/signup",
+    "https://phish.in/sitemap/sitemap.xml.gz",
+    "https://phish.in/songs",
+    "https://phish.in/tagin-project",
+    "https://phish.in/tags",
+    "https://phish.in/terms",
+    "https://phish.in/today",
+    "https://phish.in/token",
+    "https://phish.in/top-shows",
+    "https://phish.in/top-tracks",
+    "https://phish.in/venues",
+    "https://relisten.net/trey",
+    "https://www.theneo.io/blog/llms-txt-mcp-api-discovery",
+    "https://www.youtube.com/watch?v=RaNDHWixeJI"
+  ]
+}

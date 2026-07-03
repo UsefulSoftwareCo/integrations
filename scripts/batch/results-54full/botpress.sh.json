@@ -1,0 +1,432 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "botpress.sh",
+    "detect": {
+      "domain": "botpress.sh",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:21:12.752Z",
+    "summary": "Botpress exposes a bearer-authenticated Botpress Cloud HTTP API, an OAuth-protected MCP server at `https://botgpt.botpress.sh/mcp`, and the `adk` CLI authenticated with a Botpress account token.",
+    "description": "Botpress is a platform for building and operating AI agents and chatbots. It provides cloud-hosted tooling for agent development, deployment, conversations, integrations, and related runtime/admin capabilities.",
+    "credentials": {
+      "botpress_token": {
+        "type": "bearer",
+        "label": "Botpress access token",
+        "generateUrl": "https://botpress.com/docs/adk-v2/setup/profiles/",
+        "setup": "For CLI use, run [`adk login`](https://botpress.com/docs/adk-v2/setup/profiles/) to open a browser and authenticate, or supply an existing token with `adk login --token <token>` / the `BOTPRESS_TOKEN` environment variable. The Botpress docs describe ADK profiles as an access token tied to the authenticated Botpress account.",
+        "acquisition": "manual"
+      },
+      "botpress_bak": {
+        "type": "bearer",
+        "label": "Bot Access Key (BAK)",
+        "generateUrl": "https://botpress.com/docs/api-reference/authentication/",
+        "setup": "Deploy a bot in Botpress Cloud; the [authentication docs](https://botpress.com/docs/api-reference/authentication/) state that a Bot Access Key (BAK) is provided to the bot once it's deployed. Use that token for runtime-scoped API access.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "botpress-mcp-server",
+        "name": "Botpress MCP server",
+        "type": "mcp",
+        "docs": "https://botgpt.botpress.sh/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://botgpt.botpress.sh/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "botpress_token",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://botgpt.botpress.sh/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://botgpt.botpress.sh/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "botpress-cloud-api",
+        "name": "Botpress Cloud API",
+        "type": "http",
+        "docs": "https://botpress.com/docs/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://botpress.com/docs/api-reference",
+            "https://botpress.com/docs/api-reference/authentication",
+            "https://botpress.com/docs/api-reference/runtime-api/openapi/getMessage",
+            "https://botpress.com/docs/api-reference/admin-api/openapi/updateBot"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "botpress_bak",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://botpress.com/docs/api-reference/authentication",
+                  "https://botpress.com/docs/api-reference/runtime-api/openapi/getMessage"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "botpress_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://botpress.com/docs/api-reference/authentication",
+                  "https://botpress.com/docs/api-reference/admin-api/openapi/updateBot"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "Botpress documents multiple product APIs under the Cloud API docs, including Chat API, Admin API, Files API, and others. The scraped docs confirm bearer auth, but no machine-readable OpenAPI document URL or single concrete API base URL was exposed in the pages read."
+      },
+      {
+        "slug": "botpress-adk-cli",
+        "name": "Botpress ADK CLI",
+        "type": "cli",
+        "docs": "https://botpress.com/docs/adk-v2/cli/cli-reference/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://botpress.com/docs/adk-v2/cli/cli-reference/",
+            "https://botpress.com/docs/adk-v2/setup/profiles/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "botpress_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "adk login",
+                    "env": [
+                      "BOTPRESS_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://botpress.com/docs/adk-v2/setup/profiles/",
+                  "https://botpress.com/docs/adk-v2/cli/cli-reference/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@botpress/adk"
+          }
+        ],
+        "command": "adk"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:21:12.753Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 154125,
+    "completion_tokens": 1451,
+    "total_tokens": 155576
+  },
+  "visited": [
+    "https://botgpt.botpress.sh/mcp",
+    "https://botpress.com/docs/adk-v2/cli/cli-reference/",
+    "https://botpress.com/docs/adk-v2/get-started/quickstart/",
+    "https://botpress.com/docs/adk-v2/setup/profiles/",
+    "https://botpress.com/docs/adk-v2/setup/team-development/",
+    "https://botpress.com/docs/adk/cli-reference",
+    "https://botpress.com/docs/adk/quickstart",
+    "https://botpress.com/docs/api-reference",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getBotAnalytics",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/updateBot",
+    "https://botpress.com/docs/api-reference/authentication/",
+    "https://botpress.com/docs/api-reference/files-api/openapi/getFile",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/configureIntegration",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/endpoints/get-v1chatusers",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getMessage",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getParticipant",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listMessages/",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listTagValues",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listUsers/",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/createTable",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/getOrCreateTable",
+    "https://composio.dev/toolkits/botpress/framework/claude-code",
+    "https://developers.google.com/knowledge/mcp",
+    "https://docs.scalekit.com/authenticate/mcp/quickstart/",
+    "https://www.npmjs.com/package/%40bpinternal/yargs-extra?activeTab=dependents",
+    "https://www.npmjs.com/package/@botpress/runtime?activeTab=versions",
+    "https://www.npmjs.com/~david-ferland?page=1",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ],
+  "grounding": [
+    "https://api.botpress.cloud",
+    "https://api.botpress.cloud/v1/admin/bots/{id}",
+    "https://api.botpress.cloud/v1/chat/messages/{id}",
+    "https://botgpt.botpress.sh/mcp",
+    "https://botpress.com/#signing-in",
+    "https://botpress.com/#switching-and-removing-profiles",
+    "https://botpress.com/docs/",
+    "https://botpress.com/docs/adk-v2/advanced/desk-hitl",
+    "https://botpress.com/docs/adk-v2/advanced/hitl",
+    "https://botpress.com/docs/adk-v2/ai-native/agent0",
+    "https://botpress.com/docs/adk-v2/ai-native/skills",
+    "https://botpress.com/docs/adk-v2/cli/cli-reference",
+    "https://botpress.com/docs/adk-v2/cli/cli-reference/",
+    "https://botpress.com/docs/adk-v2/conversations/ai-execution",
+    "https://botpress.com/docs/adk-v2/conversations/custom-components",
+    "https://botpress.com/docs/adk-v2/conversations/lifecycle",
+    "https://botpress.com/docs/adk-v2/conversations/messages",
+    "https://botpress.com/docs/adk-v2/conversations/setup",
+    "https://botpress.com/docs/adk-v2/conversations/state",
+    "https://botpress.com/docs/adk-v2/conversations/tools",
+    "https://botpress.com/docs/adk-v2/data/knowledge",
+    "https://botpress.com/docs/adk-v2/data/tables",
+    "https://botpress.com/docs/adk-v2/external/actions",
+    "https://botpress.com/docs/adk-v2/external/triggers",
+    "https://botpress.com/docs/adk-v2/get-started/introduction",
+    "https://botpress.com/docs/adk-v2/get-started/quickstart",
+    "https://botpress.com/docs/adk-v2/get-started/quickstart/",
+    "https://botpress.com/docs/adk-v2/get-started/upgrade-from-1x",
+    "https://botpress.com/docs/adk-v2/setup/concepts",
+    "https://botpress.com/docs/adk-v2/setup/configuration",
+    "https://botpress.com/docs/adk-v2/setup/dev-console",
+    "https://botpress.com/docs/adk-v2/setup/managing-dependencies",
+    "https://botpress.com/docs/adk-v2/setup/profiles",
+    "https://botpress.com/docs/adk-v2/setup/profiles/",
+    "https://botpress.com/docs/adk-v2/setup/project-setup",
+    "https://botpress.com/docs/adk-v2/setup/team-development",
+    "https://botpress.com/docs/adk-v2/setup/team-development/",
+    "https://botpress.com/docs/adk-v2/testing/agent-map",
+    "https://botpress.com/docs/adk-v2/testing/agent-steps",
+    "https://botpress.com/docs/adk-v2/testing/analytics",
+    "https://botpress.com/docs/adk-v2/testing/debugging",
+    "https://botpress.com/docs/adk-v2/testing/evals",
+    "https://botpress.com/docs/adk-v2/testing/scripts",
+    "https://botpress.com/docs/adk-v2/workflows/create",
+    "https://botpress.com/docs/adk-v2/workflows/request-notify",
+    "https://botpress.com/docs/adk-v2/workflows/steps",
+    "https://botpress.com/docs/adk-v2/zai/classify",
+    "https://botpress.com/docs/adk-v2/zai/extract",
+    "https://botpress.com/docs/adk-v2/zai/generate",
+    "https://botpress.com/docs/adk-v2/zai/overview",
+    "https://botpress.com/docs/adk/cli-reference",
+    "https://botpress.com/docs/adk/quickstart",
+    "https://botpress.com/docs/api-reference",
+    "https://botpress.com/docs/api-reference/admin-api/concepts",
+    "https://botpress.com/docs/api-reference/admin-api/getting-started",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/createBot",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/createIntegration",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/createWorkspace",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/createWorkspaceMember",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/deleteBot",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/deleteBotIssue",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/deleteIntegration",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/deleteWorkspace",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/deleteWorkspaceMember",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getAccount",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getAuditRecords",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getBot",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getBotAnalytics",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getBotIssue",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getBotLogs",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getIntegration",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getIntegrationByName",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getIntegrationLogs",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getPublicIntegration",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getPublicIntegrationById",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getPublicWorkspace",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getWorkspace",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/getWorkspaceMember",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/listBotIssueEvents",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/listBotIssues",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/listBots",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/listIntegrations",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/listPublicIntegrations",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/listPublicWorkspaces",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/listWorkspaceMembers",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/listWorkspaces",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/updateAccount",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/updateBot",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/updateIntegration",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/updateWorkspace",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/updateWorkspaceMember",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/validateIntegrationCreation",
+    "https://botpress.com/docs/api-reference/admin-api/openapi/validateIntegrationUpdate",
+    "https://botpress.com/docs/api-reference/authentication",
+    "https://botpress.com/docs/api-reference/authentication/",
+    "https://botpress.com/docs/api-reference/chat-api/introduction",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/addParticipant",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/createConversation",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/createEvent",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/createMessage",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/createUser",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/deleteConversation",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/deleteMessage",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/deleteUser",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/getConversation",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/getEvent",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/getMessage",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/getOrCreateConversation",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/getOrCreateUser",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/getParticipant",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/getUser",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/listConversations",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/listMessages",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/listParticipants",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/listenConversation",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/removeParticipant",
+    "https://botpress.com/docs/api-reference/chat-api/openapi/updateUser",
+    "https://botpress.com/docs/api-reference/errors",
+    "https://botpress.com/docs/api-reference/files-api/getting-started",
+    "https://botpress.com/docs/api-reference/files-api/how-tos/creating-files",
+    "https://botpress.com/docs/api-reference/files-api/how-tos/index-and-search-files",
+    "https://botpress.com/docs/api-reference/files-api/how-tos/manage-files",
+    "https://botpress.com/docs/api-reference/files-api/openapi/copyFile",
+    "https://botpress.com/docs/api-reference/files-api/openapi/deleteFile",
+    "https://botpress.com/docs/api-reference/files-api/openapi/getFile",
+    "https://botpress.com/docs/api-reference/files-api/openapi/listFilePassages",
+    "https://botpress.com/docs/api-reference/files-api/openapi/listFileTagValues",
+    "https://botpress.com/docs/api-reference/files-api/openapi/listFileTags",
+    "https://botpress.com/docs/api-reference/files-api/openapi/listFiles",
+    "https://botpress.com/docs/api-reference/files-api/openapi/searchFiles",
+    "https://botpress.com/docs/api-reference/files-api/openapi/updateFileMetadata",
+    "https://botpress.com/docs/api-reference/files-api/openapi/upsertFile",
+    "https://botpress.com/docs/api-reference/pagination",
+    "https://botpress.com/docs/api-reference/ratelimiting",
+    "https://botpress.com/docs/api-reference/runtime-api/concepts",
+    "https://botpress.com/docs/api-reference/runtime-api/getting-started",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/addParticipant",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/callAction",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/cancelScheduledEvent",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/configureIntegration",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/createConversation",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/createEvent",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/createMessage",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/createUser",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/deleteConversation",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/deleteMessage",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/deleteUser",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/endpoints/get-v1chatusers",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getConversation",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getEvent",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getMessage",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getOrCreateConversation",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getOrCreateMessage",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getOrCreateUser",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getOrSetState",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getParticipant",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getState",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/getUser",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listConversations",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listEvents",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listMessages",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listMessages/",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listParticipants",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listTagValues",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listUsers",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/listUsers/",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/patchState",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/removeParticipant",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/setState",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/setStateExpiry",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/updateConversation",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/updateMessage",
+    "https://botpress.com/docs/api-reference/runtime-api/openapi/updateUser",
+    "https://botpress.com/docs/api-reference/tables-api/getting-started",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/createTable",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/createTableRows",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/deleteTable",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/deleteTableRows",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/duplicateTable",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/findTableRows",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/getOrCreateTable",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/getTable",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/getTableRow",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/listTables",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/renameTableColumn",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/updateTable",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/updateTableRows",
+    "https://botpress.com/docs/api-reference/tables-api/openapi/upsertTableRows",
+    "https://botpress.com/docs/integrations/get-started/introduction",
+    "https://botpress.com/docs/studio/introduction",
+    "https://botpress.com/docs/webchat/get-started/introduction",
+    "https://chat.botpress.cloud",
+    "https://composio.dev/toolkits/botpress/framework/claude-code",
+    "https://desk.support.channel",
+    "https://developers.google.com/knowledge/mcp",
+    "https://docs.scalekit.com/authenticate/mcp/quickstart/",
+    "https://studio.botpress.cloud/home?exploreHub=1&hubItemId=intver_01JVYWESY3BVAM5FR3XT9X813H&search=Chat+integration",
+    "https://www.npmjs.com/package/%40bpinternal/yargs-extra?activeTab=dependents",
+    "https://www.npmjs.com/package/@botpress/runtime?activeTab=versions",
+    "https://www.npmjs.com/~david-ferland?page=1",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ]
+}

@@ -1,0 +1,390 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "fellow.app",
+    "detect": {
+      "domain": "fellow.app",
+      "found": [
+        "llms.txt",
+        "oauth-protected-resource",
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://fellow.app"
+          ],
+          "authorizationEndpoint": "https://fellow.app/mcp/authorize",
+          "tokenEndpoint": "https://fellow.app/mcp/token",
+          "protectedResourceUrl": "https://fellow.app/.well-known/oauth-protected-resource",
+          "scopes": [
+            "read_calendar",
+            "read_meeting_content",
+            "read_action_items",
+            "read_channels",
+            "write_meeting_agenda"
+          ],
+          "registrationEndpoint": "https://fellow.app/mcp/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:40:20.550Z",
+    "summary": "Fellow exposes two developer integration surfaces on this domain: a tenant-scoped REST Developer API authenticated by Fellow API keys, and an OAuth-protected remote MCP server at `https://fellow.app/mcp` using dynamic OAuth discovery/registration.",
+    "description": "Fellow is an AI meeting assistant and note-taking platform for recording, transcribing, summarizing, and organizing meeting content such as notes, action items, recordings, and calendar context. It also provides enterprise governance controls and integrations for meeting data access and automation.",
+    "credentials": {
+      "fellow_oauth": {
+        "type": "oauth2",
+        "label": "Fellow OAuth client / user authorization",
+        "generateUrl": "https://fellow.app/mcp/register",
+        "setup": "For an MCP client that supports dynamic client registration, register a client at [Fellow OAuth registration](https://fellow.app/mcp/register) or let the MCP client do discovery/registration automatically from the server metadata. Then send the user through [Authorize](https://fellow.app/mcp/authorize) to grant access, and exchange the code at [Token](https://fellow.app/mcp/token). Available scopes published by Fellow are `read_calendar`, `read_meeting_content`, `read_action_items`, `read_channels`, and `write_meeting_agenda`. The authorization server metadata says token endpoint auth supports `none`, `client_secret_post`, and `client_secret_basic`, with PKCE `S256`.",
+        "acquisition": "manual"
+      },
+      "fellow_api_key": {
+        "type": "api_key",
+        "label": "Fellow Developer API key",
+        "setup": "Have a workspace admin enable the Developer API in Fellow workspace security settings, then in Fellow go to **User Settings → API, MCP & Webhooks** (or **Developer tools**) and click **+ New API Key**. Name the key, copy it when shown, and store it securely; Fellow says it is only shown once. See [Developer API help](https://help.fellow.ai/en/articles/11817206-developer-api) and [API Authentication](https://developers.fellow.ai/reference/authentication-1).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "fellow-mcp-server",
+        "name": "Fellow MCP Server",
+        "type": "mcp",
+        "docs": "https://help.fellow.ai/en/articles/12622641-fellow-s-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.fellow.ai/en/articles/12622641-fellow-s-mcp-server",
+            "https://fellow.app/.well-known/oauth-protected-resource",
+            "https://fellow.app/.well-known/oauth-authorization-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fellow_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fellow.app/.well-known/oauth-protected-resource",
+                  "https://fellow.app/.well-known/oauth-authorization-server",
+                  "https://help.fellow.ai/en/articles/12622641-fellow-s-mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://fellow.app/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "fellow-developer-api",
+        "name": "Fellow Developer API",
+        "type": "http",
+        "docs": "https://developers.fellow.ai/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.fellow.ai/en/articles/11817206-developer-api",
+            "https://developers.fellow.ai/reference/introduction",
+            "https://developers.fellow.ai/reference/authentication-1",
+            "https://developers.fellow.ai/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fellow_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-API-KEY"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.fellow.ai/reference/authentication-1",
+                  "https://help.fellow.ai/en/articles/11817206-developer-api",
+                  "https://help.fellow.ai/en/articles/13950643-n8n-integration-basics",
+                  "https://help.fellow.ai/en/articles/13639707-make-integration-basics"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{subdomain}.fellow.app/api/v1",
+        "variables": [
+          {
+            "name": "subdomain",
+            "in": "url",
+            "resolveFrom": "your Fellow workspace URL",
+            "description": "Workspace subdomain, e.g. `mycompany` from `https://mycompany.fellow.app`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:40:20.551Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 121664,
+    "completion_tokens": 1427,
+    "total_tokens": 123091
+  },
+  "visited": [
+    "https://developers.fellow.ai/llms.txt",
+    "https://developers.fellow.ai/openapi.json",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_delete_note",
+    "https://developers.fellow.ai/reference/authentication-1",
+    "https://developers.fellow.ai/reference/introduction",
+    "https://developers.fellow.ai/reference/mcp-server",
+    "https://developers.google.com/knowledge/mcp",
+    "https://docs.domaintools.com/mcp/oauth/",
+    "https://fellow.ai/blog/connect-claude-to-meeting-notes/",
+    "https://fellow.ai/blog/fellow-api/",
+    "https://fellow.ai/compare/fellow-vs-zocks",
+    "https://fellow.ai/integrations/claude",
+    "https://fellow.app/.well-known/oauth-authorization-server",
+    "https://fellow.app/.well-known/oauth-protected-resource",
+    "https://fellow.app/llms.txt",
+    "https://help.fellow.ai/en/articles/11817206-developer-api",
+    "https://help.fellow.ai/en/articles/12622641-fellow-s-mcp-server",
+    "https://help.fellow.ai/en/articles/13639707-make-integration-basics",
+    "https://help.fellow.ai/en/articles/13950643-n8n-integration-basics",
+    "https://help.fellow.ai/en/articles/4000361-workspace-settings",
+    "https://help.fellow.ai/en/collections/19166095-integration-api-permissions",
+    "https://help.fellow.ai/en/collections/2485468-integrations",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/",
+    "https://www.scalekit.com/connectors/fellowaimcp",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ],
+  "grounding": [
+    "https://copilotstudio.microsoft.com/",
+    "https://cursor.com/docs/context/mcp",
+    "https://developers.fellow.ai",
+    "https://developers.fellow.ai/",
+    "https://developers.fellow.ai/#access-rules",
+    "https://developers.fellow.ai/#benefits-of-the-mcp-server",
+    "https://developers.fellow.ai/#content",
+    "https://developers.fellow.ai/#enabling-the-mcp-server-for-your-account",
+    "https://developers.fellow.ai/#frequently-asked-questions",
+    "https://developers.fellow.ai/#getting-an-api-key",
+    "https://developers.fellow.ai/#making-authenticated-requests",
+    "https://developers.fellow.ai/#use-cases-and-examples",
+    "https://developers.fellow.ai/llms.txt",
+    "https://developers.fellow.ai/login?redirect_uri=/reference/authentication-1",
+    "https://developers.fellow.ai/login?redirect_uri=/reference/introduction",
+    "https://developers.fellow.ai/login?redirect_uri=/reference/mcp-server",
+    "https://developers.fellow.ai/openapi.json",
+    "https://developers.fellow.ai/reference",
+    "https://developers.fellow.ai/reference/action-items",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_archive_action_item",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_archive_action_item.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_create_webhook",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_create_webhook.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_delete_note",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_delete_note.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_delete_recording",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_delete_recording.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_delete_webhook",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_delete_webhook.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_action_item_by_id",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_action_item_by_id.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_action_items",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_action_items.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_authenticated_user",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_authenticated_user.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_note_by_id",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_note_by_id.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_notes",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_notes.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_recording_by_id",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_recording_by_id.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_recordings",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_recordings.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_upload_by_id",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_upload_by_id.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_webhook_by_id",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_get_webhook_by_id.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_list_uploads",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_list_uploads.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_list_webhooks",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_list_webhooks.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_mark_action_item_complete",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_mark_action_item_complete.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_update_webhook",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_update_webhook.md",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_upload_recording",
+    "https://developers.fellow.ai/reference/apps_developer_api_api_upload_recording.md",
+    "https://developers.fellow.ai/reference/authentication-1",
+    "https://developers.fellow.ai/reference/authentication-1.md",
+    "https://developers.fellow.ai/reference/introduction",
+    "https://developers.fellow.ai/reference/introduction.md",
+    "https://developers.fellow.ai/reference/mcp-server",
+    "https://developers.fellow.ai/reference/mcp-server.md",
+    "https://developers.fellow.ai/reference/notes",
+    "https://developers.fellow.ai/reference/notes.md",
+    "https://developers.fellow.ai/reference/pagination",
+    "https://developers.fellow.ai/reference/pagination.md",
+    "https://developers.fellow.ai/reference/recordings",
+    "https://developers.fellow.ai/reference/recordings.md",
+    "https://developers.fellow.ai/reference/request-limits",
+    "https://developers.fellow.ai/reference/request-limits.md",
+    "https://developers.fellow.ai/reference/status-codes",
+    "https://developers.fellow.ai/reference/status-codes.md",
+    "https://developers.fellow.ai/reference/super-admin",
+    "https://developers.fellow.ai/reference/super-admin.md",
+    "https://developers.fellow.ai/reference/users",
+    "https://developers.fellow.ai/reference/webhooks",
+    "https://developers.fellow.ai/reference/webhooks-2",
+    "https://developers.fellow.ai/reference/webhooks.md",
+    "https://developers.google.com/knowledge/mcp",
+    "https://docs.domaintools.com/mcp/oauth/",
+    "https://feedback.fellow.app/",
+    "https://fellow.ai",
+    "https://fellow.ai/blog",
+    "https://fellow.ai/blog/connect-claude-to-meeting-notes/",
+    "https://fellow.ai/blog/fellow-api/",
+    "https://fellow.ai/compare/fellow-vs-fathom",
+    "https://fellow.ai/compare/fellow-vs-fireflies",
+    "https://fellow.ai/compare/fellow-vs-granola",
+    "https://fellow.ai/compare/fellow-vs-otter",
+    "https://fellow.ai/compare/fellow-vs-zocks",
+    "https://fellow.ai/customers",
+    "https://fellow.ai/enterprise",
+    "https://fellow.ai/features/action-items",
+    "https://fellow.ai/features/ai-meeting-notes",
+    "https://fellow.ai/features/botless-recording",
+    "https://fellow.ai/features/mcp-server",
+    "https://fellow.ai/features/privacy-controls",
+    "https://fellow.ai/integrations",
+    "https://fellow.ai/integrations/claude",
+    "https://fellow.ai/pricing",
+    "https://fellow.ai/use-cases/legal",
+    "https://fellow.ai/use-cases/private-equity",
+    "https://fellow.app",
+    "https://fellow.app/",
+    "https://fellow.app/.well-known/oauth-authorization-server",
+    "https://fellow.app/.well-known/oauth-protected-resource",
+    "https://fellow.app/auth/login/",
+    "https://fellow.app/auth/signup/?utm_source=help-center&utm_medium=footer",
+    "https://fellow.app/blog/",
+    "https://fellow.app/desktop/download/?utm_source=intercom&utm_campaign=help_center&utm_content=header",
+    "https://fellow.app/llms.txt",
+    "https://fellow.app/mcp",
+    "https://fellow.app/mcp/authorize",
+    "https://fellow.app/mcp/register",
+    "https://fellow.app/mcp/revoke",
+    "https://fellow.app/mcp/token",
+    "https://fellow.app/privacy-policy/",
+    "https://fellow.app/terms-of-use/",
+    "https://help.fellow.ai/#h_03d5918d05",
+    "https://help.fellow.ai/#h_053432aad9",
+    "https://help.fellow.ai/#h_1cdb1b79a5",
+    "https://help.fellow.ai/#h_235e8fcbd7",
+    "https://help.fellow.ai/#h_3074604ce0",
+    "https://help.fellow.ai/#h_38a0c9c71d",
+    "https://help.fellow.ai/#h_394b188878",
+    "https://help.fellow.ai/#h_4032451123",
+    "https://help.fellow.ai/#h_45c7ca622c",
+    "https://help.fellow.ai/#h_4e6b872cbf",
+    "https://help.fellow.ai/#h_513874af8e",
+    "https://help.fellow.ai/#h_53ad2b5bbe",
+    "https://help.fellow.ai/#h_5484b0ef78",
+    "https://help.fellow.ai/#h_569c3cc1b3",
+    "https://help.fellow.ai/#h_5ce37b688d",
+    "https://help.fellow.ai/#h_68272bce26",
+    "https://help.fellow.ai/#h_6bfd6b73a7",
+    "https://help.fellow.ai/#h_6f971d1617",
+    "https://help.fellow.ai/#h_745d24f11f",
+    "https://help.fellow.ai/#h_79060dde4c",
+    "https://help.fellow.ai/#h_849029f3db",
+    "https://help.fellow.ai/#h_932a3d9dac",
+    "https://help.fellow.ai/#h_a669add9ad",
+    "https://help.fellow.ai/#h_a7f3d29c95",
+    "https://help.fellow.ai/#h_aca2ccfcfe",
+    "https://help.fellow.ai/#h_b07342342f",
+    "https://help.fellow.ai/#h_c4a6a21940",
+    "https://help.fellow.ai/#h_c61af0d93d",
+    "https://help.fellow.ai/#h_c8fb33785c",
+    "https://help.fellow.ai/#h_cadfed699a",
+    "https://help.fellow.ai/#h_d8fda880b0",
+    "https://help.fellow.ai/#h_d9318662bc",
+    "https://help.fellow.ai/#h_dd12dc38e2",
+    "https://help.fellow.ai/#h_e552524855",
+    "https://help.fellow.ai/#h_f09022ecfb",
+    "https://help.fellow.ai/#h_f4a09caf68",
+    "https://help.fellow.ai/#h_f5e9e01b62",
+    "https://help.fellow.ai/#h_fdf2870135",
+    "https://help.fellow.ai/#main-content",
+    "https://help.fellow.ai/en/",
+    "https://help.fellow.ai/en/articles/11003216-glean-fellow",
+    "https://help.fellow.ai/en/articles/11817206-developer-api",
+    "https://help.fellow.ai/en/articles/12622641-fellow-s-mcp-server",
+    "https://help.fellow.ai/en/articles/13370149-n8n-integration-basics",
+    "https://help.fellow.ai/en/articles/13639707-make-integration-basics",
+    "https://help.fellow.ai/en/articles/13950643-n8n-integration-basics",
+    "https://help.fellow.ai/en/articles/2477293-fellow-glossary",
+    "https://help.fellow.ai/en/articles/3706094-what-is-fellow",
+    "https://help.fellow.ai/en/articles/4000361-workspace-settings",
+    "https://help.fellow.ai/en/articles/4232023-zapier-integration",
+    "https://help.fellow.ai/en/articles/4645978-welcome-to-fellow",
+    "https://help.fellow.ai/en/articles/5659554-salesforce-integration",
+    "https://help.fellow.ai/en/articles/5760933-okta-integration-guide-scim",
+    "https://help.fellow.ai/en/articles/5918721-workspace-audit-log",
+    "https://help.fellow.ai/en/articles/8461666-fellow-ai-features",
+    "https://help.fellow.ai/en/collections/19164725-file-sharing-knowledge",
+    "https://help.fellow.ai/en/collections/19164730-fellow-mcp-server-webhooks",
+    "https://help.fellow.ai/en/collections/19166095-integration-api-permissions",
+    "https://help.fellow.ai/en/collections/2485468-integrations",
+    "https://help.fellow.app/en/articles/11817206-api",
+    "https://help.openai.com/en/articles/11487775-connectors-in-chatgpt",
+    "https://news.fellow.app/",
+    "https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp",
+    "https://trust.fellow.ai",
+    "https://www.make.com",
+    "https://www.make.com/en/register",
+    "https://www.npmjs.com/package/@fellow/n8n-nodes-fellow",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/",
+    "https://www.scalekit.com/connectors/fellowaimcp",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en",
+    "https://{subdomain}.fellow.app/api/v1/me"
+  ]
+}

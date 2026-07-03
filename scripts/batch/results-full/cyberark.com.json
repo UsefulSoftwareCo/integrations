@@ -1,0 +1,387 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "cyberark.com",
+    "detect": {
+      "domain": "cyberark.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T15:34:14.134Z",
+    "summary": "CyberArk exposes several HTTP APIs (Secure Cloud Access, Identity, Secrets Manager SaaS, Secure Infrastructure Access, and Access API); no GraphQL, MCP connect endpoint, or CLI surface was confirmed from the docs I read.",
+    "credentials": {
+      "cyberark_bearer_token": {
+        "type": "bearer",
+        "label": "Idira/CyberArk bearer authentication token",
+        "setup": "Create or sign in to an Idira Identity tenant, then obtain the session/auth token through the tenant’s normal sign-in flow. CyberArk’s docs describe this token being returned by the Identity authentication workflow and then reused as `Authorization: Bearer …` for protected APIs. If you are using API reference testing, first allow `api-docs.cyberark.com` as a trusted domain in your tenant settings.",
+        "acquisition": "manual"
+      },
+      "cyberark_api_token": {
+        "type": "api_key",
+        "label": "CyberArk API token",
+        "generateUrl": "https://api-docs.cyberark.com/create-api-token",
+        "setup": "Open the CyberArk API docs and use the linked **Create an API token** flow to mint a token for your tenant/service user. CyberArk points developers to the token creation guide from the API docs landing page. Use the token wherever the product docs call for API token authentication.",
+        "acquisition": "manual"
+      },
+      "cyberark_identity_tenant": {
+        "type": "two_step",
+        "label": "Idira Identity tenant sign-in",
+        "setup": "Use your CyberArk Idira Identity tenant and complete the normal authentication workflow. The docs describe `/Security/StartAuthentication` followed by `/Security/AdvanceAuthentication`, which returns an authentication token cookie for subsequent requests. This is a tenant-issued session credential rather than a shared example login.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "cyberark-secure-cloud-access-apis",
+        "name": "CyberArk Secure Cloud Access APIs",
+        "type": "http",
+        "docs": "https://api-docs.cyberark.com/sca-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api-docs.cyberark.com/sca-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cyberark_bearer_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api-docs.cyberark.com/sca-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{tenant_name}.sca.cyberark.cloud/api"
+      },
+      {
+        "slug": "cyberark-identity-apis",
+        "name": "CyberArk Identity APIs",
+        "type": "http",
+        "docs": "https://api-docs.cyberark.com/identity-docs-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api-docs.cyberark.com/identity-docs-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cyberark_identity_tenant",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api-docs.cyberark.com/identity-docs-api"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "cyberark-secrets-manager-saas-apis",
+        "name": "CyberArk Secrets Manager, SaaS APIs",
+        "type": "http",
+        "docs": "https://api-docs.cyberark.com/secrets-manager-saas",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api-docs.cyberark.com/secrets-manager-saas"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "cyberark-secure-infrastructure-access-api",
+        "name": "CyberArk Secure Infrastructure Access API",
+        "type": "http",
+        "docs": "https://api-docs.cyberark.com/secure-infra-access",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api-docs.cyberark.com/secure-infra-access"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cyberark_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api-docs.cyberark.com/secure-infra-access"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cyberark_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api-docs.cyberark.com/secure-infra-access"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{subdomain}.dpa.cyberark.cloud/api"
+      },
+      {
+        "slug": "cyberark-access-api",
+        "name": "CyberArk Access API",
+        "type": "http",
+        "docs": "https://api-docs.cyberark.com/secure-access",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api-docs.cyberark.com/secure-access"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cyberark_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api-docs.cyberark.com/secure-access"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{subdomain}-userportal.cyberark.cloud"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T15:34:14.134Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 105984,
+    "completion_tokens": 1314,
+    "total_tokens": 107298
+  },
+  "visited": [
+    "https://api-docs.cyberark.com/",
+    "https://api-docs.cyberark.com/identity-docs-api",
+    "https://api-docs.cyberark.com/sca-api",
+    "https://api-docs.cyberark.com/secrets-manager-saas",
+    "https://api-docs.cyberark.com/secure-access",
+    "https://api-docs.cyberark.com/secure-infra-access",
+    "https://cyberark.com/llms.txt",
+    "https://docs.cyberark.com/setup/latest/en/content/sca/automation/sca-mcp-server.htm",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "https://api-docs.cyberark.com/",
+    "https://api-docs.cyberark.com/access-request-api",
+    "https://api-docs.cyberark.com/cds-api",
+    "https://api-docs.cyberark.com/create-api-token",
+    "https://api-docs.cyberark.com/create-api-token/docs/create-api-token",
+    "https://api-docs.cyberark.com/identity-docs-api",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/identity-apis",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/identity-apis#aut",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/identity-apis#authentication-quick-start",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/identity-apis#collect-tenant-specific-information",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/identity-apis#enable-the-send-api-request-functionality-for-your-tenant",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/identity-apis#export-an-api-collection",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/identity-apis#important-terms",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/security-api#/Login/advance-authentication",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/security-api#/Login/start-authentication",
+    "https://api-docs.cyberark.com/identity-docs-api/docs/security-api#/Logout/logout",
+    "https://api-docs.cyberark.com/risk-management-api",
+    "https://api-docs.cyberark.com/sai-api",
+    "https://api-docs.cyberark.com/sca-api",
+    "https://api-docs.cyberark.com/sca-api/docs/secure-cloud-access-apis",
+    "https://api-docs.cyberark.com/sca-api/docs/secure-cloud-access-apis/elements",
+    "https://api-docs.cyberark.com/sca-api/docs/secure-cloud-access-apis/swagger-ui",
+    "https://api-docs.cyberark.com/secrets-manager-saas",
+    "https://api-docs.cyberark.com/secrets-manager-saas/docs/get-started",
+    "https://api-docs.cyberark.com/secretshub-api",
+    "https://api-docs.cyberark.com/secure-access",
+    "https://api-docs.cyberark.com/secure-access/docs/secure-access-api",
+    "https://api-docs.cyberark.com/secure-access/docs/secure-access-api/elements",
+    "https://api-docs.cyberark.com/secure-access/docs/secure-access-api/swagger-ui",
+    "https://api-docs.cyberark.com/secure-infra-access",
+    "https://api-docs.cyberark.com/secure-infra-access/docs/get-started",
+    "https://api-docs.cyberark.com/uap-schema-api",
+    "https://api-docs.cyberark.com/uap-schema-api/",
+    "https://api-docs.cyberark.com/uap-schema-api/docs/get-started",
+    "https://api-docs.cyberark.com/workspace-delegation",
+    "https://community.cyberark.com/s/",
+    "https://cyberark.com/llms.txt",
+    "https://docs.cyberark.com/#",
+    "https://docs.cyberark.com/#mc-main-content",
+    "https://docs.cyberark.com/../../../content/identity/getstarted/tenant-settings.htm",
+    "https://docs.cyberark.com/../../../content/ispss-deployment/deployment/deploy-developer.htm",
+    "https://docs.cyberark.com/../../../content/ispss-deployment/privilege",
+    "https://docs.cyberark.com/../../../content/sca/automation/sca-mcp-server.htm",
+    "https://docs.cyberark.com/../../../content/sca/automation/sca_api-prerequisite.htm",
+    "https://docs.cyberark.com/../../../content/sca/integrations/wiz/wiz-integration.htm",
+    "https://docs.cyberark.com/../../../content/sca/settings/sca_azure-b2b.htm",
+    "https://docs.cyberark.com/../../../content/sca/settings/sca_remote-access-aws-settings.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/authentication/enforce-strong-authentication.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/centralize-enterprise-directory/centralize-enterprise-directory.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/cloud-onprem-connectivity/setup-cloud-onprem-connectivity.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/core-platform-setup/core-platform-setup.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/ecosystem-integration/integrate-siem-overview.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/ecosystem-integration/integrate-ticketing-systems.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/ecosystem-integration/setup-ecosystem-integrations.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/health-maintenance/check-health-maintenance.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/health-maintenance/setup-business-continuity.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/introduction/about-setup.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/launch/launch.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/migrate/migrate-to-saas.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/security/setup-security-foundations.htm",
+    "https://docs.cyberark.com/../../../content/setup-space/signin/setup-signin.htm",
+    "https://docs.cyberark.com/../../resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/access/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/ai/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/audit-and-reports/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/cloud-visibility/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/credential-providers/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/detect-and-respond/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/epm/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/find-discovery-context-docs/latest/en/content/disco/disco-new-doc-location.htm",
+    "https://docs.cyberark.com/find-identity-administration-docs/latest/en/content/getstarted/identity-new-doc-location.htm",
+    "https://docs.cyberark.com/find-identity-docs/latest/en/content/getstarted/identity-new-doc-location.htm",
+    "https://docs.cyberark.com/find-sca-docs/latest/en/content/introduction/sca-new-doc-location.htm",
+    "https://docs.cyberark.com/find-sia-docs/latest/en/content/introduction/sia-new-doc-location.htm",
+    "https://docs.cyberark.com/find-sws-docs/latest/en/content/admin/sws-new-doc-location.htm",
+    "https://docs.cyberark.com/find-wpm-docs/latest/en/content/getstarted/find-wpm-documentation.htm",
+    "https://docs.cyberark.com/identity-compliance/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/identity-flows/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/identity/Latest/en/Content/Developer/authentication/social-login.htm?tocpath=Developer%7CAuthenticate%20users%7CAuthentication%20quick%20start%7C_____7",
+    "https://docs.cyberark.com/iga/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/isi/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/ispss-access/latest/en/content/hometileslps/dpa-lp-tile6.htm",
+    "https://docs.cyberark.com/istp/latest/en/content/istp/what-is%20istp.htm",
+    "https://docs.cyberark.com/javascript:void(0",
+    "https://docs.cyberark.com/manage/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/msp-hub/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/pam-self-hosted/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/portal/latest/en/docs.htm",
+    "https://docs.cyberark.com/privilege-cloud-secrets-rotation/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/remote-access-standard/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/secrets-hub-privilege-cloud/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/secrets-manager-saas/latest/en/content/developer/conjur_api_authenticate_user.htm",
+    "https://docs.cyberark.com/secrets-manager-saas/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/secrets-manager-sh/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/secure-browser/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/setup/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/setup/latest/en/content/sca/automation/sca-mcp-server.htm",
+    "https://docs.cyberark.com/welcome/latest/en/content/resources/_topnav/cc_home.htm",
+    "https://docs.cyberark.com/whats-new/latest/en/content/whats-new.htm",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://virtserver.swaggerhub.com/CyberArk/sca-api/main",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.cyberark.com",
+    "https://www.cyberark.com/events/",
+    "https://www.cyberark.com/products/access-management/",
+    "https://www.cyberark.com/products/adaptive-multi-factor-authentication/",
+    "https://www.cyberark.com/products/b2b-identity/",
+    "https://www.cyberark.com/products/certificate-management/",
+    "https://www.cyberark.com/products/certificate-manager-for-kubernetes/",
+    "https://www.cyberark.com/products/certificate-manager/",
+    "https://www.cyberark.com/products/code-sign-manager/",
+    "https://www.cyberark.com/products/credential-providers/",
+    "https://www.cyberark.com/products/customer-identity/",
+    "https://www.cyberark.com/products/endpoint-privilege-manager/",
+    "https://www.cyberark.com/products/endpoint-privilege-security/",
+    "https://www.cyberark.com/products/identity-compliance/",
+    "https://www.cyberark.com/products/identity-flows/",
+    "https://www.cyberark.com/products/identity-management/",
+    "https://www.cyberark.com/products/lifecycle-management/",
+    "https://www.cyberark.com/products/machine-identity-security/",
+    "https://www.cyberark.com/products/passwordless/",
+    "https://www.cyberark.com/products/privileged-access-manager/",
+    "https://www.cyberark.com/products/privileged-access/",
+    "https://www.cyberark.com/products/secrets-hub/",
+    "https://www.cyberark.com/products/secrets-management/",
+    "https://www.cyberark.com/products/secrets-manager-saas/",
+    "https://www.cyberark.com/products/secrets-manager-self-hosted/",
+    "https://www.cyberark.com/products/secure-browser/",
+    "https://www.cyberark.com/products/secure-cloud-access/",
+    "https://www.cyberark.com/products/secure-web-sessions/",
+    "https://www.cyberark.com/products/single-sign-on/",
+    "https://www.cyberark.com/products/ssh-manager-for-machines/",
+    "https://www.cyberark.com/products/vendor-privileged-access-manager/",
+    "https://www.cyberark.com/products/workforce-identity/",
+    "https://www.cyberark.com/products/workforce-password-management/",
+    "https://www.cyberark.com/products/workload-identity-manager/",
+    "https://www.cyberark.com/products/zero-touch-pki/",
+    "https://www.cyberark.com/resources/blog",
+    "https://www.cyberark.com/resources/product-datasheets",
+    "https://www.cyberark.com/resources/webinars/",
+    "https://www.cyberark.com/resources/white-papers/",
+    "https://www.cyberark.com/services-support/technical-support-contact/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://{subdomain}",
+    "https://{subdomain}.dpa.cyberark.cloud/api",
+    "https://{tenant"
+  ]
+}

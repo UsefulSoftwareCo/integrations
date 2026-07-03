@@ -1,0 +1,230 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "okx.com",
+    "detect": {
+      "domain": "okx.com",
+      "found": [
+        "llms.txt",
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://okx.com"
+          ],
+          "authorizationEndpoint": "https://www.okx.com/account/oauth?flow=code",
+          "tokenEndpoint": "https://www.okx.com/api/v5/mcp/auth/token",
+          "scopes": [
+            "live:read",
+            "demo:read",
+            "live:trade",
+            "demo:trade",
+            "live:earn",
+            "demo:earn",
+            "live:asset_transfer",
+            "demo:asset_transfer",
+            "market:read"
+          ],
+          "registrationEndpoint": "https://www.okx.com/api/v5/mcp/auth/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T10:01:46.885Z",
+    "summary": "OKX exposes an Agent Trade Kit MCP server and CLI, both using local OKX API key bundles, plus MCP OAuth client registration/authorization/token flows for agent access.",
+    "credentials": {
+      "okx_api_key_bundle": {
+        "type": "compound",
+        "label": "OKX API key bundle",
+        "generateUrl": "https://www.okx.com/account/my-api",
+        "setup": "Go to the [OKX API page](https://www.okx.com/account/my-api) and create an API key pair. OKX issues a three-part bundle: `api_key`, `secret_key`, and `passphrase`. The docs recommend starting with a demo key and using a sub-account key if possible. Store the values in your local config file (for Agent Trade Kit, `~/.okx/config.toml`) and enable only the permissions you need.",
+        "acquisition": "manual"
+      },
+      "okx_mcp_oauth_client": {
+        "type": "oauth2",
+        "label": "OKX MCP OAuth client registration",
+        "generateUrl": "https://www.okx.com/api/v5/mcp/auth/register",
+        "setup": "Register an OAuth client with OKX using dynamic client registration at [the registration endpoint](https://www.okx.com/api/v5/mcp/auth/register). Then send users through the OKX authorization page at [the OAuth authorize endpoint](https://www.okx.com/account/oauth?flow=code) and exchange the resulting code at [the token endpoint](https://www.okx.com/api/v5/mcp/auth/token). The documented scopes are `live:read`, `demo:read`, `live:trade`, `demo:trade`, `live:earn`, `demo:earn`, `live:asset_transfer`, `demo:asset_transfer`, and `market:read`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "okx-agent-trade-kit-mcp-server",
+        "name": "OKX Agent Trade Kit MCP Server",
+        "type": "mcp",
+        "docs": "https://www.okx.com/docs-v5/agent_en/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.okx.com/docs-v5/agent_en/",
+            "https://www.okx.com/en-us/help/okx-api-agreement"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "okx_api_key_bundle",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "okx config init"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.okx.com/docs-v5/agent_en/",
+                  "https://www.okx.com/en-us/help/okx-api-agreement"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.okx.com/docs-v5/agent_en/",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ]
+      },
+      {
+        "slug": "okx-agent-trade-kit-cli",
+        "name": "OKX Agent Trade Kit CLI",
+        "type": "cli",
+        "docs": "https://www.okx.com/docs-v5/agent_en/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.okx.com/docs-v5/agent_en/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "okx_api_key_bundle",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "okx config init"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.okx.com/docs-v5/agent_en/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "okx_api_key_bundle",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "~/.okx/config.toml"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.okx.com/docs-v5/agent_en/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@okx_ai/okx-trade-cli",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "@okx_ai/okx-trade-mcp",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "okx"
+      },
+      {
+        "slug": "okx-mcp-oauth-authorization",
+        "name": "OKX MCP OAuth authorization",
+        "type": "mcp",
+        "docs": "https://www.okx.com/api/v5/mcp/auth/register",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.okx.com/api/v5/mcp/auth/register",
+            "https://www.okx.com/account/oauth?flow=code",
+            "https://www.okx.com/api/v5/mcp/auth/token"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "okx_mcp_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.okx.com/api/v5/mcp/auth/register",
+                  "https://www.okx.com/account/oauth?flow=code",
+                  "https://www.okx.com/api/v5/mcp/auth/token"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.okx.com/account/oauth?flow=code",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T10:01:46.886Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 71852,
+    "completion_tokens": 1229,
+    "total_tokens": 73081
+  },
+  "visited": [
+    "https://docs.x.com/tools/llms-txt",
+    "https://github.com/tiagosiebler/okx-api/blob/master/llms.txt",
+    "https://okx.com/llms.txt",
+    "https://readme.com/blog/llm-ready-api-documentation",
+    "https://www.okx.com/docs-v5/agent_en/",
+    "https://www.okx.com/docs-v5/agent_en/#cli",
+    "https://www.okx.com/docs-v5/agent_en/#mcp",
+    "https://www.okx.com/docs-v5/en",
+    "https://www.okx.com/en-us/help/okx-api-agreement",
+    "https://www.speakeasy.com/llms.txt"
+  ]
+}

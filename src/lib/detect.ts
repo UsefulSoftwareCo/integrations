@@ -2,8 +2,8 @@
  * Domain detection engine — the heart of integrations.sh discovery.
  *
  * Given a domain, runs the full battery of agent-readiness checks in parallel:
- * well-known manifests (api-catalog, mcp-server-card, agent-card, agent-skills,
- * oauth-protected-resource, llms.txt) plus live capability detections
+ * well-known manifests (integrations.json, api-catalog, mcp-server-card,
+ * agent-card, agent-skills, oauth-protected-resource, llms.txt) plus live capability detections
  * (MCP self-onboarding DCR/CIMD, live OpenAPI schema). Every check is
  * schema-validated — never trusts a bare 200 (SPAs/login pages and JSON 404s
  * like `{"error":"Not Found"}` are common false positives).
@@ -11,6 +11,21 @@
  * Pure and fetch-injected so it runs identically in the Worker (the detection
  * endpoint), Bun (normalize batch ingestion), and tests.
  */
+
+import { sniffOpenApiHead } from "./spec-validate.ts";
+import { Schema } from "effect";
+import {
+  API_CATALOG_PATH,
+  AGENT_CARD_PATH,
+  AGENT_SKILLS_PATH,
+  INTEGRATIONS_JSON_PATH,
+  LLMS_TXT_PATH,
+  MCP_SERVER_CARD_PATH,
+  OAUTH_PROTECTED_RESOURCE_PATH,
+  OPENAPI_PROBE_PATHS,
+  PROBE_KEYS,
+} from "./conventions.ts";
+import { OwnerDeclaredDiscovery as OwnerDeclaredDiscoverySchema, type OwnerDeclaredDiscovery } from "./discovery-schema.ts";
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -26,10 +41,18 @@ export interface McpDetection {
   cimd?: boolean;
 }
 
+export interface IntegrationsJsonDetection {
+  url: string;
+  result: OwnerDeclaredDiscovery;
+}
+
 export interface DetectionResult {
   domain: string;
   /** Signals that were actually found, for a quick readiness summary. */
   found: string[];
+  /** Signals this detector version attempted. Older KV rows may lack this. */
+  probed: string[];
+  integrationsJson?: IntegrationsJsonDetection | null;
   apiCatalog?: {
     rest: string[];
     openapi: string[];
@@ -44,6 +67,7 @@ export interface DetectionResult {
       authorizationServers?: string[];
       authorizationEndpoint?: string;
       tokenEndpoint?: string;
+      protectedResourceUrl?: string;
       scopes?: string[];
       registrationEndpoint?: string;
       dcr?: boolean;
@@ -60,6 +84,7 @@ export interface DetectionResult {
 }
 
 const TIMEOUT_MS = 5000;
+const INTEGRATIONS_JSON_MAX_BYTES = 128 * 1024;
 
 async function get(
   fetchImpl: FetchLike,
@@ -73,6 +98,47 @@ async function get(
     const res = await fetchImpl(url, { redirect: "follow", ...init, headers, signal: ctrl.signal });
     const text = await res.text();
     return { res, text };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function getLimited(
+  fetchImpl: FetchLike,
+  url: string,
+  init?: RequestInit,
+  maxBytes = INTEGRATIONS_JSON_MAX_BYTES,
+): Promise<{ res: Response; text: string; truncated: boolean } | null> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const headers = { "user-agent": "integrations.sh-detector/0.1 (+https://integrations.sh)", ...(init?.headers as Record<string, string> | undefined) };
+    const res = await fetchImpl(url, { redirect: "follow", ...init, headers, signal: ctrl.signal });
+    if (!res.body) {
+      const text = await res.text();
+      return { res, text: text.slice(0, maxBytes), truncated: text.length > maxBytes };
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    const chunks: string[] = [];
+    let bytes = 0;
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > maxBytes) {
+        const keep = Math.max(0, maxBytes - (bytes - value.byteLength));
+        if (keep) chunks.push(decoder.decode(value.subarray(0, keep), { stream: true }));
+        reader.cancel().catch(() => {});
+        chunks.push(decoder.decode());
+        return { res, text: chunks.join(""), truncated: true };
+      }
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
+    return { res, text: chunks.join(""), truncated: false };
   } catch {
     return null;
   } finally {
@@ -123,7 +189,7 @@ function asJson(text: string, contentType: string | null): any | null {
 // ── individual checks ────────────────────────────────────────────────────────
 
 async function checkApiCatalog(fetchImpl: FetchLike, domain: string) {
-  const hit = await get(fetchImpl, `https://${domain}/.well-known/api-catalog`);
+  const hit = await get(fetchImpl, `https://${domain}${API_CATALOG_PATH}`);
   if (!hit) return undefined;
   const doc = asJson(hit.text, hit.res.headers.get("content-type"));
   if (!doc || !Array.isArray(doc.linkset)) return undefined;
@@ -143,7 +209,7 @@ async function checkApiCatalog(fetchImpl: FetchLike, domain: string) {
 }
 
 async function checkServerCard(fetchImpl: FetchLike, domain: string): Promise<McpDetection | undefined> {
-  const hit = await get(fetchImpl, `https://${domain}/.well-known/mcp/server-card.json`);
+  const hit = await get(fetchImpl, `https://${domain}${MCP_SERVER_CARD_PATH}`);
   if (!hit) return undefined;
   const doc = asJson(hit.text, hit.res.headers.get("content-type"));
   if (!doc || !doc.url) return undefined;
@@ -151,7 +217,7 @@ async function checkServerCard(fetchImpl: FetchLike, domain: string): Promise<Mc
 }
 
 async function checkAgentCard(fetchImpl: FetchLike, domain: string) {
-  const hit = await get(fetchImpl, `https://${domain}/.well-known/agent-card.json`);
+  const hit = await get(fetchImpl, `https://${domain}${AGENT_CARD_PATH}`);
   if (!hit) return undefined;
   const doc = asJson(hit.text, hit.res.headers.get("content-type"));
   if (!doc || !doc.name) return undefined;
@@ -159,7 +225,7 @@ async function checkAgentCard(fetchImpl: FetchLike, domain: string) {
 }
 
 async function checkAgentSkills(fetchImpl: FetchLike, domain: string) {
-  const hit = await get(fetchImpl, `https://${domain}/.well-known/agent-skills/index.json`);
+  const hit = await get(fetchImpl, `https://${domain}${AGENT_SKILLS_PATH}`);
   if (!hit) return undefined;
   const doc = asJson(hit.text, hit.res.headers.get("content-type"));
   if (!doc || !Array.isArray(doc.skills) || doc.skills.length === 0) return undefined; // empty index = no signal
@@ -167,9 +233,22 @@ async function checkAgentSkills(fetchImpl: FetchLike, domain: string) {
 }
 
 async function checkLlmsTxt(fetchImpl: FetchLike, domain: string): Promise<boolean> {
-  const hit = await get(fetchImpl, `https://${domain}/llms.txt`);
+  const hit = await get(fetchImpl, `https://${domain}${LLMS_TXT_PATH}`);
   if (!hit || !hit.res.ok) return false;
   return hit.text.length > 0 && !/<!doctype|<html/i.test(hit.text.slice(0, 200));
+}
+
+async function checkIntegrationsJson(fetchImpl: FetchLike, domain: string): Promise<IntegrationsJsonDetection | null> {
+  const url = `https://${domain}${INTEGRATIONS_JSON_PATH}`;
+  const hit = await getLimited(fetchImpl, url, { headers: { accept: "application/json" } });
+  if (!hit || !hit.res.ok || hit.truncated) return null;
+  const doc = asJson(hit.text, hit.res.headers.get("content-type"));
+  if (!doc) return null;
+  try {
+    return { url, result: Schema.decodeUnknownSync(OwnerDeclaredDiscoverySchema)(doc) };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -178,16 +257,13 @@ async function checkLlmsTxt(fetchImpl: FetchLike, domain: string): Promise<boole
  * well-known endpoints, not from mining specs.
  */
 async function checkApiSchema(fetchImpl: FetchLike, domain: string) {
-  const paths = ["/api/schema/", "/openapi.json", "/swagger.json", "/api/openapi.json", "/v1/openapi.json"];
   // Probe concurrently; sniff only the head (no body download, no parse).
-  const results = await Promise.all(paths.map(async (p) => {
+  const results = await Promise.all(OPENAPI_PROBE_PATHS.map(async (p) => {
     const url = `https://${domain}${p}`;
     const hit = await peek(fetchImpl, url);
     if (!hit || !hit.res.ok) return undefined;
     const ct = hit.res.headers.get("content-type") ?? "";
-    if (/text\/html/i.test(ct)) return undefined; // SPA fallback
-    const isOpenapi = /openapi|swagger/i.test(ct) || /["']?(?:openapi|swagger)["']?\s*:/.test(hit.head);
-    if (!isOpenapi) return undefined;
+    if (!sniffOpenApiHead(ct, hit.head)) return undefined;
     const version = /["']?(?:openapi|swagger)["']?\s*:\s*["']([^"']+)["']/.exec(hit.head)?.[1];
     return { url, format: "openapi" as const, version };
   }));
@@ -219,7 +295,8 @@ async function asMetadata(fetchImpl: FetchLike, asUrl: string) {
  * metadata for DCR / CIMD / grant types.
  */
 async function checkApiOAuth(fetchImpl: FetchLike, domain: string) {
-  const prm = await get(fetchImpl, `https://${domain}/.well-known/oauth-protected-resource`);
+  const protectedResourceUrl = `https://${domain}${OAUTH_PROTECTED_RESOURCE_PATH}`;
+  const prm = await get(fetchImpl, protectedResourceUrl);
   const prmDoc = prm && prm.res.ok ? asJson(prm.text, prm.res.headers.get("content-type")) : undefined;
   const servers: string[] | undefined = Array.isArray(prmDoc?.authorization_servers) && prmDoc.authorization_servers.length
     ? prmDoc.authorization_servers
@@ -231,6 +308,7 @@ async function checkApiOAuth(fetchImpl: FetchLike, domain: string) {
     authorizationServers: servers ?? [asUrl],
     authorizationEndpoint: meta?.authorizationEndpoint,
     tokenEndpoint: meta?.tokenEndpoint,
+    protectedResourceUrl: prmDoc ? protectedResourceUrl : undefined,
     scopes: (prmDoc?.scopes_supported as string[] | undefined) ?? meta?.scopes,
     registrationEndpoint: meta?.registrationEndpoint,
     dcr: meta?.dcr,
@@ -287,7 +365,8 @@ async function discoverMcpEndpoint(fetchImpl: FetchLike, domain: string): Promis
 export async function detect(domain: string, fetchImpl: FetchLike = fetch): Promise<DetectionResult> {
   const errors: string[] = [];
   const discoverMcpEndpointResult = discoverMcpEndpoint(fetchImpl, domain); // start concurrently
-  const [apiCatalog, serverCard, agentCard, agentSkills, llmsTxt, apiSchema, apiOAuth] = await Promise.all([
+  const [integrationsJson, apiCatalog, serverCard, agentCard, agentSkills, llmsTxt, apiSchema, apiOAuth] = await Promise.all([
+    checkIntegrationsJson(fetchImpl, domain).catch((e) => (errors.push(`integrations.json: ${e}`), null)),
     checkApiCatalog(fetchImpl, domain).catch((e) => (errors.push(`api-catalog: ${e}`), undefined)),
     checkServerCard(fetchImpl, domain).catch((e) => (errors.push(`server-card: ${e}`), undefined)),
     checkAgentCard(fetchImpl, domain).catch((e) => (errors.push(`agent-card: ${e}`), undefined)),
@@ -320,14 +399,30 @@ export async function detect(domain: string, fetchImpl: FetchLike = fetch): Prom
   const hasAuth = Object.keys(auth).length > 0;
 
   const found: string[] = [];
-  if (apiCatalog) found.push("api-catalog");
-  if (apiSchema) found.push("openapi-schema");
+  if (integrationsJson) found.push(PROBE_KEYS.integrationsJson);
+  if (apiCatalog) found.push(PROBE_KEYS.apiCatalog);
+  if (apiSchema) found.push(PROBE_KEYS.openapiSchema);
+  if (serverCard) found.push(PROBE_KEYS.mcpServerCard);
   if (mcp.length) found.push("mcp");
   if (mcp.some((m) => m.dcr || m.cimd)) found.push("mcp-self-onboard");
-  if (agentCard) found.push("agent-card");
-  if (agentSkills) found.push("agent-skills");
-  if (llmsTxt) found.push("llms.txt");
+  if (agentCard) found.push(PROBE_KEYS.agentCard);
+  if (agentSkills) found.push(PROBE_KEYS.agentSkills);
+  if (llmsTxt) found.push(PROBE_KEYS.llmsTxt);
+  if (apiOAuth?.protectedResourceUrl) found.push(PROBE_KEYS.oauthProtectedResource);
   if (hasAuth) found.push("auth");
 
-  return { domain, found, apiCatalog, apiSchema, auth: hasAuth ? auth : undefined, mcp, agentCard, agentSkills, llmsTxt, errors };
+  return {
+    domain,
+    found,
+    probed: Object.values(PROBE_KEYS),
+    integrationsJson,
+    apiCatalog,
+    apiSchema,
+    auth: hasAuth ? auth : undefined,
+    mcp,
+    agentCard,
+    agentSkills,
+    llmsTxt,
+    errors,
+  };
 }

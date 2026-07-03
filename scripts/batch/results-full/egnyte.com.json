@@ -1,0 +1,381 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "egnyte.com",
+    "detect": {
+      "domain": "egnyte.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:46:26.413Z",
+    "summary": "Egnyte exposes one public HTTP API, a managed MCP server, and the Egnyte Agentic CLI; all use Egnyte OAuth 2.0, with API keys used to register an app for token issuance.",
+    "credentials": {
+      "egnyte_api_key": {
+        "type": "app",
+        "label": "Egnyte API key + secret",
+        "generateUrl": "https://developers.egnyte.com/create",
+        "setup": "Create an app in the [Egnyte Developer Portal](https://developers.egnyte.com/create) while signed in as an Egnyte domain administrator. The app registration issues an API key and secret tied to your domain. Use that app registration to obtain OAuth 2.0 access tokens for API calls. Egnyte notes that API access is restricted to eligible plans and admin accounts.",
+        "acquisition": "manual"
+      },
+      "egnyte_oauth_access_token": {
+        "type": "oauth2",
+        "label": "Egnyte OAuth 2.0 access token",
+        "setup": "Obtain this through your Egnyte app's OAuth 2.0 flow after creating the app in the [Developer Portal](https://developers.egnyte.com/create). The access token is used to call Egnyte public APIs and the managed MCP server. Egnyte's docs state the APIs are secured through OAuth 2.0 authentication.",
+        "acquisition": "manual"
+      },
+      "egnyte_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Egnyte OAuth 2.0 session for MCP clients",
+        "setup": "Connect your MCP-compatible client to the managed Egnyte MCP server at [https://mcp-server.egnyte.com/mcp](https://mcp-server.egnyte.com/mcp). The client will redirect you to Egnyte to authenticate, approve access, and receive tokens automatically. Use this when configuring Claude, ChatGPT, or another OAuth-compatible MCP client.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "egnyte-remote-mcp-server",
+        "name": "Egnyte Remote MCP Server",
+        "type": "mcp",
+        "docs": "https://developers.egnyte.com/docs/Remote_MCP_Server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.egnyte.com/docs/Remote_MCP_Server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "egnyte_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.egnyte.com/docs/Remote_MCP_Server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp-server.egnyte.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "egnyte-agentic-cli",
+        "name": "Egnyte Agentic CLI",
+        "type": "cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.egnyte.com/egnyte-sdk",
+            "https://developers.egnyte.com/cfs/api-docs/agentic-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "egnyte_oauth_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "egnyte login",
+                    "env": [
+                      "EGNYTE_TOKEN",
+                      "EGNYTE_DOMAIN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.egnyte.com/cfs/api-docs/agentic-cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@egnyte/agentic-cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "egnyte"
+      },
+      {
+        "slug": "egnyte-public-api",
+        "name": "Egnyte Public API",
+        "type": "http",
+        "docs": "https://developers.egnyte.com/docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.egnyte.com/docs",
+            "https://developers.egnyte.com/api-docs/read/getting-started",
+            "https://developers.egnyte.com/egnyte-sdk",
+            "https://developers.egnyte.com/integration/api/openapi/json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "egnyte_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.egnyte.com/api-docs/read/getting-started",
+                  "https://developers.egnyte.com/integration/api/openapi/json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{domain}.egnyte.com/pubapi"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:46:26.413Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 230137,
+    "completion_tokens": 1715,
+    "total_tokens": 231852
+  },
+  "visited": [
+    "http://egnyte.github.io/python-egnyte/doc/_build/html/overview.html",
+    "https://developers.egnyte.com/api-docs/read/getting-started",
+    "https://developers.egnyte.com/cfs/api-docs/agentic-cli",
+    "https://developers.egnyte.com/cfs/api-docs/authentication",
+    "https://developers.egnyte.com/cfs/api-docs/remote-mcp-server",
+    "https://developers.egnyte.com/docs",
+    "https://developers.egnyte.com/docs/Remote_MCP_Server",
+    "https://developers.egnyte.com/egnyte-sdk",
+    "https://developers.egnyte.com/integration/api/openapi/json",
+    "https://developers.egnyte.com/integration/cfs/api-docs/agent-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/agentic-cli",
+    "https://developers.egnyte.com/integration/cfs/api-docs/ai-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/file-system-management",
+    "https://developers.egnyte.com/integration/cfs/api-docs/permissions-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/search-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/user-management-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/webhooks-api",
+    "https://github.com/egnyte/egnyte-mcp-server"
+  ],
+  "grounding": [
+    "http://egnyte.github.io/python-egnyte/doc/_build/html/overview.html",
+    "http://www.ietf.org/rfc/rfc2068.txt",
+    "http://www.simplecloud.info/",
+    "https://apidemo.egnyte.com/pubapi/v2/users/12345678",
+    "https://apidemo.egnyte.com/puboauth/token?client_id=x2g35g8gynb5cedas649m4h4&redirect_uri=https://yourapp.com/oauth&scope=Egnyte.filesystem%20Egnyte.link&state=apidemo123&response_type=code",
+    "https://community.egnyte.com/",
+    "https://datatracker.ietf.org/doc/html/rfc9110#name-if-none-match",
+    "https://developers.e",
+    "https://developers.egnyte.com",
+    "https://developers.egnyte.com/",
+    "https://developers.egnyte.com/#ask-a-question-to-an-agent",
+    "https://developers.egnyte.com/#authentication",
+    "https://developers.egnyte.com/#availability",
+    "https://developers.egnyte.com/#available-tools",
+    "https://developers.egnyte.com/#base-url",
+    "https://developers.egnyte.com/#chunked-upload",
+    "https://developers.egnyte.com/#code-examples",
+    "https://developers.egnyte.com/#connecting-ai-clients",
+    "https://developers.egnyte.com/#copilot",
+    "https://developers.egnyte.com/#data-privacy-and-security",
+    "https://developers.egnyte.com/#error-codes",
+    "https://developers.egnyte.com/#errors",
+    "https://developers.egnyte.com/#execution-flow-important-",
+    "https://developers.egnyte.com/#get-agent-execution-status",
+    "https://developers.egnyte.com/#get-effective-permissions-for-a-user",
+    "https://developers.egnyte.com/#get-folder-permissions",
+    "https://developers.egnyte.com/#get-folder-permissions-v1-",
+    "https://developers.egnyte.com/#id-based-references",
+    "https://developers.egnyte.com/#list-agents",
+    "https://developers.egnyte.com/#mcp-server-url",
+    "https://developers.egnyte.com/#path-encoding",
+    "https://developers.egnyte.com/#permission-levels",
+    "https://developers.egnyte.com/#prerequisites",
+    "https://developers.egnyte.com/#rate-limiting",
+    "https://developers.egnyte.com/#rate-limits",
+    "https://developers.egnyte.com/#related-resources",
+    "https://developers.egnyte.com/#set-folder-permissions",
+    "https://developers.egnyte.com/#set-folder-permissions-v1-",
+    "https://developers.egnyte.com/#when-to-use",
+    "https://developers.egnyte.com/accounts/login",
+    "https://developers.egnyte.com/api-docs/read/getting-started",
+    "https://developers.egnyte.com/cfs/api-docs/agent-api",
+    "https://developers.egnyte.com/cfs/api-docs/agentic-cli",
+    "https://developers.egnyte.com/cfs/api-docs/ai-api",
+    "https://developers.egnyte.com/cfs/api-docs/audit-reporting-api/v1",
+    "https://developers.egnyte.com/cfs/api-docs/audit-reporting-api/v2",
+    "https://developers.egnyte.com/cfs/api-docs/authentication",
+    "https://developers.egnyte.com/cfs/api-docs/authentication#userauthtoken",
+    "https://developers.egnyte.com/cfs/api-docs/best-practices",
+    "https://developers.egnyte.com/cfs/api-docs/bookmarks-api",
+    "https://developers.egnyte.com/cfs/api-docs/comments-api",
+    "https://developers.egnyte.com/cfs/api-docs/controlled-document-management-api",
+    "https://developers.egnyte.com/cfs/api-docs/document-portal-api",
+    "https://developers.egnyte.com/cfs/api-docs/etmf-api",
+    "https://developers.egnyte.com/cfs/api-docs/events-api",
+    "https://developers.egnyte.com/cfs/api-docs/file-system-management",
+    "https://developers.egnyte.com/cfs/api-docs/folder-options-api",
+    "https://developers.egnyte.com/cfs/api-docs/getting-started",
+    "https://developers.egnyte.com/cfs/api-docs/group-management",
+    "https://developers.egnyte.com/cfs/api-docs/links-api",
+    "https://developers.egnyte.com/cfs/api-docs/metadata-api",
+    "https://developers.egnyte.com/cfs/api-docs/mobile-development",
+    "https://developers.egnyte.com/cfs/api-docs/msp-api",
+    "https://developers.egnyte.com/cfs/api-docs/navigate-api",
+    "https://developers.egnyte.com/cfs/api-docs/overview",
+    "https://developers.egnyte.com/cfs/api-docs/permissions-api",
+    "https://developers.egnyte.com/cfs/api-docs/project-custom-metadata-api",
+    "https://developers.egnyte.com/cfs/api-docs/project-folder-api",
+    "https://developers.egnyte.com/cfs/api-docs/remote-mcp-server",
+    "https://developers.egnyte.com/cfs/api-docs/search-api",
+    "https://developers.egnyte.com/cfs/api-docs/sign-api",
+    "https://developers.egnyte.com/cfs/api-docs/third-party-integrations",
+    "https://developers.egnyte.com/cfs/api-docs/trash-api",
+    "https://developers.egnyte.com/cfs/api-docs/ui-integration-framework",
+    "https://developers.egnyte.com/cfs/api-docs/upload-requests-api",
+    "https://developers.egnyte.com/cfs/api-docs/user-insights-api",
+    "https://developers.egnyte.com/cfs/api-docs/user-management-api",
+    "https://developers.egnyte.com/cfs/api-docs/webhooks-api",
+    "https://developers.egnyte.com/cfs/api-docs/workflow-api",
+    "https://developers.egnyte.com/create",
+    "https://developers.egnyte.com/docs",
+    "https://developers.egnyte.com/docs/Remote_MCP_Server",
+    "https://developers.egnyte.com/egnyte-sdk",
+    "https://developers.egnyte.com/frequently-asked-questions",
+    "https://developers.egnyte.com/integration",
+    "https://developers.egnyte.com/integration/api/openapi/json",
+    "https://developers.egnyte.com/integration/api/openapi/yaml",
+    "https://developers.egnyte.com/integration/cfs/api-docs",
+    "https://developers.egnyte.com/integration/cfs/api-docs/agent-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/agentic-cli",
+    "https://developers.egnyte.com/integration/cfs/api-docs/ai-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/file-system-management",
+    "https://developers.egnyte.com/integration/cfs/api-docs/permissions-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/search-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/user-management-api",
+    "https://developers.egnyte.com/integration/cfs/api-docs/webhooks-api",
+    "https://developers.egnyte.com/integration/cfs/api-playground",
+    "https://developers.egnyte.com/integration/cfs/changelog",
+    "https://developers.egnyte.com/integration/downloads/PHPAnonymousUploaderExample.zip",
+    "https://developers.egnyte.com/integration/downloads/egnyte-postman-collection.json",
+    "https://developers.egnyte.com/integration/downloads/egnyte-postman-environment.json",
+    "https://developers.egnyte.com/integration/frequently-asked-questions",
+    "https://developers.egnyte.com/integration/sdks",
+    "https://developers.egnyte.com/integration/sg/api-docs/overview",
+    "https://developers.egnyte.com/integration/terms",
+    "https://developers.egnyte.com/javascript:void(0",
+    "https://developers.egnyte.com/portals/api/sites/global-prod-apigee-68ed-egnytedevportal/liveportal/sso/login",
+    "https://developers.egnyte.com/terms",
+    "https://docs.claude.com/en/docs/claude-code/mcp",
+    "https://docs.google.com/forms/d/e/1FAIpQLSdSPlq_myB9TgGWNOVlbavQgpVMJNoYd8mEG0jFmz5ngaSelg/viewform?usp=header",
+    "https://en.wikipedia.org/wiki/Large_language_model",
+    "https://example.com/webhook",
+    "https://github.com/egnyte/agentic-cli",
+    "https://github.com/egnyte/egnyte-android-sdk",
+    "https://github.com/egnyte/egnyte-android-sdk/blob/master/README.md",
+    "https://github.com/egnyte/egnyte-android-sdk/tree/master/sample-app",
+    "https://github.com/egnyte/egnyte-dotnet",
+    "https://github.com/egnyte/egnyte-ios-sdk",
+    "https://github.com/egnyte/egnyte-ios-sdk/blob/master/README.md",
+    "https://github.com/egnyte/egnyte-js-sdk",
+    "https://github.com/egnyte/egnyte-mcp-server",
+    "https://github.com/egnyte/python-egnyte",
+    "https://github.com/egnyte/ruby-egnyte",
+    "https://help.openai.com/en/articles/11487775-apps-in-chatgpt",
+    "https://helpdesk.egnyte.com/hc/en-us",
+    "https://helpdesk.egnyte.com/hc/en-us/articles/115003386091-Language-Pack-Request-FAQ",
+    "https://helpdesk.egnyte.com/hc/en-us/articles/17683455594125-Public-API-Usage-Restrictions-by-Plan",
+    "https://helpdesk.egnyte.com/hc/en-us/articles/360003110392-Service-Accounts",
+    "https://helpdesk.egnyte.com/hc/en-us/requests/new",
+    "https://mcp-server.egnyte.com/mcp",
+    "https://mycompany-staging.egnyte.com",
+    "https://mycompany.egnyte.com",
+    "https://pypi.org/project/egnyte/",
+    "https://rubygems.org/gems/ruby-egnyte",
+    "https://status.egnyte.com/",
+    "https://support.claude.com/en/articles/12651659-using-egnyte-for-data-room-management-with-claude",
+    "https://www.cloudflare.com/learning/ai/what-is-large-language-model/",
+    "https://www.egnyte.com",
+    "https://www.egnyte.com/about-us",
+    "https://www.egnyte.com/blog",
+    "https://www.egnyte.com/careers",
+    "https://www.egnyte.com/contact",
+    "https://www.egnyte.com/partners",
+    "https://www.egnyte.com/partners/program/partner-",
+    "https://www.egnyte.com/partners/program/partner-list",
+    "https://www.egnyte.com/plans",
+    "https://www.egnyte.com/privacy-policy",
+    "https://www.egnyte.com/website-terms-of-use",
+    "https://www.npmjs.com/package/@egnyte/agentic-cli",
+    "https://www.npmjs.com/package/egnyte-js-sdk",
+    "https://www.nuget.org/packages/Egnyte.API",
+    "https://yourapp.com/oauth",
+    "https://{domain}.egnyte.com/pubapi",
+    "https://{domain}.egnyte.com/pubapi/v1/ai",
+    "https://{domain}.egnyte.com/pubapi/v1/ai/agents",
+    "https://{domain}.egnyte.com/pubapi/v1/ai/agents/list?sortBy=createdOn&sortOrder=desc",
+    "https://{domain}.egnyte.com/pubapi/v1/ai/agents/list?sortBy=name&sortOrder=asc",
+    "https://{domain}.egnyte.com/pubapi/v1/ai/agents/{agentId}/ask",
+    "https://{domain}.egnyte.com/pubapi/v1/ai/agents/{agentId}/ask/{requestId}/status",
+    "https://{domain}.egnyte.com/pubapi/v1/ai/assistant/ask",
+    "https://{domain}.egnyte.com/pubapi/v1/ai/document/{entryId}/ask",
+    "https://{domain}.egnyte.com/pubapi/v1/ai/document/{entryId}/summary",
+    "https://{domain}.egnyte.com/pubapi/v1/fs",
+    "https://{domain}.egnyte.com/pubapi/v1/fs-content",
+    "https://{domain}.egnyte.com/pubapi/v1/fs-content/Shared/Documents/test.txt",
+    "https://{domain}.egnyte.com/pubapi/v1/fs/Shared/fromFolder",
+    "https://{domain}.egnyte.com/pubapi/v1/fs/Shared/fromFolder/test.txt",
+    "https://{domain}.egnyte.com/pubapi/v1/fs/Shared/test",
+    "https://{domain}.egnyte.com/pubapi/v1/fs/Shared/test/mydocument.docx",
+    "https://{domain}.egnyte.com/pubapi/v1/perms",
+    "https://{domain}.egnyte.com/pubapi/v1/perms/folder/MyFolder?users=jsmith|ajones&groups=All%20Power%20Users",
+    "https://{domain}.egnyte.com/pubapi/v1/perms/folder/Shared/MyFolder",
+    "https://{domain}.egnyte.com/pubapi/v1/perms/user/jsmith?folder=/Shared/Documents",
+    "https://{domain}.egnyte.com/pubapi/v1/search",
+    "https://{domain}.egnyte.com/pubapi/v1/search?query=localcloudpress",
+    "https://{domain}.egnyte.com/pubapi/v1/webhooks",
+    "https://{domain}.egnyte.com/pubapi/v1/webhooks/{webhookId}",
+    "https://{domain}.egnyte.com/pubapi/v1/webhooks/{webhookId}/details",
+    "https://{domain}.egnyte.com/pubapi/v1/webhooks/{webhookId}/status",
+    "https://{domain}.egnyte.com/pubapi/v1/whoami",
+    "https://{domain}.egnyte.com/pubapi/v2/perms",
+    "https://{domain}.egnyte.com/pubapi/v2/perms/Shared/Documents",
+    "https://{domain}.egnyte.com/pubapi/v2/search",
+    "https://{domain}.egnyte.com/pubapi/v2/users",
+    "https://{domain}.egnyte.com/pubapi/v2/users/{id}",
+    "https://{domain}.egnyte.com/pubapi/v2/users?startIndex=1&count=50&filter=userType%20eq%20%22admin%22",
+    "https://{redirect"
+  ]
+}

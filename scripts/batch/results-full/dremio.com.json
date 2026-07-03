@@ -1,0 +1,588 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "dremio.com",
+    "detect": {
+      "domain": "dremio.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T15:35:46.072Z",
+    "summary": "Dremio exposes two REST APIs, a Developer CLI, and an MCP server; all require authentication via Dremio bearer tokens, PATs, or OAuth client credentials depending on the surface.",
+    "credentials": {
+      "dremio_access_token": {
+        "type": "bearer",
+        "label": "Dremio access token",
+        "setup": "Use this token in `Authorization: Bearer <token>` for Dremio REST APIs. Dremio issues three kinds of access tokens: OAuth access tokens, personal access tokens (PATs), and authentication tokens. The easiest path is usually a PAT from the Dremio console ([Personal Access Tokens](https://docs.dremio.com/current/security/authentication/personal-access-tokens/)) or via the PAT API ([PAT API](https://docs.dremio.com/current/reference/api/personal-access-token/)); OAuth access tokens can also be minted from the [OAuth Token API](https://docs.dremio.com/current/reference/api/oauth-token/).",
+        "acquisition": "manual"
+      },
+      "dremio_pat": {
+        "type": "api_key",
+        "label": "Dremio personal access token (PAT)",
+        "setup": "Create a PAT in the Dremio console under [Personal Access Tokens](https://docs.dremio.com/current/security/authentication/personal-access-tokens/) or with the [PAT API](https://docs.dremio.com/current/reference/api/personal-access-token/). Dremio notes PATs can also be created from the API for the current user; use the resulting token as a bearer credential.",
+        "acquisition": "manual"
+      },
+      "dremio_oauth_client": {
+        "type": "oauth2_cc",
+        "label": "Dremio OAuth client credentials",
+        "setup": "Create a service user / OAuth application in Dremio, then use the client ID and client secret to obtain an OAuth access token from the OAuth token endpoint. For Dremio Cloud, the docs say to create a native OAuth application in the console under Organization → OAuth Applications, then use the client ID with the MCP or API flow. For machine-to-machine, Dremio documents `grant_type=client_credentials` with `scope=dremio.all`.",
+        "acquisition": "manual"
+      },
+      "dremio_username_password": {
+        "type": "basic",
+        "label": "Dremio username and password",
+        "setup": "Use your Dremio username and password to mint a short-lived authentication token through the legacy v2 login flow documented by Dremio ([Authentication](https://docs.dremio.com/current/security/authentication/) and [API Reference](https://docs.dremio.com/current/reference/api/)). This is mainly a bootstrap credential for obtaining a bearer token, not something you send to the REST API directly.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "dremio-rest-api",
+        "name": "Dremio REST API",
+        "type": "http",
+        "docs": "https://docs.dremio.com/current/reference/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.dremio.com/current/reference/api/",
+            "https://docs.dremio.com/current/reference/api/personal-access-token/",
+            "https://docs.dremio.com/current/reference/api/oauth-token/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dremio_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.dremio.com/current/reference/api/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{hostname}/api/v3"
+      },
+      {
+        "slug": "dremio-cloud-rest-api",
+        "name": "Dremio Cloud REST API",
+        "type": "http",
+        "docs": "https://docs.dremio.com/dremio-cloud/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.dremio.com/dremio-cloud/api/",
+            "https://docs.dremio.com/dremio-cloud/api/oauth-token",
+            "https://docs.dremio.com/dremio-cloud/api/personal-access-token"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dremio_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.dremio.com/dremio-cloud/api/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.dremio.cloud/v0/"
+      },
+      {
+        "slug": "dremio-developer-cli",
+        "name": "Dremio Developer CLI",
+        "type": "cli",
+        "docs": "https://docs.dremio.com/dremio-cloud/ai-integration/cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.dremio.com/dremio-cloud/ai-integration/cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dremio_pat",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "dremio setup",
+                    "env": [
+                      "DREMIO_TOKEN",
+                      "DREMIO_PROJECT_ID",
+                      "DREMIO_URI"
+                    ]
+                  }
+                },
+                {
+                  "id": "dremio_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "dremio setup",
+                    "env": [
+                      "DREMIO_TOKEN",
+                      "DREMIO_PROJECT_ID",
+                      "DREMIO_URI"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.dremio.com/dremio-cloud/ai-integration/cli/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "pypi",
+            "identifier": "dremio-cli",
+            "runtimeHint": "python>=3.11"
+          }
+        ],
+        "command": "dremio"
+      },
+      {
+        "slug": "dremio-mcp-server",
+        "name": "Dremio MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.dremio.com/dremio-cloud/ai-integration/mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.dremio.com/dremio-cloud/ai-integration/mcp-server/",
+            "https://docs.dremio.com/dremio-cloud/ai-integration/cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dremio_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.dremio.com/dremio-cloud/ai-integration/mcp-server/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "dremio_pat",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.dremio.com/dremio-cloud/ai-integration/mcp-server/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.dremio.cloud/mcp/{project_id}",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "project_id",
+            "resolveFrom": "Dremio console Project Overview",
+            "description": "Dremio project ID"
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T15:35:46.073Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 150029,
+    "completion_tokens": 1731,
+    "total_tokens": 151760
+  },
+  "visited": [
+    "https://docs.dremio.com/current/developer/mcp-server/",
+    "https://docs.dremio.com/current/reference/api/",
+    "https://docs.dremio.com/current/reference/api/oauth-token/",
+    "https://docs.dremio.com/current/reference/api/personal-access-token/",
+    "https://docs.dremio.com/current/security/authentication/",
+    "https://docs.dremio.com/dremio-cloud/ai-integration/cli/",
+    "https://docs.dremio.com/dremio-cloud/ai-integration/mcp-server/",
+    "https://docs.dremio.com/dremio-cloud/api/",
+    "https://github.com/dremio/cli"
+  ],
+  "grounding": [
+    "http://localhost",
+    "http://localhost/callback",
+    "http://{hostname}/apiv2/login",
+    "https://$DREMIO_HOST:9047/oauth/token",
+    "https://api.dremio.cloud",
+    "https://api.dremio.cloud/v0/",
+    "https://api.dremio.cloud/v0/projects",
+    "https://api.dremio.cloud/v0/projects/$PROJECT_ID/catalog",
+    "https://api.dremio.cloud/v0/projects/$PROJECT_ID/catalog/$SOURCE_ID?maxChildren=25&pageToken=BhQxNjc0MjhlYi03OTM2LTRlYTItYTFmYi0yM2IxYWM2ZTk0NTQSAA==",
+    "https://api.dremio.cloud/v0/projects/$PROJECT_ID/reflection-summary?filter=%7B%0A%20%20%22reflectionType%22%3A%20%5B%22RAW%22%5D%2C%0A%20%20%22refreshStatus%22%3A%20%5B%22MANUAL%22%2C%22SCHEDULED%22%5D%2C%0A%20%20%22enabledFlag%22%3A%20true%2C%0A%20%20%22reflectionNameOrDatasetPath%22%3A%20%22samples.dremio.com%22%0A%7D",
+    "https://api.dremio.cloud/v0/projects/$PROJECT_ID/reflection-summary?maxResults=25",
+    "https://api.dremio.cloud/v0/projects/$PROJECT_ID/reflection-summary?pageToken=BhQxNjc0MjhlYi03OTM2LTRlYTItYTFmYi0yM2IxYWM2ZTk0NTQSAA==",
+    "https://api.eu.dremio.cloud",
+    "https://arrow.apache.org/",
+    "https://catalog.dremio.cloud/api/iceberg/v1/",
+    "https://catalog.dremio.cloud/api/iceberg/v1/namespaces",
+    "https://chatgpt.com/connector_platform_oauth_redirect",
+    "https://claude.ai/api/mcp/auth_callback",
+    "https://claude.com/api/mcp/auth_callback",
+    "https://claude.com/pricing",
+    "https://community.dremio.com",
+    "https://community.dremio.com/",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-3.3",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-6",
+    "https://docs.astral.sh/uv/getting-started/installation/",
+    "https://docs.dremio.com/",
+    "https://docs.dremio.com/#__docusaurus_skipToContent_fallback",
+    "https://docs.dremio.com/#attributes",
+    "https://docs.dremio.com/#authenticate",
+    "https://docs.dremio.com/#authentication",
+    "https://docs.dremio.com/#authentication-methods-by-application-type",
+    "https://docs.dremio.com/#base-url",
+    "https://docs.dremio.com/#base-urls",
+    "https://docs.dremio.com/#build-agents-with-python",
+    "https://docs.dremio.com/#built-in-maximum",
+    "https://docs.dremio.com/#chat",
+    "https://docs.dremio.com/#chat-with-the-ai-agent",
+    "https://docs.dremio.com/#command-introspection",
+    "https://docs.dremio.com/#command-reference",
+    "https://docs.dremio.com/#connection-options",
+    "https://docs.dremio.com/#create-a-pat",
+    "https://docs.dremio.com/#createdby",
+    "https://docs.dremio.com/#delete-all-pats",
+    "https://docs.dremio.com/#delete-all-pats-for-one-user",
+    "https://docs.dremio.com/#deleting-a-single-pat",
+    "https://docs.dremio.com/#dremio-authentication-token",
+    "https://docs.dremio.com/#dremio-authentication-tokens",
+    "https://docs.dremio.com/#dremio-console-authentication-methods",
+    "https://docs.dremio.com/#engines",
+    "https://docs.dremio.com/#errors",
+    "https://docs.dremio.com/#example",
+    "https://docs.dremio.com/#example-1",
+    "https://docs.dremio.com/#example-2",
+    "https://docs.dremio.com/#example-3",
+    "https://docs.dremio.com/#example-autonomous-data-investigation",
+    "https://docs.dremio.com/#example-request",
+    "https://docs.dremio.com/#example-request-1",
+    "https://docs.dremio.com/#example-request-2",
+    "https://docs.dremio.com/#exchange-a-refresh-token",
+    "https://docs.dremio.com/#exchange-an-external-jwt",
+    "https://docs.dremio.com/#exclude",
+    "https://docs.dremio.com/#external-jwt",
+    "https://docs.dremio.com/#external-jwt-exchange",
+    "https://docs.dremio.com/#external-service-principal-authentication",
+    "https://docs.dremio.com/#filter",
+    "https://docs.dremio.com/#filter-output",
+    "https://docs.dremio.com/#filter-query-parameter",
+    "https://docs.dremio.com/#format-output",
+    "https://docs.dremio.com/#iceberg-rest-catalog-api",
+    "https://docs.dremio.com/#idempotent-requests",
+    "https://docs.dremio.com/#include",
+    "https://docs.dremio.com/#install",
+    "https://docs.dremio.com/#interactive-mode",
+    "https://docs.dremio.com/#jobs",
+    "https://docs.dremio.com/#legacy-authentication-methods",
+    "https://docs.dremio.com/#limit",
+    "https://docs.dremio.com/#listing-all-pats-for-one-user",
+    "https://docs.dremio.com/#m2m-applications-authentication-methods",
+    "https://docs.dremio.com/#maxchildren",
+    "https://docs.dremio.com/#maxresults",
+    "https://docs.dremio.com/#maxresults-query-parameter",
+    "https://docs.dremio.com/#metadata",
+    "https://docs.dremio.com/#non-interactive-mode",
+    "https://docs.dremio.com/#oauth-access-tokens-enterprise",
+    "https://docs.dremio.com/#oauth-client-credentials",
+    "https://docs.dremio.com/#object-attributes",
+    "https://docs.dremio.com/#obtain-oauth-access-tokens-with-username-and-password",
+    "https://docs.dremio.com/#obtain-tokens-via-client-id-and-client-secret",
+    "https://docs.dremio.com/#obtain-tokens-via-username-and-password",
+    "https://docs.dremio.com/#offset",
+    "https://docs.dremio.com/#option-1-dremio-hosted-mcp-server",
+    "https://docs.dremio.com/#option-2-self-hosted-mcp-server",
+    "https://docs.dremio.com/#orderby",
+    "https://docs.dremio.com/#ownedby",
+    "https://docs.dremio.com/#pagetoken",
+    "https://docs.dremio.com/#pagetoken-query-parameter",
+    "https://docs.dremio.com/#parameters",
+    "https://docs.dremio.com/#parameters-1",
+    "https://docs.dremio.com/#parameters-2",
+    "https://docs.dremio.com/#parameters-3",
+    "https://docs.dremio.com/#pat-exchange",
+    "https://docs.dremio.com/#personal-access-token",
+    "https://docs.dremio.com/#personal-access-tokens-enterprise",
+    "https://docs.dremio.com/#prerequisites",
+    "https://docs.dremio.com/#prerequisites-1",
+    "https://docs.dremio.com/#query",
+    "https://docs.dremio.com/#query-parameters",
+    "https://docs.dremio.com/#redirect-urls-by-ai-client",
+    "https://docs.dremio.com/#reflections",
+    "https://docs.dremio.com/#response-status-codes",
+    "https://docs.dremio.com/#response-status-codes-1",
+    "https://docs.dremio.com/#response-status-codes-2",
+    "https://docs.dremio.com/#response-status-codes-3",
+    "https://docs.dremio.com/#response-status-codes-4",
+    "https://docs.dremio.com/#run-a-query",
+    "https://docs.dremio.com/#schema-and-catalog",
+    "https://docs.dremio.com/#search",
+    "https://docs.dremio.com/#server-modes",
+    "https://docs.dremio.com/#setup",
+    "https://docs.dremio.com/#single-sign-on",
+    "https://docs.dremio.com/#step-1-create-a-native-oauth-application",
+    "https://docs.dremio.com/#step-1-install-the-dremio-mcp-server",
+    "https://docs.dremio.com/#step-2-configure-the-dremio-connection",
+    "https://docs.dremio.com/#step-2-get-your-mcp-endpoint",
+    "https://docs.dremio.com/#step-3-configure-your-ai-client",
+    "https://docs.dremio.com/#step-3-configure-your-ai-client-1",
+    "https://docs.dremio.com/#timestamps",
+    "https://docs.dremio.com/#user-applications-authentication-methods",
+    "https://docs.dremio.com/#user-specified-maximum",
+    "https://docs.dremio.com/#username-and-password",
+    "https://docs.dremio.com/#users-and-access",
+    "https://docs.dremio.com/#uuids",
+    "https://docs.dremio.com/#validate-before-you-execute",
+    "https://docs.dremio.com/#verify-your-connection",
+    "https://docs.dremio.com/25.x/",
+    "https://docs.dremio.com/25.x/reference/api/",
+    "https://docs.dremio.com/25.x/security/authentication/",
+    "https://docs.dremio.com/cloud",
+    "https://docs.dremio.com/current",
+    "https://docs.dremio.com/current/",
+    "https://docs.dremio.com/current/acceleration/",
+    "https://docs.dremio.com/current/admin/",
+    "https://docs.dremio.com/current/client-applications/",
+    "https://docs.dremio.com/current/client-applications/drivers/arrow-flight-sql-jdbc-driver/",
+    "https://docs.dremio.com/current/client-applications/drivers/arrow-flight-sql-odbc-driver/",
+    "https://docs.dremio.com/current/data-products/",
+    "https://docs.dremio.com/current/data-sources/",
+    "https://docs.dremio.com/current/deploy-dremio/",
+    "https://docs.dremio.com/current/developer/",
+    "https://docs.dremio.com/current/developer/arrow-flight/",
+    "https://docs.dremio.com/current/developer/mcp-server/",
+    "https://docs.dremio.com/current/get-started/",
+    "https://docs.dremio.com/current/help-support/",
+    "https://docs.dremio.com/current/help-support/support-settings/#support-keys",
+    "https://docs.dremio.com/current/load-data/",
+    "https://docs.dremio.com/current/reference/",
+    "https://docs.dremio.com/current/reference/admin-cli/",
+    "https://docs.dremio.com/current/reference/api/",
+    "https://docs.dremio.com/current/reference/api/#built-in-maximum",
+    "https://docs.dremio.com/current/reference/api/#maxchildren-query-parameter",
+    "https://docs.dremio.com/current/reference/api/#user-specified-maximum",
+    "https://docs.dremio.com/current/reference/api/catalog/",
+    "https://docs.dremio.com/current/reference/api/catalog/container-folder/#retrieve-a-folder-by-id",
+    "https://docs.dremio.com/current/reference/api/catalog/container-space/#retrieve-a-space-by-id",
+    "https://docs.dremio.com/current/reference/api/catalog/source/#retrieve-a-source-by-id",
+    "https://docs.dremio.com/current/reference/api/data-maintenance",
+    "https://docs.dremio.com/current/reference/api/datasets/",
+    "https://docs.dremio.com/current/reference/api/engine-management/",
+    "https://docs.dremio.com/current/reference/api/external-token-providers/",
+    "https://docs.dremio.com/current/reference/api/job/",
+    "https://docs.dremio.com/current/reference/api/ldap-authorization",
+    "https://docs.dremio.com/current/reference/api/nodeCollections/",
+    "https://docs.dremio.com/current/reference/api/oauth-token",
+    "https://docs.dremio.com/current/reference/api/oauth-token/",
+    "https://docs.dremio.com/current/reference/api/oauth-token/#exchange-a-pat",
+    "https://docs.dremio.com/current/reference/api/oauth-token/#exchange-a-refresh-token",
+    "https://docs.dremio.com/current/reference/api/oauth-token/#obtain-tokens-via-username-and-password",
+    "https://docs.dremio.com/current/reference/api/personal-access-token",
+    "https://docs.dremio.com/current/reference/api/personal-access-token/",
+    "https://docs.dremio.com/current/reference/api/personal-access-token/#create-a-pat",
+    "https://docs.dremio.com/current/reference/api/reflections/",
+    "https://docs.dremio.com/current/reference/api/reflections/reflection-summary/#retrieve-a-reflection-summary",
+    "https://docs.dremio.com/current/reference/api/roles/",
+    "https://docs.dremio.com/current/reference/api/scripts/",
+    "https://docs.dremio.com/current/reference/api/search/",
+    "https://docs.dremio.com/current/reference/api/source",
+    "https://docs.dremio.com/current/reference/api/sql/",
+    "https://docs.dremio.com/current/reference/api/user/",
+    "https://docs.dremio.com/current/reference/api/wlm/",
+    "https://docs.dremio.com/current/reference/bulletins/",
+    "https://docs.dremio.com/current/reference/sql/",
+    "https://docs.dremio.com/current/release-notes/",
+    "https://docs.dremio.com/current/security/",
+    "https://docs.dremio.com/current/security/auditing/",
+    "https://docs.dremio.com/current/security/authentication/",
+    "https://docs.dremio.com/current/security/authentication/application-authentication/",
+    "https://docs.dremio.com/current/security/authentication/application-authentication/external-token/",
+    "https://docs.dremio.com/current/security/authentication/application-authentication/external-token/#retrieving-an-external-jwt",
+    "https://docs.dremio.com/current/security/authentication/identity-providers/",
+    "https://docs.dremio.com/current/security/authentication/identity-providers/#ldap",
+    "https://docs.dremio.com/current/security/authentication/identity-providers/#openid-connect-oidc-providers",
+    "https://docs.dremio.com/current/security/authentication/personal-access-tokens",
+    "https://docs.dremio.com/current/security/authentication/personal-access-tokens/",
+    "https://docs.dremio.com/current/security/authentication/personal-access-tokens/#creating-a-pat",
+    "https://docs.dremio.com/current/security/authentication/personal-access-tokens/#enabling-the-use-of-pats",
+    "https://docs.dremio.com/current/security/authentication/users",
+    "https://docs.dremio.com/current/security/authentication/users/",
+    "https://docs.dremio.com/current/security/authentication/users/#service-users",
+    "https://docs.dremio.com/current/security/authentication/users/#user-types",
+    "https://docs.dremio.com/current/security/compliance",
+    "https://docs.dremio.com/current/security/idle-session-timeout",
+    "https://docs.dremio.com/current/security/integrations/",
+    "https://docs.dremio.com/current/security/rbac/",
+    "https://docs.dremio.com/current/security/secrets-management/",
+    "https://docs.dremio.com/current/what-is-dremio/",
+    "https://docs.dremio.com/data-privacy/",
+    "https://docs.dremio.com/dremio-cloud",
+    "https://docs.dremio.com/dremio-cloud/",
+    "https://docs.dremio.com/dremio-cloud/about/",
+    "https://docs.dremio.com/dremio-cloud/admin/",
+    "https://docs.dremio.com/dremio-cloud/ai-integration/",
+    "https://docs.dremio.com/dremio-cloud/ai-integration/cli",
+    "https://docs.dremio.com/dremio-cloud/ai-integration/cli/",
+    "https://docs.dremio.com/dremio-cloud/ai-integration/mcp-server",
+    "https://docs.dremio.com/dremio-cloud/ai-integration/mcp-server/",
+    "https://docs.dremio.com/dremio-cloud/api/",
+    "https://docs.dremio.com/dremio-cloud/api/catalog/",
+    "https://docs.dremio.com/dremio-cloud/api/catalog/folder#retrieve-a-folder-by-id",
+    "https://docs.dremio.com/dremio-cloud/api/catalog/folder/",
+    "https://docs.dremio.com/dremio-cloud/api/catalog/source/",
+    "https://docs.dremio.com/dremio-cloud/api/catalog/source/#retrieve-a-source-by-id",
+    "https://docs.dremio.com/dremio-cloud/api/catalog/user-defined-function/",
+    "https://docs.dremio.com/dremio-cloud/api/data-maintenance",
+    "https://docs.dremio.com/dremio-cloud/api/data-maintenance/",
+    "https://docs.dremio.com/dremio-cloud/api/engine-rules",
+    "https://docs.dremio.com/dremio-cloud/api/engines",
+    "https://docs.dremio.com/dremio-cloud/api/external-token-providers",
+    "https://docs.dremio.com/dremio-cloud/api/identity-providers",
+    "https://docs.dremio.com/dremio-cloud/api/job/",
+    "https://docs.dremio.com/dremio-cloud/api/job/job-results/",
+    "https://docs.dremio.com/dremio-cloud/api/oauth-token",
+    "https://docs.dremio.com/dremio-cloud/api/oauth-token#exchange-a-pat",
+    "https://docs.dremio.com/dremio-cloud/api/personal-access-token",
+    "https://docs.dremio.com/dremio-cloud/api/projects",
+    "https://docs.dremio.com/dremio-cloud/api/projects#list-all-projects",
+    "https://docs.dremio.com/dremio-cloud/api/reflection/",
+    "https://docs.dremio.com/dremio-cloud/api/reflection/reflection-summary/",
+    "https://docs.dremio.com/dremio-cloud/api/reflection/reflection-summary/#retrieve-a-reflection-summary",
+    "https://docs.dremio.com/dremio-cloud/api/roles",
+    "https://docs.dremio.com/dremio-cloud/api/scripts",
+    "https://docs.dremio.com/dremio-cloud/api/scripts/",
+    "https://docs.dremio.com/dremio-cloud/api/search",
+    "https://docs.dremio.com/dremio-cloud/api/search/",
+    "https://docs.dremio.com/dremio-cloud/api/source",
+    "https://docs.dremio.com/dremio-cloud/api/sql",
+    "https://docs.dremio.com/dremio-cloud/api/users",
+    "https://docs.dremio.com/dremio-cloud/bring-data/",
+    "https://docs.dremio.com/dremio-cloud/changelog",
+    "https://docs.dremio.com/dremio-cloud/developer/",
+    "https://docs.dremio.com/dremio-cloud/explore-analyze/",
+    "https://docs.dremio.com/dremio-cloud/get-started/",
+    "https://docs.dremio.com/dremio-cloud/help-support/",
+    "https://docs.dremio.com/dremio-cloud/manage-govern/",
+    "https://docs.dremio.com/dremio-cloud/security/",
+    "https://docs.dremio.com/dremio-cloud/security/authentication/personal-access-token/",
+    "https://docs.dremio.com/dremio-cloud/sql/",
+    "https://docs.dremio.com/editions",
+    "https://docs.dremio.com/llms.txt",
+    "https://docs.dremio.com/responsibility",
+    "https://github.com/dremio-community",
+    "https://github.com/dremio/cli",
+    "https://github.com/dremio/dremio-mcp.gitcd",
+    "https://help.openai.com/en/articles/11487775-connectors-in-chatgpt#h_a454f0d0b6",
+    "https://iceberg.apache.org/",
+    "https://login.dremio.cloud/",
+    "https://login.dremio.cloud/oauth/token",
+    "https://mcp.dremio.cloud/mcp/{project_id}",
+    "https://mcp.eu.dremio.cloud/mcp/{project_id}",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://polaris.apache.org/",
+    "https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp#h_3d1a65aded",
+    "https://support.dremio.com",
+    "https://university.dremio.com",
+    "https://www.dremio.com/",
+    "https://www.dremio.com/about/",
+    "https://www.dremio.com/awards/",
+    "https://www.dremio.com/awards/dremio-achieves-leader-status-in-g2-fall-reports/",
+    "https://www.dremio.com/blog/breakthrough-announcement-dremio-is-the-fastest-lakehouse-20x-faster-on-tpc-ds/",
+    "https://www.dremio.com/blog/what-forresters-2026-data-lakehouse-landscape-signals-about-the-market-and-where-dremio-fits/",
+    "https://www.dremio.com/cloud/",
+    "https://www.dremio.com/community-edition/",
+    "https://www.dremio.com/customers/",
+    "https://www.dremio.com/enterprise/",
+    "https://www.dremio.com/get-started/",
+    "https://www.dremio.com/llms-full.txt",
+    "https://www.dremio.com/newsroom/",
+    "https://www.dremio.com/newsroom/dremio-1-vendor-in-dresners-2025-active-data-architecture-market-study/",
+    "https://www.dremio.com/open-source/",
+    "https://www.dremio.com/platform/",
+    "https://www.dremio.com/pricing/",
+    "https://www.dremio.com/solutions/",
+    "https://www.dremio.com/solutions/financial-services/",
+    "https://www.dremio.com/solutions/life-sciences-healthcare/",
+    "https://www.dremio.com/solutions/manufacturing/",
+    "https://www.dremio.com/solutions/retail-consumer-products/",
+    "https://www.dremio.com/solutions/technology/",
+    "https://www.dremio.com/use-cases/agentic-ai/",
+    "https://www.dremio.com/use-cases/data-fabric/",
+    "https://www.dremio.com/use-cases/hybrid-lakehouse/",
+    "https://www.dremio.com/use-cases/lake-to-iceberg-lakehouse/",
+    "https://www.dremio.com/use-cases/unified-data-analytics/",
+    "https://www.dremio.com/use-cases/warehouse-to-lakehouse/",
+    "https://www.gartner.com/reviews/market/data-lakehouse-platforms/vendor/dremio/product/dremio-1135869028",
+    "https://{h",
+    "https://{hostname}/api/v3/catalog",
+    "https://{hostname}/api/v3/catalog/2b1be882-7012-4a99-8d6c-82e32e4562e4?maxChildren=25&pageToken=BhQxNjc0MjhlYi03OTM2LTRlYTItYTFmYi0yM2IxYWM2ZTk0NTQSAA==",
+    "https://{hostname}/api/v3/reflection-summary?maxResults=25",
+    "https://{hostname}/api/v3/reflection-summary?pageToken=BhQxNjc0MjhlYi03OTM2LTRlYTItYTFmYi0yM2IxYWM2ZTk0NTQSAA==",
+    "https://{hostname}/api/v3/token",
+    "https://{hostname}/api/v3/user/b9dbebc7-bc3b-4d56-9154-31762ab65a43/token",
+    "https://{hostname}/api/v3/user/b9dbebc7-bc3b-4d56-9154-31762ab65a43/token/98ec8f42-7764-4d9d-af5a-693f1f1cc444",
+    "https://{hostname}/api/v3/{path_to_endpoint}",
+    "https://{hostname}/oauth/token",
+    "https://{self.dremio_host}:9047/oauth/token"
+  ]
+}

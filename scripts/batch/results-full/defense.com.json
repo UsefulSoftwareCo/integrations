@@ -1,0 +1,468 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "defense.com",
+    "detect": {
+      "domain": "defense.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T15:35:29.854Z",
+    "summary": "Defense.com exposes an MCP surface at its “AI-Powered Cyber Security” page (auth unknown) plus SIEM-style integration surfaces for Microsoft 365 (my.defense.com, using an Entra ID app/client ID + tenant ID + client secret), Cloudflare (API token), CrowdStrike (OAuth2 API client ID/secret/base URL), and Mimecast (application ID/key, service-account email, secret key), while AWS CloudTrail ingestion relies on a customer-created IAM role with external ID.",
+    "credentials": {
+      "m365_app": {
+        "type": "oauth2_cc",
+        "label": "Microsoft Entra ID app registration",
+        "generateUrl": "https://portal.azure.com",
+        "setup": "Create an app registration in [Microsoft Entra ID](https://portal.azure.com) for the Defense.com integration, then copy the `Application (client) ID`, `Directory (tenant) ID`, and create a `Client Secret` under **Certificates & secrets**. Defense.com says to use the app in **my.defense.com** under **Integrations** for the Microsoft 365 connector. The app must be granted the Microsoft Graph / Office 365 permissions listed in the integration guide.",
+        "acquisition": "manual"
+      },
+      "cloudflare_api_token": {
+        "type": "api_key",
+        "label": "Cloudflare API token",
+        "generateUrl": "https://dash.cloudflare.com/profile/api-tokens",
+        "setup": "In Cloudflare, open **My Profile** → **API Tokens** → **Create Token** → **Create Custom Token**. Grant the token **Account / Account Settings / Read**, scope it to the needed account, and save the token value when created. Defense.com asks you to provide the token and the Cloudflare Account ID to support for the SIEM integration.",
+        "acquisition": "manual"
+      },
+      "crowdstrike_api_client": {
+        "type": "app",
+        "label": "CrowdStrike Falcon API client",
+        "generateUrl": "https://falcon.crowdstrike.com",
+        "setup": "In the CrowdStrike Falcon console, go to **Support and Resources** → **API Clients and Keys** → **Add New API Client**. Create an OAuth2 API client, then copy the `Client ID`, `Secret`, and `Base URL` shown after creation. Defense.com uses these values for the CrowdStrike SIEM integration.",
+        "acquisition": "manual"
+      },
+      "mimecast_api_app": {
+        "type": "compound",
+        "label": "Mimecast API application and service account",
+        "generateUrl": "https://community.mimecast.com/s/article/Managing-API-Applications-505230018",
+        "setup": "Create a Mimecast API application and associate it with a service account. Defense.com requests the `Application ID`, `Application Key`, service account email address, and `Secret Key` for the SIEM integration. Enable Enhanced Logging for the relevant log type first, then provide the credentials to Defense.com support through a secure one-time link or ticket.",
+        "acquisition": "manual"
+      },
+      "aws_assumed_role": {
+        "type": "signature",
+        "label": "AWS IAM role with external ID",
+        "generateUrl": "https://console.aws.amazon.com/iam/",
+        "setup": "In AWS, create an IAM role for Defense.com's AWS account (`653730588838`) with **Require external ID** enabled, attach the permissions specified by the guide, and record the role ARN plus the external ID. Defense.com uses the role ARN, external ID, S3 bucket ARN, and SQS queue ARN to ingest CloudTrail logs.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "defense-com-ai-powered-cyber-security-mcp",
+        "name": "Defense.com AI-Powered Cyber Security MCP",
+        "type": "mcp",
+        "docs": "https://www.defense.com/ai-cyber-security-powered-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.defense.com/llms.txt",
+            "https://www.defense.com/ai-cyber-security-powered-mcp"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://www.defense.com/ai-cyber-security-powered-mcp"
+      },
+      {
+        "slug": "defense-com-microsoft-365-integration",
+        "name": "Defense.com Microsoft 365 integration",
+        "type": "http",
+        "docs": "https://help.defense.com/en/articles/8811767-how-to-integrate-microsoft-365",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.defense.com/en/articles/8811767-how-to-integrate-microsoft-365",
+            "https://help.defense.com/en/articles/8380052-generating-a-client-secret-in-microsoft-azure-active-directory-entra-id"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "m365_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "headerName": "Application (client) ID",
+                    "scheme": "oauth2"
+                  }
+                },
+                {
+                  "id": "m365_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "headerName": "Directory (tenant) ID",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.defense.com/en/articles/8811767-how-to-integrate-microsoft-365",
+                  "https://help.defense.com/en/articles/8380052-generating-a-client-secret-in-microsoft-azure-active-directory-entra-id"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://my.defense.com"
+      },
+      {
+        "slug": "defense-com-cloudflare-siem-integration",
+        "name": "Defense.com Cloudflare SIEM integration",
+        "type": "http",
+        "docs": "https://help.defense.com/en/articles/12266396-how-to-integrate-cloudflare",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.defense.com/en/articles/12266396-how-to-integrate-cloudflare"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cloudflare_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.defense.com/en/articles/12266396-how-to-integrate-cloudflare"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.defense.com"
+      },
+      {
+        "slug": "defense-com-crowdstrike-siem-integration",
+        "name": "Defense.com CrowdStrike SIEM integration",
+        "type": "http",
+        "docs": "https://help.defense.com/en/articles/13176136-how-to-integrate-crowdstrike",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.defense.com/en/articles/13176136-how-to-integrate-crowdstrike"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "crowdstrike_api_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.defense.com/en/articles/13176136-how-to-integrate-crowdstrike"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.crowdstrike.com"
+      },
+      {
+        "slug": "defense-com-mimecast-siem-integration",
+        "name": "Defense.com Mimecast SIEM integration",
+        "type": "http",
+        "docs": "https://help.defense.com/en/articles/14657766-how-to-integrate-mimecast",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://help.defense.com/en/articles/14657766-how-to-integrate-mimecast"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mimecast_api_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://help.defense.com/en/articles/14657766-how-to-integrate-mimecast"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.mimecast.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T15:35:29.854Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 281539,
+    "completion_tokens": 2041,
+    "total_tokens": 283580
+  },
+  "visited": [
+    "https://defense.com/llms.txt",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://help.defense.com",
+    "https://help.defense.com/en/articles/12266396-how-to-integrate-cloudflare",
+    "https://help.defense.com/en/articles/12821145-how-to-integrate-aws-cloudtrail",
+    "https://help.defense.com/en/articles/13176136-how-to-integrate-crowdstrike",
+    "https://help.defense.com/en/articles/14657766-how-to-integrate-mimecast",
+    "https://help.defense.com/en/articles/8380052-generating-a-client-secret-in-microsoft-azure-active-directory-entra-id",
+    "https://help.defense.com/en/articles/8811767-how-to-integrate-microsoft-365",
+    "https://help.defense.com/en/collections/12153901-orbital-agent",
+    "https://help.defense.com/en/collections/2798076-siem",
+    "https://help.defense.com/en/collections/7361978-integrations",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.defense.com/ai-cyber-security-powered-mcp",
+    "https://www.defense.com/integrations",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "http://portal.azure.com",
+    "https://community.mimecast.com/s/article/Managing-API-Applications-505230018",
+    "https://console.aws.amazon.com/s3/",
+    "https://dash.cloudflare.com/login",
+    "https://defense.com/llms.txt",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://help.defense.com",
+    "https://help.defense.com/#h_01cc1b7b68",
+    "https://help.defense.com/#h_17b701144a",
+    "https://help.defense.com/#h_1fd09ce767",
+    "https://help.defense.com/#h_372c25fefc",
+    "https://help.defense.com/#h_3f5c08fb6a",
+    "https://help.defense.com/#h_40c342e884",
+    "https://help.defense.com/#h_4990a93e5d",
+    "https://help.defense.com/#h_4ae0f00039",
+    "https://help.defense.com/#h_64feab4e4e",
+    "https://help.defense.com/#h_66f2b5b4fd",
+    "https://help.defense.com/#h_6700672ebf",
+    "https://help.defense.com/#h_679df34dc9",
+    "https://help.defense.com/#h_7e8c822cf9",
+    "https://help.defense.com/#h_9d7d619455",
+    "https://help.defense.com/#h_ae8980dceb",
+    "https://help.defense.com/#h_b542e5dfa4",
+    "https://help.defense.com/#h_ba534807dc",
+    "https://help.defense.com/#h_ceab4660d6",
+    "https://help.defense.com/#h_e347777b2c",
+    "https://help.defense.com/#h_ed3c530773",
+    "https://help.defense.com/#h_fc72521420",
+    "https://help.defense.com/#h_fcd7996c77",
+    "https://help.defense.com/#main-content",
+    "https://help.defense.com/en/",
+    "https://help.defense.com/en/articles/10365587-how-to-manage-siem-runbook-suppression",
+    "https://help.defense.com/en/articles/10420848-how-to-enable-the-users-module-for-your-microsoft-365-integration",
+    "https://help.defense.com/en/articles/10577378-how-to-deploy-the-orbital-agent-on-windows",
+    "https://help.defense.com/en/articles/10681838-how-to-create-scheduled-reports",
+    "https://help.defense.com/en/articles/10682260-how-to-create-saved-detection-rules",
+    "https://help.defense.com/en/articles/10858866-how-to-integrate-aws-guardduty",
+    "https://help.defense.com/en/articles/11095601-how-to-grant-an-azure-application-securityalert-read-all-permissions",
+    "https://help.defense.com/en/articles/11402850-how-to-set-up-azure-activity-logs-for-defense-com-siem",
+    "https://help.defense.com/en/articles/11621583-how-to-use-webhooks-to-create-issues-for-threats-in-jira",
+    "https://help.defense.com/en/articles/12002674-how-to-grant-an-azure-application-directory-read-all-permissions",
+    "https://help.defense.com/en/articles/12059054-how-to-run-the-linux-troubleshooting-script",
+    "https://help.defense.com/en/articles/12060830-how-to-run-the-windows-troubleshooting-script",
+    "https://help.defense.com/en/articles/12266396-how-to-integrate-cloudflare",
+    "https://help.defense.com/en/articles/12818423-how-to-uninstall-the-orbital-agent",
+    "https://help.defense.com/en/articles/12821145-how-to-integrate-aws-cloudtrail",
+    "https://help.defense.com/en/articles/12829897-how-to-integrate-azure-event-hubs",
+    "https://help.defense.com/en/articles/12830947-how-to-integrate-sentinelone",
+    "https://help.defense.com/en/articles/12831307-how-to-integrate-your-sonicwall-firewall",
+    "https://help.defense.com/en/articles/12831391-how-to-integrate-your-sophos-firewall",
+    "https://help.defense.com/en/articles/12859244-how-to-integrate-your-fortinet-fortigate-firewall-with-defense-com",
+    "https://help.defense.com/en/articles/12859258-how-to-integrate-carbon-black-with-defense-com",
+    "https://help.defense.com/en/articles/12867484-how-to-integrate-your-watchguard-firewall",
+    "https://help.defense.com/en/articles/12878913-how-to-integrate-your-hpe-aruba-switch-with-defense-com",
+    "https://help.defense.com/en/articles/12960968-how-to-integrate-your-palo-alto-device",
+    "https://help.defense.com/en/articles/12982796-how-to-delete-a-google-cloud-project",
+    "https://help.defense.com/en/articles/12995767-how-to-integrate-your-draytek-device",
+    "https://help.defense.com/en/articles/13003691-how-to-configure-file-integrity-monitoring-on-windows",
+    "https://help.defense.com/en/articles/13160132-how-to-integrate-checkpoint-harmony",
+    "https://help.defense.com/en/articles/13161235-how-to-integrate-forcepoint",
+    "https://help.defense.com/en/articles/13176136-how-to-integrate-crowdstrike",
+    "https://help.defense.com/en/articles/13463929-architectural-overview-data-sovereignty-pipeline-security",
+    "https://help.defense.com/en/articles/13513544-how-to-close-security-events",
+    "https://help.defense.com/en/articles/13600466-how-to-integrate-your-juniper-switch",
+    "https://help.defense.com/en/articles/13671982-how-to-integrate-cisco-umbrella",
+    "https://help.defense.com/en/articles/13684622-how-to-integrate-hubspot",
+    "https://help.defense.com/en/articles/13926718-how-to-use-webhooks-to-create-threat-notifications-in-microsoft-teams",
+    "https://help.defense.com/en/articles/14017012-how-to-deploy-the-orbital-agent-on-linux",
+    "https://help.defense.com/en/articles/14121149-how-to-isolate-a-device-using-the-orbital-agent",
+    "https://help.defense.com/en/articles/14121245-how-to-create-a-new-orbital-agent-group",
+    "https://help.defense.com/en/articles/14288068-how-to-integrate-auth0-with-defense-com",
+    "https://help.defense.com/en/articles/14299330-how-to-integrate-your-esxi-hosts",
+    "https://help.defense.com/en/articles/14495459-how-to-manage-orbital-agent-isolation-rules",
+    "https://help.defense.com/en/articles/14657766-how-to-integrate-mimecast",
+    "https://help.defense.com/en/articles/14752404-how-to-deploy-a-log-collector-using-orbital-on-linux",
+    "https://help.defense.com/en/articles/14753051-how-to-ship-logs-to-your-collector-using-orbital-on-windows",
+    "https://help.defense.com/en/articles/15030173-how-to-generate-a-new-sophos-client-id-and-client-secret",
+    "https://help.defense.com/en/articles/15083380-how-to-integrate-eset-protect",
+    "https://help.defense.com/en/articles/15223385-how-to-install-the-defense-com-threat-analysis-extension-in-claude-desktop",
+    "https://help.defense.com/en/articles/15360216-how-to-integrate-microsoft-copilot-with-defense-com-threat-api",
+    "https://help.defense.com/en/articles/15360284-how-to-integrate-beacon",
+    "https://help.defense.com/en/articles/15423027-how-to-log-out-users-using-orbital",
+    "https://help.defense.com/en/articles/15586703-webhook-payloads",
+    "https://help.defense.com/en/articles/15768823-how-to-integrate-forcepoint-one",
+    "https://help.defense.com/en/articles/5908315-how-to-raise-a-support-ticket",
+    "https://help.defense.com/en/articles/5913467-understanding-runbooks",
+    "https://help.defense.com/en/articles/5987981-introduction-to-lucene-queries",
+    "https://help.defense.com/en/articles/8380052-generating-a-client-secret-in-microsoft-azure-active-directory-entra-id",
+    "https://help.defense.com/en/articles/8420722-onboarding-cisco-meraki-to-defense-com",
+    "https://help.defense.com/en/articles/8504821-how-to-integrate-aws-cloudwatch",
+    "https://help.defense.com/en/articles/8504821-onboarding-aws-cloudwatch-to-defense-com",
+    "https://help.defense.com/en/articles/8811767-how-to-integrate-microsoft-365",
+    "https://help.defense.com/en/articles/8811767-how-to-integrate-microsoft-365-into-defense-com",
+    "https://help.defense.com/en/collections/10389825-collectors",
+    "https://help.defense.com/en/collections/10389837-agents",
+    "https://help.defense.com/en/collections/10389991-linux",
+    "https://help.defense.com/en/collections/10389992-microsoft-windows",
+    "https://help.defense.com/en/collections/10390007-linux",
+    "https://help.defense.com/en/collections/10390008-microsoft-windows",
+    "https://help.defense.com/en/collections/10390009-general",
+    "https://help.defense.com/en/collections/12153901-orbital-agent",
+    "https://help.defense.com/en/collections/12806137-support",
+    "https://help.defense.com/en/collections/1305684-account-management",
+    "https://help.defense.com/en/collections/2798065-asset-profile",
+    "https://help.defense.com/en/collections/2798071-vulnerability-scans",
+    "https://help.defense.com/en/collections/2798074-penetration-tests",
+    "https://help.defense.com/en/collections/2798076-siem",
+    "https://help.defense.com/en/collections/2798077-recon",
+    "https://help.defense.com/en/collections/2798079-training",
+    "https://help.defense.com/en/collections/2798080-threats",
+    "https://help.defense.com/en/collections/3035614-endpoint-protection",
+    "https://help.defense.com/en/collections/3233790-partners",
+    "https://help.defense.com/en/collections/3464331-phishing",
+    "https://help.defense.com/en/collections/3508365-remediations",
+    "https://help.defense.com/en/collections/3641820-compliance",
+    "https://help.defense.com/en/collections/7361978-integrations",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://learn.microsoft.com/en-us/purview/audit-log-enable-disable?tabs=microsoft-purview-portal",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://my.defense.com",
+    "https://my.defense.com/integrations",
+    "https://onetimesecret.com/",
+    "https://onetimesecret.com/en/",
+    "https://portal.azure.com",
+    "https://status.defense.com/",
+    "https://status.defense.com/api/v2/summary.json",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.defense.com",
+    "https://www.defense.com/#",
+    "https://www.defense.com/#integration-modal-auth0",
+    "https://www.defense.com/#integration-modal-aws",
+    "https://www.defense.com/#integration-modal-aws_cloudtrail",
+    "https://www.defense.com/#integration-modal-aws_cloudwatch",
+    "https://www.defense.com/#integration-modal-aws_guard_duty",
+    "https://www.defense.com/#integration-modal-azure",
+    "https://www.defense.com/#integration-modal-azure_active_directory",
+    "https://www.defense.com/#integration-modal-azure_event_hubs",
+    "https://www.defense.com/#integration-modal-bitdefender",
+    "https://www.defense.com/#integration-modal-carbon_black",
+    "https://www.defense.com/#integration-modal-cisco_umbrella",
+    "https://www.defense.com/#integration-modal-cloudflare",
+    "https://www.defense.com/#integration-modal-defender_for_endpoint",
+    "https://www.defense.com/#integration-modal-draytek",
+    "https://www.defense.com/#integration-modal-duo_security",
+    "https://www.defense.com/#integration-modal-eset",
+    "https://www.defense.com/#integration-modal-forcepoint",
+    "https://www.defense.com/#integration-modal-google",
+    "https://www.defense.com/#integration-modal-linux",
+    "https://www.defense.com/#integration-modal-m365",
+    "https://www.defense.com/#integration-modal-windows",
+    "https://www.defense.com/about",
+    "https://www.defense.com/advanced-cyber-security-business-owners",
+    "https://www.defense.com/ai-cybe",
+    "https://www.defense.com/ai-cyber-security-powered-mcp",
+    "https://www.defense.com/application-scanning",
+    "https://www.defense.com/asset-profile",
+    "https://www.defense.com/become-a-partner",
+    "https://www.defense.com/blog",
+    "https://www.defense.com/case-studies",
+    "https://www.defense.com/contact",
+    "https://www.defense.com/cookie-policy",
+    "https://www.defense.com/cookies",
+    "https://www.defense.com/cyber-essentials",
+    "https://www.defense.com/cyber-security-awareness-training",
+    "https://www.defense.com/cyber-security-glossary",
+    "https://www.defense.com/cyber-security-management-it-managers",
+    "https://www.defense.com/cyber-security-risk-management-tool",
+    "https://www.defense.com/cyber-security-solution-mid-market",
+    "https://www.defense.com/endpoint-detection-response",
+    "https://www.defense.com/endpoint-protection",
+    "https://www.defense.com/enterprise-security-solution",
+    "https://www.defense.com/events",
+    "https://www.defense.com/extended-detection-response",
+    "https://www.defense.com/free-trial",
+    "https://www.defense.com/ftc-safeguards-rule",
+    "https://www.defense.com/glossary",
+    "https://www.defense.com/guides",
+    "https://www.defense.com/industries/education",
+    "https://www.defense.com/industries/healthcare",
+    "https://www.defense.com/integrations",
+    "https://www.defense.com/log-monitoring",
+    "https://www.defense.com/managed-detection-and-response",
+    "https://www.defense.com/managed-security-service-provider",
+    "https://www.defense.com/managed-siem",
+    "https://www.defense.com/managed-soc",
+    "https://www.defense.com/microsoft-365",
+    "https://www.defense.com/mission",
+    "https://www.defense.com/orbital-agent",
+    "https://www.defense.com/partners",
+    "https://www.defense.com/penetration-testing",
+    "https://www.defense.com/phishing-simulator",
+    "https://www.defense.com/platform",
+    "https://www.defense.com/pricing",
+    "https://www.defense.com/privacy",
+    "https://www.defense.com/security-awareness-training",
+    "https://www.defense.com/sitemap.xml",
+    "https://www.defense.com/small-business-cyber-security-solution",
+    "https://www.defense.com/solutions/pci-dss",
+    "https://www.defense.com/terms",
+    "https://www.defense.com/threat-recon",
+    "https://www.defense.com/videos",
+    "https://www.defense.com/vulnerability-scanning",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

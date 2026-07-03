@@ -1,0 +1,640 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "temporal.io",
+    "detect": {
+      "domain": "temporal.io",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:02:27.530Z",
+    "summary": "Temporal exposes a Cloud Ops HTTP API, two CLIs (`temporal` and `tcld`), and documents a community MCP server; authentication is via Temporal Cloud API keys, interactive OAuth login stored in CLI profiles, or mTLS certificates for namespace access.",
+    "description": "Temporal is a durable execution platform for building reliable applications and orchestrating long-running workflows. It offers open-source workflow infrastructure and a managed Temporal Cloud service for running and administering workflows.",
+    "credentials": {
+      "cloud_api_key": {
+        "type": "api_key",
+        "label": "Temporal Cloud API key",
+        "generateUrl": "https://docs.temporal.io/cloud/api-keys",
+        "setup": "In Temporal Cloud, create an API key from the Cloud UI or with [`tcld apikey create`](https://docs.temporal.io/cloud/tcld/apikey). The key is managed from the [Manage API keys](https://docs.temporal.io/cloud/api-keys) guide; copy the secret when it is created because the CLI docs note you won't be able to retrieve it again.",
+        "acquisition": "manual"
+      },
+      "cloud_oauth_login": {
+        "type": "oauth2",
+        "label": "Temporal Cloud interactive login token",
+        "generateUrl": "https://docs.temporal.io/cli/cloud",
+        "setup": "Install the Temporal Cloud CLI extension as documented in [Install and configure the CLI](https://docs.temporal.io/cli/setup-cli), then run `temporal cloud login --profile <name>` as described in [Use with Temporal Cloud](https://docs.temporal.io/cli/cloud). This opens a browser, authenticates with Temporal Cloud, and stores the OAuth token in your selected CLI profile/TOML config. The standalone `tcld` CLI also supports browser login via [`tcld login`](https://docs.temporal.io/cloud/tcld/login).",
+        "acquisition": "manual"
+      },
+      "cloud_mtls_cert": {
+        "type": "compound",
+        "label": "Temporal Cloud mTLS client certificate and private key",
+        "generateUrl": "https://docs.temporal.io/cloud/certificates",
+        "setup": "Configure mTLS for your Temporal Cloud Namespace following [Authenticate with mTLS certificates](https://docs.temporal.io/cloud/certificates). You must upload/manage the Namespace CA configuration in Temporal Cloud, then generate or obtain a client certificate and matching private key that meet Temporal's X.509 requirements. Use the resulting cert/key files with CLI flags like `--tls-cert-path` and `--tls-key-path`, or the equivalent SDK/client configuration.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "temporal-cli",
+        "name": "Temporal CLI",
+        "type": "cli",
+        "docs": "https://docs.temporal.io/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.temporal.io/cli",
+            "https://docs.temporal.io/cli/setup-cli",
+            "https://docs.temporal.io/cli/cloud",
+            "https://docs.temporal.io/develop/environment-configuration"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cloud_oauth_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "temporal cloud login --profile <name>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.temporal.io/cli/cloud",
+                  "https://docs.temporal.io/develop/environment-configuration"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cloud_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "temporal workflow list --address <namespace>.<account>.tmprl.cloud:7233 --namespace <namespace>.<account> --api-key <your-api-key>",
+                    "env": [
+                      "TEMPORAL_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.temporal.io/cli/setup-cli",
+                  "https://docs.temporal.io/cli/cloud"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cloud_mtls_cert",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "temporal workflow list --address <namespace>.<account>.tmprl.cloud:7233 --namespace <namespace>.<account> --tls-cert-path /path/to/client.pem --tls-key-path /path/to/client.key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.temporal.io/cli/cloud",
+                  "https://docs.temporal.io/cloud/certificates"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "temporal"
+          },
+          {
+            "registryType": "docker",
+            "identifier": "temporalio/temporal",
+            "runtimeHint": "docker"
+          }
+        ],
+        "command": "temporal"
+      },
+      {
+        "slug": "temporal-cloud-cli-tcld",
+        "name": "Temporal Cloud CLI (tcld)",
+        "type": "cli",
+        "docs": "https://docs.temporal.io/cloud/tcld",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.temporal.io/cloud/tcld",
+            "https://docs.temporal.io/cloud/tcld/login",
+            "https://docs.temporal.io/cloud/tcld/apikey",
+            "https://docs.temporal.io/cloud/api-keys"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cloud_oauth_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "tcld login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.temporal.io/cloud/tcld/login"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cloud_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.temporal.io/cloud/api-keys",
+                  "https://docs.temporal.io/ops"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "temporalio/brew/tcld"
+          }
+        ],
+        "command": "tcld"
+      },
+      {
+        "slug": "temporal-cloud-ops-api",
+        "name": "Temporal Cloud Ops API",
+        "type": "http",
+        "docs": "https://docs.temporal.io/ops",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.temporal.io/ops",
+            "https://saas-api.tmprl.cloud/docs/httpapi.html#description/introduction",
+            "https://docs.temporal.io/cloud/api-keys"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cloud_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://saas-api.tmprl.cloud/docs/httpapi.html#description/introduction",
+                  "https://docs.temporal.io/ops"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://saas-api.tmprl.cloud"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:02:27.530Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 189080,
+    "completion_tokens": 1975,
+    "total_tokens": 191055
+  },
+  "visited": [
+    "https://community.temporal.io/t/temporal-cli-api-key-support-environment-and-config-file-issues/15954",
+    "https://docs.temporal.io/",
+    "https://docs.temporal.io/cli",
+    "https://docs.temporal.io/cli/cloud",
+    "https://docs.temporal.io/cli/setup-cli",
+    "https://docs.temporal.io/cloud",
+    "https://docs.temporal.io/cloud/api-keys",
+    "https://docs.temporal.io/cloud/certificates",
+    "https://docs.temporal.io/cloud/tcld",
+    "https://docs.temporal.io/cloud/tcld/apikey",
+    "https://docs.temporal.io/cloud/tcld/login",
+    "https://docs.temporal.io/develop/environment-configuration",
+    "https://docs.temporal.io/ops",
+    "https://github.com/GethosTheWalrus/temporal-mcp",
+    "https://saas-api.tmprl.cloud/docs/httpapi.html#description/introduction",
+    "https://temporal.io/code-exchange",
+    "https://temporal.io/code-exchange/temporal-mcp-server",
+    "https://temporal.io/llms.txt"
+  ],
+  "grounding": [
+    "http://localhost:8233",
+    "http://localhost:8233/",
+    "https://buf.build/temporalio/cloud-api/docs/main:temporal.api.cloud.cloudservice.v1#temporal.api.cloud.cloudservice.v1.CloudService",
+    "https://cloud.temporal.io/",
+    "https://cloud.temporal.io/profile/api-keys",
+    "https://cloud.temporal.io/settings/api-keys",
+    "https://community.temporal.io",
+    "https://community.temporal.io/",
+    "https://community.temporal.io/t/temporal-cli-api-key-support-environment-and-config-file-issues/15954",
+    "https://docs.temporal",
+    "https://docs.temporal.io",
+    "https://docs.temporal.io/",
+    "https://docs.temporal.io/#",
+    "https://docs.temporal.io/#--auto_confirm",
+    "https://docs.temporal.io/#--description",
+    "https://docs.temporal.io/#--disable-pop-up",
+    "https://docs.temporal.io/#--duration",
+    "https://docs.temporal.io/#--expiry",
+    "https://docs.temporal.io/#--id",
+    "https://docs.temporal.io/#--id-1",
+    "https://docs.temporal.io/#--id-2",
+    "https://docs.temporal.io/#--id-3",
+    "https://docs.temporal.io/#--name",
+    "https://docs.temporal.io/#--owner-id",
+    "https://docs.temporal.io/#--owner-type",
+    "https://docs.temporal.io/#--request-id",
+    "https://docs.temporal.io/#--request-id-1",
+    "https://docs.temporal.io/#--request-id-2",
+    "https://docs.temporal.io/#--request-id-3",
+    "https://docs.temporal.io/#--resource-version",
+    "https://docs.temporal.io/#--resource-version-1",
+    "https://docs.temporal.io/#--resource-version-2",
+    "https://docs.temporal.io/#--service-account-id",
+    "https://docs.temporal.io/#1-create-a-certificate-authority-ca",
+    "https://docs.temporal.io/#2-set-the-namespace-name",
+    "https://docs.temporal.io/#3-create-and-sign-an-end-entity-certificate",
+    "https://docs.temporal.io/#4-optional-convert-to-pkcs8-format-for-java-sdk",
+    "https://docs.temporal.io/#5-use-the-certificates-with-temporal-cloud",
+    "https://docs.temporal.io/#__docusaurus_skipToContent_fallback",
+    "https://docs.temporal.io/#account-level-rate-limit",
+    "https://docs.temporal.io/#api-key-permissions",
+    "https://docs.temporal.io/#api-key-prerequisites",
+    "https://docs.temporal.io/#api-key-supported-tooling",
+    "https://docs.temporal.io/#api-key-use-cases",
+    "https://docs.temporal.io/#bash-auto-completion",
+    "https://docs.temporal.io/#become-familiar-with-temporal-cloud",
+    "https://docs.temporal.io/#best-practices",
+    "https://docs.temporal.io/#build-tcld-from-source",
+    "https://docs.temporal.io/#ca-certificates",
+    "https://docs.temporal.io/#certificate-requirements",
+    "https://docs.temporal.io/#cli-basics",
+    "https://docs.temporal.io/#cli-integration",
+    "https://docs.temporal.io/#cloud-administration",
+    "https://docs.temporal.io/#command-reference",
+    "https://docs.temporal.io/#compile-the-api-and-use-the-generated-code-for-other-languages",
+    "https://docs.temporal.io/#configuration-methods",
+    "https://docs.temporal.io/#configure-proxy-support",
+    "https://docs.temporal.io/#configure-the-cli",
+    "https://docs.temporal.io/#connect-to-temporal-cloud",
+    "https://docs.temporal.io/#control-authorization",
+    "https://docs.temporal.io/#create",
+    "https://docs.temporal.io/#create-and-modify-configuration-files",
+    "https://docs.temporal.io/#delete",
+    "https://docs.temporal.io/#delete-an-api-key",
+    "https://docs.temporal.io/#delete-api-keys-with-tcld",
+    "https://docs.temporal.io/#delete-api-keys-with-the-temporal-cloud-ui",
+    "https://docs.temporal.io/#develop-applications-with-the-cloud-ops-api",
+    "https://docs.temporal.io/#development-server-configuration",
+    "https://docs.temporal.io/#disable",
+    "https://docs.temporal.io/#dynamic-configuration",
+    "https://docs.temporal.io/#enable",
+    "https://docs.temporal.io/#enable-auto-completion",
+    "https://docs.temporal.io/#enable-or-disable-an-api-key",
+    "https://docs.temporal.io/#enable-or-turn-off-the-temporal-web-ui",
+    "https://docs.temporal.io/#end-entity-certificates",
+    "https://docs.temporal.io/#environment-variables",
+    "https://docs.temporal.io/#faqs",
+    "https://docs.temporal.io/#feature-guides",
+    "https://docs.temporal.io/#fish-auto-completion",
+    "https://docs.temporal.io/#generate-an-api-key",
+    "https://docs.temporal.io/#generate-an-api-key-for-a-service-account",
+    "https://docs.temporal.io/#generate-api-keys-with-tcld",
+    "https://docs.temporal.io/#generate-api-keys-with-the-temporal-cloud-ui",
+    "https://docs.temporal.io/#generate-api-keys-with-the-temporal-cloud-ui-1",
+    "https://docs.temporal.io/#get",
+    "https://docs.temporal.io/#getting-cli-help",
+    "https://docs.temporal.io/#global-modifiers",
+    "https://docs.temporal.io/#important-considerations",
+    "https://docs.temporal.io/#install-and-configure-the-cli",
+    "https://docs.temporal.io/#install-tcld",
+    "https://docs.temporal.io/#install-tcld-by-using-homebrew",
+    "https://docs.temporal.io/#install-the-cli",
+    "https://docs.temporal.io/#install-the-temporal-cloud-extension",
+    "https://docs.temporal.io/#interactive-login",
+    "https://docs.temporal.io/#issue-certificates",
+    "https://docs.temporal.io/#list",
+    "https://docs.temporal.io/#load-configuration-profile-and-environment-variables",
+    "https://docs.temporal.io/#log-out",
+    "https://docs.temporal.io/#manage-api-key-state-with-tcld",
+    "https://docs.temporal.io/#manage-api-key-state-with-the-temporal-cloud-ui",
+    "https://docs.temporal.io/#manage-api-keys",
+    "https://docs.temporal.io/#manage-certificate-filters",
+    "https://docs.temporal.io/#manage-certificates",
+    "https://docs.temporal.io/#namespace-authentication",
+    "https://docs.temporal.io/#namespace-registration",
+    "https://docs.temporal.io/#next-steps",
+    "https://docs.temporal.io/#non-interactive-login",
+    "https://docs.temporal.io/#option-1-issue-a-separate-root-certificate-for-each-namespace",
+    "https://docs.temporal.io/#option-1-you-already-have-certificate-management-infrastructure",
+    "https://docs.temporal.io/#option-2-you-dont-have-certificate-management-infrastructure",
+    "https://docs.temporal.io/#overview",
+    "https://docs.temporal.io/#per-identity-rate-limits",
+    "https://docs.temporal.io/#prerequisites",
+    "https://docs.temporal.io/#provide-feedback",
+    "https://docs.temporal.io/#rate-limits",
+    "https://docs.temporal.io/#request-limit-increases",
+    "https://docs.temporal.io/#rotate-an-api-key",
+    "https://docs.temporal.io/#run-a-local-development-server",
+    "https://docs.temporal.io/#serviceaccount-api-keys",
+    "https://docs.temporal.io/#setting-up-proxy-support",
+    "https://docs.temporal.io/#start-a-development-server",
+    "https://docs.temporal.io/#tcld-commands",
+    "https://docs.temporal.io/#toml-file-configuration",
+    "https://docs.temporal.io/#troubleshooting",
+    "https://docs.temporal.io/#usage-guidelines",
+    "https://docs.temporal.io/#use-cases",
+    "https://docs.temporal.io/#use-step-cli-to-generate-certificates",
+    "https://docs.temporal.io/#use-tcld-to-generate-certificates",
+    "https://docs.temporal.io/#use-with-temporal-cloud",
+    "https://docs.temporal.io/#user-api-keys",
+    "https://docs.temporal.io/#using-apikeys",
+    "https://docs.temporal.io/#using-grpc",
+    "https://docs.temporal.io/#using-http",
+    "https://docs.temporal.io/#using-the-go-sdk",
+    "https://docs.temporal.io/#zsh-auto-completion",
+    "https://docs.temporal.io/activities",
+    "https://docs.temporal.io/ai-cookbook",
+    "https://docs.temporal.io/best-practices/",
+    "https://docs.temporal.io/best-practices/cloud-access-control",
+    "https://docs.temporal.io/cli",
+    "https://docs.temporal.io/cli#command-reference",
+    "https://docs.temporal.io/cli.md",
+    "https://docs.temporal.io/cli/cloud",
+    "https://docs.temporal.io/cli/cloud#interactive-login",
+    "https://docs.temporal.io/cli/cloud.md",
+    "https://docs.temporal.io/cli/command-reference",
+    "https://docs.temporal.io/cli/command-reference/cloud",
+    "https://docs.temporal.io/cli/command-reference/config",
+    "https://docs.temporal.io/cli/common-operations",
+    "https://docs.temporal.io/cli/setup-cli",
+    "https://docs.temporal.io/cli/setup-cli#environment-variables",
+    "https://docs.temporal.io/cli/setup-cli#install-the-temporal-cloud-extension",
+    "https://docs.temporal.io/cli/setup-cli.md",
+    "https://docs.temporal.io/cloud",
+    "https://docs.temporal.io/cloud.md",
+    "https://docs.temporal.io/cloud/api-keys",
+    "https://docs.temporal.io/cloud/api-keys#manage-api-keys",
+    "https://docs.temporal.io/cloud/api-keys.md",
+    "https://docs.temporal.io/cloud/audit-logs",
+    "https://docs.temporal.io/cloud/audit-logs-gcp",
+    "https://docs.temporal.io/cloud/billing",
+    "https://docs.temporal.io/cloud/billing-and-usage",
+    "https://docs.temporal.io/cloud/capacity-modes",
+    "https://docs.temporal.io/cloud/certificates",
+    "https://docs.temporal.io/cloud/certificates#configure-clients-to-use-client-certificates",
+    "https://docs.temporal.io/cloud/certificates#update-certificates-using-temporal-cloud-ui",
+    "https://docs.temporal.io/cloud/certificates.md",
+    "https://docs.temporal.io/cloud/connectivity",
+    "https://docs.temporal.io/cloud/export",
+    "https://docs.temporal.io/cloud/get-started",
+    "https://docs.temporal.io/cloud/get-started/",
+    "https://docs.temporal.io/cloud/high-availability",
+    "https://docs.temporal.io/cloud/limits",
+    "https://docs.temporal.io/cloud/manage-access",
+    "https://docs.temporal.io/cloud/manage-access/",
+    "https://docs.temporal.io/cloud/manage-access/custom-roles",
+    "https://docs.temporal.io/cloud/manage-access/permissions-reference",
+    "https://docs.temporal.io/cloud/manage-access/roles-and-permissions",
+    "https://docs.temporal.io/cloud/manage-access/saml",
+    "https://docs.temporal.io/cloud/manage-access/scim",
+    "https://docs.temporal.io/cloud/manage-access/service-accounts",
+    "https://docs.temporal.io/cloud/manage-access/user-groups",
+    "https://docs.temporal.io/cloud/manage-access/users",
+    "https://docs.temporal.io/cloud/metrics",
+    "https://docs.temporal.io/cloud/metrics/",
+    "https://docs.temporal.io/cloud/migrate",
+    "https://docs.temporal.io/cloud/namespaces",
+    "https://docs.temporal.io/cloud/nexus",
+    "https://docs.temporal.io/cloud/notifications",
+    "https://docs.temporal.io/cloud/notifications#admin-notifications",
+    "https://docs.temporal.io/cloud/overview",
+    "https://docs.temporal.io/cloud/pricing",
+    "https://docs.temporal.io/cloud/rpo-rto",
+    "https://docs.temporal.io/cloud/security",
+    "https://docs.temporal.io/cloud/service-availability",
+    "https://docs.temporal.io/cloud/service-health",
+    "https://docs.temporal.io/cloud/sla",
+    "https://docs.temporal.io/cloud/support",
+    "https://docs.temporal.io/cloud/support#support-ticket",
+    "https://docs.temporal.io/cloud/tcld",
+    "https://docs.temporal.io/cloud/tcld.md",
+    "https://docs.temporal.io/cloud/tcld/",
+    "https://docs.temporal.io/cloud/tcld/account",
+    "https://docs.temporal.io/cloud/tcld/apikey",
+    "https://docs.temporal.io/cloud/tcld/apikey#create",
+    "https://docs.temporal.io/cloud/tcld/apikey.md",
+    "https://docs.temporal.io/cloud/tcld/connectivity-rule",
+    "https://docs.temporal.io/cloud/tcld/feature",
+    "https://docs.temporal.io/cloud/tcld/generate-certificates",
+    "https://docs.temporal.io/cloud/tcld/login",
+    "https://docs.temporal.io/cloud/tcld/login.md",
+    "https://docs.temporal.io/cloud/tcld/logout",
+    "https://docs.temporal.io/cloud/tcld/migration",
+    "https://docs.temporal.io/cloud/tcld/namespace",
+    "https://docs.temporal.io/cloud/tcld/nexus",
+    "https://docs.temporal.io/cloud/tcld/request",
+    "https://docs.temporal.io/cloud/tcld/service-account",
+    "https://docs.temporal.io/cloud/tcld/user",
+    "https://docs.temporal.io/cloud/tcld/user-group",
+    "https://docs.temporal.io/cloud/tcld/version",
+    "https://docs.temporal.io/cloud/terraform-provider",
+    "https://docs.temporal.io/cloud/users",
+    "https://docs.temporal.io/cloud/worker-health",
+    "https://docs.temporal.io/clusters",
+    "https://docs.temporal.io/develop",
+    "https://docs.temporal.io/develop/",
+    "https://docs.temporal.io/develop/activity-retry-simulator",
+    "https://docs.temporal.io/develop/dotnet/",
+    "https://docs.temporal.io/develop/environment-configuration",
+    "https://docs.temporal.io/develop/environment-configuration#cli-integration",
+    "https://docs.temporal.io/develop/environment-configuration.md",
+    "https://docs.temporal.io/develop/go/",
+    "https://docs.temporal.io/develop/java/",
+    "https://docs.temporal.io/develop/php/",
+    "https://docs.temporal.io/develop/plugins-guide",
+    "https://docs.temporal.io/develop/python/",
+    "https://docs.temporal.io/develop/ruby/",
+    "https://docs.temporal.io/develop/rust/",
+    "https://docs.temporal.io/develop/safe-deployments",
+    "https://docs.temporal.io/develop/task-queue-priority-fairness",
+    "https://docs.temporal.io/develop/typescript/",
+    "https://docs.temporal.io/develop/worker-performance",
+    "https://docs.temporal.io/develop/worker-tuning-reference",
+    "https://docs.temporal.io/encyclopedia/",
+    "https://docs.temporal.io/encyclopedia/temporal-sdks#temporal-client",
+    "https://docs.temporal.io/evaluate/",
+    "https://docs.temporal.io/evaluate/development-production-features/release-stages#pre-release",
+    "https://docs.temporal.io/evaluate/development-production-features/release-stages#public-preview",
+    "https://docs.temporal.io/glossary",
+    "https://docs.temporal.io/integrations",
+    "https://docs.temporal.io/namespaces",
+    "https://docs.temporal.io/ops",
+    "https://docs.temporal.io/ops.md",
+    "https://docs.temporal.io/production-deployment",
+    "https://docs.temporal.io/production-deployment/data-encryption",
+    "https://docs.temporal.io/quickstarts",
+    "https://docs.temporal.io/references/",
+    "https://docs.temporal.io/references/client-environment-configuration",
+    "https://docs.temporal.io/security",
+    "https://docs.temporal.io/tags/api",
+    "https://docs.temporal.io/tags/tcld",
+    "https://docs.temporal.io/tags/temporal-cli",
+    "https://docs.temporal.io/tags/temporal-cloud",
+    "https://docs.temporal.io/troubleshooting/",
+    "https://docs.temporal.io/visibility",
+    "https://docs.temporal.io/with-ai",
+    "https://docs.temporal.io/workers#worker-process",
+    "https://github.com/GethosTheWalrus/temporal-mcp",
+    "https://github.com/grpc/grpc-go/blob/master/Documentation/proxy.md",
+    "https://github.com/protocolbuffers/protobuf/releases",
+    "https://github.com/scop/bash-completion#installation",
+    "https://github.com/smallstep/cli",
+    "https://github.com/smallstep/cli#installation",
+    "https://github.com/temporalio",
+    "https://github.com/temporalio/cli",
+    "https://github.com/temporalio/cloud-api",
+    "https://github.com/temporalio/cloud-api.gitcd",
+    "https://github.com/temporalio/cloud-api/blob/main/VERSION#L1C1-L1C14",
+    "https://github.com/temporalio/cloud-api/tree/main",
+    "https://github.com/temporalio/cloud-api/tree/main/temporal/api/cloud",
+    "https://github.com/temporalio/cloud-samples-go",
+    "https://github.com/temporalio/cloud-samples-go/blob/main/client/temporal/client.go",
+    "https://github.com/temporalio/cloud-sdk-go",
+    "https://github.com/temporalio/documentation",
+    "https://github.com/temporalio/documentation/blob/main/README.md",
+    "https://github.com/temporalio/samples-typescript/blob/main/env-config/src/load-from-file.ts",
+    "https://github.com/temporalio/sdk-dotnet",
+    "https://github.com/temporalio/sdk-go",
+    "https://github.com/temporalio/sdk-java",
+    "https://github.com/temporalio/sdk-php",
+    "https://github.com/temporalio/sdk-python",
+    "https://github.com/temporalio/sdk-ruby",
+    "https://github.com/temporalio/sdk-typescript",
+    "https://github.com/temporalio/tcld.gitcd",
+    "https://github.com/temporalio/temporal",
+    "https://go.dev/doc/install",
+    "https://grpc.io/docs/",
+    "https://grpc.io/docs/#official-support",
+    "https://grpc.io/docs/languages/",
+    "https://grpc.io/docs/languages/python/quickstart/#grpc-tools",
+    "https://hub.docker.com/r/temporalio/temporal",
+    "https://learn.temporal.io",
+    "https://learn.temporal.io/",
+    "https://learn.temporal.io/courses/",
+    "https://learn.temporal.io/courses/intro_to_temporal_cloud/",
+    "https://learn.temporal.io/courses/temporal_101/",
+    "https://learn.temporal.io/courses/temporal_102/",
+    "https://learn.temporal.io/examples/",
+    "https://learn.temporal.io/getting_started/",
+    "https://learn.temporal.io/tutorials/",
+    "https://pages.temporal.io/ask-an-expert",
+    "https://pages.temporal.io/contact-us",
+    "https://pages.temporal.io/newsletter-subscribe",
+    "https://replay.temporal.io/",
+    "https://saas-api.tmprl.cloud",
+    "https://saas-api.tmprl.cloud/#tag/API-Keys",
+    "https://saas-api.tmprl.cloud//cloud/account",
+    "https://saas-api.tmprl.cloud/docs/httpapi.html#description/introduction",
+    "https://status.temporal.io/",
+    "https://t.mp/slack",
+    "https://temporal.download/cli/archive/latest?platform=darwin&arch=amd64",
+    "https://temporal.download/cli/archive/latest?platform=darwin&arch=arm64",
+    "https://temporal.download/cli/archive/latest?platform=linux&arch=amd64",
+    "https://temporal.download/cli/archive/latest?platform=linux&arch=arm64",
+    "https://temporal.download/cli/archive/latest?platform=windows&arch=amd64",
+    "https://temporal.download/cli/archive/latest?platform=windows&arch=arm64",
+    "https://temporal.io/#main-content",
+    "https://temporal.io/about",
+    "https://temporal.io/blog",
+    "https://temporal.io/candidate-privacy-policy",
+    "https://temporal.io/careers",
+    "https://temporal.io/changelog",
+    "https://temporal.io/cloud",
+    "https://temporal.io/code-exchange",
+    "https://temporal.io/code-exchange/temporal-mcp-server",
+    "https://temporal.io/code-of-conduct",
+    "https://temporal.io/community",
+    "https://temporal.io/community#events",
+    "https://temporal.io/events",
+    "https://temporal.io/get-cloud",
+    "https://temporal.io/global-privacy-policy",
+    "https://temporal.io/how-it-works",
+    "https://temporal.io/in-use",
+    "https://temporal.io/llms.txt",
+    "https://temporal.io/news",
+    "https://temporal.io/partners",
+    "https://temporal.io/pricing",
+    "https://temporal.io/product",
+    "https://temporal.io/replay/2026",
+    "https://temporal.io/resources",
+    "https://temporal.io/security",
+    "https://temporal.io/setup/install-temporal-cli",
+    "https://temporal.io/sitemap",
+    "https://temporal.io/slack",
+    "https://temporal.io/solutions/ai",
+    "https://temporal.io/solutions/financial-services",
+    "https://temporal.io/solutions/platform-engineering",
+    "https://temporal.io/startup",
+    "https://temporal.io/temporal-cookie-policy",
+    "https://temporal.io/terms-of-servi",
+    "https://temporal.io/terms-of-service",
+    "https://trust.temporal.io",
+    "https://typescript.temporal.io/",
+    "https://www.scalar.com",
+    "https://www.youtube.com/c/Temporalio",
+    "https://x.com/temporalio"
+  ]
+}

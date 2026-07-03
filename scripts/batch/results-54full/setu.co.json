@@ -1,0 +1,823 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "setu.co",
+    "detect": {
+      "domain": "setu.co",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:26:02.725Z",
+    "summary": "Setu exposes multiple authenticated developer APIs for payments and financial-data workflows (UPI Setu, BBPS BillPay, AA Gateway, Insights, and eSign) plus an OAuth-protected MCP server for Bharat Connect BillPay.",
+    "description": "Setu provides fintech infrastructure in India for payments, bill payments, identity and signature workflows, and consented financial-data access. Its products let businesses embed UPI, BBPS, account-aggregator, insights, and eSign capabilities into their applications.",
+    "credentials": {
+      "setu_api_credentials": {
+        "type": "compound",
+        "label": "Setu API credentials (client ID/secret plus product or partner identifiers)",
+        "generateUrl": "https://bridge.setu.co/v2/signup",
+        "setup": "Create a developer account in [The Bridge signup](https://bridge.setu.co/v2/signup). In [Bridge settings](https://docs.setu.co/dev-tools/bridge/settings), use **API credentials** to view test credentials; live credentials are generated after a product goes live. Some products also require onboarding with Setu: BBPS BillPay says to contact [onboarding@setu.co](mailto:onboarding@setu.co) to obtain `clientID`, `secret`, and `X-PARTNER-ID`. Use the product-specific instance identifier where required, such as `x-product-instance-id`.",
+        "acquisition": "manual"
+      },
+      "setu_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Setu BillPay MCP OAuth client/session",
+        "generateUrl": "https://billpay-mcp.setu.co/register",
+        "setup": "For the Bharat Connect BillPay MCP server, use the server's OAuth 2.0 metadata advertised at [oauth-protected-resource](https://billpay-mcp.setu.co/.well-known/oauth-protected-resource) and [oauth-authorization-server](https://billpay-mcp.setu.co/.well-known/oauth-authorization-server). The MCP metadata exposes `registration_endpoint` at `https://billpay-mcp.setu.co/register` plus `authorization_endpoint` and `token_endpoint` on the same host. Register or use an MCP client against that authorization server, then obtain a Bearer token for `https://billpay-mcp.setu.co/mcp`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "setu-bbps-billpay-api",
+        "name": "Setu BBPS BillPay API",
+        "type": "http",
+        "docs": "https://docs.setu.co/payments/billpay/api-integration/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.setu.co/payments/billpay/api-integration/quickstart",
+            "https://docs.setu.co/payments/billpay/api-integration/api-reference"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-PARTNER-ID"
+                  }
+                },
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.setu.co/payments/billpay/api-integration/quickstart",
+                  "https://docs.setu.co/payments/billpay/api-integration/api-reference"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://sandbox-coudc.setu.co/api/v2"
+      },
+      {
+        "slug": "setu-upi-setu-api",
+        "name": "Setu UPI Setu API",
+        "type": "http",
+        "docs": "https://docs.setu.co/payments/umap/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.setu.co/payments/umap/api-integration",
+            "https://docs.setu.co/payments/umap/api-reference",
+            "https://docs.setu.co/dev-tools/bridge/settings"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "clientID"
+                  }
+                },
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "secret"
+                  }
+                },
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "client"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.setu.co/payments/umap/api-integration"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.setu.co/payments/umap/api-integration"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://accountservice.setu.co"
+      },
+      {
+        "slug": "setu-bharat-connect-billpay-mcp",
+        "name": "Setu Bharat Connect BillPay MCP",
+        "type": "mcp",
+        "docs": "https://setu.co/blog/Setu-Bill-Payments-MCP",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://setu.co/blog/Setu-Bill-Payments-MCP",
+            "https://billpay-mcp.setu.co/mcp",
+            "https://billpay-mcp.setu.co/.well-known/oauth-protected-resource",
+            "https://billpay-mcp.setu.co/.well-known/oauth-authorization-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "setu_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://billpay-mcp.setu.co/mcp",
+                  "https://billpay-mcp.setu.co/.well-known/oauth-protected-resource",
+                  "https://billpay-mcp.setu.co/.well-known/oauth-authorization-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://billpay-mcp.setu.co/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "setu-aa-gateway-api",
+        "name": "Setu AA Gateway API",
+        "type": "http",
+        "docs": "https://docs.setu.co/data/account-aggregator/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.setu.co/data/account-aggregator/api-reference",
+            "https://docs.setu.co/data/account-aggregator/api-integration",
+            "https://docs.setu.co/dev-tools/bridge/settings"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.setu.co/data/account-aggregator/api-reference",
+                  "https://docs.setu.co/data/account-aggregator/api-integration",
+                  "https://docs.setu.co/dev-tools/bridge/settings"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://fiu.setu.co"
+      },
+      {
+        "slug": "setu-insights-api",
+        "name": "Setu Insights API",
+        "type": "http",
+        "docs": "https://docs.setu.co/data/insights/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.setu.co/data/insights/api-reference",
+            "https://docs.setu.co/data/insights/quickstart/api-integration",
+            "https://docs.setu.co/dev-tools/bridge/settings"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-client-id"
+                  }
+                },
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-client-secret"
+                  }
+                },
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-product-instance-id"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.setu.co/data/insights/quickstart/api-integration",
+                  "https://docs.setu.co/dev-tools/bridge/settings"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://insights.setu.co"
+      },
+      {
+        "slug": "setu-data-gateway-esign-api",
+        "name": "Setu Data Gateway eSign API",
+        "type": "http",
+        "docs": "https://docs.setu.co/data/esign/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.setu.co/data/esign/api-reference",
+            "https://docs.setu.co/dev-tools/bridge/settings"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "setu_api_credentials",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.setu.co/data/esign/api-reference",
+                  "https://docs.setu.co/dev-tools/bridge/settings"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://dg.setu.co"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:26:02.725Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 266724,
+    "completion_tokens": 3024,
+    "total_tokens": 269748
+  },
+  "visited": [
+    "https://billpay-mcp.setu.co/.well-known/oauth-authorization-server",
+    "https://billpay-mcp.setu.co/.well-known/oauth-protected-resource",
+    "https://billpay-mcp.setu.co/mcp",
+    "https://developers.google.com/workspace/drive/api/guides/configure-mcp-server",
+    "https://developers.openai.com/codex/mcp",
+    "https://docs.newrelic.com/docs/agentic-ai/mcp/setup/",
+    "https://docs.setu.co/",
+    "https://docs.setu.co/data/account-aggregator/api-integration",
+    "https://docs.setu.co/data/account-aggregator/api-reference",
+    "https://docs.setu.co/data/account-aggregator/overview",
+    "https://docs.setu.co/data/esign/api-reference",
+    "https://docs.setu.co/data/esign/overview",
+    "https://docs.setu.co/data/insights/api-reference",
+    "https://docs.setu.co/data/insights/overview",
+    "https://docs.setu.co/data/insights/quickstart/api-integration",
+    "https://docs.setu.co/data/kyc/overview",
+    "https://docs.setu.co/dev-tools/bridge/settings",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference",
+    "https://docs.setu.co/payments/billpay/api-integration/apis",
+    "https://docs.setu.co/payments/billpay/api-integration/quickstart",
+    "https://docs.setu.co/payments/umap/api-integration",
+    "https://docs.setu.co/payments/umap/api-reference",
+    "https://heeki.medium.com/building-an-mcp-server-as-an-api-developer-cfc162d06a83",
+    "https://setu.co/",
+    "https://setu.co/blog/Setu-Bill-Payments-MCP",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ],
+  "grounding": [
+    "https://accountservice.setu.co",
+    "https://api.rebit.org.in/schema",
+    "https://billpay-mcp.setu.co",
+    "https://billpay-mcp.setu.co/.well-known/oauth-authorization-server",
+    "https://billpay-mcp.setu.co/.well-known/oauth-protected-resource",
+    "https://billpay-mcp.setu.co/authorize",
+    "https://billpay-mcp.setu.co/callback",
+    "https://billpay-mcp.setu.co/mcp",
+    "https://billpay-mcp.setu.co/register",
+    "https://billpay-mcp.setu.co/token",
+    "https://blog.setu.co",
+    "https://bridge.setu.co/v2/signup",
+    "https://coudc.setu.co",
+    "https://coudc.setu.co/api/v2/auth/token",
+    "https://d91labs.org/",
+    "https://developers.google.com/workspace/drive/api/guides/configure-mcp-server",
+    "https://developers.openai.com/codex/mcp",
+    "https://dg-sandbox.setu.co",
+    "https://dg.setu.co",
+    "https://di-uat.setu.co",
+    "https://docs.newrelic.com/docs/agentic-ai/mcp/setup/",
+    "https://docs.se",
+    "https://docs.setu.co/",
+    "https://docs.setu.co/#1--request-insight-generation",
+    "https://docs.setu.co/#2--retrieve-insights",
+    "https://docs.setu.co/#aadhaar-esign",
+    "https://docs.setu.co/#account-aggregator",
+    "https://docs.setu.co/#api-integration",
+    "https://docs.setu.co/#api-integration-guide",
+    "https://docs.setu.co/#building-with-setu-s-aa-stack",
+    "https://docs.setu.co/#create-fi-data-block-api",
+    "https://docs.setu.co/#data-category",
+    "https://docs.setu.co/#data-ingestion-apis",
+    "https://docs.setu.co/#fetch-bill",
+    "https://docs.setu.co/#fx-mandate-booking",
+    "https://docs.setu.co/#generate-access-token",
+    "https://docs.setu.co/#how-can-you-access-user-profile-",
+    "https://docs.setu.co/#how-does-it-work-",
+    "https://docs.setu.co/#how-to-integrate",
+    "https://docs.setu.co/#insight-generation-apis",
+    "https://docs.setu.co/#payments-category",
+    "https://docs.setu.co/#proceed-with-integration",
+    "https://docs.setu.co/#quickstart-api-integration",
+    "https://docs.setu.co/#settings",
+    "https://docs.setu.co/#step-1---get-your-api-keys",
+    "https://docs.setu.co/#step-2---provide-details-to-set-up-agent",
+    "https://docs.setu.co/#step-3---start-api-integration",
+    "https://docs.setu.co/#step-4---share-screens-for-npci-approval",
+    "https://docs.setu.co/#step-5---run-and-submit-test-cases",
+    "https://docs.setu.co/#val-add--value-added-services-",
+    "https://docs.setu.co/#what-can-i-do-with-this-product-",
+    "https://docs.setu.co/#what-can-you-build-",
+    "https://docs.setu.co/#what-can-you-do-with-this-product-",
+    "https://docs.setu.co/#what-is-esign-",
+    "https://docs.setu.co/#what-is-setu-insights-",
+    "https://docs.setu.co/#what-settings-are-available-",
+    "https://docs.setu.co/#when-do-i-have-access-to-multiple-organisations--and-how-do-i-access-it-",
+    "https://docs.setu.co/data",
+    "https://docs.setu.co/data/account-aggregator",
+    "https://docs.setu.co/data/account-aggregator/api-integration",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~AA_participants_APIs/path~/v2/fips/get",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~AA_participants_APIs/path~/v2/fips/{fip_id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~Consent_V2_APIs/path~/v2/consents/collection/post",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~Consent_V2_APIs/path~/v2/consents/collection/{id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~Consent_V2_APIs/path~/v2/consents/post",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~Consent_V2_APIs/path~/v2/consents/{consent_id}/data-sessions/get",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~Consent_V2_APIs/path~/v2/consents/{consent_id}/fetch/status/get",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~Consent_V2_APIs/path~/v2/consents/{request_id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~Consent_V2_APIs/path~/v2/consents/{request_id}/revoke/post",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~FI_data_fetch_V2_APIs/path~/v2/sessions/post",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~FI_data_fetch_V2_APIs/path~/v2/sessions/refresh/{consent_id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~FI_data_fetch_V2_APIs/path~/v2/sessions/refresh/{consent_id}/post",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/category~FI_data_fetch_V2_APIs/path~/v2/sessions/{session_id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-integration#/operation~getToken",
+    "https://docs.setu.co/data/account-aggregator/api-integration/account-availability-apis",
+    "https://docs.setu.co/data/account-aggregator/api-integration/api-reference",
+    "https://docs.setu.co/data/account-aggregator/api-integration/consent-flow",
+    "https://docs.setu.co/data/account-aggregator/api-integration/data-apis",
+    "https://docs.setu.co/data/account-aggregator/api-integration/fip-apis",
+    "https://docs.setu.co/data/account-aggregator/api-integration/notifications",
+    "https://docs.setu.co/data/account-aggregator/api-reference",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~AA_participants_APIs/path~/v2/fips/get",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~AA_participants_APIs/path~/v2/fips/{fip_id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~Consent_V2_APIs/path~/v2/consents/collection/post",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~Consent_V2_APIs/path~/v2/consents/collection/{id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~Consent_V2_APIs/path~/v2/consents/post",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~Consent_V2_APIs/path~/v2/consents/{consent_id}/data-sessions/get",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~Consent_V2_APIs/path~/v2/consents/{consent_id}/fetch/status/get",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~Consent_V2_APIs/path~/v2/consents/{request_id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~Consent_V2_APIs/path~/v2/consents/{request_id}/revoke/post",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~FI_data_fetch_V2_APIs/path~/v2/sessions/post",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~FI_data_fetch_V2_APIs/path~/v2/sessions/refresh/{consent_id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~FI_data_fetch_V2_APIs/path~/v2/sessions/refresh/{consent_id}/post",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/category~FI_data_fetch_V2_APIs/path~/v2/sessions/{session_id}/get",
+    "https://docs.setu.co/data/account-aggregator/api-reference#/operation~getToken",
+    "https://docs.setu.co/data/account-aggregator/consent-object",
+    "https://docs.setu.co/data/account-aggregator/embed-setu-aa",
+    "https://docs.setu.co/data/account-aggregator/fi-data-types",
+    "https://docs.setu.co/data/account-aggregator/licenses-and-go-live",
+    "https://docs.setu.co/data/account-aggregator/licenses-and-go-live/go-live",
+    "https://docs.setu.co/data/account-aggregator/licenses-and-go-live/licenses",
+    "https://docs.setu.co/data/account-aggregator/licenses-and-go-live/participants-in-aa",
+    "https://docs.setu.co/data/account-aggregator/multi-aa-gateway",
+    "https://docs.setu.co/data/account-aggregator/overview",
+    "https://docs.setu.co/data/account-aggregator/quickstart",
+    "https://docs.setu.co/data/account-aggregator/quickstart#quickstart-guide",
+    "https://docs.setu.co/data/bav",
+    "https://docs.setu.co/data/digilocker",
+    "https://docs.setu.co/data/ekyc",
+    "https://docs.setu.co/data/esign",
+    "https://docs.setu.co/data/esign/api-reference",
+    "https://docs.setu.co/data/esign/api-reference#/category~Flexible_eSign/operation~CreateSigRequestconfig",
+    "https://docs.setu.co/data/esign/api-reference#/category~Flexible_eSign/operation~GetSigningConfig",
+    "https://docs.setu.co/data/esign/api-reference#/category~Flexible_eSign/operation~UpdateSigningConfig",
+    "https://docs.setu.co/data/esign/api-reference#/category~Flexible_eSign/operation~UploadSigningConfig",
+    "https://docs.setu.co/data/esign/api-reference#/category~eSign_Template/operation~CreateSigRequestwithdoctemplate",
+    "https://docs.setu.co/data/esign/api-reference#/category~eSign_Template/operation~GetTemplate",
+    "https://docs.setu.co/data/esign/api-reference#/category~eSign_Template/operation~RendereSigndocumenttemplate",
+    "https://docs.setu.co/data/esign/api-reference#/category~eSign_Template/operation~UpdateeSigndocumenttemplate",
+    "https://docs.setu.co/data/esign/api-reference#/category~eSign_Template/operation~UploadeSigndocumenttemplate",
+    "https://docs.setu.co/data/esign/api-reference#/category~eStamp/operation~CreateSignatureRequestwithEStamp",
+    "https://docs.setu.co/data/esign/api-reference#/category~eStamp/operation~estampcount",
+    "https://docs.setu.co/data/esign/api-reference#/operation~CreateSignatureRequest",
+    "https://docs.setu.co/data/esign/api-reference#/operation~DeleteSignatureRequest",
+    "https://docs.setu.co/data/esign/api-reference#/operation~DownloadaSignedDocument",
+    "https://docs.setu.co/data/esign/api-reference#/operation~Downloaddocument",
+    "https://docs.setu.co/data/esign/api-reference#/operation~GetEsignAuditReport",
+    "https://docs.setu.co/data/esign/api-reference#/operation~GetSignatureRequestbyRequestID",
+    "https://docs.setu.co/data/esign/api-reference#/operation~UploadDocument",
+    "https://docs.setu.co/data/esign/error-codes",
+    "https://docs.setu.co/data/esign/estamp",
+    "https://docs.setu.co/data/esign/flexi-esign",
+    "https://docs.setu.co/data/esign/name-match",
+    "https://docs.setu.co/data/esign/notifications",
+    "https://docs.setu.co/data/esign/overview",
+    "https://docs.setu.co/data/esign/overview#/category~Flexible_eSign/operation~CreateSigRequestconfig",
+    "https://docs.setu.co/data/esign/overview#/category~Flexible_eSign/operation~GetSigningConfig",
+    "https://docs.setu.co/data/esign/overview#/category~Flexible_eSign/operation~UpdateSigningConfig",
+    "https://docs.setu.co/data/esign/overview#/category~Flexible_eSign/operation~UploadSigningConfig",
+    "https://docs.setu.co/data/esign/overview#/category~eSign_Template/operation~CreateSigRequestwithdoctemplate",
+    "https://docs.setu.co/data/esign/overview#/category~eSign_Template/operation~GetTemplate",
+    "https://docs.setu.co/data/esign/overview#/category~eSign_Template/operation~RendereSigndocumenttemplate",
+    "https://docs.setu.co/data/esign/overview#/category~eSign_Template/operation~UpdateeSigndocumenttemplate",
+    "https://docs.setu.co/data/esign/overview#/category~eSign_Template/operation~UploadeSigndocumenttemplate",
+    "https://docs.setu.co/data/esign/overview#/category~eStamp/operation~CreateSignatureRequestwithEStamp",
+    "https://docs.setu.co/data/esign/overview#/category~eStamp/operation~estampcount",
+    "https://docs.setu.co/data/esign/overview#/operation~CreateSignatureRequest",
+    "https://docs.setu.co/data/esign/overview#/operation~DeleteSignatureRequest",
+    "https://docs.setu.co/data/esign/overview#/operation~DownloadaSignedDocument",
+    "https://docs.setu.co/data/esign/overview#/operation~Downloaddocument",
+    "https://docs.setu.co/data/esign/overview#/operation~GetEsignAuditReport",
+    "https://docs.setu.co/data/esign/overview#/operation~GetSignatureRequestbyRequestID",
+    "https://docs.setu.co/data/esign/overview#/operation~UploadDocument",
+    "https://docs.setu.co/data/esign/pdf-templating",
+    "https://docs.setu.co/data/esign/quickstart",
+    "https://docs.setu.co/data/gst",
+    "https://docs.setu.co/data/insights",
+    "https://docs.setu.co/data/insights/api-reference",
+    "https://docs.setu.co/data/insights/api-reference#/category~Data_ingestion/operation~create_fi_data_v3_fiData_post",
+    "https://docs.setu.co/data/insights/api-reference#/category~Fi_Data_Ingestion_(PDF",
+    "https://docs.setu.co/data/insights/api-reference#/category~Insight_generation/operation~get_insights_v3_insight_get",
+    "https://docs.setu.co/data/insights/api-reference#/category~Insight_generation/operation~process_insights_v3_insight_post",
+    "https://docs.setu.co/data/insights/api-reference#/category~List_transactions/operation~list-deposit-transactions",
+    "https://docs.setu.co/data/insights/api-reference#/category~List_transactions/operation~list-equities-transactions",
+    "https://docs.setu.co/data/insights/api-reference#/category~List_transactions/operation~list-etf-transactions",
+    "https://docs.setu.co/data/insights/api-reference#/category~List_transactions/operation~list-mutual-funds-transactions",
+    "https://docs.setu.co/data/insights/api-reference#/category~Purge/operation~purge_data_v2_purge_delete",
+    "https://docs.setu.co/data/insights/api-reference#/category~Templates/operation~create_template_v3_template_post",
+    "https://docs.setu.co/data/insights/api-reference#/category~Templates/operation~get_templates_v3_template_get",
+    "https://docs.setu.co/data/insights/error-code",
+    "https://docs.setu.co/data/insights/insights",
+    "https://docs.setu.co/data/insights/notifications",
+    "https://docs.setu.co/data/insights/overview",
+    "https://docs.setu.co/data/insights/quickstart",
+    "https://docs.setu.co/data/insights/quickstart/api-integration",
+    "https://docs.setu.co/data/insights/quickstart/postman",
+    "https://docs.setu.co/data/kyc",
+    "https://docs.setu.co/data/kyc/encryption",
+    "https://docs.setu.co/data/kyc/overview",
+    "https://docs.setu.co/data/match-apis",
+    "https://docs.setu.co/data/pan",
+    "https://docs.setu.co/dev-tools",
+    "https://docs.setu.co/dev-tools/bridge",
+    "https://docs.setu.co/dev-tools/bridge/analytics-and-reports",
+    "https://docs.setu.co/dev-tools/bridge/explore-and-configure-products",
+    "https://docs.setu.co/dev-tools/bridge/glossary",
+    "https://docs.setu.co/dev-tools/bridge/overview",
+    "https://docs.setu.co/dev-tools/bridge/settings",
+    "https://docs.setu.co/dev-tools/bridge/user-profile",
+    "https://docs.setu.co/payments",
+    "https://docs.setu.co/payments/bbps",
+    "https://docs.setu.co/payments/bbps/overview",
+    "https://docs.setu.co/payments/bbps/quickstart/api-integration",
+    "https://docs.setu.co/payments/bbps/quickstart/csv",
+    "https://docs.setu.co/payments/billpay",
+    "https://docs.setu.co/payments/billpay/api-integration",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Dispute/path~/api/v2/bbps/bills/complaint/request/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Dispute/path~/api/v2/bbps/bills/complaint/response/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Fetch/path~/api/v2/bbps/bills/fetch/request/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Fetch/path~/api/v2/bbps/bills/fetch/response/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Health/operation~getHealth",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~List/operation~getBillerPlans",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~List/path~/api/v2/bbps/billers/get",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~List/path~/api/v2/bbps/categories/get",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~List/path~/api/v2/bbps/disputes/get",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~List/path~/api/v2/bbps/transactions/get",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Mandate_API/path~/api/v2/bbps/bills/mandate/request/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Mandate_API/path~/api/v2/bbps/bills/mandate/response/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Pay/path~/api/v2/bbps/bills/payment/request/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Pay/path~/api/v2/bbps/bills/payment/response/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Token_API/operation~fetchToken",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Transaction%20flow/path~/api/v2/bbps/bills/mandate/request/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~UPMS/operation~CancelUPMSRegistration",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~UPMS/operation~SimulateBillNotification",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~UPMS/operation~SimulateSkipPaymentNotification",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~UPMS/operation~UpdateUPMSRegistration",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~UPMS/operation~ViewUPMSRegistration",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Val%20Add%20APIs/path~/api/v2/bbps/valadd/{requestType}/request/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Val%20Add%20APIs/path~/api/v2/bbps/valadd/{requestType}/response/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Val_Add_APIs/path~/api/v2/bbps/valadd/{requestType}/request/post",
+    "https://docs.setu.co/payments/billpay/api-integration/api-reference#/category~Val_Add_APIs/path~/api/v2/bbps/valadd/{requestType}/response/post",
+    "https://docs.setu.co/payments/billpay/api-integration/apis",
+    "https://docs.setu.co/payments/billpay/api-integration/fx-retail",
+    "https://docs.setu.co/payments/billpay/api-integration/harmonization_of_tat",
+    "https://docs.setu.co/payments/billpay/api-integration/objects",
+    "https://docs.setu.co/payments/billpay/api-integration/paying-bills/bill-payment-options",
+    "https://docs.setu.co/payments/billpay/api-integration/paying-bills/customer-convenience-fee",
+    "https://docs.setu.co/payments/billpay/api-integration/paying-bills/multi-bill-processing",
+    "https://docs.setu.co/payments/billpay/api-integration/paying-bills/plan-mdm-integration",
+    "https://docs.setu.co/payments/billpay/api-integration/paying-bills/quickstart",
+    "https://docs.setu.co/payments/billpay/api-integration/paying-bills/remittance_flows_guide",
+    "https://docs.setu.co/payments/billpay/api-integration/quickstart",
+    "https://docs.setu.co/payments/billpay/api-integration/upms",
+    "https://docs.setu.co/payments/billpay/api-integration/v2-migration",
+    "https://docs.setu.co/payments/billpay/api-integration/webhooks",
+    "https://docs.setu.co/payments/billpay/mobile-prepaid-recharge/api-reference",
+    "https://docs.setu.co/payments/billpay/mobile-prepaid-recharge/quickstart",
+    "https://docs.setu.co/payments/billpay/mobile-prepaid-recharge/webhooks",
+    "https://docs.setu.co/payments/billpay/overview",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/api-reference",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/custom-payment",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/custom-payment/android",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/custom-payment/apis",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/custom-payment/cross-platform",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/custom-payment/iOS",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/custom-payment/website",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/quickstart",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/quickstart/android",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/quickstart/cross-platform",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/quickstart/iOS",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/quickstart/website",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/remitter-details",
+    "https://docs.setu.co/payments/billpay/pre-built-screens/webhooks",
+    "https://docs.setu.co/payments/billpay/quickstart",
+    "https://docs.setu.co/payments/umap",
+    "https://docs.setu.co/payments/umap/api-integration",
+    "https://docs.setu.co/payments/umap/api-integration/aggregators",
+    "https://docs.setu.co/payments/umap/api-integration/merchants",
+    "https://docs.setu.co/payments/umap/api-reference",
+    "https://docs.setu.co/payments/umap/api-reference#/category~beneficiary-account/operation~beneficiary-account#create",
+    "https://docs.setu.co/payments/umap/api-reference#/category~beneficiary-account/operation~beneficiary-account#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~beneficiary-account/operation~beneficiary-account#list",
+    "https://docs.setu.co/payments/umap/api-reference#/category~beneficiary-account/operation~beneficiary-account#update",
+    "https://docs.setu.co/payments/umap/api-reference#/category~collect/operation~collect#create",
+    "https://docs.setu.co/payments/umap/api-reference#/category~collect/operation~collect#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~customer-vpa/operation~customer-vpa#DoCustomerVpaVerification",
+    "https://docs.setu.co/payments/umap/api-reference#/category~customer-vpa/operation~customer-vpa#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~customer-vpa/operation~customer-vpa#verify",
+    "https://docs.setu.co/payments/umap/api-reference#/category~dqr/operation~dqr#create",
+    "https://docs.setu.co/payments/umap/api-reference#/category~dqr/operation~dqr#expireById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~dqr/operation~dqr#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#create",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#createTPV",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#execute",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#fetchMandateExecutionById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#fetchMandateOperationById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#fetchMandatePreDebitNotificationById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#mockMandate",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#modify",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#notify",
+    "https://docs.setu.co/payments/umap/api-reference#/category~mandates/operation~mandates#revoke",
+    "https://docs.setu.co/payments/umap/api-reference#/category~merchant/operation~merchant#createMerchantWrapper",
+    "https://docs.setu.co/payments/umap/api-reference#/category~merchant/operation~merchant#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~merchant/operation~merchant#updateTxnStatus",
+    "https://docs.setu.co/payments/umap/api-reference#/category~offlineQR/operation~offlineQR#create",
+    "https://docs.setu.co/payments/umap/api-reference#/category~offlineQR/operation~offlineQR#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~offlineQR/operation~offlineQR#status",
+    "https://docs.setu.co/payments/umap/api-reference#/category~payments/operation~payments#DoPayment",
+    "https://docs.setu.co/payments/umap/api-reference#/category~payments/operation~payments#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~payments/operation~payments#fetchHistoryByProductInstanceId",
+    "https://docs.setu.co/payments/umap/api-reference#/category~payments/operation~payments#fetchLastByProductInstanceId",
+    "https://docs.setu.co/payments/umap/api-reference#/category~payments/operation~payments#modifyTransfers",
+    "https://docs.setu.co/payments/umap/api-reference#/category~refund/operation~refund#create",
+    "https://docs.setu.co/payments/umap/api-reference#/category~refund/operation~refund#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~refund/operation~refund#fetchByPaymentTxnId",
+    "https://docs.setu.co/payments/umap/api-reference#/category~refund/operation~refund#updateMockRefundStatus",
+    "https://docs.setu.co/payments/umap/api-reference#/category~short-link/operation~short-link#fetchByShortCode",
+    "https://docs.setu.co/payments/umap/api-reference#/category~sqr/operation~sqr#create",
+    "https://docs.setu.co/payments/umap/api-reference#/category~sqr/operation~sqr#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~sqr/operation~sqr#status",
+    "https://docs.setu.co/payments/umap/api-reference#/category~tpv-plus/operation~tpv-plus#createTPVPlus",
+    "https://docs.setu.co/payments/umap/api-reference#/category~tpv-plus/operation~tpv-plus#fetchTPVPlus",
+    "https://docs.setu.co/payments/umap/api-reference#/category~tpv/operation~tpv#createTPV",
+    "https://docs.setu.co/payments/umap/api-reference#/category~tpv/operation~tpv#expireTPV",
+    "https://docs.setu.co/payments/umap/api-reference#/category~tpv/operation~tpv#fetchTPV",
+    "https://docs.setu.co/payments/umap/api-reference#/category~vpa/operation~vpa#checkAvailability",
+    "https://docs.setu.co/payments/umap/api-reference#/category~vpa/operation~vpa#create",
+    "https://docs.setu.co/payments/umap/api-reference#/category~vpa/operation~vpa#fetchById",
+    "https://docs.setu.co/payments/umap/api-reference#/category~vpa/operation~vpa#updateStatus",
+    "https://docs.setu.co/payments/umap/mandates",
+    "https://docs.setu.co/payments/umap/mandates/generic",
+    "https://docs.setu.co/payments/umap/mandates/generic/pause",
+    "https://docs.setu.co/payments/umap/mandates/generic/revoke",
+    "https://docs.setu.co/payments/umap/mandates/generic/unpause",
+    "https://docs.setu.co/payments/umap/mandates/generic/update",
+    "https://docs.setu.co/payments/umap/mandates/one-shot",
+    "https://docs.setu.co/payments/umap/mandates/one-shot/check-status",
+    "https://docs.setu.co/payments/umap/mandates/one-shot/create",
+    "https://docs.setu.co/payments/umap/mandates/one-shot/execute",
+    "https://docs.setu.co/payments/umap/mandates/one-shot/pre-debit-notify",
+    "https://docs.setu.co/payments/umap/mandates/recur",
+    "https://docs.setu.co/payments/umap/mandates/recur/check-status",
+    "https://docs.setu.co/payments/umap/mandates/recur/create",
+    "https://docs.setu.co/payments/umap/mandates/recur/execute",
+    "https://docs.setu.co/payments/umap/mandates/recur/pre-debit-notify",
+    "https://docs.setu.co/payments/umap/mandates/reserve",
+    "https://docs.setu.co/payments/umap/mandates/reserve-plus",
+    "https://docs.setu.co/payments/umap/mandates/reserve-plus/check-status",
+    "https://docs.setu.co/payments/umap/mandates/reserve-plus/create",
+    "https://docs.setu.co/payments/umap/mandates/reserve-plus/execute",
+    "https://docs.setu.co/payments/umap/mandates/reserve/check-status",
+    "https://docs.setu.co/payments/umap/mandates/reserve/create",
+    "https://docs.setu.co/payments/umap/mandates/reserve/execute",
+    "https://docs.setu.co/payments/umap/merchant-onboarding",
+    "https://docs.setu.co/payments/umap/merchant-onboarding/check-vpa-availability-api",
+    "https://docs.setu.co/payments/umap/merchant-onboarding/create-merchant-api",
+    "https://docs.setu.co/payments/umap/merchant-onboarding/create-vpa-api",
+    "https://docs.setu.co/payments/umap/notifications",
+    "https://docs.setu.co/payments/umap/notifications/customer-vpa-verification",
+    "https://docs.setu.co/payments/umap/notifications/mandates",
+    "https://docs.setu.co/payments/umap/notifications/mandates/create",
+    "https://docs.setu.co/payments/umap/notifications/mandates/execute",
+    "https://docs.setu.co/payments/umap/notifications/mandates/notify",
+    "https://docs.setu.co/payments/umap/notifications/mandates/pause",
+    "https://docs.setu.co/payments/umap/notifications/mandates/revoke",
+    "https://docs.setu.co/payments/umap/notifications/mandates/unpause",
+    "https://docs.setu.co/payments/umap/notifications/mandates/update",
+    "https://docs.setu.co/payments/umap/notifications/payments",
+    "https://docs.setu.co/payments/umap/notifications/refunds",
+    "https://docs.setu.co/payments/umap/notifications/verify-signature",
+    "https://docs.setu.co/payments/umap/overview",
+    "https://docs.setu.co/payments/umap/payments",
+    "https://docs.setu.co/payments/umap/payments/collect",
+    "https://docs.setu.co/payments/umap/payments/collect/check-status",
+    "https://docs.setu.co/payments/umap/payments/collect/create-collect-request",
+    "https://docs.setu.co/payments/umap/payments/collect/verify-customer-vpa-api",
+    "https://docs.setu.co/payments/umap/payments/flash",
+    "https://docs.setu.co/payments/umap/payments/flash/check-status",
+    "https://docs.setu.co/payments/umap/payments/flash/create-dqr",
+    "https://docs.setu.co/payments/umap/payments/flash/create-sqr",
+    "https://docs.setu.co/payments/umap/payments/tpv",
+    "https://docs.setu.co/payments/umap/payments/tpv/check-status",
+    "https://docs.setu.co/payments/umap/payments/tpv/create-tpv",
+    "https://docs.setu.co/payments/umap/payments/tpv/life-cycle",
+    "https://docs.setu.co/payments/umap/quickstart",
+    "https://docs.setu.co/payments/umap/quickstart/aggregators",
+    "https://docs.setu.co/payments/umap/quickstart/merchants",
+    "https://docs.setu.co/payments/umap/refunds-disputes",
+    "https://docs.setu.co/payments/umap/refunds-disputes/check-refund-status-api",
+    "https://docs.setu.co/payments/umap/refunds-disputes/create-refund-api",
+    "https://docs.setu.co/payments/umap/refunds-disputes/fetch-dispute-api",
+    "https://docs.setu.co/payments/umap/transaction-monitoring/check-status-api",
+    "https://docs.setu.co/payments/umap/transaction-monitoring/check-status-history-api",
+    "https://docs.setu.co/payments/umap/transaction-monitoring/fetch-payment-api",
+    "https://docs.setu.co/payments/upi-deeplinks",
+    "https://docs.setu.co/payments/upi-deeplinks/overview",
+    "https://docs.setu.co/payments/whatsapp-collect",
+    "https://docs.setu.co/payments/whatsapp-collect/journey",
+    "https://docs.setu.co/payments/whatsapp-collect/overview",
+    "https://docs.setu.co/payments/whatsapp-collect/reminders",
+    "https://fiu-sandbox.setu.co",
+    "https://fiu.setu.co",
+    "https://form.typeform.com/to/edKluyh7?utm_source=setu_blog&utm_medium=blog&utm_campaign=tech_agentic_bill",
+    "https://github.com/SetuHQ/account-aggregator-sample-app",
+    "https://github.com/SetuHQ/docs/edit/main/content/data/account-aggregator/api-integration.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/data/account-aggregator/overview.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/data/esign/overview.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/data/insights/overview.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/data/insights/quickstart/api-integration.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/data/kyc/overview.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/dev-tools/bridge/settings.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/payments/billpay/api-integration/apis.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/payments/billpay/api-integration/quickstart.mdx",
+    "https://github.com/SetuHQ/docs/edit/main/content/payments/umap/api-integration.mdx",
+    "https://heeki.medium.com/building-an-mcp-server-as-an-api-developer-cfc162d06a83",
+    "https://insights.setu.co",
+    "https://moneyrules.substack.com/",
+    "https://my-billpay-callback.com",
+    "https://qa-coudc.setu.co",
+    "https://qa-coudc.setu.co/api/v2/auth/token",
+    "https://raw.githubusercontent.com/SetuHQ/docs/main/api-references/data/account-aggregator.json",
+    "https://raw.githubusercontent.com/SetuHQ/docs/main/api-references/data/esign.json",
+    "https://raw.githubusercontent.com/SetuHQ/docs/main/api-references/data/insights.json",
+    "https://raw.githubusercontent.com/SetuHQ/docs/main/api-references/payments/billpay/api-integration.json",
+    "https://sahamati.org.in/account-aggregators-in-india/",
+    "https://sandbox-coudc.setu.co",
+    "https://sandbox-coudc.setu.co/api/v2/auth/token",
+    "https://setu.co",
+    "https://setu.co/",
+    "https://setu.co/#",
+    "https://setu.co/#balancing-probabilistic-and-deterministic-workflows",
+    "https://setu.co/#building-on-setu-s-core-bill-payments-stack",
+    "https://setu.co/#designing-mcp-tools-for-bill-payments",
+    "https://setu.co/#early-validation-and-cross-llm-testing",
+    "https://setu.co/#emergent-workflows-and-agentic-reasoning",
+    "https://setu.co/#example--a-sample-mcp-tool-definition",
+    "https://setu.co/#what-are-agentic-bill-payments-",
+    "https://setu.co/#what-s-next--building-on-a-strong-foundation",
+    "https://setu.co/AA_playbook.pdf",
+    "https://setu.co/about",
+    "https://setu.co/blog",
+    "https://setu.co/blog/Setu-Bill-Payments-MCP",
+    "https://setu.co/blog/aapki-aanumathi-deejiye",
+    "https://setu.co/blog/articles",
+    "https://setu.co/blog/categories",
+    "https://setu.co/blog/columns",
+    "https://setu.co/blog/columns/the-other-side",
+    "https://setu.co/blog/introducing-upi-performance-guarantee",
+    "https://setu.co/blog/our-story-part-one",
+    "https://setu.co/blog/reliability-setu-recap-2025",
+    "https://setu.co/careers",
+    "https://setu.co/contact-sales",
+    "https://setu.co/partners",
+    "https://setu.co/pay",
+    "https://setu.co/privacy-policy",
+    "https://setu.co/support",
+    "https://setu.co/team",
+    "https://setu.co/terms",
+    "https://status.setu.co/",
+    "https://support.setu.co/support/home",
+    "https://www.bharat-connect.com/assets/images/pages/brand-centre/media-kit/Bharat-Connect-MediaKit.zip",
+    "https://www.bharat-connect.com/assets/images/pages/brand-centre/media-kit/Bharat_Connect_Brand_Guidelines_11-09-24.pdf",
+    "https://www.niti.gov.in/node/1299",
+    "https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3142",
+    "https://www.reddit.com/r/mcp/comments/1mw09b5/how_are_you_handling_oauth_when_running_mcp/",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ]
+}

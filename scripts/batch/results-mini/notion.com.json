@@ -1,0 +1,263 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "notion.com",
+    "detect": {
+      "domain": "notion.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T10:00:44.206Z",
+    "summary": "Notion exposes a REST HTTP API, a hosted MCP server, and the `ntn` CLI; API access uses internal connection tokens, OAuth public connection tokens, or personal access tokens, while MCP uses OAuth and the CLI can use `ntn login` or `NOTION_API_TOKEN`.",
+    "credentials": {
+      "notion_pat": {
+        "type": "bearer",
+        "label": "Personal access token",
+        "generateUrl": "https://www.notion.so/developers",
+        "setup": "Go to the [Notion Developer portal](https://www.notion.so/developers), create a new personal access token, choose the workspace and capabilities, then copy the token value. Use the token as `Authorization: Bearer <token>` for API calls, or export it as `NOTION_API_TOKEN` for the CLI.",
+        "acquisition": "manual"
+      },
+      "notion_oauth": {
+        "type": "oauth2",
+        "label": "Public connection OAuth access token",
+        "generateUrl": "https://www.notion.so/developers",
+        "setup": "Create a public connection in the [Notion Developer portal](https://www.notion.so/developers), configure its OAuth settings and installation scope, then have the user install it through Notion's OAuth flow. The resulting access token is used on behalf of that user/workspace.",
+        "acquisition": "manual"
+      },
+      "notion_cli_login": {
+        "type": "bearer",
+        "label": "Notion CLI login session",
+        "generateUrl": "https://developers.notion.com/cli/get-started/authentication",
+        "setup": "Install the CLI with `curl -fsSL https://ntn.dev | bash`, then run `ntn login` and complete the browser authorization flow. The CLI stores your workspace-scoped token in the OS keychain (or `auth.json` if `NOTION_KEYRING=0`). For unattended use, prefer `NOTION_API_TOKEN` instead.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "notion-mcp",
+        "name": "Notion MCP",
+        "type": "mcp",
+        "docs": "https://developers.notion.com/guides/mcp/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.notion.com/guides/mcp/overview",
+            "https://developers.notion.com/guides/mcp/get-started-with-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "notion_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.notion.com/guides/mcp/overview",
+                  "https://developers.notion.com/guides/mcp/get-started-with-mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.notion.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "notion-cli",
+        "name": "Notion CLI",
+        "type": "cli",
+        "docs": "https://developers.notion.com/cli/get-started/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.notion.com/cli/get-started/overview",
+            "https://developers.notion.com/cli/get-started/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "notion_cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "ntn login"
+                  }
+                },
+                {
+                  "id": "notion_pat",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "NOTION_API_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.notion.com/cli/get-started/authentication",
+                  "https://developers.notion.com/cli/get-started/overview"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "install-script",
+            "identifier": "https://ntn.dev",
+            "runtimeHint": "shell"
+          }
+        ],
+        "command": "ntn"
+      },
+      {
+        "slug": "notion-api",
+        "name": "Notion API",
+        "type": "http",
+        "docs": "https://developers.notion.com/reference/intro",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.notion.com/reference/intro",
+            "https://developers.notion.com/guides/get-started/overview",
+            "https://developers.notion.com/guides/get-started/personal-access-tokens",
+            "https://developers.notion.com/guides/get-started/public-connections"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "notion_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "notion_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Notion-Version",
+                    "scheme": "Notion-Version"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.notion.com/reference/intro",
+                  "https://developers.notion.com/guides/get-started/overview"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "notion_oauth",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "notion_oauth",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Notion-Version",
+                    "scheme": "Notion-Version"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.notion.com/guides/get-started/public-connections",
+                  "https://developers.notion.com/reference/intro"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "notion_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "notion_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Notion-Version",
+                    "scheme": "Notion-Version"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.notion.com/guides/get-started/personal-access-tokens",
+                  "https://developers.notion.com/reference/intro"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T10:00:44.207Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 200801,
+    "completion_tokens": 1936,
+    "total_tokens": 202737
+  },
+  "visited": [
+    "https://developers.notion.com/cli/get-started/authentication",
+    "https://developers.notion.com/cli/get-started/overview",
+    "https://developers.notion.com/guides/get-started/overview",
+    "https://developers.notion.com/guides/get-started/personal-access-tokens",
+    "https://developers.notion.com/guides/get-started/public-connections",
+    "https://developers.notion.com/guides/mcp/get-started-with-mcp",
+    "https://developers.notion.com/guides/mcp/overview",
+    "https://developers.notion.com/llms.txt",
+    "https://developers.notion.com/reference/intro",
+    "https://github.com/makenotion/notion-mcp-server",
+    "https://www.reddit.com/r/Notion/comments/1qv4wq4/notion_cli/",
+    "https://www.scalekit.com/blog/notion-mcp-vs-api"
+  ]
+}

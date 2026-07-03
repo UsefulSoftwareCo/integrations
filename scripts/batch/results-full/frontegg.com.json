@@ -1,0 +1,758 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "frontegg.com",
+    "detect": {
+      "domain": "frontegg.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T13:24:19.999Z",
+    "summary": "Frontegg exposes four public HTTP integration surfaces for developers: environment auth, identity/user management, account management, applications, and SCIM provisioning; auth is via clientId+API key for minting an environment token, or Bearer JWTs (environment token or user JWT) on the other APIs.",
+    "credentials": {
+      "frontegg_env_token": {
+        "type": "bearer",
+        "label": "Environment token",
+        "generateUrl": "https://developers.frontegg.com/ciam/api/vendor-service",
+        "setup": "Go to [Environment → Keys & domains](https://portal.frontegg.com/login) in the Frontegg portal, copy your `Client ID` and `API key`, then call `POST /auth/vendor` on the region gateway (for example `https://api.frontegg.com/auth/vendor`) to mint a bearer token for management and some self-service APIs. If you already have a Frontegg account personal/API token, the docs say it can also authenticate here. To target a specific environment for a portal-minted token, include `frontegg-environment-id` with that environment's `clientId`."
+      },
+      "frontegg_user_jwt": {
+        "type": "bearer",
+        "label": "Authenticated user token",
+        "setup": "Sign in through your Frontegg application or use the documented user authentication flows to obtain a user JWT. Frontegg docs say self-service routes can be called with this token on your tenant subdomain or custom domain, without extra tenant headers."
+      },
+      "frontegg_api_key": {
+        "type": "api_key",
+        "label": "API key",
+        "setup": "Open the Frontegg portal and go to [Environment → Keys & domains](https://portal.frontegg.com/login) to copy the `API key`. It is used together with your `Client ID` to mint an environment token via `POST /auth/vendor`."
+      },
+      "frontegg_client_id": {
+        "type": "api_key",
+        "label": "Client ID",
+        "setup": "Open the Frontegg portal and go to [Environment → Keys & domains](https://portal.frontegg.com/login) to copy the `Client ID`. It is used together with your `API key` to mint an environment token via `POST /auth/vendor`."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "frontegg-identity-and-user-management-api",
+        "name": "Frontegg Identity and User Management API",
+        "type": "http",
+        "docs": "https://developers.frontegg.com/ciam/api/identity",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.frontegg.com/ciam/api/identity.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "frontegg_env_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "frontegg_user_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.frontegg.com/ciam/api/identity.md"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://developers.frontegg.com/_bundle/ciam/api/identity.yaml",
+        "url": "https://api.frontegg.com/identity"
+      },
+      {
+        "slug": "frontegg-environment-authentication-api",
+        "name": "Frontegg Environment Authentication API",
+        "type": "http",
+        "docs": "https://developers.frontegg.com/ciam/api/vendor-service",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.frontegg.com/ciam/api/vendor-service.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "frontegg_client_id",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "clientId"
+                  }
+                },
+                {
+                  "id": "frontegg_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "secret"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.frontegg.com/ciam/api/vendor-service.md"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://developers.frontegg.com/_bundle/ciam/api/vendor-service.yaml",
+        "url": "https://api.frontegg.com/auth/vendor"
+      },
+      {
+        "slug": "frontegg-account-management-api",
+        "name": "Frontegg Account Management API",
+        "type": "http",
+        "docs": "https://developers.frontegg.com/ciam/api/tenants",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.frontegg.com/ciam/api/tenants.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "frontegg_env_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "frontegg_user_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.frontegg.com/ciam/api/tenants.md"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://developers.frontegg.com/_bundle/ciam/api/tenants.yaml",
+        "url": "https://api.frontegg.com/tenants"
+      },
+      {
+        "slug": "frontegg-scim-provisioning-api",
+        "name": "Frontegg SCIM Provisioning API",
+        "type": "http",
+        "docs": "https://developers.frontegg.com/ciam/api/scim",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.frontegg.com/ciam/api/scim.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "frontegg_env_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "frontegg_user_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.frontegg.com/ciam/api/scim.md"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://developers.frontegg.com/_bundle/ciam/api/scim.yaml",
+        "url": "https://api.frontegg.com/directory"
+      },
+      {
+        "slug": "frontegg-applications-api",
+        "name": "Frontegg Applications API",
+        "type": "http",
+        "docs": "https://developers.frontegg.com/ciam/api/applications",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.frontegg.com/ciam/api/applications.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "frontegg_env_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "frontegg_user_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.frontegg.com/ciam/api/applications.md"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://developers.frontegg.com/_bundle/ciam/api/applications.yaml",
+        "url": "https://api.frontegg.com/applications"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T13:24:20.000Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 177408,
+    "completion_tokens": 2992,
+    "total_tokens": 180400
+  },
+  "visited": [
+    "https://developers.frontegg.com/agen-for-saas/introduction/overview",
+    "https://developers.frontegg.com/ciam/api/applications",
+    "https://developers.frontegg.com/ciam/api/applications.md",
+    "https://developers.frontegg.com/ciam/api/identity",
+    "https://developers.frontegg.com/ciam/api/identity.md",
+    "https://developers.frontegg.com/ciam/api/overview",
+    "https://developers.frontegg.com/ciam/api/scim",
+    "https://developers.frontegg.com/ciam/api/scim.md",
+    "https://developers.frontegg.com/ciam/api/tenants",
+    "https://developers.frontegg.com/ciam/api/tenants.md",
+    "https://developers.frontegg.com/ciam/api/vendor-service",
+    "https://developers.frontegg.com/ciam/api/vendor-service.md",
+    "https://developers.frontegg.com/ciam/guides/getting-started/home",
+    "https://developers.frontegg.com/ciam/sdks/overview",
+    "https://frontegg.com/llms.txt",
+    "https://www.plain.com/docs/graphql/introduction",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "https://.frontegg.com",
+    "https://api.au.frontegg.com",
+    "https://api.au.frontegg.com/applications",
+    "https://api.au.frontegg.com/applications/",
+    "https://api.au.frontegg.com/auth/vendor",
+    "https://api.au.frontegg.com/auth/vendor/",
+    "https://api.au.frontegg.com/directory",
+    "https://api.au.frontegg.com/directory/",
+    "https://api.au.frontegg.com/identity",
+    "https://api.au.frontegg.com/identity/",
+    "https://api.au.frontegg.com/tenants",
+    "https://api.au.frontegg.com/tenants/",
+    "https://api.ca.frontegg.com",
+    "https://api.ca.frontegg.com/applications",
+    "https://api.ca.frontegg.com/applications/",
+    "https://api.ca.frontegg.com/auth/vendor",
+    "https://api.ca.frontegg.com/auth/vendor/",
+    "https://api.ca.frontegg.com/directory",
+    "https://api.ca.frontegg.com/directory/",
+    "https://api.ca.frontegg.com/identity",
+    "https://api.ca.frontegg.com/identity/",
+    "https://api.ca.frontegg.com/tenants",
+    "https://api.ca.frontegg.com/tenants/",
+    "https://api.frontegg.com",
+    "https://api.frontegg.com/applications",
+    "https://api.frontegg.com/applications/",
+    "https://api.frontegg.com/auth/vendor",
+    "https://api.frontegg.com/auth/vendor/",
+    "https://api.frontegg.com/directory",
+    "https://api.frontegg.com/directory/",
+    "https://api.frontegg.com/identity",
+    "https://api.frontegg.com/identity/",
+    "https://api.frontegg.com/tenants",
+    "https://api.frontegg.com/tenants/",
+    "https://api.readme.dev/docs/getting-started",
+    "https://api.us.frontegg.com",
+    "https://api.us.frontegg.com/applications",
+    "https://api.us.frontegg.com/applications/",
+    "https://api.us.frontegg.com/auth/vendor",
+    "https://api.us.frontegg.com/auth/vendor/",
+    "https://api.us.frontegg.com/directory",
+    "https://api.us.frontegg.com/directory/",
+    "https://api.us.frontegg.com/identity",
+    "https://api.us.frontegg.com/identity/",
+    "https://api.us.frontegg.com/tenants",
+    "https://api.us.frontegg.com/tenants/",
+    "https://api.{{region}}.frontegg.com/xxxx",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fintroduction%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fapplications%2Fapplications-settings.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fapplications.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Faccount-invitations-settings.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fapi-token.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fcore-settings.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fcustom-social-oauth-provider.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fdata-migration.md+and+answ",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fgeneral.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fmfa.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fpasswordless.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fsms.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fscim%2Fscim-configurations.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fscim%2Fscim-settings.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fscim.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Faccount-migration.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Faccount-settings.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Faccounts.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Fsub-accounts-and-hierarchy.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Fsub-accounts.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fvendor-service%2Fother%2Fauthenticate_vendor.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fvendor-service.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fguides%2Fgetting-started%2Fhome.md+and+answer+questions+based+on+the+content",
+    "https://chat.openai.com/?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fsdks%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fagen-for-saas%2Fintroduction%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fapplications%2Fapplications-settings.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fapplications.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Faccount-invitations-settings.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fapi-token.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fcore-settings.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fcustom-social-oauth-provider.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fgeneral.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fmfa.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fpasswordless.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity%2Fsms.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fidentity.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fscim%2Fscim-configurations.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fscim%2Fscim-settings.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fscim.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Faccount-migration.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Faccount-settings.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Faccounts.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Fsub-accounts-and-hierarchy.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants%2Fsub-accounts.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Ftenants.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fvendor-service%2Fother%2Fauthenticate_vendor.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fapi%2Fvendor-service.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fguides%2Fgetting-started%2Fhome.md+and+answer+questions+based+on+the+content",
+    "https://claude.ai/new?q=Read+https%3A%2F%2Fdevelopers.frontegg.com%2Fciam%2Fsdks%2Foverview.md+and+answer+questions+based+on+the+content",
+    "https://datatracker.ietf.org/doc/html/rfc7644",
+    "https://developers.frontegg.com/",
+    "https://developers.frontegg.com/#agen-for-saas-overview",
+    "https://developers.frontegg.com/#api-access",
+    "https://developers.frontegg.com/#api-categories",
+    "https://developers.frontegg.com/#api-gateway-by-region",
+    "https://developers.frontegg.com/#api-introduction",
+    "https://developers.frontegg.com/#authentication-apis",
+    "https://developers.frontegg.com/#backend-sdks",
+    "https://developers.frontegg.com/#cicd--automation",
+    "https://developers.frontegg.com/#content",
+    "https://developers.frontegg.com/#designed-for-saas",
+    "https://developers.frontegg.com/#example-usage",
+    "https://developers.frontegg.com/#explore-by-product",
+    "https://developers.frontegg.com/#explore-use-cases",
+    "https://developers.frontegg.com/#fronteggai-sdks",
+    "https://developers.frontegg.com/#frontend-sdks",
+    "https://developers.frontegg.com/#generating-and-using-a-typescript-sdk",
+    "https://developers.frontegg.com/#get-started",
+    "https://developers.frontegg.com/#how-agen-for-saas-works",
+    "https://developers.frontegg.com/#install-the-sdk",
+    "https://developers.frontegg.com/#management-apis",
+    "https://developers.frontegg.com/#mobile-sdks",
+    "https://developers.frontegg.com/#performing-your-first-api-call",
+    "https://developers.frontegg.com/#related-topics",
+    "https://developers.frontegg.com/#self-service-apis",
+    "https://developers.frontegg.com/#troubleshooting-common-errors",
+    "https://developers.frontegg.com/#what-agen-for-saas-provides",
+    "https://developers.frontegg.com/#when-and-where-to-use-headers",
+    "https://developers.frontegg.com/_bundle/ciam/api/applications.yaml",
+    "https://developers.frontegg.com/_bundle/ciam/api/identity.yaml",
+    "https://developers.frontegg.com/_bundle/ciam/api/scim.yaml",
+    "https://developers.frontegg.com/_bundle/ciam/api/tenants.yaml",
+    "https://developers.frontegg.com/_bundle/ciam/api/vendor-service.yaml",
+    "https://developers.frontegg.com/agen-for-saas/access-control/overview",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/auth0",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/azure",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/cognito",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/firebase",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/keycloak",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/oidc",
+    "https://developers.frontegg.com/agen-for-saas/configuration/authentication/overview",
+    "https://developers.frontegg.com/agen-for-saas/configuration/backend-verification",
+    "https://developers.frontegg.com/agen-for-saas/configuration/custom-domain",
+    "https://developers.frontegg.com/agen-for-saas/configuration/hosting-mcp-gateway",
+    "https://developers.frontegg.com/agen-for-saas/configuration/overview",
+    "https://developers.frontegg.com/agen-for-saas/data-protection/masking-types",
+    "https://developers.frontegg.com/agen-for-saas/data-protection/overview",
+    "https://developers.frontegg.com/agen-for-saas/getting-started/connect-ai-platform",
+    "https://developers.frontegg.com/agen-for-saas/getting-started/quickstart",
+    "https://developers.frontegg.com/agen-for-saas/hooks/overview",
+    "https://developers.frontegg.com/agen-for-saas/introduction/core-concepts",
+    "https://developers.frontegg.com/agen-for-saas/introduction/overview",
+    "https://developers.frontegg.com/agen-for-saas/introduction/overview.md",
+    "https://developers.frontegg.com/agen-for-saas/monitoring/overview",
+    "https://developers.frontegg.com/agen-for-saas/overview/dashboard",
+    "https://developers.frontegg.com/agen-for-saas/policies/approval-flows",
+    "https://developers.frontegg.com/agen-for-saas/policies/conditional-expressions",
+    "https://developers.frontegg.com/agen-for-saas/policies/creating-policies",
+    "https://developers.frontegg.com/agen-for-saas/policies/overview",
+    "https://developers.frontegg.com/agen-for-saas/policies/tenant-level-policies",
+    "https://developers.frontegg.com/agen-for-saas/security-compliance/overview",
+    "https://developers.frontegg.com/agen-for-saas/sources/overview",
+    "https://developers.frontegg.com/agen-for-saas/tools/about-tools",
+    "https://developers.frontegg.com/agen-for-saas/tools/managing-tools",
+    "https://developers.frontegg.com/api/identity/general/authenticatioauthenticationcontrollerv1_authenticatelocaluser",
+    "https://developers.frontegg.com/api/vendor-service",
+    "https://developers.frontegg.com/ciam/api/agent",
+    "https://developers.frontegg.com/ciam/api/applications",
+    "https://developers.frontegg.com/ciam/api/applications.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/createapplication.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/createapplicationclient.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/createapplicationtenantassignment.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/deleteapplication.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/deleteapplicationclient.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/deleteapplicationtenantassignment.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/editapplicationtenantassignment.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getapplicationbyid.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getapplicationclientbyid.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getapplicationclientcredentials.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getapplicationclientsbyappid.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getapplications.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getapplicationstenantsassignments.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getapplicationstenantsassignmentsv2.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getapplicationtenantsassignmentsbyappid.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/getdefaultapplication.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/regenerateapplicationclientcredentials.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/regenerateapplicationsharedsecretcredentials.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/updateapplication.md",
+    "https://developers.frontegg.com/ciam/api/applications/applications-settings/updateapplicationclient.md",
+    "https://developers.frontegg.com/ciam/api/audits",
+    "https://developers.frontegg.com/ciam/api/entitlements",
+    "https://developers.frontegg.com/ciam/api/identity",
+    "https://developers.frontegg.com/ciam/api/identity.md",
+    "https://developers.frontegg.com/ciam/api/identity/account-invitations",
+    "https://developers.frontegg.com/ciam/api/identity/account-invitations-settings",
+    "https://developers.frontegg.com/ciam/api/identity/account-invitations-settings.md",
+    "https://developers.frontegg.com/ciam/api/identity/account-roles",
+    "https://developers.frontegg.com/ciam/api/identity/api-token",
+    "https://developers.frontegg.com/ciam/api/identity/api-token.md",
+    "https://developers.frontegg.com/ciam/api/identity/api-token/authenticationapitokencontrollerv2_authapitoken.md",
+    "https://developers.frontegg.com/ciam/api/identity/api-token/authenticationapitokencontrollerv2_refreshtoken.md",
+    "https://developers.frontegg.com/ciam/api/identity/api-tokens",
+    "https://developers.frontegg.com/ciam/api/identity/core-settings",
+    "https://developers.frontegg.com/ciam/api/identity/core-settings.md",
+    "https://developers.frontegg.com/ciam/api/identity/custom-social-oauth-provider",
+    "https://developers.frontegg.com/ciam/api/identity/custom-social-oauth-provider.md",
+    "https://developers.frontegg.com/ciam/api/identity/data-migration",
+    "https://developers.frontegg.com/ciam/api/identity/data-migration.md",
+    "https://developers.frontegg.com/ciam/api/identity/delegation",
+    "https://developers.frontegg.com/ciam/api/identity/domain-restrictions",
+    "https://developers.frontegg.com/ciam/api/identity/email-configuration",
+    "https://developers.frontegg.com/ciam/api/identity/email-templates",
+    "https://developers.frontegg.com/ciam/api/identity/general",
+    "https://developers.frontegg.com/ciam/api/identity/general.md",
+    "https://developers.frontegg.com/ciam/api/identity/general/authenticatioauthenticationcontrollerv1_authenticatelocaluser.md",
+    "https://developers.frontegg.com/ciam/api/identity/general/authenticatioauthenticationcontrollerv1_logout.md",
+    "https://developers.frontegg.com/ciam/api/identity/general/authenticatioauthenticationcontrollerv1_refreshtoken.md",
+    "https://developers.frontegg.com/ciam/api/identity/general/userscontrollerv1_signupuser.md",
+    "https://developers.frontegg.com/ciam/api/identity/general/userssignupcontrollerv1_signupuserusername.md",
+    "https://developers.frontegg.com/ciam/api/identity/ip-restrictions",
+    "https://developers.frontegg.com/ciam/api/identity/lockout-policy",
+    "https://developers.frontegg.com/ciam/api/identity/m2m-tokens",
+    "https://developers.frontegg.com/ciam/api/identity/mfa",
+    "https://developers.frontegg.com/ciam/api/identity/mfa-configuration",
+    "https://developers.frontegg.com/ciam/api/identity/mfa-settings",
+    "https://developers.frontegg.com/ciam/api/identity/mfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_enrollauthenticatormfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_enrollsmsmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_preenrollauthenticatormfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_preenrollsmsmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_preenrollwebauthnmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_preverifyemailotcmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_preverifysmsmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_recovermfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_verifyauthenticatormfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_verifyemailotcmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/authenticationmfacontrollerv1_verifysmsmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/usersmfacontrollerv1_disableauthenticatormfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/usersmfacontrollerv1_disablesmsmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/mfa/usersmfacontrollerv1_predisablesmsmfa.md",
+    "https://developers.frontegg.com/ciam/api/identity/password-settings",
+    "https://developers.frontegg.com/ciam/api/identity/passwordless",
+    "https://developers.frontegg.com/ciam/api/identity/passwordless.md",
+    "https://developers.frontegg.com/ciam/api/identity/permissions",
+    "https://developers.frontegg.com/ciam/api/identity/permissions-categories",
+    "https://developers.frontegg.com/ciam/api/identity/personal-tokens",
+    "https://developers.frontegg.com/ciam/api/identity/roles",
+    "https://developers.frontegg.com/ciam/api/identity/sessions-configuration",
+    "https://developers.frontegg.com/ciam/api/identity/sessions-management",
+    "https://developers.frontegg.com/ciam/api/identity/sms",
+    "https://developers.frontegg.com/ciam/api/identity/sms-configuration",
+    "https://developers.frontegg.com/ciam/api/identity/sms-templates",
+    "https://developers.frontegg.com/ciam/api/identity/sms.md",
+    "https://developers.frontegg.com/ciam/api/identity/user-groups",
+    "https://developers.frontegg.com/ciam/api/identity/user-management",
+    "https://developers.frontegg.com/ciam/api/identity/user-pools",
+    "https://developers.frontegg.com/ciam/api/identity/user-sessions",
+    "https://developers.frontegg.com/ciam/api/identity/users",
+    "https://developers.frontegg.com/ciam/api/identity/users-applications-management",
+    "https://developers.frontegg.com/ciam/api/overview",
+    "https://developers.frontegg.com/ciam/api/overview.md",
+    "https://developers.frontegg.com/ciam/api/scim",
+    "https://developers.frontegg.com/ciam/api/scim.md",
+    "https://developers.frontegg.com/ciam/api/scim/scim-configurations",
+    "https://developers.frontegg.com/ciam/api/scim/scim-configurations.md",
+    "https://developers.frontegg.com/ciam/api/scim/scim-configurations/scim2connectionconfigcontroller_create.md",
+    "https://developers.frontegg.com/ciam/api/scim/scim-configurations/scim2connectionconfigcontroller_deletebyid.md",
+    "https://developers.frontegg.com/ciam/api/scim/scim-configurations/scim2connectionconfigcontroller_fetchbyid.md",
+    "https://developers.frontegg.com/ciam/api/scim/scim-configurations/scim2connectionconfigcontroller_partialupdate.md",
+    "https://developers.frontegg.com/ciam/api/scim/scim-settings",
+    "https://developers.frontegg.com/ciam/api/scim/scim-settings.md",
+    "https://developers.frontegg.com/ciam/api/scim/scim-settings/scim2connectionconfigcontroller_fetchall.md",
+    "https://developers.frontegg.com/ciam/api/team",
+    "https://developers.frontegg.com/ciam/api/tenants",
+    "https://developers.frontegg.com/ciam/api/tenants.md",
+    "https://developers.frontegg.com/ciam/api/tenants/account-migration",
+    "https://developers.frontegg.com/ciam/api/tenants/account-migration.md",
+    "https://developers.frontegg.com/ciam/api/tenants/account-migration/migrationcontrollerv1_getmigratetenantsstatus.md",
+    "https://developers.frontegg.com/ciam/api/tenants/account-migration/migrationcontrollerv1_migratetenants.md",
+    "https://developers.frontegg.com/ciam/api/tenants/account-settings",
+    "https://developers.frontegg.com/ciam/api/tenants/account-settings.md",
+    "https://developers.frontegg.com/ciam/api/tenants/account-settings/accountsettingscontrollerv1_getpublicsettings.md",
+    "https://developers.frontegg.com/ciam/api/tenants/account-settings/accountsettingscontrollerv1_getsettings.md",
+    "https://developers.frontegg.com/ciam/api/tenants/account-settings/accountsettingscontrollerv1_updatesettings.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv1_addtenantmetadata.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv1_createtenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv1_deletecurrenttenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv1_deletetenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv1_deletetenantmetadata.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv1_gettenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv1_updatetenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv2_gettenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv2_gettenants.md",
+    "https://developers.frontegg.com/ciam/api/tenants/accounts/tenantcontrollerv2_updatetenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts-and-hierarchy",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts-and-hierarchy.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts-and-hierarchy/tenanthierarchycontrollerv1_createsubtenants.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts-and-hierarchy/tenanthierarchycontrollerv1_deletesubtenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts/subtenantcontrollerv1_createsubtenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts/subtenantcontrollerv1_deletesubtenant.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts/subtenantcontrollerv1_updatesubtenanthierarchysettings.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts/subtenantcontrollerv1_updatesubtenantmanagement.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts/tenanthierarchycontrollerv1_getparenttenants.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts/tenanthierarchycontrollerv1_getsubtenants.md",
+    "https://developers.frontegg.com/ciam/api/tenants/sub-accounts/tenanthierarchycontrollerv1_getsubtenantstree.md",
+    "https://developers.frontegg.com/ciam/api/vendor-service",
+    "https://developers.frontegg.com/ciam/api/vendor-service.md",
+    "https://developers.frontegg.com/ciam/api/vendor-service/other/authenticate_vendor",
+    "https://developers.frontegg.com/ciam/api/vendor-service/other/authenticate_vendor.md",
+    "https://developers.frontegg.com/ciam/guides/admin-portal/intro",
+    "https://developers.frontegg.com/ciam/guides/authentication/overview",
+    "https://developers.frontegg.com/ciam/guides/authentication/social/overview",
+    "https://developers.frontegg.com/ciam/guides/authorization/entitlements-rbac-overview",
+    "https://developers.frontegg.com/ciam/guides/authorization/entitlements/intro",
+    "https://developers.frontegg.com/ciam/guides/authorization/rebac",
+    "https://developers.frontegg.com/ciam/guides/customizations/emails/templates",
+    "https://developers.frontegg.com/ciam/guides/customizations/introduction",
+    "https://developers.frontegg.com/ciam/guides/env-settings/custom-domain",
+    "https://developers.frontegg.com/ciam/guides/env-settings/hosted-embedded",
+    "https://developers.frontegg.com/ciam/guides/env-settings/overview",
+    "https://developers.frontegg.com/ciam/guides/env-settings/rate-limits",
+    "https://developers.frontegg.com/ciam/guides/frontegg-ai/overview",
+    "https://developers.frontegg.com/ciam/guides/frontegg-ai/tools",
+    "https://developers.frontegg.com/ciam/guides/getting-started/architecture",
+    "https://developers.frontegg.com/ciam/guides/getting-started/home",
+    "https://developers.frontegg.com/ciam/guides/getting-started/home.md",
+    "https://developers.frontegg.com/ciam/guides/getting-started/quick-start",
+    "https://developers.frontegg.com/ciam/guides/integrations/flows/overview",
+    "https://developers.frontegg.com/ciam/guides/integrations/intro",
+    "https://developers.frontegg.com/ciam/guides/integrations/prehooks",
+    "https://developers.frontegg.com/ciam/guides/integrations/protect-backend-api/overview",
+    "https://developers.frontegg.com/ciam/guides/integrations/third-party/overview",
+    "https://developers.frontegg.com/ciam/guides/integrations/webhooks",
+    "https://developers.frontegg.com/ciam/guides/login-box/intro",
+    "https://developers.frontegg.com/ciam/guides/management/manage-accounts/login-per-account",
+    "https://developers.frontegg.com/ciam/guides/management/manage-accounts/overview",
+    "https://developers.frontegg.com/ciam/guides/management/manage-users/overview",
+    "https://developers.frontegg.com/ciam/guides/management/manage-users/scim/overview",
+    "https://developers.frontegg.com/ciam/guides/management/multi-apps/overview",
+    "https://developers.frontegg.com/ciam/guides/management/user-pools/user-pools-overview",
+    "https://developers.frontegg.com/ciam/guides/monitoring/intro",
+    "https://developers.frontegg.com/ciam/guides/security-center/domain-ip-restrictions/overview",
+    "https://developers.frontegg.com/ciam/guides/security-center/mfa/overview",
+    "https://developers.frontegg.com/ciam/guides/security-center/overview",
+    "https://developers.frontegg.com/ciam/guides/security-center/security-rules/overview",
+    "https://developers.frontegg.com/ciam/guides/security-center/session-management/overview",
+    "https://developers.frontegg.com/ciam/guides/security-center/token-management/overview",
+    "https://developers.frontegg.com/ciam/guides/step-up/intro",
+    "https://developers.frontegg.com/ciam/guides/use-cases/bring-your-sign-up",
+    "https://developers.frontegg.com/ciam/guides/use-cases/building-ai-agents",
+    "https://developers.frontegg.com/ciam/guides/use-cases/feature-flags",
+    "https://developers.frontegg.com/ciam/guides/use-cases/m2m",
+    "https://developers.frontegg.com/ciam/guides/use-cases/migrate-users",
+    "https://developers.frontegg.com/ciam/guides/use-cases/sso-only",
+    "https://developers.frontegg.com/ciam/sdks/automation/terraform",
+    "https://developers.frontegg.com/ciam/sdks/backend/go/entitlements",
+    "https://developers.frontegg.com/ciam/sdks/backend/go/go-integrate",
+    "https://developers.frontegg.com/ciam/sdks/backend/java/entitlements",
+    "https://developers.frontegg.com/ciam/sdks/backend/node/entitlements",
+    "https://developers.frontegg.com/ciam/sdks/backend/node/node-integrate",
+    "https://developers.frontegg.com/ciam/sdks/backend/python/fastapi/integrate",
+    "https://developers.frontegg.com/ciam/sdks/backend/python/flask/integrate",
+    "https://developers.frontegg.com/ciam/sdks/coding-agent-skills",
+    "https://developers.frontegg.com/ciam/sdks/frontegg-ai/python",
+    "https://developers.frontegg.com/ciam/sdks/frontegg-ai/typescript",
+    "https://developers.frontegg.com/ciam/sdks/frontend/angular/hosted-login",
+    "https://developers.frontegg.com/ciam/sdks/frontend/next/app-router/hosted-login",
+    "https://developers.frontegg.com/ciam/sdks/frontend/react/hosted-login",
+    "https://developers.frontegg.com/ciam/sdks/frontend/vanilla/hosted-login",
+    "https://developers.frontegg.com/ciam/sdks/frontend/vue/hosted-login",
+    "https://developers.frontegg.com/ciam/sdks/mobile/overview",
+    "https://developers.frontegg.com/ciam/sdks/overview",
+    "https://developers.frontegg.com/ciam/sdks/overview.md",
+    "https://frontegg.com/",
+    "https://frontegg.com/blog",
+    "https://frontegg.com/blog/ai-agent-governance-starts-with-guardrails",
+    "https://frontegg.com/blog/category/authentication",
+    "https://frontegg.com/blog/category/saas",
+    "https://frontegg.com/blog/category/security-compliance",
+    "https://frontegg.com/blog/category/user_management",
+    "https://frontegg.com/blog/introducing-agent-analytics",
+    "https://frontegg.com/blog/introducing-agent-connector",
+    "https://frontegg.com/blog/the-role-of-ciam-in-the-age-of-ai-agents",
+    "https://frontegg.com/blog/vue-authentication",
+    "https://frontegg.com/ciam",
+    "https://frontegg.com/cluster_keyword/access-management",
+    "https://frontegg.com/cluster_keyword/auth0",
+    "https://frontegg.com/cluster_keyword/aws-cognito",
+    "https://frontegg.com/cluster_keyword/sso",
+    "https://frontegg.com/contact-sales",
+    "https://frontegg.com/guides/access-management",
+    "https://frontegg.com/guides/agentic-ai-readiness-gap",
+    "https://frontegg.com/guides/ciam",
+    "https://frontegg.com/guides/feature-flags",
+    "https://frontegg.com/guides/saas-architecture",
+    "https://frontegg.com/guides/saml",
+    "https://frontegg.com/guides/totally-unsanctioned-ciam-vendor-guide",
+    "https://frontegg.com/integration_category/customer-support",
+    "https://frontegg.com/integration_category/development",
+    "https://frontegg.com/integration_category/finance",
+    "https://frontegg.com/integration_category/marketing",
+    "https://frontegg.com/integration_category/productivity",
+    "https://frontegg.com/llms.txt",
+    "https://frontegg.com/mcp-marketplace",
+    "https://frontegg.com/mcp-marketplace/bamboohr",
+    "https://frontegg.com/mcp-marketplace/freshbooks",
+    "https://frontegg.com/mcp-marketplace/gmail",
+    "https://frontegg.com/mcp-marketplace/google-calendar",
+    "https://frontegg.com/mcp-marketplace/workday",
+    "https://frontegg.com/pricing",
+    "https://frontegg.com/resources/agentlink-feature-delegated-ai-governance",
+    "https://frontegg.com/resources/agentlink-livestream-day-one",
+    "https://frontegg.com/resources/agentlink-livestream-day-three",
+    "https://frontegg.com/resources/agentlink-livestream-day-two",
+    "https://frontegg.com/resources/case-studies",
+    "https://frontegg.com/resources/live",
+    "https://frontegg.com/resources/videos",
+    "https://frontegg.com/resources/white-papers",
+    "https://frontegg.com/sitemap_index.xml",
+    "https://frontegg.github.io/frontegg-android-kotlin/#/",
+    "https://frontegg.github.io/frontegg-flutter/#/",
+    "https://frontegg.github.io/frontegg-ionic-capacitor/#/",
+    "https://frontegg.github.io/frontegg-ios-swift/#/",
+    "https://frontegg.github.io/frontegg-react-native/#/",
+    "https://github.com/frontegg/openapi-public/blob/master/agent.json",
+    "https://github.com/frontegg/openapi-public/blob/master/apis-combined.json",
+    "https://github.com/frontegg/openapi-public/blob/master/entitlements.json",
+    "https://github.com/frontegg/openapi-public/blob/master/identity.json",
+    "https://github.com/frontegg/openapi-public/blob/master/scim.json",
+    "https://github.com/frontegg/openapi-public/blob/master/sso.json",
+    "https://github.com/frontegg/openapi-public/blob/master/tenants.json",
+    "https://join.slack.com/t/frontegg-community/shared_invite/zt-e1oxi1vn-SZErBZcwHcbgj4vrwRIp5A",
+    "https://portal.frontegg.com/login",
+    "https://portal.frontegg.com/signup",
+    "https://support.frontegg.com/frontegg/directories",
+    "https://www.plain.com/docs/graphql/introduction",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql",
+    "https://{domain}.frontegg.com/applications",
+    "https://{domain}.frontegg.com/applications/",
+    "https://{domain}.frontegg.com/directory",
+    "https://{domain}.frontegg.com/directory/",
+    "https://{domain}.frontegg.com/identity",
+    "https://{domain}.frontegg.com/identity/",
+    "https://{domain}.frontegg.com/tenants",
+    "https://{domain}.frontegg.com/tenants/"
+  ]
+}

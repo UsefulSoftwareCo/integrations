@@ -1,0 +1,367 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "iproov.com",
+    "detect": {
+      "domain": "iproov.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:32:00.247Z",
+    "summary": "iProov exposes two HTTP integration surfaces—a regional REST API authenticated either by service-provider `api_key`+`secret` in the request body or OAuth-based Basic/Bearer credentials from iPortal, and an OIDC Web surface at `api.eu.iproov.id/oidc/v1` authenticated with registered OIDC client credentials via client secret, private_key_jwt, or mTLS/public-client PKCE modes.",
+    "credentials": {
+      "sp_api_key_secret": {
+        "type": "compound",
+        "label": "Service Provider API key and secret",
+        "generateUrl": "https://portal.iproov.com/",
+        "setup": "Sign in to [iPortal](https://portal.iproov.com/) and create or open a service provider. The implementation guide says API credentials are obtained when creating a service provider, and these credentials are used for the Service API. Use the service provider's `api_key` and `secret` values in request bodies for `/claim/*` endpoints.",
+        "acquisition": "manual"
+      },
+      "oauth_basic_userpass": {
+        "type": "basic",
+        "label": "OAuth username and password for Service API token issuance",
+        "generateUrl": "https://portal.iproov.com/",
+        "setup": "Sign in to [iPortal](https://portal.iproov.com/) and create or open a service provider. The API reference says the `basicAuth` credentials are obtained via iPortal as an OAuth username and OAuth password, and the implementation guide maps them to `POST /{api_key}/access_token`. Use them as HTTP Basic auth when exchanging for an OAuth bearer token.",
+        "acquisition": "manual"
+      },
+      "management_bearer": {
+        "type": "bearer",
+        "label": "Management API OAuth access token",
+        "generateUrl": "https://portal.iproov.com/",
+        "setup": "First obtain OAuth username/password from [iPortal](https://portal.iproov.com/) for your service provider. Then call the documented token endpoint `POST /{api_key}/access_token` using HTTP Basic auth to obtain an OAuth 2 bearer token. Use that bearer token for the Management and User API endpoints.",
+        "acquisition": "manual"
+      },
+      "oidc_client": {
+        "type": "app",
+        "label": "OIDC Web client registration",
+        "generateUrl": "https://portal.iproov.com/",
+        "setup": "Sign in to [iPortal](https://portal.iproov.com/) and go to the OIDC Web application registration flow described in [Registering Your Application](https://docs.iproov.com/oidcweb/user-guide/registering). Create an application, choose a token endpoint authentication method, and iPortal provisions your `client_id` and any associated secret or key-based configuration. This client registration is then used for OIDC Web login flows and the hosted-profile user-management API.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "iproov-rest-api",
+        "name": "iProov REST API",
+        "type": "http",
+        "docs": "https://eu.rp.secure.iproov.me/docs.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.iproov.com/implementation/api/prepare",
+            "https://eu.rp.secure.iproov.me/docs.html",
+            "https://eu.rp.secure.iproov.me/swagger.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "sp_api_key_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                },
+                {
+                  "id": "sp_api_key_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://eu.rp.secure.iproov.me/docs.html",
+                  "https://docs.iproov.com/implementation/api/prepare",
+                  "https://eu.rp.secure.iproov.me/swagger.json"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "oauth_basic_userpass",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "basicAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://eu.rp.secure.iproov.me/docs.html",
+                  "https://docs.iproov.com/implementation/api/prepare",
+                  "https://eu.rp.secure.iproov.me/swagger.json"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "management_bearer",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://eu.rp.secure.iproov.me/docs.html",
+                  "https://docs.iproov.com/implementation/api/prepare",
+                  "https://eu.rp.secure.iproov.me/swagger.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<base_url>/api/v2",
+        "variables": [
+          {
+            "name": "base_url",
+            "resolveFrom": "Select the provisioned regional API base URL/service location, e.g. eu.rp.secure.iproov.me, us.rp.secure.iproov.me, sg.rp.secure.iproov.me, au.rp.secure.iproov.me, jkt.rp.secure.iproov.me, latam.rp.secure.iproov.me.",
+            "description": "Regional tenant API host chosen in iPortal/service location."
+          }
+        ]
+      },
+      {
+        "slug": "iproov-oidc-web",
+        "name": "iProov OIDC Web",
+        "type": "http",
+        "docs": "https://docs.iproov.com/oidcweb/user-guide",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.iproov.com/oidcweb/user-guide/environments",
+            "https://docs.iproov.com/oidcweb/user-guide/registering",
+            "https://docs.iproov.com/oidcweb/user-guide/client-auth",
+            "https://docs.iproov.com/oidcweb/product-spec/token-binding",
+            "https://docs.iproov.com/oidcweb/product-spec/user-lifecycle"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "oidc_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.iproov.com/oidcweb/user-guide/client-auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "oidc_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.iproov.com/oidcweb/user-guide/client-auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "oidc_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.iproov.com/oidcweb/user-guide/client-auth",
+                  "https://docs.iproov.com/oidcweb/product-spec/token-binding"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.eu.iproov.id/oidc/v1",
+        "notes": "Start from the OpenID discovery document at `https://api.eu.iproov.id/oidc/v1/.well-known/openid-configuration`; the docs say endpoints and capabilities can vary by environment. Supports OIDC/OAuth flows including Authorization Code with PKCE, PAR, CIBA, and a user-management API authenticated with the same OIDC client credentials."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:32:00.247Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 290635,
+    "completion_tokens": 3272,
+    "total_tokens": 293907
+  },
+  "visited": [
+    "https://docs.iproov.com/",
+    "https://docs.iproov.com/implementation/api/prepare",
+    "https://docs.iproov.com/implementation/architecture",
+    "https://docs.iproov.com/implementation_A-Z/rest_api/prepare",
+    "https://docs.iproov.com/iportal",
+    "https://docs.iproov.com/oidcweb/product-spec",
+    "https://docs.iproov.com/oidcweb/product-spec/token-binding",
+    "https://docs.iproov.com/oidcweb/product-spec/user-lifecycle",
+    "https://docs.iproov.com/oidcweb/user-guide",
+    "https://docs.iproov.com/oidcweb/user-guide/client-auth",
+    "https://docs.iproov.com/oidcweb/user-guide/environments",
+    "https://docs.iproov.com/oidcweb/user-guide/registering",
+    "https://eu.rp.secure.iproov.me/docs.html",
+    "https://eu.rp.secure.iproov.me/swagger.json",
+    "https://iproov.com/llms.txt",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "https://api.eu.iproov.id",
+    "https://au.rp.secure.iproov.me/api/v2",
+    "https://docs.iproov.com/",
+    "https://docs.iproov.com/#",
+    "https://docs.iproov.com/#__docusaurus_skipToContent_fallback",
+    "https://docs.iproov.com/#audience",
+    "https://docs.iproov.com/#create-an-application",
+    "https://docs.iproov.com/#invite-your-team",
+    "https://docs.iproov.com/#obtain-api-authentication-credentials",
+    "https://docs.iproov.com/#private_key_jwt-example",
+    "https://docs.iproov.com/#reports-and-transaction-lookup",
+    "https://docs.iproov.com/#sequence-flow-and-architecture",
+    "https://docs.iproov.com/#service-provider-settings",
+    "https://docs.iproov.com/getting-started",
+    "https://docs.iproov.com/getting-started/product-overview",
+    "https://docs.iproov.com/getting-started/sdk-lifecycle",
+    "https://docs.iproov.com/getting-started/support",
+    "https://docs.iproov.com/implementation/api/logging",
+    "https://docs.iproov.com/implementation/api/operations",
+    "https://docs.iproov.com/implementation/api/postman",
+    "https://docs.iproov.com/implementation/api/prepare",
+    "https://docs.iproov.com/implementation/api/retry",
+    "https://docs.iproov.com/implementation/api/signals",
+    "https://docs.iproov.com/implementation/api/user-id",
+    "https://docs.iproov.com/implementation/architecture",
+    "https://docs.iproov.com/implementation/go-live",
+    "https://docs.iproov.com/implementation/minimum-requirements",
+    "https://docs.iproov.com/implementation_A-Z/rest_api/prepare",
+    "https://docs.iproov.com/iportal",
+    "https://docs.iproov.com/iportal/invite-team",
+    "https://docs.iproov.com/iportal/service-providers",
+    "https://docs.iproov.com/oidcweb/product-spec",
+    "https://docs.iproov.com/oidcweb/product-spec/auth-code-flow",
+    "https://docs.iproov.com/oidcweb/product-spec/authentication-modes",
+    "https://docs.iproov.com/oidcweb/product-spec/ciba",
+    "https://docs.iproov.com/oidcweb/product-spec/claims",
+    "https://docs.iproov.com/oidcweb/product-spec/data-retention",
+    "https://docs.iproov.com/oidcweb/product-spec/first-second-factor",
+    "https://docs.iproov.com/oidcweb/product-spec/jar",
+    "https://docs.iproov.com/oidcweb/product-spec/legacy-flows",
+    "https://docs.iproov.com/oidcweb/product-spec/overview",
+    "https://docs.iproov.com/oidcweb/product-spec/par",
+    "https://docs.iproov.com/oidcweb/product-spec/security-posture",
+    "https://docs.iproov.com/oidcweb/product-spec/signed-requests",
+    "https://docs.iproov.com/oidcweb/product-spec/standards",
+    "https://docs.iproov.com/oidcweb/product-spec/token-binding",
+    "https://docs.iproov.com/oidcweb/product-spec/user-lifecycle",
+    "https://docs.iproov.com/oidcweb/product-spec/verification-levels",
+    "https://docs.iproov.com/oidcweb/product-spec/where-it-fits",
+    "https://docs.iproov.com/oidcweb/user-guide",
+    "https://docs.iproov.com/oidcweb/user-guide/auth-code-flow",
+    "https://docs.iproov.com/oidcweb/user-guide/checklist",
+    "https://docs.iproov.com/oidcweb/user-guide/ciba",
+    "https://docs.iproov.com/oidcweb/user-guide/client-auth",
+    "https://docs.iproov.com/oidcweb/user-guide/environments",
+    "https://docs.iproov.com/oidcweb/user-guide/errors",
+    "https://docs.iproov.com/oidcweb/user-guide/how-to-read",
+    "https://docs.iproov.com/oidcweb/user-guide/jar",
+    "https://docs.iproov.com/oidcweb/user-guide/legacy-flows",
+    "https://docs.iproov.com/oidcweb/user-guide/login-hint",
+    "https://docs.iproov.com/oidcweb/user-guide/logout",
+    "https://docs.iproov.com/oidcweb/user-guide/par",
+    "https://docs.iproov.com/oidcweb/user-guide/reading-results",
+    "https://docs.iproov.com/oidcweb/user-guide/redirect-uris",
+    "https://docs.iproov.com/oidcweb/user-guide/registering",
+    "https://docs.iproov.com/oidcweb/user-guide/scopes",
+    "https://docs.iproov.com/oidcweb/user-guide/second-factor",
+    "https://docs.iproov.com/oidcweb/user-guide/sender-constrained",
+    "https://docs.iproov.com/oidcweb/user-guide/user-experience",
+    "https://docs.iproov.com/oidcweb/user-guide/user-management",
+    "https://eu.rp.secure.iproov.me/api/v2",
+    "https://eu.rp.secure.iproov.me/docs.html",
+    "https://eu.rp.secure.iproov.me/swagger.json",
+    "https://github.com/iProov/android",
+    "https://github.com/iProov/dotnet-maui",
+    "https://github.com/iProov/flutter",
+    "https://github.com/iProov/ios",
+    "https://github.com/iProov/react-native",
+    "https://github.com/iProov/web",
+    "https://iproov.com/llms.txt",
+    "https://jkt.rp.secure.iproov.me/api/v2",
+    "https://latam.rp.secure.iproov.me/api/v2",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://portal.iproov.com",
+    "https://portal.iproov.com/",
+    "https://redocly.com/redoc/",
+    "https://sg.rp.secure.iproov.me/api/v2",
+    "https://us.rp.secure.iproov.me/api/v2",
+    "https://www.apollographql.com/blog/connect-ai-agents-to-your-graphql-api-using-mcp-and-type-safe-tool-configuration",
+    "https://www.iproov.com/about",
+    "https://www.iproov.com/biometric-authentication-solution",
+    "https://www.iproov.com/biometric-encyclopedia",
+    "https://www.iproov.com/biometric-remote-onboarding-solution",
+    "https://www.iproov.com/blog",
+    "https://www.iproov.com/careers",
+    "https://www.iproov.com/certifications",
+    "https://www.iproov.com/contact-us",
+    "https://www.iproov.com/industries/customs-and-borders",
+    "https://www.iproov.com/industries/financial-services",
+    "https://www.iproov.com/industries/government-public-sector",
+    "https://www.iproov.com/industries/healthcare",
+    "https://www.iproov.com/industries/travel",
+    "https://www.iproov.com/leadership",
+    "https://www.iproov.com/liveness-detection",
+    "https://www.iproov.com/on-the-move-biometrics",
+    "https://www.iproov.com/partners",
+    "https://www.iproov.com/press",
+    "https://www.iproov.com/reports",
+    "https://www.iproov.com/use-cases/account-recovery-device-binding",
+    "https://www.iproov.com/use-cases/biometric-authentication",
+    "https://www.iproov.com/use-cases/digital-identity",
+    "https://www.iproov.com/use-cases/multi-factor-authentication",
+    "https://www.iproov.com/use-cases/onboarding",
+    "https://www.iproov.com/use-cases/visas-borders-immigration",
+    "https://www.iproov.com/workforce-mfa-solution",
+    "https://www.iproov.com/workforce-solution-suite",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://yourapp.example/callback",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

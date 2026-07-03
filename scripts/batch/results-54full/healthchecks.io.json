@@ -1,0 +1,451 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "healthchecks.io",
+    "detect": {
+      "domain": "healthchecks.io",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:27:34.143Z",
+    "summary": "Healthchecks.io exposes two REST-style HTTP integration surfaces—the authenticated Management API (current v3 plus deprecated v1) and the ping-based Pinging API—and an archived `hchk` CLI.",
+    "description": "Healthchecks.io monitors cron jobs and other recurring processes by receiving pings from scripts and services and alerting when expected signals do not arrive. It also provides account-level management of checks, integrations, and related monitoring configuration.",
+    "credentials": {
+      "project_api_key": {
+        "type": "api_key",
+        "label": "Project API key",
+        "generateUrl": "https://healthchecks.io/docs/api/",
+        "setup": "In Healthchecks.io, open your project's **Project Settings** and create either a read-write or read-only API key as described in the [Management API v3 docs](https://healthchecks.io/docs/api/). API keys are project-specific; there are no account-wide API keys. Use the key in the `X-Api-Key` header, or for JSON `POST` requests where supported, include it as an `api_key` field in the request body."
+      },
+      "check_secret": {
+        "type": "compound",
+        "label": "Check UUID or project ping key + slug",
+        "generateUrl": "https://healthchecks.io/docs/http_api/",
+        "setup": "Create a check in Healthchecks.io, then copy its ping URL details from the web UI as documented in the [Pinging API](https://healthchecks.io/docs/http_api/). You can identify a check either by its generated check UUID, or by a combination of the project's `Ping Key` and the check's slug. Treat both check UUIDs and project Ping Keys as secrets because anyone with them can send telemetry signals to your checks."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "management-api-v3",
+        "name": "Management API v3",
+        "type": "http",
+        "docs": "https://healthchecks.io/docs/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://healthchecks.io/docs/api/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "project_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Api-Key"
+                  }
+                },
+                {
+                  "id": "project_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "api_key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://healthchecks.io/docs/api/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://healthchecks.io/api/v3/"
+      },
+      {
+        "slug": "management-api-v1",
+        "name": "Management API v1",
+        "type": "http",
+        "docs": "https://healthchecks.io/docs/apiv1/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://healthchecks.io/docs/apiv1/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "project_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Api-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://healthchecks.io/docs/apiv1/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "project_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "api_key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://healthchecks.io/docs/apiv1/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://healthchecks.io/api/v1/"
+      },
+      {
+        "slug": "pinging-api",
+        "name": "Pinging API",
+        "type": "http",
+        "docs": "https://healthchecks.io/docs/http_api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://healthchecks.io/docs/http_api/",
+            "https://healthchecks.io/docs/",
+            "https://healthchecks.io/docs/bash/",
+            "https://healthchecks.io/docs/attaching_logs/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "check_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "path"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://healthchecks.io/docs/http_api/",
+                  "https://healthchecks.io/docs/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://hc-ping.com/"
+      },
+      {
+        "slug": "hchk-cli",
+        "name": "hchk CLI",
+        "type": "cli",
+        "docs": "https://github.com/healthchecks/hchk",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://github.com/healthchecks/hchk",
+            "https://healthchecks.io/docs/api/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "project_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://github.com/healthchecks/hchk",
+                  "https://healthchecks.io/docs/api/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "healthchecks/hchk"
+          }
+        ],
+        "command": "hchk"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:27:34.143Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 57438,
+    "completion_tokens": 1242,
+    "total_tokens": 58680
+  },
+  "visited": [
+    "https://github.com/healthchecks/hchk",
+    "https://healthchecks.io/docs/",
+    "https://healthchecks.io/docs/api/",
+    "https://healthchecks.io/docs/apiv1/",
+    "https://healthchecks.io/docs/attaching_logs/",
+    "https://healthchecks.io/docs/bash/",
+    "https://healthchecks.io/docs/http_api/"
+  ],
+  "grounding": [
+    "https://archiveprogram.github.com",
+    "https://blog.healthchecks.io",
+    "https://blog.healthchecks.io/",
+    "https://curl.haxx.se/docs/manpage.html",
+    "https://curl.haxx.se/docs/manpage.html#--retry-delay",
+    "https://curl.se/docs/manpage.html#-f",
+    "https://docs.github.com",
+    "https://docs.github.com/",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.github.com/site-policy/github-terms/github-terms-of-service",
+    "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement",
+    "https://en.wikipedia.org/wiki/Dead_man%27s_switch",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#",
+    "https://github.com/#readme-ov-file",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/bdd/runitor",
+    "https://github.com/collections",
+    "https://github.com/contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fhealthchecks%2Fhchk&report=healthchecks+%28user%29",
+    "https://github.com/customer-stories",
+    "https://github.com/cuu508",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/healthchecks",
+    "https://github.com/healthchecks/hchk",
+    "https://github.com/healthchecks/hchk/actions",
+    "https://github.com/healthchecks/hchk/activity",
+    "https://github.com/healthchecks/hchk/blob/master/.gitignore",
+    "https://github.com/healthchecks/hchk/blob/master/README.md",
+    "https://github.com/healthchecks/hchk/blob/master/setup.cfg",
+    "https://github.com/healthchecks/hchk/blob/master/setup.py",
+    "https://github.com/healthchecks/hchk/blob/master/tox.ini",
+    "https://github.com/healthchecks/hchk/branches",
+    "https://github.com/healthchecks/hchk/commit/3554ca69d8ccec942fcc10f49ef627f562d47bff",
+    "https://github.com/healthchecks/hchk/commit/7ae71fb812e772fbae093bf04f326b107d03f9a0",
+    "https://github.com/healthchecks/hchk/commit/a4e9036ccd23afc2342bac82551e4b922c0a2648",
+    "https://github.com/healthchecks/hchk/commit/e176a31664ec562258759e5c39650de97af0915b",
+    "https://github.com/healthchecks/hchk/commits/master/",
+    "https://github.com/healthchecks/hchk/commits?author=cuu508",
+    "https://github.com/healthchecks/hchk/custom-properties",
+    "https://github.com/healthchecks/hchk/forks",
+    "https://github.com/healthchecks/hchk/graphs/contributors",
+    "https://github.com/healthchecks/hchk/issues",
+    "https://github.com/healthchecks/hchk/projects",
+    "https://github.com/healthchecks/hchk/pulls",
+    "https://github.com/healthchecks/hchk/pulse",
+    "https://github.com/healthchecks/hchk/releases",
+    "https://github.com/healthchecks/hchk/search?l=python",
+    "https://github.com/healthchecks/hchk/security",
+    "https://github.com/healthchecks/hchk/stargazers",
+    "https://github.com/healthchecks/hchk/tags",
+    "https://github.com/healthchecks/hchk/tree/master/hchk",
+    "https://github.com/healthchecks/hchk/watchers",
+    "https://github.com/login?return_to=%2Fhealthchecks%2Fhchk",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fhealthchecks%2Fhchk",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/orgs/healthchecks/packages?repo_name=hchk",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=healthchecks%2Fhchk",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.community/",
+    "https://hc-ping.com/",
+    "https://hc-ping.com/$PING_KEY/$SLUG?create=1",
+    "https://hc-ping.com/31365bce-8da9-4729-8ff3-aaa71d56b712",
+    "https://hc-ping.com/803f680d-e89b-492b-82ef-2be7b774a92d",
+    "https://hc-ping.com/your-uuid-here",
+    "https://hc-ping.com/your-uuid-here/$?",
+    "https://healthchecks.io/#create-check",
+    "https://healthchecks.io/#delete-check",
+    "https://healthchecks.io/#exitcode-slug",
+    "https://healthchecks.io/#exitcode-uuid",
+    "https://healthchecks.io/#fail-slug",
+    "https://healthchecks.io/#fail-uuid",
+    "https://healthchecks.io/#get-check",
+    "https://healthchecks.io/#list-badges",
+    "https://healthchecks.io/#list-channels",
+    "https://healthchecks.io/#list-checks",
+    "https://healthchecks.io/#list-flips",
+    "https://healthchecks.io/#list-pings",
+    "https://healthchecks.io/#log-slug",
+    "https://healthchecks.io/#log-uuid",
+    "https://healthchecks.io/#pause-check",
+    "https://healthchecks.io/#ping-body",
+    "https://healthchecks.io/#resume-check",
+    "https://healthchecks.io/#start-slug",
+    "https://healthchecks.io/#start-uuid",
+    "https://healthchecks.io/#status",
+    "https://healthchecks.io/#success-slug",
+    "https://healthchecks.io/#success-uuid",
+    "https://healthchecks.io/#update-check",
+    "https://healthchecks.io/../api/",
+    "https://healthchecks.io/../autoprovisioning/",
+    "https://healthchecks.io/../http_api#log-uuid",
+    "https://healthchecks.io/about/",
+    "https://healthchecks.io/accounts/login/",
+    "https://healthchecks.io/accounts/profile/",
+    "https://healthchecks.io/api/v1/badges/",
+    "https://healthchecks.io/api/v1/channels/",
+    "https://healthchecks.io/api/v1/checks/",
+    "https://healthchecks.io/api/v1/checks/31365bce-8da9-4729-8ff3-aaa71d56b712",
+    "https://healthchecks.io/api/v1/checks/31365bce-8da9-4729-8ff3-aaa71d56b712/pause",
+    "https://healthchecks.io/api/v1/checks/31365bce-8da9-4729-8ff3-aaa71d56b712/resume",
+    "https://healthchecks.io/api/v1/checks/803f680d-e89b-492b-82ef-2be7b774a92d",
+    "https://healthchecks.io/api/v1/checks/803f680d-e89b-492b-82ef-2be7b774a92d/pause",
+    "https://healthchecks.io/api/v1/checks/803f680d-e89b-492b-82ef-2be7b774a92d/resume",
+    "https://healthchecks.io/api/v1/checks/?tag=foo&tag=bar",
+    "https://healthchecks.io/api/v3/badges/",
+    "https://healthchecks.io/api/v3/channels/",
+    "https://healthchecks.io/api/v3/checks/",
+    "https://healthchecks.io/api/v3/checks/31365bce-8da9-4729-8ff3-aaa71d56b712",
+    "https://healthchecks.io/api/v3/checks/31365bce-8da9-4729-8ff3-aaa71d56b712/pause",
+    "https://healthchecks.io/api/v3/checks/31365bce-8da9-4729-8ff3-aaa71d56b712/resume",
+    "https://healthchecks.io/api/v3/checks/803f680d-e89b-492b-82ef-2be7b774a92d",
+    "https://healthchecks.io/api/v3/checks/803f680d-e89b-492b-82ef-2be7b774a92d/pause",
+    "https://healthchecks.io/api/v3/checks/803f680d-e89b-492b-82ef-2be7b774a92d/resume",
+    "https://healthchecks.io/api/v3/checks/?slug=backups",
+    "https://healthchecks.io/api/v3/checks/?tag=foo&tag=bar",
+    "https://healthchecks.io/api/v3/status/",
+    "https://healthchecks.io/b/2/1b9d0386-d07e-44b0-8995-4a9a372de43c.svg",
+    "https://healthchecks.io/b/2/7d3ab93d-836e-4505-bbda-fcbd5e07adf9.svg",
+    "https://healthchecks.io/configuring_checks/",
+    "https://healthchecks.io/configuring_notifications/",
+    "https://healthchecks.io/docs/",
+    "https://healthchecks.io/docs/api/",
+    "https://healthchecks.io/docs/apiv1/",
+    "https://healthchecks.io/docs/arduino/",
+    "https://healthchecks.io/docs/attaching_logs/",
+    "https://healthchecks.io/docs/autoprovisioning/",
+    "https://healthchecks.io/docs/badges/",
+    "https://healthchecks.io/docs/bash/",
+    "https://healthchecks.io/docs/cloning_checks/",
+    "https://healthchecks.io/docs/configuring_checks/",
+    "https://healthchecks.io/docs/configuring_notifications/",
+    "https://healthchecks.io/docs/configuring_prometheus/",
+    "https://healthchecks.io/docs/cron/",
+    "https://healthchecks.io/docs/csharp/",
+    "https://healthchecks.io/docs/email/",
+    "https://healthchecks.io/docs/github_actions/",
+    "https://healthchecks.io/docs/go/",
+    "https://healthchecks.io/docs/healthchecks_cronitor_comparison/",
+    "https://healthchecks.io/docs/healthchecks_sentry_comparison/",
+    "https://healthchecks.io/docs/http_api/",
+    "https://healthchecks.io/docs/javascript/",
+    "https://healthchecks.io/docs/measuring_script_run_time/",
+    "https://healthchecks.io/docs/monitoring_cron_jobs/",
+    "https://healthchecks.io/docs/monitoring_systemd_tasks/",
+    "https://healthchecks.io/docs/network_routers/",
+    "https://healthchecks.io/docs/php/",
+    "https://healthchecks.io/docs/powershell/",
+    "https://healthchecks.io/docs/projects_teams/",
+    "https://healthchecks.io/docs/python/",
+    "https://healthchecks.io/docs/reliability_tips/",
+    "https://healthchecks.io/docs/resources/",
+    "https://healthchecks.io/docs/ruby/",
+    "https://healthchecks.io/docs/self_hosted/",
+    "https://healthchecks.io/docs/self_hosted_configuration/",
+    "https://healthchecks.io/docs/self_hosted_docker/",
+    "https://healthchecks.io/docs/signaling_failures/",
+    "https://healthchecks.io/docs/slug_urls/",
+    "https://healthchecks.io/faq/",
+    "https://healthchecks.io/http_api/",
+    "https://healthchecks.io/measuring_script_run_time/",
+    "https://healthchecks.io/monitoring_cron_jobs/",
+    "https://healthchecks.io/pricing/",
+    "https://healthchecks.io/privacy/",
+    "https://healthchecks.io/projects_teams/",
+    "https://healthchecks.io/signaling_failures/",
+    "https://healthchecks.io/terms/",
+    "https://maintainers.github.com",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://status.healthchecks.io/",
+    "https://support.github.com",
+    "https://support.github.com?tags=dotcom-footer",
+    "https://www.githubstatus.com/",
+    "https://www.gnu.org/software/wget/manual/wget.html"
+  ]
+}

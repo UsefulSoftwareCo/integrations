@@ -1,0 +1,215 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "hubspot.com",
+    "detect": {
+      "domain": "hubspot.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T09:56:58.879Z",
+    "summary": "HubSpot exposes one authenticated REST API surface, a remote OAuth+PKCE MCP server, and a local CLI-based Developer MCP server; no public surfaces were confirmed.",
+    "credentials": {
+      "hs_oauth_token": {
+        "type": "oauth2",
+        "label": "HubSpot OAuth access token",
+        "generateUrl": "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/working-with-oauth",
+        "setup": "Create a HubSpot app, complete OAuth installation for a user or account, and copy the resulting access token from the app’s auth details. HubSpot says OAuth is the path for public apps and marketplace/multi-customer integrations. Use the token as a `Bearer` value in `Authorization`.",
+        "acquisition": "manual"
+      },
+      "hs_private_token": {
+        "type": "bearer",
+        "label": "HubSpot private app access token",
+        "generateUrl": "https://developers.hubspot.com/docs/apps/legacy-apps/private-apps/overview",
+        "setup": "In your HubSpot account, go to **Development** → **Legacy apps** → **Create legacy app** → **Private**, choose scopes, create the app, then reveal the token from the app’s **Auth** tab. HubSpot instructs you to send it as `Authorization: Bearer <token>`.",
+        "acquisition": "manual"
+      },
+      "hs_cli_login": {
+        "type": "basic",
+        "label": "HubSpot CLI login/session",
+        "generateUrl": "https://developers.hubspot.com/docs/developer-tooling/local-development/hubspot-cli/install-the-cli",
+        "setup": "Install the HubSpot CLI, then run `hs login` to authenticate the CLI. HubSpot also exposes CLI-authenticated workflows through `hs mcp setup` and project commands; this credential represents the logged-in CLI session used by local developer tooling.",
+        "acquisition": "ambient"
+      },
+      "hs_mcp_oauth": {
+        "type": "oauth2",
+        "label": "HubSpot MCP auth app OAuth credentials",
+        "generateUrl": "https://app.hubspot.com/l/mcp-auth-apps/",
+        "setup": "Create an MCP auth app in HubSpot at [the MCP auth apps page](https://app.hubspot.com/l/mcp-auth-apps/). Configure the app for the CRM data your agent needs, then use the app’s OAuth credentials with an MCP client that supports PKCE. HubSpot says PKCE is required, and some clients such as the MCP Inspector handle it automatically. The server endpoint is `https://mcp.hubspot.com`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "hubspot-api",
+        "name": "HubSpot API",
+        "type": "http",
+        "docs": "https://developers.hubspot.com/docs/api-reference/latest/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.hubspot.com/docs/apps/developer-platform/overview",
+            "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/intro-to-auth",
+            "https://developers.hubspot.com/docs/apps/legacy-apps/private-apps/overview",
+            "https://developers.hubspot.com/docs/api/overview",
+            "https://developers.hubspot.com/docs/api-reference/latest/crm/search-the-crm"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hs_oauth_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/intro-to-auth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "hs_private_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/intro-to-auth",
+                  "https://developers.hubspot.com/docs/apps/legacy-apps/private-apps/overview"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "hubspot-mcp-server",
+        "name": "HubSpot MCP server",
+        "type": "mcp",
+        "docs": "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/integrate-with-hubspot-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.hubspot.com/ai-tools/mcp",
+            "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/integrate-with-hubspot-mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hs_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.hubspot.com/ai-tools/mcp",
+                  "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/integrate-with-hubspot-mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.hubspot.com",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "hubspot-developer-mcp-server",
+        "name": "HubSpot Developer MCP server",
+        "type": "mcp",
+        "docs": "https://developers.hubspot.com/docs/developer-tooling/local-development/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.hubspot.com/ai-tools/mcp",
+            "https://developers.hubspot.com/docs/developer-tooling/local-development/mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hs_cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "hs login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.hubspot.com/docs/developer-tooling/local-development/mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://developers.hubspot.com/docs/developer-tooling/local-development/mcp-server",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T09:56:58.879Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 253840,
+    "completion_tokens": 1986,
+    "total_tokens": 255826
+  },
+  "visited": [
+    "https://community.hubspot.com/t/custom-objects-oauth-2-1-mcp-auth-app-support/146796",
+    "https://developers.hubspot.com/ai-tools/mcp",
+    "https://developers.hubspot.com/blog/hubspot-integration-choosing-private-public-hubspot-apps",
+    "https://developers.hubspot.com/docs/api-reference/latest",
+    "https://developers.hubspot.com/docs/api-reference/latest/crm/search-the-crm",
+    "https://developers.hubspot.com/docs/api-reference/latest/openapi.json",
+    "https://developers.hubspot.com/docs/api-reference/latest/overview",
+    "https://developers.hubspot.com/docs/api/overview",
+    "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/overview",
+    "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/integrate-with-hubspot-mcp-server",
+    "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/integrate-with-the-remote-hubspot-mcp-server",
+    "https://developers.hubspot.com/docs/apps/developer-platform/overview",
+    "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/intro-to-auth",
+    "https://developers.hubspot.com/docs/apps/legacy-apps/private-apps/build-with-projects/create-private-apps-with-projects",
+    "https://developers.hubspot.com/docs/apps/legacy-apps/private-apps/overview",
+    "https://developers.hubspot.com/docs/developer-tooling/local-development/mcp-server",
+    "https://developers.hubspot.com/docs/llms.txt",
+    "https://github.com/danny-avila/LibreChat/discussions/11564",
+    "https://www.scalekit.com/blog/hubspot-mcp-vs-api",
+    "https://www.speakeasy.com/mcp/using-mcp/mcp-server-providers/hubspot"
+  ]
+}

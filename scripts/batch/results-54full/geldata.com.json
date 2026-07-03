@@ -1,0 +1,589 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "geldata.com",
+    "detect": {
+      "domain": "geldata.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:27:14.648Z",
+    "summary": "Gel exposes a `gel` CLI plus optional per-instance EdgeQL-over-HTTP and GraphQL endpoints; authentication is via CLI `gel cloud login`, Gel Cloud secret keys, or database credentials/JWTs on the HTTP surfaces.",
+    "credentials": {
+      "gel_cloud_secret_key": {
+        "type": "api_key",
+        "label": "Gel Cloud secret key",
+        "generateUrl": "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_secretkey",
+        "setup": "Create a Gel Cloud secret key from the [Gel Cloud CLI docs](https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_secretkey). The connection docs state that to authenticate with a Gel Cloud instance you provide the instance name and a secret key; the Cloud docs also say you can generate a secret key in the Cloud UI or by running `gel cloud secretkey create`.",
+        "acquisition": "manual"
+      },
+      "gel_cloud_login": {
+        "type": "oauth2",
+        "label": "Gel Cloud CLI login session",
+        "generateUrl": "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_login",
+        "setup": "Authenticate the CLI by running `gel cloud login` as documented in [gel cloud login](https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_login). This signs you into Gel Cloud and stores a local access token for subsequent `gel cloud` commands.",
+        "acquisition": "manual"
+      },
+      "gel_db_password": {
+        "type": "basic",
+        "label": "Gel database username and password",
+        "setup": "Create or set a database role password on your Gel instance. The docs note Gel creates an `admin` user by default with a randomized password, and you can set one with `alter role admin { set password := '<password>'; };` or create a new role with `create superuser role <name> { set password := '<password>'; };`. For linked or local instances, the CLI can also save these credentials locally as described in [Connection parameters](https://docs.geldata.com/reference/using/connection.md).",
+        "acquisition": "manual"
+      },
+      "gel_db_jwt": {
+        "type": "jwt",
+        "label": "Gel database JWT for SIMPLE_HTTP transport",
+        "setup": "Configure your Gel instance to use `cfg::JWT` for the `SIMPLE_HTTP` transport as described in [EdgeQL over HTTP](https://docs.geldata.com/reference/using/http.md). Then mint a JWT for a Gel database user according to your instance's JWT configuration. Requests must include `Authorization: Bearer <token>` and `X-EdgeDB-User: <gel-username>`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "gel-cli",
+        "name": "Gel CLI",
+        "type": "cli",
+        "docs": "https://docs.geldata.com/reference/using/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.geldata.com/reference/using/cli",
+            "https://docs.geldata.com/reference/using/cli/gel_cloud",
+            "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_login",
+            "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_secretkey",
+            "https://docs.geldata.com/reference/using/connection"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "gel_cloud_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "gel cloud login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.geldata.com/reference/using/cli/gel_cloud",
+                  "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_login"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gel_cloud_secret_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.geldata.com/reference/using/cli/gel_cloud",
+                  "https://docs.geldata.com/reference/using/connection"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "gel"
+      },
+      {
+        "slug": "gel-graphql-endpoint",
+        "name": "Gel GraphQL endpoint",
+        "type": "graphql",
+        "docs": "https://docs.geldata.com/reference/using/graphql",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.geldata.com/reference/using/graphql",
+            "https://docs.geldata.com/reference/using/graphql/graphql",
+            "https://docs.geldata.com/reference/using/connection"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "spec": "introspection"
+      },
+      {
+        "slug": "gel-edgeql-over-http",
+        "name": "Gel EdgeQL over HTTP",
+        "type": "http",
+        "docs": "https://docs.geldata.com/reference/using/http",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.geldata.com/reference/using/http.md",
+            "https://docs.geldata.com/reference/using/connection.md",
+            "https://docs.geldata.com/learn/clients"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "gel_db_password",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.geldata.com/reference/using/http.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gel_db_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "gel_db_password",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-EdgeDB-User"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.geldata.com/reference/using/http.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gel_cloud_secret_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.geldata.com/reference/using/http.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<hostname>:<port>/branch/<branch-name>/edgeql",
+        "notes": "The HTTP endpoint is only available when the `edgeql_http` extension is enabled in the instance schema. Docs state auth can also be configured to `cfg::Trust`, in which case no auth is done, but the default is password-based and Gel Cloud uses bearer secret keys."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:27:14.648Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 510810,
+    "completion_tokens": 2538,
+    "total_tokens": 513348
+  },
+  "visited": [
+    "https://docs.developers.optimizely.com/platform-optimizely/docs/graphql-api-technical-overview",
+    "https://docs.geldata.com/",
+    "https://docs.geldata.com/guides/tutorials/nextjs_app_router",
+    "https://docs.geldata.com/learn/clients",
+    "https://docs.geldata.com/learn/installation",
+    "https://docs.geldata.com/learn/localdev",
+    "https://docs.geldata.com/learn/quickstart/setup",
+    "https://docs.geldata.com/reference/auth",
+    "https://docs.geldata.com/reference/auth/webauthn",
+    "https://docs.geldata.com/reference/using/cli",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_login",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_secretkey",
+    "https://docs.geldata.com/reference/using/cli/gel_connopts",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_credentials",
+    "https://docs.geldata.com/reference/using/connection",
+    "https://docs.geldata.com/reference/using/connection.md",
+    "https://docs.geldata.com/reference/using/graphql",
+    "https://docs.geldata.com/reference/using/graphql/graphql",
+    "https://docs.geldata.com/reference/using/http",
+    "https://docs.geldata.com/reference/using/http.md",
+    "https://docs.geldata.com/reference/using/js",
+    "https://docs.geldata.com/reference/using/js/generation",
+    "https://docs.geldata.com/resources/changelog/6_x",
+    "https://docs.geldata.com/resources/guides/contributing/code",
+    "https://docs.geldata.com/resources/guides/tutorials/chatgpt_bot",
+    "https://docs.geldata.com/resources/guides/tutorials/cloudflare_workers",
+    "https://docs.geldata.com/resources/guides/tutorials/graphql_apis_with_strawberry",
+    "https://docs.geldata.com/resources/guides/tutorials/jupyter_notebook",
+    "https://docs.geldata.com/resources/guides/tutorials/rest_apis_with_fastapi",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://localhost:5000/graph",
+    "https://bun.sh/guides/ecosystem/edgedb",
+    "https://cloud.edgedb.com",
+    "https://cloud.geldata.com/",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication#basic_authentication_scheme",
+    "https://docs",
+    "https://docs.developers.optimizely.com/platform-optimizely/docs/graphql-api-technical-overview",
+    "https://docs.geldata",
+    "https://docs.geldata.com/",
+    "https://docs.geldata.com/#",
+    "https://docs.geldata.com/#available-libraries",
+    "https://docs.geldata.com/#connection",
+    "https://docs.geldata.com/#other-mechanisms",
+    "https://docs.geldata.com/#ref-intro-clients-connection",
+    "https://docs.geldata.com/#ref-intro-clients-connection-cloud",
+    "https://docs.geldata.com/#reference",
+    "https://docs.geldata.com/#usage",
+    "https://docs.geldata.com/#using-environment-variables",
+    "https://docs.geldata.com/#using-projects",
+    "https://docs.geldata.com/cloud",
+    "https://docs.geldata.com/guides/tutorials/nextjs_app_router",
+    "https://docs.geldata.com/learn/branches",
+    "https://docs.geldata.com/learn/cli",
+    "https://docs.geldata.com/learn/cli#ref-admin-install",
+    "https://docs.geldata.com/learn/clients",
+    "https://docs.geldata.com/learn/clients.md",
+    "https://docs.geldata.com/learn/edgeql",
+    "https://docs.geldata.com/learn/guides/ai",
+    "https://docs.geldata.com/learn/guides/drizzle",
+    "https://docs.geldata.com/learn/installation",
+    "https://docs.geldata.com/learn/installation.md",
+    "https://docs.geldata.com/learn/instances",
+    "https://docs.geldata.com/learn/localdev",
+    "https://docs.geldata.com/learn/migrations",
+    "https://docs.geldata.com/learn/projects",
+    "https://docs.geldata.com/learn/projects#ref-intro-projects",
+    "https://docs.geldata.com/learn/quickstart/ai",
+    "https://docs.geldata.com/learn/quickstart/connecting",
+    "https://docs.geldata.com/learn/quickstart/inheritance",
+    "https://docs.geldata.com/learn/quickstart/modeling",
+    "https://docs.geldata.com/learn/quickstart/overview",
+    "https://docs.geldata.com/learn/quickstart/setup",
+    "https://docs.geldata.com/learn/quickstart/working",
+    "https://docs.geldata.com/learn/schema",
+    "https://docs.geldata.com/learn/tutorials/ai_fastapi_searchbot",
+    "https://docs.geldata.com/learn/tutorials/gel_drizzle_booknotes",
+    "https://docs.geldata.com/reference",
+    "https://docs.geldata.com/reference/auth",
+    "https://docs.geldata.com/reference/auth/webauthn",
+    "https://docs.geldata.com/reference/datamodel",
+    "https://docs.geldata.com/reference/datamodel/access_policies",
+    "https://docs.geldata.com/reference/datamodel/aliases",
+    "https://docs.geldata.com/reference/datamodel/annotations",
+    "https://docs.geldata.com/reference/datamodel/branches",
+    "https://docs.geldata.com/reference/datamodel/comparison",
+    "https://docs.geldata.com/reference/datamodel/computeds",
+    "https://docs.geldata.com/reference/datamodel/constraints",
+    "https://docs.geldata.com/reference/datamodel/extensions",
+    "https://docs.geldata.com/reference/datamodel/functions",
+    "https://docs.geldata.com/reference/datamodel/future",
+    "https://docs.geldata.com/reference/datamodel/globals",
+    "https://docs.geldata.com/reference/datamodel/indexes",
+    "https://docs.geldata.com/reference/datamodel/inheritance",
+    "https://docs.geldata.com/reference/datamodel/introspection",
+    "https://docs.geldata.com/reference/datamodel/introspection/casts",
+    "https://docs.geldata.com/reference/datamodel/introspection/colltypes",
+    "https://docs.geldata.com/reference/datamodel/introspection/constraints",
+    "https://docs.geldata.com/reference/datamodel/introspection/functions",
+    "https://docs.geldata.com/reference/datamodel/introspection/indexes",
+    "https://docs.geldata.com/reference/datamodel/introspection/mutation_rewrites",
+    "https://docs.geldata.com/reference/datamodel/introspection/objects",
+    "https://docs.geldata.com/reference/datamodel/introspection/operators",
+    "https://docs.geldata.com/reference/datamodel/introspection/scalars",
+    "https://docs.geldata.com/reference/datamodel/introspection/triggers",
+    "https://docs.geldata.com/reference/datamodel/linkprops",
+    "https://docs.geldata.com/reference/datamodel/links",
+    "https://docs.geldata.com/reference/datamodel/migrations",
+    "https://docs.geldata.com/reference/datamodel/migrations.md#ref-eql-ddl",
+    "https://docs.geldata.com/reference/datamodel/modules",
+    "https://docs.geldata.com/reference/datamodel/mutation_rewrites",
+    "https://docs.geldata.com/reference/datamodel/objects",
+    "https://docs.geldata.com/reference/datamodel/permissions",
+    "https://docs.geldata.com/reference/datamodel/primitives",
+    "https://docs.geldata.com/reference/datamodel/properties",
+    "https://docs.geldata.com/reference/datamodel/triggers",
+    "https://docs.geldata.com/reference/edgeql",
+    "https://docs.geldata.com/reference/edgeql/analyze",
+    "https://docs.geldata.com/reference/edgeql/delete",
+    "https://docs.geldata.com/reference/edgeql/for",
+    "https://docs.geldata.com/reference/edgeql/group",
+    "https://docs.geldata.com/reference/edgeql/insert",
+    "https://docs.geldata.com/reference/edgeql/literals",
+    "https://docs.geldata.com/reference/edgeql/parameters",
+    "https://docs.geldata.com/reference/edgeql/path_resolution",
+    "https://docs.geldata.com/reference/edgeql/paths",
+    "https://docs.geldata.com/reference/edgeql/select",
+    "https://docs.geldata.com/reference/edgeql/sets",
+    "https://docs.geldata.com/reference/edgeql/transactions",
+    "https://docs.geldata.com/reference/edgeql/types",
+    "https://docs.geldata.com/reference/edgeql/update",
+    "https://docs.geldata.com/reference/edgeql/with",
+    "https://docs.geldata.com/reference/reference/edgeql/tx_start.md#ref-eql-statements-start-tx",
+    "https://docs.geldata.com/reference/running",
+    "https://docs.geldata.com/reference/running/admin",
+    "https://docs.geldata.com/reference/running/admin/configure",
+    "https://docs.geldata.com/reference/running/admin/roles",
+    "https://docs.geldata.com/reference/running/admin/statistics_update",
+    "https://docs.geldata.com/reference/running/admin/vacuum",
+    "https://docs.geldata.com/reference/running/backend_ha",
+    "https://docs.geldata.com/reference/running/configuration",
+    "https://docs.geldata.com/reference/running/deployment",
+    "https://docs.geldata.com/reference/running/deployment/aws_aurora_ecs",
+    "https://docs.geldata.com/reference/running/deployment/azure_flexibleserver",
+    "https://docs.geldata.com/reference/running/deployment/bare_metal",
+    "https://docs.geldata.com/reference/running/deployment/digitalocean",
+    "https://docs.geldata.com/reference/running/deployment/docker",
+    "https://docs.geldata.com/reference/running/deployment/fly_io",
+    "https://docs.geldata.com/reference/running/deployment/gcp",
+    "https://docs.geldata.com/reference/running/http",
+    "https://docs.geldata.com/reference/running/local",
+    "https://docs.geldata.com/reference/s",
+    "https://docs.geldata.com/reference/st",
+    "https://docs.geldata.com/reference/stdlib",
+    "https://docs.geldata.com/reference/stdlib/",
+    "https://docs.geldata.com/reference/stdlib/abstract",
+    "https://docs.geldata.com/reference/stdlib/array",
+    "https://docs.geldata.com/reference/stdlib/bool",
+    "https://docs.geldata.com/reference/stdlib/bytes",
+    "https://docs.geldata.com/reference/stdlib/c",
+    "https://docs.geldata.com/reference/stdlib/cfg",
+    "https://docs.geldata.com/reference/stdlib/cfg.md#type::cfg::AuthMethod",
+    "https://docs.geldata.com/reference/stdlib/cfg.md#type::cfg::ConnectionTransport",
+    "https://docs.geldata.com/reference/stdlib/cfg.md#type::cfg::JWT",
+    "https://docs.geldata.com/reference/stdlib/cfg.md#type::cfg::Password",
+    "https://docs.geldata.com/reference/stdlib/cfg.md#type::cfg::Trust",
+    "https://docs.geldata.com/reference/stdlib/constraints",
+    "https://docs.geldata.com/reference/stdlib/datetime",
+    "https://docs.geldata.com/reference/stdlib/enum",
+    "https://docs.geldata.com/reference/stdlib/fts",
+    "https://docs.geldata.com/reference/stdlib/generic",
+    "https://docs.geldata.com/reference/stdlib/json",
+    "https://docs.geldata.com/reference/stdlib/math",
+    "https://docs.geldata.com/reference/stdlib/net",
+    "https://docs.geldata.com/reference/stdlib/numbers",
+    "https://docs.geldata.com/reference/stdlib/numbers#function::std::random",
+    "https://docs.geldata.com/reference/stdlib/objects",
+    "https://docs.geldata.com/reference/stdlib/range",
+    "https://docs.geldata.com/reference/stdlib/sequence",
+    "https://docs.geldata.com/reference/stdlib/set",
+    "https://docs.geldata.com/reference/stdlib/string",
+    "https://docs.geldata.com/reference/stdlib/sys",
+    "https://docs.geldata.com/reference/stdlib/tuple",
+    "https://docs.geldata.com/reference/stdlib/type",
+    "https://docs.geldata.com/reference/stdlib/uuid",
+    "https://docs.geldata.com/reference/using",
+    "https://docs.geldata.com/reference/using/cli",
+    "https://docs.geldata.com/reference/using/cli#ref-cli-overview",
+    "https://docs.geldata.com/reference/using/cli/gel",
+    "https://docs.geldata.com/reference/using/cli/gel_analyze",
+    "https://docs.geldata.com/reference/using/cli/gel_branch",
+    "https://docs.geldata.com/reference/using/cli/gel_branch/gel_branch_create",
+    "https://docs.geldata.com/reference/using/cli/gel_branch/gel_branch_drop",
+    "https://docs.geldata.com/reference/using/cli/gel_branch/gel_branch_list",
+    "https://docs.geldata.com/reference/using/cli/gel_branch/gel_branch_merge",
+    "https://docs.geldata.com/reference/using/cli/gel_branch/gel_branch_rebase",
+    "https://docs.geldata.com/reference/using/cli/gel_branch/gel_branch_rename",
+    "https://docs.geldata.com/reference/using/cli/gel_branch/gel_branch_switch",
+    "https://docs.geldata.com/reference/using/cli/gel_branch/gel_branch_wipe",
+    "https://docs.geldata.com/reference/using/cli/gel_cli_upgrade",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_login",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_login.md#ref-cli-gel-cloud-login",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_logout",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_secretkey",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_secretkey/edgedb_cloud_secretkey_create#ref-cli-gel-cloud-secretkey-create",
+    "https://docs.geldata.com/reference/using/cli/gel_cloud/gel_cloud_secretkey/edgedb_cloud_secretkey_create.md#ref-cli-gel-cloud-secretkey-create",
+    "https://docs.geldata.com/reference/using/cli/gel_configure",
+    "https://docs.geldata.com/reference/using/cli/gel_connopts",
+    "https://docs.geldata.com/reference/using/cli/gel_database",
+    "https://docs.geldata.com/reference/using/cli/gel_database/gel_database_create",
+    "https://docs.geldata.com/reference/using/cli/gel_database/gel_database_drop",
+    "https://docs.geldata.com/reference/using/cli/gel_database/gel_database_wipe",
+    "https://docs.geldata.com/reference/using/cli/gel_describe",
+    "https://docs.geldata.com/reference/using/cli/gel_describe/gel_describe_object",
+    "https://docs.geldata.com/reference/using/cli/gel_describe/gel_describe_schema",
+    "https://docs.geldata.com/reference/using/cli/gel_dump",
+    "https://docs.geldata.com/reference/using/cli/gel_extension",
+    "https://docs.geldata.com/reference/using/cli/gel_extension/install",
+    "https://docs.geldata.com/reference/using/cli/gel_extension/list",
+    "https://docs.geldata.com/reference/using/cli/gel_extension/list-available",
+    "https://docs.geldata.com/reference/using/cli/gel_extension/uninstall",
+    "https://docs.geldata.com/reference/using/cli/gel_info",
+    "https://docs.geldata.com/reference/using/cli/gel_info.md#ref-cli-gel-paths",
+    "https://docs.geldata.com/reference/using/cli/gel_init",
+    "https://docs.geldata.com/reference/using/cli/gel_instance",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_create",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_credentials",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_destroy",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_link",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_link.md#ref-cli-gel-instance-link",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_list",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_logs",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_reset_password",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_restart",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_revert",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_start",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_status",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_stop",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_unlink",
+    "https://docs.geldata.com/reference/using/cli/gel_instance/gel_instance_upgrade",
+    "https://docs.geldata.com/reference/using/cli/gel_list",
+    "https://docs.geldata.com/reference/using/cli/gel_migrate",
+    "https://docs.geldata.com/reference/using/cli/gel_migrate.md#ref-cli-gel-migrate",
+    "https://docs.geldata.com/reference/using/cli/gel_migration",
+    "https://docs.geldata.com/reference/using/cli/gel_migration/gel_migration_apply",
+    "https://docs.geldata.com/reference/using/cli/gel_migration/gel_migration_create",
+    "https://docs.geldata.com/reference/using/cli/gel_migration/gel_migration_create.md#ref-cli-gel-migration-create",
+    "https://docs.geldata.com/reference/using/cli/gel_migration/gel_migration_edit",
+    "https://docs.geldata.com/reference/using/cli/gel_migration/gel_migration_extract",
+    "https://docs.geldata.com/reference/using/cli/gel_migration/gel_migration_log",
+    "https://docs.geldata.com/reference/using/cli/gel_migration/gel_migration_status",
+    "https://docs.geldata.com/reference/using/cli/gel_migration/gel_migration_upgrade_check",
+    "https://docs.geldata.com/reference/using/cli/gel_project",
+    "https://docs.geldata.com/reference/using/cli/gel_project/gel_project_info",
+    "https://docs.geldata.com/reference/using/cli/gel_project/gel_project_init",
+    "https://docs.geldata.com/reference/using/cli/gel_project/gel_project_unlink",
+    "https://docs.geldata.com/reference/using/cli/gel_project/gel_project_upgrade",
+    "https://docs.geldata.com/reference/using/cli/gel_query",
+    "https://docs.geldata.com/reference/using/cli/gel_restore",
+    "https://docs.geldata.com/reference/using/cli/gel_server",
+    "https://docs.geldata.com/reference/using/cli/gel_server/gel_server_info",
+    "https://docs.geldata.com/reference/using/cli/gel_server/gel_server_install",
+    "https://docs.geldata.com/reference/using/cli/gel_server/gel_server_list_versions",
+    "https://docs.geldata.com/reference/using/cli/gel_server/gel_server_uninstall",
+    "https://docs.geldata.com/reference/using/cli/gel_ui",
+    "https://docs.geldata.com/reference/using/cli/gel_watch",
+    "https://docs.geldata.com/reference/using/cli/network",
+    "https://docs.geldata.com/reference/using/clients",
+    "https://docs.geldata.com/reference/using/clients#ref-clients-index",
+    "https://docs.geldata.com/reference/using/connection",
+    "https://docs.geldata.com/reference/using/connection#ref-dsn",
+    "https://docs.geldata.com/reference/using/connection#ref-reference-connection",
+    "https://docs.geldata.com/reference/using/connection.md",
+    "https://docs.geldata.com/reference/using/connection.md#ref-reference-connection-dsn",
+    "https://docs.geldata.com/reference/using/connection.md#ref-reference-connection-instance-name",
+    "https://docs.geldata.com/reference/using/connection.md#ref-reference-connection-parameters",
+    "https://docs.geldata.com/reference/using/connection.md#ref-reference-connection-parameters-branch",
+    "https://docs.geldata.com/reference/using/datetime",
+    "https://docs.geldata.com/reference/using/graphql",
+    "https://docs.geldata.com/reference/using/graphql#ref-graphql-index",
+    "https://docs.geldata.com/reference/using/graphql/cheatsheet",
+    "https://docs.geldata.com/reference/using/graphql/graphql",
+    "https://docs.geldata.com/reference/using/graphql/introspection",
+    "https://docs.geldata.com/reference/using/graphql/mutations",
+    "https://docs.geldata.com/reference/using/http",
+    "https://docs.geldata.com/reference/using/http#ref-edgeql-http",
+    "https://docs.geldata.com/reference/using/http.md",
+    "https://docs.geldata.com/reference/using/js",
+    "https://docs.geldata.com/reference/using/js/client",
+    "https://docs.geldata.com/reference/using/js/datatypes",
+    "https://docs.geldata.com/reference/using/js/generation",
+    "https://docs.geldata.com/reference/using/js/interfaces",
+    "https://docs.geldata.com/reference/using/js/queries",
+    "https://docs.geldata.com/reference/using/js/querybuilder",
+    "https://docs.geldata.com/reference/using/projects",
+    "https://docs.geldata.com/reference/using/projects#ref-guide-using-projects",
+    "https://docs.geldata.com/reference/using/python",
+    "https://docs.geldata.com/reference/using/python/api/advanced",
+    "https://docs.geldata.com/reference/using/python/api/codegen",
+    "https://docs.geldata.com/reference/using/python/api/types",
+    "https://docs.geldata.com/reference/using/python/client",
+    "https://docs.geldata.com/reference/using/sql_adapter",
+    "https://docs.geldata.com/resources",
+    "https://docs.geldata.com/resources/changelog",
+    "https://docs.geldata.com/resources/changelog/1_x",
+    "https://docs.geldata.com/resources/changelog/2_x",
+    "https://docs.geldata.com/resources/changelog/3_x",
+    "https://docs.geldata.com/resources/changelog/4_x",
+    "https://docs.geldata.com/resources/changelog/5_x",
+    "https://docs.geldata.com/resources/changelog/6_x",
+    "https://docs.geldata.com/resources/changelog/7_x",
+    "https://docs.geldata.com/resources/changelog/deprecation",
+    "https://docs.geldata.com/resources/cheatsheets",
+    "https://docs.geldata.com/resources/cheatsheets/admin",
+    "https://docs.geldata.com/resources/cheatsheets/aliases",
+    "https://docs.geldata.com/resources/cheatsheets/annotations",
+    "https://docs.geldata.com/resources/cheatsheets/boolean",
+    "https://docs.geldata.com/resources/cheatsheets/cli",
+    "https://docs.geldata.com/resources/cheatsheets/delete",
+    "https://docs.geldata.com/resources/cheatsheets/functions",
+    "https://docs.geldata.com/resources/cheatsheets/insert",
+    "https://docs.geldata.com/resources/cheatsheets/objects",
+    "https://docs.geldata.com/resources/cheatsheets/repl",
+    "https://docs.geldata.com/resources/cheatsheets/select",
+    "https://docs.geldata.com/resources/cheatsheets/update",
+    "https://docs.geldata.com/resources/guides",
+    "https://docs.geldata.com/resources/guides/contributing",
+    "https://docs.geldata.com/resources/guides/contributing/code",
+    "https://docs.geldata.com/resources/guides/contributing/documentation",
+    "https://docs.geldata.com/resources/guides/datamigrations",
+    "https://docs.geldata.com/resources/guides/datamigrations/postgres",
+    "https://docs.geldata.com/resources/guides/migrations",
+    "https://docs.geldata.com/resources/guides/migrations/guide",
+    "https://docs.geldata.com/resources/guides/migrations/tips",
+    "https://docs.geldata.com/resources/guides/tutorials/chatgpt_bot",
+    "https://docs.geldata.com/resources/guides/tutorials/cloudflare_workers",
+    "https://docs.geldata.com/resources/guides/tutorials/graphql_apis_with_strawberry",
+    "https://docs.geldata.com/resources/guides/tutorials/graphql_apis_with_strawberry.md",
+    "https://docs.geldata.com/resources/guides/tutorials/jupyter_notebook",
+    "https://docs.geldata.com/resources/guides/tutorials/jupyter_notebook.md",
+    "https://docs.geldata.com/resources/guides/tutorials/nextjs_app_router",
+    "https://docs.geldata.com/resources/guides/tutorials/nextjs_pages_router",
+    "https://docs.geldata.com/resources/guides/tutorials/rest_apis_with_fastapi",
+    "https://docs.geldata.com/resources/guides/tutorials/rest_apis_with_flask",
+    "https://docs.geldata.com/resources/guides/tutorials/rest_apis_with_flask#ref-guide-rest-apis-with-flask",
+    "https://docs.geldata.com/resources/guides/tutorials/trpc",
+    "https://docs.geldata.com/resources/protocol",
+    "https://docs.geldata.com/resources/protocol/dataformats",
+    "https://docs.geldata.com/resources/protocol/dump_format",
+    "https://docs.geldata.com/resources/protocol/errors",
+    "https://docs.geldata.com/resources/protocol/errors.md#ref-protocol-error-codes",
+    "https://docs.geldata.com/resources/protocol/messages",
+    "https://docs.geldata.com/resources/protocol/typedesc",
+    "https://docs.geldata.com/resources/upgrading",
+    "https://docs.jupyter.org/en/latest/install/notebook-classic.html",
+    "https://docs.rs/gel-tokio/latest/gel_tokio/",
+    "https://fastapi.tiangolo.com/",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/geldata",
+    "https://github.com/geldata/gel-examples/tree/main/strawberry-gql",
+    "https://github.com/geldata/setup-gel",
+    "https://pkg.go.dev/github.com/geldata/gel-go",
+    "https://strawberry.rocks/",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.geldata.com/p/sunset",
+    "https://www.geldata.com/ps1",
+    "https://www.geldata.com/sh",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

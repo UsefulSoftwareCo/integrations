@@ -1,0 +1,178 @@
+---
+import Base from "~/layouts/Base.astro";
+import Breadcrumb from "~/components/Breadcrumb.astro";
+
+const title = "Publishing your integration surface - integrations.sh";
+const description = "Publish standard discovery files so integrations.sh can map your APIs, MCP servers, agent metadata, credentials, and caveats from your own domain.";
+
+const example = `{
+  "version": 3,
+  "summary": "Resend exposes an HTTP API, MCP server, and CLI for sending and managing email.",
+  "credentials": {
+    "resend_api_key": {
+      "type": "api_key",
+      "label": "Resend API key",
+      "generateUrl": "https://resend.com/api-keys",
+      "setup": "Create an API key in the Resend dashboard. Store it as RESEND_API_KEY and send it as an Authorization bearer token."
+    }
+  },
+  "surfaces": [
+    {
+      "slug": "resend-api",
+      "name": "Resend API",
+      "type": "http",
+      "docs": "https://resend.com/docs/api-reference",
+      "spec": "https://resend.com/openapi.json",
+      "url": "https://api.resend.com",
+      "basis": {
+        "via": "declared",
+        "source": "https://resend.com/.well-known/integrations.json"
+      },
+      "auth": {
+        "status": "required",
+        "entries": [
+          {
+            "use": [
+              {
+                "id": "resend_api_key",
+                "mechanics": {
+                  "source": "http",
+                  "in": "header",
+                  "headerName": "Authorization",
+                  "scheme": "Bearer"
+                }
+              }
+            ],
+            "basis": {
+              "via": "declared",
+              "source": "https://resend.com/.well-known/integrations.json"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "resend-mcp-server",
+      "name": "Resend MCP server",
+      "type": "mcp",
+      "docs": "https://resend.com/docs/mcp-server",
+      "url": "https://mcp.resend.com/mcp",
+      "transports": ["streamable-http"],
+      "basis": {
+        "via": "declared",
+        "source": "https://resend.com/.well-known/integrations.json"
+      },
+      "auth": {
+        "status": "required",
+        "entries": [
+          {
+            "use": [
+              {
+                "id": "resend_api_key",
+                "mechanics": {
+                  "source": "http",
+                  "in": "header",
+                  "headerName": "Authorization",
+                  "scheme": "Bearer"
+                }
+              }
+            ],
+            "basis": {
+              "via": "declared",
+              "source": "https://resend.com/.well-known/integrations.json"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}`;
+
+const formats = [
+  { path: "/llms.txt", feeds: "Plain-language docs and product context.", adoption: "Use it when your docs have a good LLM-readable overview." },
+  { path: "/.well-known/api-catalog", feeds: "REST bases, OpenAPI links, docs, status pages, and MCP endpoints.", adoption: "Use RFC 9727 when you already publish a machine-readable service catalog." },
+  { path: "/openapi.json and conventional OpenAPI paths", feeds: "HTTP API surfaces and spec pointers.", adoption: "Publish one canonical OpenAPI document, then link alternates from your catalog if needed." },
+  { path: "/.well-known/mcp/server-card.json", feeds: "MCP server endpoint, transport, and auth metadata.", adoption: "Use it when agents can connect to an MCP server on your domain." },
+  { path: "/.well-known/oauth-protected-resource", feeds: "OAuth resource metadata, authorization servers, scopes, and self-onboarding support.", adoption: "Use it when an API or MCP endpoint is protected by OAuth." },
+  { path: "/.well-known/agent-card.json", feeds: "Agent-facing service identity.", adoption: "Use it to publish the agent card your site wants clients to read first." },
+  { path: "/.well-known/agent-skills/index.json", feeds: "Agent skill inventory.", adoption: "Use it when your domain publishes reusable skills or task instructions." },
+  { path: "/.well-known/integrations.json", feeds: "Your declared v3 summary, credentials, and surfaces.", adoption: "Use it when you want this registry page to reflect your own integration map directly." },
+];
+---
+
+<Base title={title} description={description} path="/publishing/">
+  <div class="container">
+    <article class="own">
+      <Breadcrumb segments={[{ label: "registry", href: "/" }, { label: "own your page" }]} />
+
+      <header class="own-head">
+        <h1>Publishing your integration surface</h1>
+        <p>
+          Every domain page is generated from what your site publishes plus live discovery. If your page is missing an API,
+          MCP server, credential, or agent-facing file, publish the relevant format on your own domain and re-run discovery.
+        </p>
+      </header>
+
+      <section>
+        <div class="sec-header"><span class="sec-label">Formats We Read</span></div>
+        <div class="format-table">
+          {formats.map((format) => (
+            <div class="format-row">
+              <code>{format.path}</code>
+              <p>{format.feeds}</p>
+              <p>{format.adoption}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div class="sec-header"><span class="sec-label">integrations.json</span></div>
+        <p>
+          <code>/.well-known/integrations.json</code> is the integrations.sh owner declaration format. It is a v3 discovery
+          subset you can author: <code>{`{ version: 3, summary?, credentials?, surfaces? }`}</code>. Credentials and surfaces
+          use the same wire schema as the registry output.
+        </p>
+        <pre class="code-block own-code"><code>{example}</code></pre>
+        <p>
+          We needed a way to represent this data for ourselves; we publish the format so you can own it. If a better community
+          standard emerges, we'll happily migrate.
+        </p>
+      </section>
+
+      <section>
+        <div class="sec-header"><span class="sec-label">What We May Add</span></div>
+        <p>
+          Owner declarations are respected as the owner's statement of intent. The registry may additionally record verified
+          operational caveats, including rate limits, required headers like GitHub's mandatory <code>User-Agent</code>, and auth
+          quirks sourced from docs, testing, and later user reports.
+        </p>
+      </section>
+
+      <section>
+        <div class="sec-header"><span class="sec-label">Re-Run Discovery</span></div>
+        <p>
+          After publishing any of these files, open your domain page and click <b>Map integration surface</b>. The next run
+          refreshes the conventions scorecard and the discovered surfaces.
+        </p>
+      </section>
+    </article>
+  </div>
+</Base>
+
+<style>
+  .own { max-width: 780px; }
+  .own-head { padding: 24px 0 8px; }
+  .own-head h1 { margin: 0; font-size: 34px; line-height: 1.15; letter-spacing: -0.03em; }
+  .own-head p, .own section p { color: var(--gray-700); font-size: 14.5px; line-height: 1.65; max-width: 680px; }
+  .own section { margin-top: 38px; }
+  .format-table { margin-top: 8px; }
+  .format-row { display: grid; grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; padding: 13px 0; border-bottom: 1px solid var(--gray-100); align-items: baseline; }
+  .format-row code { color: var(--gray-1000); background: var(--gray-25); border: 1px solid var(--gray-100); border-radius: 4px; padding: 1px 5px; font-size: 12px; overflow-wrap: anywhere; }
+  .format-row p { margin: 0; color: var(--gray-500); font-size: 13px; line-height: 1.55; }
+  .own-code { margin: 14px 0; max-height: 560px; }
+  @media (max-width: 720px) {
+    .own-head h1 { font-size: 29px; }
+    .format-row { grid-template-columns: 1fr; gap: 5px; }
+  }
+</style>

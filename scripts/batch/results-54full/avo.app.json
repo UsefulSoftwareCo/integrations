@@ -1,0 +1,490 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "avo.app",
+    "detect": {
+      "domain": "avo.app",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:09:44.926Z",
+    "summary": "Avo exposes a REST Public API at `api.avo.app`, a remote MCP server at `https://mcp.avo.app/mcp`, and an npm-distributed `avo` CLI.",
+    "description": "Avo is an analytics tracking-plan and data-governance platform for defining events, properties, metrics, and branches, then generating implementation code and monitoring analytics quality. It helps product, data, and engineering teams keep analytics definitions consistent and publish or import tracking-plan data across tools.",
+    "credentials": {
+      "avo_service_account": {
+        "type": "basic",
+        "label": "Avo service account name + secret",
+        "generateUrl": "https://www.avo.app/docs/reference/public-api/authentication.md#creating-service-accounts",
+        "setup": "In Avo, open [Workspace Settings → Service Accounts](https://www.avo.app/schemas/default?settings=service-accounts) (or follow the steps in [Authentication](https://www.avo.app/docs/reference/public-api/authentication.md#creating-service-accounts)). Create a service account, copy the generated final service-account name and secret once, then send them to the API as HTTP Basic auth using base64-encoded `name:secret` in the `authorization` header. Only workspace admins can create service accounts."
+      },
+      "avo_user_oauth": {
+        "type": "oauth2",
+        "label": "Avo user account OAuth token",
+        "generateUrl": "https://www.avo.app/login",
+        "setup": "Sign in to [Avo](https://www.avo.app/login) with a user account that has access to the target workspace. MCP clients obtain OAuth 2.0 + PKCE tokens for you on first use against the Avo authorization server discovered from [`https://api.avo.app/.well-known/oauth-authorization-server`](https://api.avo.app/.well-known/oauth-authorization-server). Read access is requested first; write access is requested as a separate consent step the first time you call a write tool.",
+        "acquisition": "ambient"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "avo-public-api",
+        "name": "Avo Public API",
+        "type": "http",
+        "docs": "https://www.avo.app/docs/reference/public-api/overview.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.avo.app/docs/reference/public-api/overview.md",
+            "https://www.avo.app/docs/reference/public-api/authentication.md",
+            "https://www.avo.app/docs/reference/public-api/export-tracking-plan.md",
+            "https://www.avo.app/docs/reference/public-api/import-tracking-plan.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "avo_service_account",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.avo.app/docs/reference/public-api/overview.md",
+                  "https://www.avo.app/docs/reference/public-api/authentication.md",
+                  "https://www.avo.app/docs/reference/public-api/export-tracking-plan.md",
+                  "https://www.avo.app/docs/reference/public-api/import-tracking-plan.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.avo.app",
+        "variables": [
+          {
+            "name": "workspaceId",
+            "resolveFrom": "Avo workspace URL",
+            "description": "Found in the Avo app URL after `/schemas/`."
+          },
+          {
+            "name": "branchId",
+            "resolveFrom": "Avo branch URL",
+            "description": "Found in the Avo app URL after `/branches/`; use `main` for the main branch where allowed."
+          }
+        ]
+      },
+      {
+        "slug": "avo-mcp",
+        "name": "Avo MCP",
+        "type": "mcp",
+        "docs": "https://www.avo.app/docs/reference/avo-mcp/overview.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.avo.app/docs/reference/avo-mcp/overview.md",
+            "https://www.avo.app/docs/reference/avo-mcp/tools.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "avo_user_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.avo.app/docs/reference/avo-mcp/overview.md",
+                  "https://www.avo.app/docs/reference/avo-mcp/tools.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.avo.app/mcp",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "workspaceId",
+            "description": "Required by every MCP tool except `list_workspaces`; discover it with `list_workspaces` or pass `WORKSPACE_ID` in stdio clients."
+          }
+        ]
+      },
+      {
+        "slug": "avo-cli",
+        "name": "Avo CLI",
+        "type": "cli",
+        "docs": "https://www.avo.app/docs/implementation/cli.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.avo.app/docs/implementation/cli.md",
+            "https://raw.githubusercontent.com/avohq/avo/master/package.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "avo_user_oauth",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "avo login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.avo.app/docs/implementation/cli.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "avo",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "avo"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:09:44.926Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 141971,
+    "completion_tokens": 1601,
+    "total_tokens": 143572
+  },
+  "visited": [
+    "https://apitracker.io/a/avo-app",
+    "https://docs.avohq.io/3.0/guides/api-only-app.html",
+    "https://github.com/avohq/avo",
+    "https://raw.githubusercontent.com/avohq/avo/master/package.json",
+    "https://www.avo.app/docs/implementation/avo-codegen-tech-deep-dive",
+    "https://www.avo.app/docs/implementation/cli",
+    "https://www.avo.app/docs/implementation/cli.md",
+    "https://www.avo.app/docs/public-api/create-branch",
+    "https://www.avo.app/docs/public-api/create-branch.md",
+    "https://www.avo.app/docs/public-api/export-branch-stats.md",
+    "https://www.avo.app/docs/reference/avo-mcp/overview.md",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md",
+    "https://www.avo.app/docs/reference/public-api/authentication.md",
+    "https://www.avo.app/docs/reference/public-api/export-tracking-plan.md",
+    "https://www.avo.app/docs/reference/public-api/import-tracking-plan.md",
+    "https://www.avo.app/docs/reference/public-api/openapi.json",
+    "https://www.avo.app/docs/reference/public-api/overview.md",
+    "https://www.avo.app/llms.txt",
+    "https://www.youtube.com/watch?v=j_xTc1h4axo"
+  ],
+  "grounding": [
+    "http://json-schema.org/draft-06/schema#",
+    "https://api.avo.app",
+    "https://api.avo.app/.well-known/oauth-authorization-server",
+    "https://api.avo.app/oauth/register",
+    "https://api.avo.app/workspaces/",
+    "https://api.avo.app/workspaces/:workspaceId/branches/:branchId/export/v1",
+    "https://api.avo.app/workspaces/:workspaceId/branches/:branchId/export/v1?changedEventsOnly=true",
+    "https://api.avo.app/workspaces/:workspaceId/branches/:branchId/import/v1",
+    "https://api.avo.app/workspaces/:workspaceId/branches/main/export/v1",
+    "https://api.avo.app/workspaces/:workspaceId/branches/main/export/v1?payloadFormat=jsonSchema",
+    "https://api.avo.app/workspaces/:workspaceId/branches/main/export/v1?payloadFormat=ndjson",
+    "https://api.avo.app/workspaces/:workspaceId/branches/main/export/v1?payloadFormat=snowplowSchemas",
+    "https://api.avo.app/workspaces/:workspaceId/branches/main/export/v1?payloadFormat=snowplowSchemas&vendor=com.mycompany",
+    "https://api.avo.app/workspaces/:workspaceId/branches/main/import/v1",
+    "https://api.avo.app/workspaces/:workspaceId/branches/main/import/v1?importMethod=addUpdateAndRemove",
+    "https://api.avo.app/workspaces/:workspaceId/branches/my-branch/import/v1?importMethod=addAndUpdate",
+    "https://apitracker.io/a/avo-app",
+    "https://docs.avohq.io/3.0/guides/api-only-app.html",
+    "https://docs.snowplow.io/docs/pipeline-components-and-applications/iglu/",
+    "https://en.wikipedia.org/wiki/Basic_access_authentication",
+    "https://github.com/avohq",
+    "https://github.com/avohq/avo",
+    "https://github.com/avohq/avo-mcp",
+    "https://github.com/avohq/avo.git",
+    "https://github.com/avohq/docs/issues/new?title=Feedback%20for%20%E2%80%9CAvo%20Codegen%20technical%20deep%20dive%E2%80%9D&labels=feedback",
+    "https://github.com/avohq/docs/issues/new?title=Feedback%20for%20%E2%80%9CUsing%20the%20Avo%20CLI%E2%80%9D&labels=feedback",
+    "https://github.com/avohq/docs/tree/main/pages/implementation/avo-codegen-tech-deep-dive.mdx",
+    "https://github.com/avohq/docs/tree/main/pages/implementation/cli.mdx",
+    "https://github.com/ndjson/ndjson-spec",
+    "https://mcp.avo.app/.well-known/oauth-protected-resource",
+    "https://mcp.avo.app/mcp",
+    "https://modelcontextprotocol.io/",
+    "https://raw.githubusercontent.com/avohq/avo/master/package.json",
+    "https://www.avo.app",
+    "https://www.avo.app/#avo-command-line-interface",
+    "https://www.avo.app/#avo-generated-file-with-event-tracking-functions",
+    "https://www.avo.app/#codegen",
+    "https://www.avo.app/#complete-reference",
+    "https://www.avo.app/#data-validations",
+    "https://www.avo.app/#git-conflicts-in-avo-files",
+    "https://www.avo.app/#initialization",
+    "https://www.avo.app/#interface-files",
+    "https://www.avo.app/#property-types",
+    "https://www.avo.app/#quickstart",
+    "https://www.avo.app/#required--optional",
+    "https://www.avo.app/#single-value--list",
+    "https://www.avo.app/#step-1-install-the-avo-cli",
+    "https://www.avo.app/#step-2-link-your-avo-account",
+    "https://www.avo.app/#step-3-pull-generated-analytics-wrappers-from-avo",
+    "https://www.avo.app/#step-4-monitor-the-analytics-implementation",
+    "https://www.avo.app/#supported-tracking-methods-avo-actions",
+    "https://www.avo.app/#type",
+    "https://www.avo.app/#using-an-avo-branch-with-a-git-branch",
+    "https://www.avo.app/#using-avo-branches",
+    "https://www.avo.app/#value-constraints",
+    "https://www.avo.app/#whats-happening-inside-codegen",
+    "https://www.avo.app/#whats-inside-the-initavo-method--avo-constructor",
+    "https://www.avo.app/docs",
+    "https://www.avo.app/docs/adopting-avo-with-ai-agents",
+    "https://www.avo.app/docs/adopting-avo-with-ai-agents.md",
+    "https://www.avo.app/docs/adopting-avo-with-ai-agents/governing-ai-generated-analytics",
+    "https://www.avo.app/docs/adopting-avo-with-ai-agents/governing-ai-generated-analytics.md",
+    "https://www.avo.app/docs/adopting-avo-with-ai-agents/setting-up-a-tracking-plan",
+    "https://www.avo.app/docs/adopting-avo-with-ai-agents/setting-up-a-tracking-plan.md",
+    "https://www.avo.app/docs/audit/advanced-event-naming-rules",
+    "https://www.avo.app/docs/audit/branch-audit",
+    "https://www.avo.app/docs/audit/overview",
+    "https://www.avo.app/docs/audit/overview.md",
+    "https://www.avo.app/docs/audit/quickstart",
+    "https://www.avo.app/docs/audit/rules",
+    "https://www.avo.app/docs/audit/rules.md",
+    "https://www.avo.app/docs/data-design",
+    "https://www.avo.app/docs/data-design.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/advanced-data-design-features",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/define-sources-and-destinations",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/event-variants",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/events",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/events.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/governance",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/governance.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/governance/custom-fields",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/governance/custom-fields.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/governance/tagging-pii",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/governance/tagging-pii.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/implementation-status",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/journeys",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/journeys.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/metrics",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/metrics.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/properties",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/properties.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/stakeholder-domains",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/stakeholder-domains.md",
+    "https://www.avo.app/docs/data-design/avo-tracking-plan/workbench",
+    "https://www.avo.app/docs/data-design/best-practices/defining-descriptive-events-and-properties",
+    "https://www.avo.app/docs/data-design/best-practices/defining-descriptive-events-and-properties.md",
+    "https://www.avo.app/docs/data-design/best-practices/global-namespace",
+    "https://www.avo.app/docs/data-design/best-practices/groups",
+    "https://www.avo.app/docs/data-design/best-practices/naming-conventions",
+    "https://www.avo.app/docs/data-design/best-practices/naming-conventions.md",
+    "https://www.avo.app/docs/data-design/branches",
+    "https://www.avo.app/docs/data-design/branches.md",
+    "https://www.avo.app/docs/data-design/branches/approval-workflows",
+    "https://www.avo.app/docs/data-design/branches/branch-changes",
+    "https://www.avo.app/docs/data-design/branches/code-changes",
+    "https://www.avo.app/docs/data-design/branches/pulling-pushing-items-between-branches",
+    "https://www.avo.app/docs/data-design/branches/workspace-notifications",
+    "https://www.avo.app/docs/data-design/collaboration",
+    "https://www.avo.app/docs/data-design/collaboration/members#codegen-access-for-non-editors",
+    "https://www.avo.app/docs/data-design/global-requirements",
+    "https://www.avo.app/docs/data-design/guides/agentic-data-design",
+    "https://www.avo.app/docs/data-design/guides/agentic-data-design.md",
+    "https://www.avo.app/docs/data-design/guides/archive-and-restore",
+    "https://www.avo.app/docs/data-design/guides/avo-as-solutions-design-document",
+    "https://www.avo.app/docs/data-design/guides/bulk-editing",
+    "https://www.avo.app/docs/data-design/guides/documenting-downstream-dependencies",
+    "https://www.avo.app/docs/data-design/guides/documenting-purpose-meetings-in-avo",
+    "https://www.avo.app/docs/data-design/guides/documenting-purpose-meetings-in-avo.md",
+    "https://www.avo.app/docs/data-design/guides/event-triggers",
+    "https://www.avo.app/docs/data-design/guides/managing-changes-impacting-multiple-stakeholders",
+    "https://www.avo.app/docs/data-design/guides/multiple-sources-on-avo-branches",
+    "https://www.avo.app/docs/data-design/guides/name-mapping",
+    "https://www.avo.app/docs/data-design/guides/object-properties",
+    "https://www.avo.app/docs/data-design/guides/organizing-event-hierarchy",
+    "https://www.avo.app/docs/data-design/guides/organizing-event-hierarchy.md",
+    "https://www.avo.app/docs/data-design/guides/organizing-metrics-and-events",
+    "https://www.avo.app/docs/data-design/guides/organizing-metrics-and-events.md",
+    "https://www.avo.app/docs/data-design/guides/pinned-properties",
+    "https://www.avo.app/docs/data-design/guides/reset-tracking-plan",
+    "https://www.avo.app/docs/data-design/quick-start",
+    "https://www.avo.app/docs/data-design/quick-start.md",
+    "https://www.avo.app/docs/data-design/start-data-design",
+    "https://www.avo.app/docs/data-design/start-data-design.md",
+    "https://www.avo.app/docs/faqs/inspector-faq",
+    "https://www.avo.app/docs/faqs/yes-you-can-faq",
+    "https://www.avo.app/docs/help/troubleshooting",
+    "https://www.avo.app/docs/images/public-api/create-service-account.png",
+    "https://www.avo.app/docs/images/public-api/delete-service-account.png",
+    "https://www.avo.app/docs/images/public-api/service-accounts.png",
+    "https://www.avo.app/docs/implementation/avo-codegen-overview",
+    "https://www.avo.app/docs/implementation/avo-codegen-overview.md",
+    "https://www.avo.app/docs/implementation/avo-codegen-tech-deep-dive",
+    "https://www.avo.app/docs/implementation/cli",
+    "https://www.avo.app/docs/implementation/cli.md",
+    "https://www.avo.app/docs/implementation/cli.md#step-3-pull-generated-analytics-wrappers-from-avo",
+    "https://www.avo.app/docs/implementation/guides/avo-and-existing-tracking",
+    "https://www.avo.app/docs/implementation/guides/avo-and-git",
+    "https://www.avo.app/docs/implementation/guides/avo-and-linters",
+    "https://www.avo.app/docs/implementation/guides/avo-and-unit-tests",
+    "https://www.avo.app/docs/implementation/guides/avo-in-monorepo",
+    "https://www.avo.app/docs/implementation/guides/avo-in-the-ci",
+    "https://www.avo.app/docs/implementation/guides/download-or-copy-avo-file-manually",
+    "https://www.avo.app/docs/implementation/guides/explicit-null-in-codegen",
+    "https://www.avo.app/docs/implementation/guides/property-bundles-unbundling",
+    "https://www.avo.app/docs/implementation/guides/start-implementing-tracking-changes",
+    "https://www.avo.app/docs/implementation/guides/start-using-inspector-with-avo-codegen",
+    "https://www.avo.app/docs/implementation/guides/start-using-visual-debuggers",
+    "https://www.avo.app/docs/implementation/start-using-avo-codegen",
+    "https://www.avo.app/docs/index.md",
+    "https://www.avo.app/docs/inspector/add-events-from-inspector",
+    "https://www.avo.app/docs/inspector/configuring-inspector-sources",
+    "https://www.avo.app/docs/inspector/connect-inspector-to-adobe-tag-extension",
+    "https://www.avo.app/docs/inspector/connect-inspector-to-gtm",
+    "https://www.avo.app/docs/inspector/connect-inspector-to-posthog",
+    "https://www.avo.app/docs/inspector/connect-inspector-to-rudderstack",
+    "https://www.avo.app/docs/inspector/connect-inspector-to-segment",
+    "https://www.avo.app/docs/inspector/connect-inspector-to-snowplow",
+    "https://www.avo.app/docs/inspector/inspector-debugger",
+    "https://www.avo.app/docs/inspector/inspector-events-view",
+    "https://www.avo.app/docs/inspector/inspector-find-issues",
+    "https://www.avo.app/docs/inspector/inspector-fix-issues",
+    "https://www.avo.app/docs/inspector/inspector-ignore-issues",
+    "https://www.avo.app/docs/inspector/inspector-installation-overview",
+    "https://www.avo.app/docs/inspector/inspector-issues-view",
+    "https://www.avo.app/docs/inspector/inspector-slack-alerts",
+    "https://www.avo.app/docs/inspector/issue-types-in-inspector",
+    "https://www.avo.app/docs/inspector/start-using-inspector",
+    "https://www.avo.app/docs/inspector/start-using-inspector.md",
+    "https://www.avo.app/docs/llms-full.txt",
+    "https://www.avo.app/docs/public-api/create-branch",
+    "https://www.avo.app/docs/public-api/create-branch.md",
+    "https://www.avo.app/docs/public-api/export-branch-stats",
+    "https://www.avo.app/docs/public-api/export-branch-stats.md",
+    "https://www.avo.app/docs/publishing/exporting",
+    "https://www.avo.app/docs/publishing/import/get-tracking-plan-into-avo",
+    "https://www.avo.app/docs/publishing/import/get-tracking-plan-into-avo.md",
+    "https://www.avo.app/docs/publishing/import/importing",
+    "https://www.avo.app/docs/publishing/publishing/adobe-experience-platform",
+    "https://www.avo.app/docs/publishing/publishing/amplitude-data",
+    "https://www.avo.app/docs/publishing/publishing/mixpanel-lexicon",
+    "https://www.avo.app/docs/publishing/publishing/mparticle-data-master",
+    "https://www.avo.app/docs/publishing/publishing/overview",
+    "https://www.avo.app/docs/publishing/publishing/overview.md",
+    "https://www.avo.app/docs/publishing/publishing/overview.md#payload-format",
+    "https://www.avo.app/docs/publishing/publishing/rudderstack",
+    "https://www.avo.app/docs/publishing/publishing/segment-protocols",
+    "https://www.avo.app/docs/publishing/publishing/snowplow-data-structures",
+    "https://www.avo.app/docs/publishing/publishing/use-cases",
+    "https://www.avo.app/docs/publishing/publishing/webhook-publishing",
+    "https://www.avo.app/docs/publishing/webhook-signing",
+    "https://www.avo.app/docs/reference/avo-codegen/anonymous-user-id",
+    "https://www.avo.app/docs/reference/avo-codegen/custom-loggers",
+    "https://www.avo.app/docs/reference/avo-codegen/destinations",
+    "https://www.avo.app/docs/reference/avo-codegen/library-codegen",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages.md",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/csharp",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/java",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/javascript",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/kotlin",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/objc",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/php",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/python",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/reasonml",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/rescript",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/ruby",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/swift",
+    "https://www.avo.app/docs/reference/avo-codegen/programming-languages/typescript",
+    "https://www.avo.app/docs/reference/avo-debuggers/mobile",
+    "https://www.avo.app/docs/reference/avo-debuggers/overview",
+    "https://www.avo.app/docs/reference/avo-debuggers/web",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/android",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/dart",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/go",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/ios",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/java",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/node",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/overview",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/react-native",
+    "https://www.avo.app/docs/reference/avo-inspector-sdks/web",
+    "https://www.avo.app/docs/reference/avo-intelligence",
+    "https://www.avo.app/docs/reference/avo-intelligence.md",
+    "https://www.avo.app/docs/reference/avo-mcp/overview",
+    "https://www.avo.app/docs/reference/avo-mcp/overview.md",
+    "https://www.avo.app/docs/reference/avo-mcp/tools",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md#get",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md#give_feedback",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md#list_branches",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md#list_workspaces",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md#save_items",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md#search",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md#troubleshooting",
+    "https://www.avo.app/docs/reference/avo-mcp/tools.md#workflow",
+    "https://www.avo.app/docs/reference/public-api/authentication",
+    "https://www.avo.app/docs/reference/public-api/authentication.md",
+    "https://www.avo.app/docs/reference/public-api/authentication.md#authenticating-with-avo-api",
+    "https://www.avo.app/docs/reference/public-api/authentication.md#creating-service-accounts",
+    "https://www.avo.app/docs/reference/public-api/create-branch",
+    "https://www.avo.app/docs/reference/public-api/export-branch-stats",
+    "https://www.avo.app/docs/reference/public-api/export-tracking-plan",
+    "https://www.avo.app/docs/reference/public-api/export-tracking-plan.md",
+    "https://www.avo.app/docs/reference/public-api/import-tracking-plan",
+    "https://www.avo.app/docs/reference/public-api/import-tracking-plan.md",
+    "https://www.avo.app/docs/reference/public-api/openapi.json",
+    "https://www.avo.app/docs/reference/public-api/overview",
+    "https://www.avo.app/docs/reference/public-api/overview.md",
+    "https://www.avo.app/docs/workflow/implement",
+    "https://www.avo.app/docs/workflow/merge-publish",
+    "https://www.avo.app/docs/workflow/overview",
+    "https://www.avo.app/docs/workflow/overview.md",
+    "https://www.avo.app/docs/workflow/plan",
+    "https://www.avo.app/docs/workflow/request-implementation",
+    "https://www.avo.app/docs/workflow/review",
+    "https://www.avo.app/docs/workflow/validate",
+    "https://www.avo.app/docs/workspace-management/authentication",
+    "https://www.avo.app/docs/workspace-management/domains",
+    "https://www.avo.app/docs/workspace-management/members",
+    "https://www.avo.app/docs/workspace-management/members.md#codegen-access-for-non-editors",
+    "https://www.avo.app/llms.txt",
+    "https://www.avo.app/login",
+    "https://www.avo.app/onboarding",
+    "https://www.avo.app/privacy",
+    "https://www.avo.app/schemas/",
+    "https://www.avo.app/schemas/default?settings=general",
+    "https://www.avo.app/schemas/default?settings=service-accounts",
+    "https://www.rfc-editor.org/rfc/rfc7591",
+    "https://www.rfc-editor.org/rfc/rfc9728",
+    "https://www.youtube.com/watch?v=j_xTc1h4axo"
+  ]
+}

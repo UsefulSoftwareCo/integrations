@@ -2,85 +2,22 @@
  * Surfaces — the integration map for a domain page.
  *
  * Renders the kind sections (MCP servers / REST · OpenAPI / GraphQL / CLI) from
- * TWO sources merged: the static catalog (passed as props, SSR'd for SEO) and
- * the discovery result (read from durable KV on mount, or run live). A
- * discovered surface enriches the matching catalog entry with its auth (matched
- * on url/spec, else name); discovered-only surfaces are appended. Credentials
- * render once at the bottom. Auth lives WITH each surface, not in a separate
- * "Authentication" block.
+ * discovery data only: SSR/baseline discovery, durable KV read on mount, or the
+ * live discovery run. Credentials render once at the bottom. Auth lives WITH
+ * each surface, not in a separate "Authentication" block.
  *
  * Types come from the canonical Effect Schema (`import type`, so `effect` never
  * enters the client bundle).
  */
 import { useEffect, useState } from "react";
+import { buildConventionRows, type ConventionRow } from "../lib/conventions.ts";
 import type { Credential, DiscoveryResult } from "../lib/discovery-schema.ts";
-import { credCta, hostOf, type AuthStatus, type Basis, type DiscoveryDoc, type Surface } from "../lib/surface-view.ts";
+import { buildSections, discoveryFreshness, type DiscoverData, type SurfaceEntry } from "../lib/surface-sections.ts";
+import { cliLoginFor, credCta, hostOf, type AuthStatus, type Basis, type Surface } from "../lib/surface-view.ts";
 import Setup from "./surface/Setup.tsx";
 
-export type DiscoverData = Partial<Pick<DiscoveryResult, "summary">> & DiscoveryDoc;
 type Creds = DiscoveryResult["credentials"];
-
-/** A static catalog entry, pre-flattened by the page (identity for dedup). */
-export interface CatalogItem {
-  name: string;
-  description?: string;
-  slug: string;
-  kind: string;
-  meta: string;
-  url?: string;
-  spec?: string;
-  /** CLI rows: the command name — their only identity (no url/spec). */
-  command?: string;
-}
-export interface CatalogSection {
-  kind: string;
-  label: string;
-  items: CatalogItem[];
-}
-
-const KIND_ORDER = ["mcp", "openapi", "graphql", "cli"] as const;
-const KIND_LABEL: Record<string, string> = { mcp: "MCP servers", openapi: "REST · OpenAPI", graphql: "GraphQL", cli: "CLI" };
-/** surface.type → page section kind (v3 `http` and v2 openapi/rest share the
- * catalog's `openapi` section key). */
-const kindOf = (t: string): string => (t === "http" || t === "rest" ? "openapi" : t);
-const norm = (s: string) => s.trim().toLowerCase();
-
-function surfaceIdentity(s: Surface): string | undefined {
-  switch (s.type) {
-    case "mcp":
-      return s.url;
-    case "graphql":
-      return s.url ?? s.spec;
-    case "cli":
-      return s.command;
-    default: // http (+ legacy openapi/rest)
-      return s.spec ?? s.url;
-  }
-}
-
-function surfaceMeta(s: Surface): string {
-  switch (s.type) {
-    case "mcp":
-      return s.transports?.[0] ?? "mcp";
-    case "graphql":
-      return "graphql";
-    case "cli":
-      return s.command ?? "cli";
-    default: // http (+ legacy openapi/rest)
-      return "rest";
-  }
-}
-
-/** Does a discovered surface refer to the same thing as a catalog entry?
- * Slug equality is authoritative (the worker's continuity pass keeps slugs
- * stable across runs); locator match covers a discovered surface enriching a
- * catalog row that predates it; name match is the last resort. */
-function matches(s: Surface, it: CatalogItem): boolean {
-  if (s.slug && s.slug === it.slug) return true;
-  const id = surfaceIdentity(s);
-  if (id && (id === it.url || id === it.spec || id === it.command)) return true;
-  return norm(s.name) === norm(it.name);
-}
+type StoredDiscoveryEnvelope = { result?: DiscoverData; discoveredAt?: string };
 
 function Prov({ p }: { p: Basis }) {
   if (!p) return null;
@@ -88,6 +25,13 @@ function Prov({ p }: { p: Basis }) {
     return (
       <span className="disc-prov disc-prov-det" title={`Detected via ${p.signal} — re-verifiable`}>
         detected
+      </span>
+    );
+  }
+  if (p.via === "declared") {
+    return (
+      <span className="disc-prov disc-prov-decl" title="Declared by the site owner via integrations.json">
+        declared
       </span>
     );
   }
@@ -99,45 +43,65 @@ function Prov({ p }: { p: Basis }) {
   );
 }
 
-interface Entry {
-  key: string;
-  name: string;
-  href?: string;
-  meta?: string;
-  surface?: Surface;
-}
-
-/** Merge catalog + discovered surfaces into per-kind sections. A discovered
- * surface (matched or standalone) links to its worker-SSR'd page; a pure-catalog
- * surface keeps its static `/{kind}/{slug}/` detail page. */
-function buildSections(catalog: CatalogSection[], data: DiscoverData | null, domain: string) {
-  const surfaces = data?.surfaces ?? [];
-  const discPage = (s: Surface) => `/${encodeURIComponent(domain)}/${s.slug}/`;
-  const catByKind = new Map(catalog.map((s) => [s.kind, s.items]));
-  const out: { kind: string; label: string; entries: Entry[] }[] = [];
-  for (const kind of KIND_ORDER) {
-    const items = catByKind.get(kind) ?? [];
-    const discovered = surfaces.filter((s) => kindOf(s.type) === kind);
-    const used = new Set<number>();
-    const entries: Entry[] = items.map((it, i) => {
-      const di = discovered.findIndex((s, idx) => !used.has(idx) && matches(s, it));
-      if (di >= 0) {
-        used.add(di);
-        return { key: `c${i}`, name: it.name, href: discPage(discovered[di]), meta: it.meta, surface: discovered[di] };
-      }
-      // Catalog-only surface — its detail page is served from the baseline JSON
-      // by the same `/{domain}/{slug}/` route (worker), keyed by its slug.
-      return { key: `c${i}`, name: it.name, href: `/${encodeURIComponent(domain)}/${it.slug}/`, meta: it.meta };
-    });
-    discovered.forEach((s, idx) => {
-      if (!used.has(idx)) entries.push({ key: `d${idx}`, name: s.name, href: discPage(s), meta: surfaceMeta(s), surface: s });
-    });
-    if (entries.length) out.push({ kind, label: KIND_LABEL[kind], entries });
+function ConventionDetail({ row }: { row: ConventionRow }) {
+  if (row.status === "found") {
+    return row.valueUrl ? (
+      <a className="conv-link conv-url" href={row.valueUrl} target="_blank" rel="noopener">
+        {row.detail}
+      </a>
+    ) : (
+      <span className="conv-url">{row.detail}</span>
+    );
   }
-  return out;
+  if (row.status === "unprobed") {
+    return (
+      <span className="conv-path" title={row.detailTitle}>
+        {row.detail}
+      </span>
+    );
+  }
+  return (
+    <code className="conv-path">{row.detail}</code>
+  );
 }
 
-function EntryRow({ e }: { e: Entry }) {
+function Conventions({ rows }: { rows: ConventionRow[] }) {
+  const found = rows.filter((row) => row.status === "found").length;
+  const probed = rows.filter((row) => row.status !== "unprobed").length;
+  return (
+    <details className="disc-conv" id="conventions">
+      <summary className="conv-summary">
+        <span className="sec-label conv-summary-text">
+          conventions · {found}/{probed} published
+        </span>
+      </summary>
+      <ul className="conv-list">
+        {rows.map((row) => (
+          <li className="conv-row" key={row.key}>
+            {row.specHref ? (
+              <a className="conv-name" href={row.specHref} target="_blank" rel="noopener">
+                {row.label}
+              </a>
+            ) : (
+              <span className="conv-name">{row.label}</span>
+            )}
+            <span className={`conv-status conv-status-${row.status}`} aria-label={row.status}>
+              {row.status === "found" ? "✓" : row.status === "missing" ? "✗" : "—"}
+            </span>
+            <span className="conv-detail">
+              <ConventionDetail row={row} />
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="conv-owner">
+        Publish these signals → <a href="/publishing/">/publishing</a>
+      </p>
+    </details>
+  );
+}
+
+function EntryRow({ e }: { e: SurfaceEntry }) {
   return (
     <li className="disc-entry">
       <div className="disc-entry-head">
@@ -155,13 +119,35 @@ function EntryRow({ e }: { e: Entry }) {
   );
 }
 
+function DiscoveryMeta({ discoveredAt, hasSurfaces, onRegenerate }: { discoveredAt?: string; hasSurfaces: boolean; onRegenerate: () => void }) {
+  const freshness = discoveryFreshness(discoveredAt, hasSurfaces);
+  // Unknown-age data (timestampless baselines) shows no age claim at all —
+  // just the regenerate affordance.
+  return (
+    <div className="disc-freshness" title={freshness.title}>
+      {freshness.known && <span>discovered {freshness.label}</span>}
+      {freshness.shouldRegenerate && (
+        <button className="conv-action disc-regenerate" onClick={onRegenerate}>
+          regenerate
+        </button>
+      )}
+    </div>
+  );
+}
+
+function normalizeStoredDiscovery(stored: StoredDiscoveryEnvelope): DiscoverData | null {
+  if (!stored?.result?.surfaces) return null;
+  return {
+    ...stored.result,
+    discoveredAt: stored.result.discoveredAt ?? stored.discoveredAt,
+  };
+}
+
 export default function Surfaces({
   domain,
-  catalog = [],
   initialData = null,
 }: {
   domain: string;
-  catalog?: CatalogSection[];
   /** Stored discovery baked in by the SSR'd domain page — the island then
    * hydrates directly into "done" with no fetch and no idle-button flash. */
   initialData?: DiscoverData | null;
@@ -181,9 +167,9 @@ export default function Surfaces({
     fetch(`/api/${encodeURIComponent(domain)}/discovery`)
       .then(async (r) => {
         if (cancelled || !r.ok) return;
-        const stored = (await r.json()) as { result?: DiscoverData };
-        if (stored?.result?.surfaces) {
-          setData(stored.result);
+        const result = normalizeStoredDiscovery((await r.json()) as StoredDiscoveryEnvelope);
+        if (result) {
+          setData(result);
           setState("done");
         }
       })
@@ -193,15 +179,19 @@ export default function Surfaces({
     };
   }, [domain, initialData]);
 
-  async function run() {
-    // The site's key conversion — posthog is the snippet global from
-    // src/lib/analytics.ts (absent on localhost, hence the guard).
-    (window as { posthog?: { capture: (e: string, p?: Record<string, unknown>) => void } }).posthog?.capture("map_surface_clicked", { domain });
+  async function run(opts?: { regenerate?: boolean }) {
+    const posthog = (window as { posthog?: { capture: (e: string, p?: Record<string, unknown>) => void } }).posthog;
+    if (opts?.regenerate) {
+      posthog?.capture("regenerate_clicked", { domain });
+    } else {
+      posthog?.capture("map_surface_clicked", { domain });
+    }
     setState("loading");
     setProgress("Starting…");
     setLiveCreds({});
     setLiveSurfaces([]);
     const surfaceKeys = new Set<string>();
+    const started = Date.now();
     try {
       const res = await fetch(`/api/${encodeURIComponent(domain)}/discover/stream`);
       if (!res.ok || !res.body) throw new Error();
@@ -209,6 +199,7 @@ export default function Surfaces({
       const dec = new TextDecoder();
       let buf = "";
       let finished = false;
+      let surfaceCount = 0;
       while (!finished) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -223,7 +214,7 @@ export default function Surfaces({
             else if (line.startsWith("data:")) dat += line.slice(5).trim();
           }
           if (!dat) continue;
-          let parsed: { message?: string; id?: string; credential?: Credential; type?: string; name?: string; spec?: string; url?: string };
+          let parsed: { message?: string; id?: string; credential?: Credential; type?: string; name?: string; spec?: string; url?: string; surfaces?: unknown[] };
           try {
             parsed = JSON.parse(dat);
           } catch {
@@ -235,36 +226,59 @@ export default function Surfaces({
             const { id, credential } = parsed;
             setLiveCreds((c) => ({ ...c, [id]: credential }));
           } else if (ev === "surface") {
-            const key = `${parsed.type}|${(parsed.spec || parsed.url || parsed.name || "").toLowerCase()}`;
+            const surfaceKey = (s: { type?: string; spec?: string; url?: string; name?: string }) =>
+              `${s.type}|${(s.spec || s.url || s.name || "").toLowerCase()}`;
+            const key = surfaceKey(parsed);
+            const next = parsed as unknown as Surface;
             if (!surfaceKeys.has(key)) {
               surfaceKeys.add(key);
-              setLiveSurfaces((s) => [...s, parsed as unknown as Surface]);
+              setLiveSurfaces((s) => [...s, next]);
+            } else {
+              // Re-emit for an already-streamed surface (e.g. basis upgraded
+              // discovered→detected at merge time): overwrite in place.
+              setLiveSurfaces((s) => s.map((cur) => (surfaceKey(cur) === key ? next : cur)));
             }
           } else if (ev === "done") {
+            surfaceCount = Array.isArray(parsed.surfaces) ? parsed.surfaces.length : liveSurfaces.length;
             setData(parsed as unknown as DiscoverData);
             setState("done");
             finished = true;
+            posthog?.capture("discovery_stream_done", { domain, surfaces: surfaceCount, duration_ms: Date.now() - started });
           } else if (ev === "error") {
             setState("error");
             finished = true;
+            posthog?.capture("discovery_stream_error", { domain });
           }
         }
       }
       reader.cancel().catch(() => {});
-      if (!finished) setState("error");
+      if (!finished) {
+        setState("error");
+        posthog?.capture("discovery_stream_error", { domain });
+      }
     } catch {
       setState("error");
+      posthog?.capture("discovery_stream_error", { domain });
     }
+  }
+
+  function regenerate() {
+    void run({ regenerate: true });
   }
 
   const activeData: DiscoverData | null =
     state === "loading" ? { credentials: liveCreds, surfaces: liveSurfaces } : state === "done" ? data : null;
-  const built = buildSections(catalog, activeData, domain);
+  const built = buildSections(activeData, domain);
+  const conventions = buildConventionRows(activeData?.detect, domain);
   const creds: Creds = activeData?.credentials ?? {};
+  const hasSurfaceData = (data?.surfaces?.length ?? 0) > 0;
   const credIdsOf = (auth?: AuthStatus): string[] =>
     auth?.status === "required" ? auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
-  const usedCredIds = new Set<string>(built.flatMap((sec) => sec.entries.flatMap((e) => credIdsOf(e.surface?.auth))));
-  const credList = Object.entries(creds).filter(([id]) => usedCredIds.has(id));
+  const usedCredIds = new Set<string>(built.flatMap((sec) => sec.entries.flatMap((e) => credIdsOf(e.surface.auth))));
+  const allAuths = built.flatMap((sec) => sec.entries.map((e) => e.surface.auth));
+  const credList = Object.entries(creds)
+    .filter(([id]) => usedCredIds.has(id))
+    .map(([id, c]) => ({ id, cred: c, cliLogin: cliLoginFor(id, allAuths) }));
 
   return (
     <div className="disc">
@@ -273,7 +287,7 @@ export default function Surfaces({
           <p className="auth-cta-text">
             Map how to integrate with <b>{domain}</b> — every API, MCP server, and CLI, and how to authenticate to each.
           </p>
-          <button className="auth-btn" onClick={run}>
+          <button className="auth-btn" onClick={() => void run()}>
             Map integration surface →
           </button>
         </div>
@@ -288,12 +302,13 @@ export default function Surfaces({
       {state === "error" && (
         <div className="auth-loading">
           <span className="auth-loading-text">Couldn't reach the detector.</span>
-          <button className="auth-btn" onClick={run}>
+          <button className="auth-btn" onClick={() => void run()}>
             Retry
           </button>
         </div>
       )}
       {state === "done" && data?.summary && <p className="disc-summary">{data.summary}</p>}
+      {state === "done" && hasSurfaceData && <DiscoveryMeta discoveredAt={data?.discoveredAt} hasSurfaces={hasSurfaceData} onRegenerate={regenerate} />}
 
       {built.map((sec) => (
         <section className="disc-sec" id={sec.kind} key={sec.kind}>
@@ -314,22 +329,32 @@ export default function Surfaces({
           <div className="sec-header">
             <span className="sec-label">Credentials</span>
           </div>
-          {credList.map(([id, c]) => (
+          {credList.map(({ id, cred: c, cliLogin }) => (
             <div className="disc-cred" key={id}>
               <div className="disc-cred-head">
                 <span className="disc-cred-label">{c.label}</span>
                 <span className="disc-ctype">{c.type}</span>
-                {c.generateUrl && (
-                  <a className="disc-cred-get" href={c.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(c.generateUrl)}>
-                    {credCta(c.type)} ↗
-                  </a>
+                {cliLogin ? (
+                  <code className="disc-cred-cli">$ {cliLogin}</code>
+                ) : (
+                  c.generateUrl && (
+                    <a className="disc-cred-get" href={c.generateUrl} target="_blank" rel="noopener noreferrer" title={hostOf(c.generateUrl)}>
+                      {credCta(c.type)} ↗
+                    </a>
+                  )
                 )}
               </div>
-              {c.setup && <Setup md={c.setup} />}
+              {cliLogin ? (
+                <p className="disc-cred-clinote">Acquired by the CLI — running <code>{cliLogin}</code> opens the auth flow and stores the credential.</p>
+              ) : (
+                c.setup && <Setup md={c.setup} />
+              )}
             </div>
           ))}
         </section>
       )}
+
+      <Conventions rows={conventions} />
     </div>
   );
 }

@@ -1,0 +1,464 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "logtail.com",
+    "detect": {
+      "domain": "logtail.com",
+      "found": [
+        "mcp"
+      ],
+      "mcp": [
+        {
+          "url": "https://logtail.com/mcp",
+          "source": "probe",
+          "auth": "none"
+        }
+      ],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:33:33.093Z",
+    "summary": "logtail.com exposes a public remote MCP server and Better Stack/Logtail Telemetry developer surfaces including a bearer-authenticated Telemetry API, bearer-authenticated HTTP log ingestion API, and basic-auth SQL API.",
+    "description": "Logtail.com is the Better Stack log management and telemetry product for collecting, querying, and analyzing logs, metrics, and traces. It also offers AI-assistant access to telemetry and uptime data via an MCP server.",
+    "credentials": {
+      "betterstack_global_api_token": {
+        "type": "bearer",
+        "label": "Better Stack global API token",
+        "generateUrl": "https://betterstack.com/settings/global-api-tokens",
+        "setup": "In Better Stack, open [API tokens](https://betterstack.com/settings/global-api-tokens). Create or copy a token from the **Global API tokens** section. Docs: [Telemetry API getting started](https://betterstack.com/docs/logs/api/getting-started/) and [Uptime API getting started](https://betterstack.com/docs/uptime/api/getting-started-with-uptime-api/)."
+      },
+      "betterstack_telemetry_api_token": {
+        "type": "bearer",
+        "label": "Better Stack Telemetry API token",
+        "generateUrl": "https://betterstack.com/docs/logs/api/getting-started/",
+        "setup": "Open the Telemetry docs at [Get started with Telemetry API](https://betterstack.com/docs/logs/api/getting-started/) and follow the **Get a Telemetry API token** instructions to create a team-scoped token for Telemetry resources.",
+        "acquisition": "manual"
+      },
+      "logtail_source_token": {
+        "type": "bearer",
+        "label": "Logtail source token",
+        "generateUrl": "https://betterstack.com/docs/logs/ingesting-data/http/logs/",
+        "setup": "Create or open a Telemetry log source in Better Stack, then copy that source's token for HTTP ingestion. Use the ingestion docs at [Ingesting logs](https://betterstack.com/docs/logs/ingesting-data/http/logs/) as the setup reference; requests send it as `Authorization: Bearer $SOURCE_TOKEN`.",
+        "acquisition": "manual"
+      },
+      "telemetry_sql_basic": {
+        "type": "basic",
+        "label": "Telemetry SQL API username and password",
+        "generateUrl": "https://telemetry.betterstack.com/team/0/dashboards/connections?tab=sql-api",
+        "setup": "In Telemetry, go to [Integrations → SQL API](https://telemetry.betterstack.com/team/0/dashboards/connections?tab=sql-api), click **Connect** for the ClickHouse HTTP client, and create the username/password shown there. Reference: [SQL API](https://betterstack.com/docs/logs/query-api/connect-remotely/).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "logtail-mcp-server",
+        "name": "Logtail MCP server",
+        "type": "mcp",
+        "docs": "https://betterstack.com/docs/getting-started/integrations/mcp/",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T20:33:33.093Z"
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "Seed fact: automated probes detected MCP server endpoint https://logtail.com/mcp with auth none"
+            ]
+          }
+        },
+        "url": "https://logtail.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "telemetry-api",
+        "name": "Telemetry API",
+        "type": "http",
+        "docs": "https://betterstack.com/docs/logs/api/getting-started/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://betterstack.com/docs/logs/start/",
+            "https://betterstack.com/docs/logs/api/getting-started/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "betterstack_global_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "betterstack_telemetry_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://betterstack.com/docs/logs/api/getting-started/"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "http-log-ingestion-api",
+        "name": "HTTP log ingestion API",
+        "type": "http",
+        "docs": "https://betterstack.com/docs/logs/ingesting-data/http/logs/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://betterstack.com/docs/logs/ingesting-data/http/logs/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "logtail_source_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://betterstack.com/docs/logs/ingesting-data/http/logs/"
+                ]
+              }
+            }
+          ]
+        },
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/json"
+            },
+            "description": "Docs say `Content-Type` is required; accepted values include `application/json`, `application/msgpack`, or `application/x-ndjson`."
+          }
+        ]
+      },
+      {
+        "slug": "telemetry-sql-api",
+        "name": "Telemetry SQL API",
+        "type": "http",
+        "docs": "https://betterstack.com/docs/logs/query-api/connect-remotely/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://betterstack.com/docs/logs/query-api/connect-remotely/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "telemetry_sql_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://betterstack.com/docs/logs/query-api/connect-remotely/"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:33:33.093Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 267984,
+    "completion_tokens": 1592,
+    "total_tokens": 269576
+  },
+  "visited": [
+    "https://betterstack.com/docs/getting-started/integrations/mcp/",
+    "https://betterstack.com/docs/logs/",
+    "https://betterstack.com/docs/logs/api/getting-started/",
+    "https://betterstack.com/docs/logs/api/getting-started/?output=1",
+    "https://betterstack.com/docs/logs/ingesting-data/http/logs/",
+    "https://betterstack.com/docs/logs/ingesting-data/http/logs/string-and-json-format/",
+    "https://betterstack.com/docs/logs/query-api/connect-remotely/",
+    "https://betterstack.com/docs/logs/query-api/connect-remotely/?output=1",
+    "https://betterstack.com/docs/logs/start/",
+    "https://betterstack.com/docs/uptime/api/getting-started-with-uptime-api/",
+    "https://devcenter.heroku.com/articles/logtail",
+    "https://github.com/logtail",
+    "https://logtail.com/",
+    "https://logtail.com/mcp",
+    "https://slack.com/marketplace/A01QZEYLPHT-logtail",
+    "https://www.npmjs.com/~logtail"
+  ],
+  "grounding": [
+    "https://$INGESTING_HOST",
+    "https://betterstack.com/#examples",
+    "https://betterstack.com/#get-a-global-api-token",
+    "https://betterstack.com/#get-a-telemetry-api-token",
+    "https://betterstack.com/#get-an-uptime-api-token",
+    "https://betterstack.com/#getting-started-with-telemetry-api",
+    "https://betterstack.com/#have-any-questions",
+    "https://betterstack.com/#hit-the-ground-running-with-our-quickstart-guides",
+    "https://betterstack.com/#how-telemetry-api-works",
+    "https://betterstack.com/#how-uptime-api-works",
+    "https://betterstack.com/#leveraging-pre-aggregated-metrics-data",
+    "https://betterstack.com/#query-limits",
+    "https://betterstack.com/#request-limits",
+    "https://betterstack.com/#s3-sampling",
+    "https://betterstack.com/#sending-timestamps",
+    "https://betterstack.com/#terraform-support",
+    "https://betterstack.com/ai-sre",
+    "https://betterstack.com/book-a-demo",
+    "https://betterstack.com/careers",
+    "https://betterstack.com/careers/engineering",
+    "https://betterstack.com/community",
+    "https://betterstack.com/community/blog",
+    "https://betterstack.com/community/comparisons",
+    "https://betterstack.com/community/comparisons/datadog-log-management-alternatives/",
+    "https://betterstack.com/community/comparisons/free-status-page-tools/",
+    "https://betterstack.com/community/comparisons/grafana-alternatives/",
+    "https://betterstack.com/community/comparisons/incident-io-alternative/",
+    "https://betterstack.com/community/comparisons/incident-management-tools/",
+    "https://betterstack.com/community/comparisons/sentry-alternatives/",
+    "https://betterstack.com/community/guides",
+    "https://betterstack.com/community/guides/ai/mcp-explained/",
+    "https://betterstack.com/community/guides/incident-management/what-is-incident-management/",
+    "https://betterstack.com/community/questions",
+    "https://betterstack.com/dashboards",
+    "https://betterstack.com/demos/?utm_content&utm_medium=docs-getting-started&utm_source=community&utm_term=mcp-server",
+    "https://betterstack.com/demos/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=connect-remotely",
+    "https://betterstack.com/demos/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-api-getting-started",
+    "https://betterstack.com/demos/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-start",
+    "https://betterstack.com/demos/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-using-logtail-string-and-json-format",
+    "https://betterstack.com/demos/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-sources-http-rest-api",
+    "https://betterstack.com/demos/?utm_content&utm_medium=docs-uptime&utm_source=community&utm_term=docs-uptime-api-getting-started",
+    "https://betterstack.com/demos/ai-sre/",
+    "https://betterstack.com/docs/",
+    "https://betterstack.com/docs/ai-sre/?utm_content&utm_medium=docs-getting-started&utm_source=community&utm_term=mcp-server",
+    "https://betterstack.com/docs/ai-sre/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=connect-remotely",
+    "https://betterstack.com/docs/ai-sre/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-api-getting-started",
+    "https://betterstack.com/docs/ai-sre/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-start",
+    "https://betterstack.com/docs/ai-sre/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-using-logtail-string-and-json-format",
+    "https://betterstack.com/docs/ai-sre/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-sources-http-rest-api",
+    "https://betterstack.com/docs/ai-sre/?utm_content&utm_medium=docs-uptime&utm_source=community&utm_term=docs-uptime-api-getting-started",
+    "https://betterstack.com/docs/brand/",
+    "https://betterstack.com/docs/errors/",
+    "https://betterstack.com/docs/errors/?utm_content&utm_medium=docs-getting-started&utm_source=community&utm_term=mcp-server",
+    "https://betterstack.com/docs/errors/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=connect-remotely",
+    "https://betterstack.com/docs/errors/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-api-getting-started",
+    "https://betterstack.com/docs/errors/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-start",
+    "https://betterstack.com/docs/errors/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-using-logtail-string-and-json-format",
+    "https://betterstack.com/docs/errors/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-sources-http-rest-api",
+    "https://betterstack.com/docs/errors/?utm_content&utm_medium=docs-uptime&utm_source=community&utm_term=docs-uptime-api-getting-started",
+    "https://betterstack.com/docs/errors/start/",
+    "https://betterstack.com/docs/getting-started/?utm_content&utm_medium=docs-getting-started&utm_source=community&utm_term=mcp-server",
+    "https://betterstack.com/docs/getting-started/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=connect-remotely",
+    "https://betterstack.com/docs/getting-started/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-api-getting-started",
+    "https://betterstack.com/docs/getting-started/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-start",
+    "https://betterstack.com/docs/getting-started/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-using-logtail-string-and-json-format",
+    "https://betterstack.com/docs/getting-started/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-sources-http-rest-api",
+    "https://betterstack.com/docs/getting-started/?utm_content&utm_medium=docs-uptime&utm_source=community&utm_term=docs-uptime-api-getting-started",
+    "https://betterstack.com/docs/getting-started/integrations/mcp/",
+    "https://betterstack.com/docs/getting-started/integrations/terraform/",
+    "https://betterstack.com/docs/getting-started/team-and-account-management/reporting/",
+    "https://betterstack.com/docs/getting-started/welcome/",
+    "https://betterstack.com/docs/logs/",
+    "https://betterstack.com/docs/logs/?utm_content&utm_medium=docs-getting-started&utm_source=community&utm_term=mcp-server",
+    "https://betterstack.com/docs/logs/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=connect-remotely",
+    "https://betterstack.com/docs/logs/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-api-getting-started",
+    "https://betterstack.com/docs/logs/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-start",
+    "https://betterstack.com/docs/logs/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-using-logtail-string-and-json-format",
+    "https://betterstack.com/docs/logs/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-sources-http-rest-api",
+    "https://betterstack.com/docs/logs/?utm_content&utm_medium=docs-uptime&utm_source=community&utm_term=docs-uptime-api-getting-started",
+    "https://betterstack.com/docs/logs/alternative-to/lightstep/",
+    "https://betterstack.com/docs/logs/api/alerts/list/",
+    "https://betterstack.com/docs/logs/api/connections/?utm_content=callout&utm_medium=docs-logs&utm_source=community&utm_term=connect-remotely",
+    "https://betterstack.com/docs/logs/api/connections/list/",
+    "https://betterstack.com/docs/logs/api/dashboards/list/",
+    "https://betterstack.com/docs/logs/api/explorations/list/",
+    "https://betterstack.com/docs/logs/api/getting-started/",
+    "https://betterstack.com/docs/logs/api/getting-started/?output=1",
+    "https://betterstack.com/docs/logs/api/list-all-existing-sources/",
+    "https://betterstack.com/docs/logs/collector/",
+    "https://betterstack.com/docs/logs/dashboards/",
+    "https://betterstack.com/docs/logs/dashboards/alerts/",
+    "https://betterstack.com/docs/logs/dashboards/getting-started/",
+    "https://betterstack.com/docs/logs/datadog-agent/",
+    "https://betterstack.com/docs/logs/faster-queries/",
+    "https://betterstack.com/docs/logs/grafana-visualization/",
+    "https://betterstack.com/docs/logs/host-data-in-your-own-bucket/",
+    "https://betterstack.com/docs/logs/ingesting-data/http/logs/",
+    "https://betterstack.com/docs/logs/ingesting-data/http/logs/string-and-json-format/",
+    "https://betterstack.com/docs/logs/ingesting-data/http/metrics/",
+    "https://betterstack.com/docs/logs/ingesting-data/http/traces/",
+    "https://betterstack.com/docs/logs/ingesting-data/logs/docker-kubernetes/",
+    "https://betterstack.com/docs/logs/ingesting-data/metrics/prometheus-scrape/",
+    "https://betterstack.com/docs/logs/integrations/",
+    "https://betterstack.com/docs/logs/log-forwarding/",
+    "https://betterstack.com/docs/logs/logging-start/",
+    "https://betterstack.com/docs/logs/open-telemetry/",
+    "https://betterstack.com/docs/logs/query-api/connect-remotely/",
+    "https://betterstack.com/docs/logs/query-api/connect-remotely/?output=1",
+    "https://betterstack.com/docs/logs/query-boost/",
+    "https://betterstack.com/docs/logs/sources/",
+    "https://betterstack.com/docs/logs/start/",
+    "https://betterstack.com/docs/logs/tracing/",
+    "https://betterstack.com/docs/logs/using-logtail/explore-logs/",
+    "https://betterstack.com/docs/logs/using-logtail/live-tail-query-language/",
+    "https://betterstack.com/docs/logs/using-logtail/transforming-ingested-data/logs-vrl/",
+    "https://betterstack.com/docs/logs/vector/",
+    "https://betterstack.com/docs/logs/wide-events-time-series/",
+    "https://betterstack.com/docs/uptime/?utm_content&utm_medium=docs-getting-started&utm_source=community&utm_term=mcp-server",
+    "https://betterstack.com/docs/uptime/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=connect-remotely",
+    "https://betterstack.com/docs/uptime/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-api-getting-started",
+    "https://betterstack.com/docs/uptime/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-start",
+    "https://betterstack.com/docs/uptime/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-logs-using-logtail-string-and-json-format",
+    "https://betterstack.com/docs/uptime/?utm_content&utm_medium=docs-logs&utm_source=community&utm_term=docs-sources-http-rest-api",
+    "https://betterstack.com/docs/uptime/?utm_content&utm_medium=docs-uptime&utm_source=community&utm_term=docs-uptime-api-getting-started",
+    "https://betterstack.com/docs/uptime/api/getting-started-with-uptime-api/",
+    "https://betterstack.com/docs/uptime/api/list-all-existing-hearbeats/",
+    "https://betterstack.com/docs/uptime/api/list-all-existing-monitors/",
+    "https://betterstack.com/docs/uptime/api/list-all-existing-status-pages/",
+    "https://betterstack.com/docs/uptime/api/list-all-new-relic-integrations/",
+    "https://betterstack.com/docs/uptime/api/metadata/",
+    "https://betterstack.com/docs/uptime/api/on-call-calendar/",
+    "https://betterstack.com/docs/uptime/api/pagination/",
+    "https://betterstack.com/docs/uptime/api/reporting/",
+    "https://betterstack.com/docs/uptime/api/roles/list/",
+    "https://betterstack.com/docs/uptime/api/team-members/list/",
+    "https://betterstack.com/docs/uptime/audit-logs/",
+    "https://betterstack.com/docs/uptime/bulk-importing-monitors/",
+    "https://betterstack.com/docs/uptime/connecting-external-calendars/",
+    "https://betterstack.com/docs/uptime/creating-a-new-team/",
+    "https://betterstack.com/docs/uptime/custom-subdomain/",
+    "https://betterstack.com/docs/uptime/escalation-policies/",
+    "https://betterstack.com/docs/uptime/frequently-asked-questions/",
+    "https://betterstack.com/docs/uptime/getting-started-with-oncall-v2/",
+    "https://betterstack.com/docs/uptime/getting-started-with-status-pages/",
+    "https://betterstack.com/docs/uptime/incident-metadata/",
+    "https://betterstack.com/docs/uptime/incidents/screening-alerts/",
+    "https://betterstack.com/docs/uptime/integrating-with-better-uptime/aws-sso/",
+    "https://betterstack.com/docs/uptime/ios-and-android-mobile-apps/",
+    "https://betterstack.com/docs/uptime/monitoring-start/",
+    "https://betterstack.com/docs/uptime/naming-monitors/",
+    "https://betterstack.com/docs/uptime/phone-number/",
+    "https://betterstack.com/docs/uptime/post-mortems/",
+    "https://betterstack.com/docs/uptime/slack/",
+    "https://betterstack.com/docs/uptime/start/",
+    "https://betterstack.com/docs/uptime/status-pages/subscribing-to-status-updates/subscribing-to-api/",
+    "https://betterstack.com/docs/uptime/uptime-monitor/",
+    "https://betterstack.com/docs/uptime/working-with-incidents/",
+    "https://betterstack.com/docs/warehouse/start/",
+    "https://betterstack.com/dpa",
+    "https://betterstack.com/enterprise",
+    "https://betterstack.com/error-tracking",
+    "https://betterstack.com/help",
+    "https://betterstack.com/incident-management",
+    "https://betterstack.com/infrastructure-monitoring",
+    "https://betterstack.com/integrations",
+    "https://betterstack.com/log-management",
+    "https://betterstack.com/pricing",
+    "https://betterstack.com/privacy",
+    "https://betterstack.com/real-user-monitoring",
+    "https://betterstack.com/security",
+    "https://betterstack.com/settings/api-tokens/0",
+    "https://betterstack.com/settings/global-api-tokens",
+    "https://betterstack.com/status-page",
+    "https://betterstack.com/tag/changelog",
+    "https://betterstack.com/tel:+1",
+    "https://betterstack.com/telemetry",
+    "https://betterstack.com/terms",
+    "https://betterstack.com/tracing",
+    "https://betterstack.com/uptime",
+    "https://betterstack.com/users/sign-in",
+    "https://betterstack.com/users/sign-up",
+    "https://business.safety.google/privacy/",
+    "https://calendly.com/betterstack/consultation-migrating-from-datadog",
+    "https://clickhouse.com/docs/interfaces/formats",
+    "https://cursor.com/en/install-mcp?name=betterstack&config=eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vbWNwLmJldHRlcnN0YWNrLmNvbSJ9",
+    "https://datatracker.ietf.org/doc/html/rfc3339",
+    "https://devcenter.heroku.com/articles/logtail",
+    "https://docs.anthropic.com/en/docs/claude-code",
+    "https://en.wikipedia.org/wiki/Unix_time",
+    "https://eu-nbg-2-connect.betterstackdata.com?output_format_pretty_row_numbers=0",
+    "https://github.com/logtail",
+    "https://github.com/msgpack/msgpack/blob/master/spec.md#timestamp-extension-type",
+    "https://jsonapi.org/",
+    "https://logtail.com/",
+    "https://logtail.com/ai-sre",
+    "https://logtail.com/careers",
+    "https://logtail.com/careers/engineering",
+    "https://logtail.com/dashboards",
+    "https://logtail.com/dpa",
+    "https://logtail.com/enterprise",
+    "https://logtail.com/error-tracking",
+    "https://logtail.com/help",
+    "https://logtail.com/incident-management",
+    "https://logtail.com/infrastructure-monitoring",
+    "https://logtail.com/integrations",
+    "https://logtail.com/log-management",
+    "https://logtail.com/mcp",
+    "https://logtail.com/pricing",
+    "https://logtail.com/pricing#logs",
+    "https://logtail.com/privacy",
+    "https://logtail.com/real-user-monitoring",
+    "https://logtail.com/security",
+    "https://logtail.com/status-page",
+    "https://logtail.com/tel:+1",
+    "https://logtail.com/telemetry",
+    "https://logtail.com/terms",
+    "https://logtail.com/tracing",
+    "https://logtail.com/uptime",
+    "https://logtail.com/users/sign-in",
+    "https://logtail.com/users/sign-up",
+    "https://mcp.betterstack.com",
+    "https://modelcontextprotocol.io/quickstart/user",
+    "https://slack.com/marketplace/A01QZEYLPHT-logtail",
+    "https://status.betterstack.com/",
+    "https://swagger.io/docs/specification/authentication/bearer-authentication/",
+    "https://telemetry.betterstack.com/team/0/dashboards/connections?tab=sql-api",
+    "https://telemetry.betterstack.com/team/0/dashboards/connections?tab=sql-api&utm_content=callout&utm_medium=docs-logs&utm_source=community&utm_term=connect-remotely",
+    "https://telemetry.betterstack.com/team/0/sources",
+    "https://uptime.betterstack.com/faq",
+    "https://www.npmjs.com/~logtail"
+  ]
+}

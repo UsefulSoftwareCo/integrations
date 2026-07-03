@@ -1,0 +1,289 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "ean-search.org",
+    "detect": {
+      "domain": "ean-search.org",
+      "found": [
+        "oauth-protected-resource",
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://www.ean-search.org"
+          ],
+          "authorizationEndpoint": "https://www.ean-search.org/authorize",
+          "tokenEndpoint": "https://www.ean-search.org/token",
+          "protectedResourceUrl": "https://ean-search.org/.well-known/oauth-protected-resource",
+          "scopes": [
+            "user"
+          ],
+          "registrationEndpoint": "https://www.ean-search.org/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:34:11.461Z",
+    "summary": "EAN-Search exposes a token-authenticated REST API, a Bearer-authenticated GraphQL API at `https://api.ean-search.org/graphql`, and an OAuth-protected streamable-HTTP MCP server at `https://www.ean-search.org/mcp`.",
+    "description": "EAN-Search is a product barcode lookup service that lets users search a large database of EAN, GTIN, UPC, and ISBN codes and related product information. It offers paid accounts for higher-volume access, API usage, and AI integrations.",
+    "credentials": {
+      "ean_api_token": {
+        "type": "api_key",
+        "label": "EAN-Search API token",
+        "generateUrl": "https://www.ean-search.org/ean-database-api.html",
+        "setup": "Create an account from the [EAN Database Accounts page](https://www.ean-search.org/ean-database-api.html) using one of the `Create ... Account` links, then log in to your EAN-Search account to obtain your private API access token. The docs say to replace `abcdef` in examples with your own token after opening an account, and the same regular API token is used for GraphQL."
+      },
+      "ean_oauth_client": {
+        "type": "oauth2",
+        "label": "EAN-Search OAuth client",
+        "generateUrl": "https://www.ean-search.org/register",
+        "setup": "Register an OAuth client against EAN-Search using the dynamic client registration endpoint at [register](https://www.ean-search.org/register). Then run the OAuth flow against [authorize](https://www.ean-search.org/authorize) and [token](https://www.ean-search.org/token). The catalog indicates the `user` scope is supported. Use this when connecting to the MCP server, which the docs say handles authorization via your account."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "ean-search-rest-api",
+        "name": "EAN-Search REST API",
+        "type": "http",
+        "docs": "https://www.ean-search.org/ean-api-intro.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.ean-search.org/ean-api-intro.html",
+            "https://www.ean-search.org/ean-database-api.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ean_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.ean-search.org/ean-api-intro.html"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.ean-search.org/api"
+      },
+      {
+        "slug": "ean-search-graphql-api",
+        "name": "EAN-Search GraphQL API",
+        "type": "graphql",
+        "docs": "https://api.ean-search.org/graphql",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.ean-search.org/graphql",
+            "https://www.ean-search.org/blog/graphql-ean-api.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ean_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.ean-search.org/blog/graphql-ean-api.html"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "https://api.ean-search.org/graphql"
+      },
+      {
+        "slug": "ean-search-mcp-server",
+        "name": "EAN-Search MCP server",
+        "type": "mcp",
+        "docs": "https://www.ean-search.org/blog/mcp-server-for-ai.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.ean-search.org/blog/mcp-server-for-ai.html",
+            "https://www.ean-search.org/ean-database-api.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ean_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.ean-search.org/blog/mcp-server-for-ai.html",
+                  "https://www.ean-search.org/authorize",
+                  "https://www.ean-search.org/token",
+                  "https://www.ean-search.org/register"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.ean-search.org/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:34:11.461Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 43983,
+    "completion_tokens": 1223,
+    "total_tokens": 45206
+  },
+  "visited": [
+    "https://api.ean-search.org/graphql",
+    "https://apislist.com/api/1742/ean-search",
+    "https://www.ean-search.org/",
+    "https://www.ean-search.org/authorize",
+    "https://www.ean-search.org/blog/graphql-ean-api.html",
+    "https://www.ean-search.org/blog/mcp-server-for-ai.html",
+    "https://www.ean-search.org/ean-api-intro.html",
+    "https://www.ean-search.org/ean-database-api.html",
+    "https://www.ean-search.org/register",
+    "https://www.ean-search.org/token",
+    "https://www.postman.com/relaxed/ean-search-org-api/documentation/23aehho/ean-search-org-api"
+  ],
+  "grounding": [
+    "https://api.ean-search.org/api?",
+    "https://api.ean-search.org/api?token=",
+    "https://api.ean-search.org/api?token=abcdef&op=barcode-lookup&format=json&ean=5099750442227",
+    "https://api.ean-search.org/api?token=abcdef&op=barcode-prefix-search&format=json&prefix=0885909",
+    "https://api.ean-search.org/api?token=abcdef&op=product-search&format=json&name=Bananaboat",
+    "https://api.ean-search.org/graphql",
+    "https://api.ean-search.org/graphql?query=%7BproductSearch(keywords",
+    "https://apislist.com/api/1742/ean-search",
+    "https://en.wikipedia.org/wiki/Global_Trade_Item_Number",
+    "https://en.wikipedia.org/wiki/OpenAPI_Specification",
+    "https://github.com/eansearch/BarcodeScanner",
+    "https://github.com/eansearch/zbar",
+    "https://graphql.org/",
+    "https://modelcontextprotocol.io/",
+    "https://www.ean-search.org/",
+    "https://www.ean-search.org/#curl",
+    "https://www.ean-search.org/#curl-prefix",
+    "https://www.ean-search.org/#curl-search",
+    "https://www.ean-search.org/#excel",
+    "https://www.ean-search.org/#excel-search",
+    "https://www.ean-search.org/#go",
+    "https://www.ean-search.org/#go-prefix",
+    "https://www.ean-search.org/#go-search",
+    "https://www.ean-search.org/#java",
+    "https://www.ean-search.org/#java-search",
+    "https://www.ean-search.org/#php",
+    "https://www.ean-search.org/#php-prefix",
+    "https://www.ean-search.org/#php-search",
+    "https://www.ean-search.org/#python",
+    "https://www.ean-search.org/#python-prefix",
+    "https://www.ean-search.org/#python-search",
+    "https://www.ean-search.org/#rust",
+    "https://www.ean-search.org/#rust-prefix",
+    "https://www.ean-search.org/#rust-search",
+    "https://www.ean-search.org/authorize",
+    "https://www.ean-search.org/barcode-scanner.html",
+    "https://www.ean-search.org/blog/",
+    "https://www.ean-search.org/blog/api-similar-product-search.html",
+    "https://www.ean-search.org/blog/category-search.html",
+    "https://www.ean-search.org/blog/combine-ean-search-api-with-chatgpt.html",
+    "https://www.ean-search.org/blog/deepseek-with-ean-api.html",
+    "https://www.ean-search.org/blog/ean-api-languages.html",
+    "https://www.ean-search.org/blog/ean-barcode-images.html",
+    "https://www.ean-search.org/blog/ean-libraries-updated.html",
+    "https://www.ean-search.org/blog/ean-prefix-2.html",
+    "https://www.ean-search.org/blog/ean-prefix-search.html",
+    "https://www.ean-search.org/blog/ean-search-in-french.html",
+    "https://www.ean-search.org/blog/google-categories.html",
+    "https://www.ean-search.org/blog/graphql-ean-api.html",
+    "https://www.ean-search.org/blog/gtin-ean-upc-codes.html",
+    "https://www.ean-search.org/blog/gtin-lookup-javascript.html",
+    "https://www.ean-search.org/blog/invalid-eans.html",
+    "https://www.ean-search.org/blog/mcp-server-for-ai.html",
+    "https://www.ean-search.org/blog/vba-ean-barcodes.html",
+    "https://www.ean-search.org/buy-eans.html",
+    "https://www.ean-search.org/contact.html",
+    "https://www.ean-search.org/ean-api-intro.html",
+    "https://www.ean-search.org/ean-database-api.html",
+    "https://www.ean-search.org/ean-libraries.html",
+    "https://www.ean-search.org/ean-tools.html",
+    "https://www.ean-search.org/es/",
+    "https://www.ean-search.org/ext/aHR0cHM6Ly9iYXJjb2Rlc21hbmlhLmNvbS9yZWYvNjYzYTY5Y2U1MWU1NEphbgo=",
+    "https://www.ean-search.org/ext/aHR0cHM6Ly9iYXJjb2Rlc3RhbGsuZ3JzbS5pby9idXllYW4K",
+    "https://www.ean-search.org/fr/",
+    "https://www.ean-search.org/imprint.html",
+    "https://www.ean-search.org/isbn-search.html",
+    "https://www.ean-search.org/login.html",
+    "https://www.ean-search.org/mcp",
+    "https://www.ean-search.org/new-account.html?type=bronze",
+    "https://www.ean-search.org/new-account.html?type=gold",
+    "https://www.ean-search.org/new-account.html?type=pro",
+    "https://www.ean-search.org/new-account.html?type=pro&mobile=1",
+    "https://www.ean-search.org/new-account.html?type=silver",
+    "https://www.ean-search.org/new-account.html?type=trial",
+    "https://www.ean-search.org/privacy.html",
+    "https://www.ean-search.org/register",
+    "https://www.ean-search.org/token",
+    "https://www.ean-search.org/tos.html",
+    "https://www.ean-search.org/unsubscribe.html",
+    "https://www.ean-search.org/upc-barcode-lookup.html",
+    "https://www.ean-search.org/upload.html",
+    "https://www.ean-suche.de/",
+    "https://www.postman.com/relaxed/ean-search-org-api/documentation/23aehho/ean-search-org-api"
+  ]
+}

@@ -1,0 +1,535 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "infobip.com",
+    "detect": {
+      "domain": "infobip.com",
+      "found": [
+        "api-catalog",
+        "mcp",
+        "agent-skills",
+        "llms.txt"
+      ],
+      "apiCatalog": {
+        "rest": [
+          "https://www.infobip.com/docs/api",
+          "https://www.infobip.com/docs/mcp"
+        ],
+        "openapi": [],
+        "docs": [
+          "https://www.infobip.com/docs/api",
+          "https://www.infobip.com/docs/mcp"
+        ],
+        "status": [],
+        "mcp": []
+      },
+      "mcp": [
+        {
+          "url": "https://www.infobip.com/docs/mcp",
+          "source": "server-card"
+        }
+      ],
+      "agentSkills": {
+        "count": 2,
+        "names": [
+          "api-documentation",
+          "mcp-integration"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:30:03.989Z",
+    "summary": "Infobip exposes a tenant-specific REST API and a family of remote MCP servers; both use Infobip-issued credentials, with REST supporting API key/basic/OAuth 2.0 and MCP supporting API key or OAuth 2.1.",
+    "description": "Infobip is a communications platform for messaging, voice, authentication, customer data, and related platform services. It provides APIs and MCP servers for channels such as SMS, email, WhatsApp, Viber, RCS, voice, 2FA, customer data, and account management.",
+    "credentials": {
+      "infobip_api_key": {
+        "type": "api_key",
+        "label": "Infobip API key",
+        "generateUrl": "https://portal.infobip.com/dev/api-keys",
+        "setup": "Sign up for an Infobip account via [Sign up](https://www.infobip.com/signup) or log in, then open the [API keys page](https://portal.infobip.com/dev/api-keys). Infobip assigns an API key when the account is created, and you can create additional keys there. Copy the key and store it securely; the docs note you can view and copy the initial key for 2 days after account creation. Ensure the key has the scopes needed for the API or MCP server you will call.",
+        "acquisition": "manual"
+      },
+      "infobip_basic": {
+        "type": "basic",
+        "label": "Infobip account username and password",
+        "generateUrl": "https://portal.infobip.com/login",
+        "setup": "Use your Infobip account credentials. Create an account via [Sign up](https://www.infobip.com/signup) if needed, then authenticate API requests with your Infobip username and password using HTTP Basic auth. The docs say this is typically used when an API key is not available, such as API methods that generate API keys.",
+        "acquisition": "manual"
+      },
+      "infobip_oauth": {
+        "type": "oauth2",
+        "label": "Infobip OAuth 2.1 app/session for MCP",
+        "setup": "Use an MCP client that supports OAuth 2.1 and dynamic authorization server metadata discovery, then connect it to an Infobip MCP server endpoint such as `https://mcp.infobip.com/sms`. The client should initiate the OAuth flow automatically and redirect you to the Infobip OAuth server for authentication. If your client cannot auto-discover scopes, read `{mcp-server-url}/.well-known/oauth-authorization-server` for the endpoint-specific supported scopes, for example `https://mcp.infobip.com/sms/.well-known/oauth-authorization-server`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "mcp-server",
+        "name": "MCP server",
+        "type": "mcp",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T20:30:03.989Z"
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "docs": "https://www.infobip.com/docs/mcp"
+      },
+      {
+        "slug": "infobip-mcp-servers",
+        "name": "Infobip MCP servers",
+        "type": "mcp",
+        "docs": "https://www.infobip.com/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.infobip.com/docs/mcp",
+            "https://www.infobip.com/docs/mcp/using-mcp",
+            "https://www.infobip.com/docs/tutorials/integrate-infobip-mcp-server-with-mcp-client"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "infobip_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "App"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.infobip.com/docs/mcp",
+                  "https://www.infobip.com/docs/mcp/using-mcp",
+                  "https://www.infobip.com/docs/tutorials/integrate-infobip-mcp-server-with-mcp-client"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "infobip_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.infobip.com/docs/mcp",
+                  "https://www.infobip.com/docs/mcp/using-mcp",
+                  "https://www.infobip.com/docs/tutorials/integrate-infobip-mcp-server-with-mcp-client"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.infobip.com/{mcp-tool}",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ],
+        "variables": [
+          {
+            "name": "mcp-tool",
+            "resolveFrom": "choose one of the documented MCP server names such as `sms`, `email`, `whatsapp`, `viber`, `rcs`, `voice`, `mobile-app-messaging`, `2fa`, `camara`, `people`, `account-management`, or `application-entity`",
+            "description": "Per-product MCP server path segment."
+          }
+        ]
+      },
+      {
+        "slug": "infobip-rest-api",
+        "name": "Infobip REST API",
+        "type": "http",
+        "docs": "https://www.infobip.com/docs/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.infobip.com/docs/api",
+            "https://www.infobip.com/docs/essentials/api-essentials/api-authentication",
+            "https://www.infobip.com/docs/api/tools/openapi",
+            "https://api.infobip.com/platform/1/openapi.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "infobip_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "App"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.infobip.com/docs/api",
+                  "https://www.infobip.com/docs/essentials/api-essentials/api-authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "infobip_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.infobip.com/docs/essentials/api-essentials/api-authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "infobip_oauth",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.infobip.com/docs/essentials/api-essentials/api-authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{baseUrl}",
+        "variables": [
+          {
+            "name": "baseUrl",
+            "in": "url",
+            "resolveFrom": "your Infobip account base URL shown in the portal/docs examples",
+            "description": "Each Infobip account has a unique base URL that must be used in every API request, e.g. `example.infobip.com`."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:30:03.989Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 115381,
+    "completion_tokens": 2405,
+    "total_tokens": 117786
+  },
+  "visited": [
+    "https://api.infobip.com/platform/1/openapi",
+    "https://api.infobip.com/platform/1/openapi.json",
+    "https://api.infobip.com/platform/1/openapi.yaml",
+    "https://github.com/infobip/mcp",
+    "https://www.infobip.com/docs/api",
+    "https://www.infobip.com/docs/api/tools/openapi",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authentication",
+    "https://www.infobip.com/docs/mcp",
+    "https://www.infobip.com/docs/mcp/using-mcp",
+    "https://www.infobip.com/docs/tutorials/integrate-infobip-mcp-server-with-mcp-client"
+  ],
+  "grounding": [
+    "https://api.infobip.com/platform/1/openapi",
+    "https://api.infobip.com/platform/1/openapi.json",
+    "https://api.infobip.com/platform/1/openapi.yaml",
+    "https://api.infobip.com/platform/1/openapi/openapi",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/blog/10dlc-vs-short-codes-vs-toll-free-numbers.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/blog/data-to-improve-customer-experience.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/blog/how-infobip-scales-through-partnerships.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/blog/skandia.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/blog/what-is-a2p-10dlc.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/engineering/geniuses-worriers-and-the-annoying-people-who-make-us-better.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/engineering/how-to-build-whatsapp-flows-in-minutes-not-days.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/engineering/infobips-anja-hula-is-named-women-engineer-of-the-year.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/engineering/our-team-shrunk-to-two-and-we-made-it-work.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/engineering/you-should-let-your-mentee-fail.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/events/gartner-it-symposium-xpo-barcelona-2026.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/events/linkedin-live-messaging-trends.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/events/rcs-in-action-what-2025-taught-us-what-comes-next.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/guides/omnichannel-marketing-automation.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/guides/omnichannel-marketing-automation/partner-with-infobip.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/guides/omnichannel-marketing-automation/strategy.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/guides/omnichannel-marketing-automation/use-cases.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-cx-maturity-report-2026.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-digitas-publicis-groupe.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-floward-agentos.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-fortunes-europes-most-innovative-companies.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-launches-pitchmate.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-leader-gartner-mq-2026-cpaas.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-leader-gartner-mq-2026.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-omdia-white-paper-voice-ai.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-shift-2026-brings-nvidia.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/news/infobip-shift-2026-bruketazinicgrey-demo.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/webinars/bipexperts-rcs-webinar-for-partners.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/webinars/bipexperts-voice-for-partners.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/webinars/bipexperts-voice.md",
+    "https://cdn-web.infobip.com/uploads/markdown-exports/www.infobip.com/webinars/bipexperts-webinar-rcs-para-socios.md",
+    "https://claude.ai/",
+    "https://claude.com/product/claude-code",
+    "https://cursor.directory/mcp/infobip/",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication",
+    "https://developers.openai.com/codex/cli",
+    "https://discord.com/invite/G9Gr6fk2e4",
+    "https://github.com/geelen/mcp-remote",
+    "https://github.com/infobip",
+    "https://github.com/infobip/mcp",
+    "https://github.com/infobip/mcp/tree/main/examples",
+    "https://github.com/infobip/mobile-messaging-sdk-android/wiki/Events",
+    "https://github.com/infobip/mobile-messaging-sdk-ios/wiki/Events",
+    "https://github.com/infobip/people-web-sdk",
+    "https://github.com/infobip?q=infobip-api-*-client&type=&language=&sort=#org-profiles-repositories",
+    "https://infobip.com/docs",
+    "https://infobip.com/docs/api",
+    "https://infobip.com/docs/essentials",
+    "https://infobip.com/docs/essentials/api-essentials/api-authentication",
+    "https://infobip.com/docs/essentials/api-essentials/api-authorization#api-scopes",
+    "https://infobip.com/docs/essentials/api-essentials/base-url",
+    "https://infobip.com/docs/essentials/api-essentials/integration-best-practices",
+    "https://infobip.com/docs/essentials/api-essentials/response-status-and-error-codes",
+    "https://infobip.com/docs/essentials/api-essentials/roles-and-scopes",
+    "https://infobip.com/docs/essentials/getting-started/free-trial",
+    "https://infobip.com/docs/integrations",
+    "https://infobip.com/docs/mcp",
+    "https://infobip.com/docs/product-documentation",
+    "https://infobip.com/docs/release-notes",
+    "https://infobip.com/docs/sdk",
+    "https://infobip.com/docs/sdk?page=1",
+    "https://infobip.com/docs/tutorials",
+    "https://infobip.com/glossary",
+    "https://learn.microsoft.com/en-us/semantic-kernel/overview/",
+    "https://mcp.infobip.com/2fa",
+    "https://mcp.infobip.com/account-management",
+    "https://mcp.infobip.com/application-entity",
+    "https://mcp.infobip.com/camara",
+    "https://mcp.infobip.com/deep-research",
+    "https://mcp.infobip.com/email",
+    "https://mcp.infobip.com/mobile-app-messaging",
+    "https://mcp.infobip.com/people",
+    "https://mcp.infobip.com/rcs",
+    "https://mcp.infobip.com/search",
+    "https://mcp.infobip.com/sms",
+    "https://mcp.infobip.com/sms/.well-known/oauth-authorization-server",
+    "https://mcp.infobip.com/sms/sse",
+    "https://mcp.infobip.com/viber",
+    "https://mcp.infobip.com/voice",
+    "https://mcp.infobip.com/whatsapp",
+    "https://mcp.infobip.com/whatsapp-flow",
+    "https://mcp.infobip.com/{mcp-tool}",
+    "https://modelcontextprotocol.io/docs",
+    "https://modelcontextprotocol.io/docs/learn/architecture#transport-layer",
+    "https://modelcontextprotocol.io/docs/learn/server-concepts#tools",
+    "https://modelcontextprotocol.io/introduction",
+    "https://modelcontextprotocol.io/specification/2024-11-05/basic/transports#http-with-sse",
+    "https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization#server-metadata-discovery",
+    "https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http",
+    "https://modelcontextprotocol.io/specification/draft/server/prompts#implementation-considerations",
+    "https://platform.openai.com/docs/guides/agents",
+    "https://portal.infobip.com/dev/api-keys",
+    "https://portal.infobip.com/homepage/#support",
+    "https://portal.infobip.com/login",
+    "https://portal.infobip.com/login?callback=https://www.infobip.com/docs/api",
+    "https://portal.infobip.com/settings/accounts/api-keys",
+    "https://portal.infobip.com/signup?callback=https://www.infobip.com/docs/api",
+    "https://roadmap.infobip.com",
+    "https://spring.io/projects/spring-ai",
+    "https://stackoverflow.com/questions/tagged/infobip",
+    "https://status.infobip.com",
+    "https://status.infobip.com/",
+    "https://support.infobip.com",
+    "https://swagger.io/specification/",
+    "https://www.cursor.com/en",
+    "https://www.ietf.org/rfc/rfc2045.txt",
+    "https://www.infobip.com/",
+    "https://www.infobip.com/#additional-resources",
+    "https://www.infobip.com/#agent-permission-and-access-control",
+    "https://www.infobip.com/#api-key-authentication",
+    "https://www.infobip.com/#authentication",
+    "https://www.infobip.com/#authentication-and-verification",
+    "https://www.infobip.com/#authentication-troubleshooting",
+    "https://www.infobip.com/#available-endpoints",
+    "https://www.infobip.com/#base-url",
+    "https://www.infobip.com/#best-practices",
+    "https://www.infobip.com/#code-examples",
+    "https://www.infobip.com/#cursor-mcp-integration-steps",
+    "https://www.infobip.com/#customer-data-and-platform-management",
+    "https://www.infobip.com/#developer-resources",
+    "https://www.infobip.com/#error-codes-troubleshooting",
+    "https://www.infobip.com/#error-handling",
+    "https://www.infobip.com/#example-configuration-http",
+    "https://www.infobip.com/#example-configuration-stdio-transport-bridge",
+    "https://www.infobip.com/#features",
+    "https://www.infobip.com/#free-trial",
+    "https://www.infobip.com/#get-started-with-infobip-mcp-servers",
+    "https://www.infobip.com/#help-and-support",
+    "https://www.infobip.com/#infobip-mcp-server-settings",
+    "https://www.infobip.com/#message-delivery-troubleshooting",
+    "https://www.infobip.com/#messaging-channels",
+    "https://www.infobip.com/#next-steps",
+    "https://www.infobip.com/#oauth-2-1-authentication",
+    "https://www.infobip.com/#prerequisites",
+    "https://www.infobip.com/#rate-limits",
+    "https://www.infobip.com/#sdks",
+    "https://www.infobip.com/#transport-options-available-endpoints",
+    "https://www.infobip.com/#troubleshooting",
+    "https://www.infobip.com/#webhooks",
+    "https://www.infobip.com/#what-can-you-do-with-infobip-mcp-servers",
+    "https://www.infobip.com/#where-can-you-add-infobip-mcp-servers",
+    "https://www.infobip.com/ai-hub/vocalize",
+    "https://www.infobip.com/contact",
+    "https://www.infobip.com/docs",
+    "https://www.infobip.com/docs/",
+    "https://www.infobip.com/docs/2fa-service",
+    "https://www.infobip.com/docs/ai-hub/ai-assistant",
+    "https://www.infobip.com/docs/ai-hub/ai-assistant/create-ai-assistant",
+    "https://www.infobip.com/docs/answers",
+    "https://www.infobip.com/docs/api",
+    "https://www.infobip.com/docs/api/ai-hub",
+    "https://www.infobip.com/docs/api/ai-hub/ai-assistants",
+    "https://www.infobip.com/docs/api/api/connectivity/camara",
+    "https://www.infobip.com/docs/api/channels",
+    "https://www.infobip.com/docs/api/channels/apple-mfb",
+    "https://www.infobip.com/docs/api/channels/email",
+    "https://www.infobip.com/docs/api/channels/instagram",
+    "https://www.infobip.com/docs/api/channels/kakao",
+    "https://www.infobip.com/docs/api/channels/line",
+    "https://www.infobip.com/docs/api/channels/live-chat",
+    "https://www.infobip.com/docs/api/channels/messenger",
+    "https://www.infobip.com/docs/api/channels/mms",
+    "https://www.infobip.com/docs/api/channels/mobile-app-messaging",
+    "https://www.infobip.com/docs/api/channels/omni-failover",
+    "https://www.infobip.com/docs/api/channels/open-channel",
+    "https://www.infobip.com/docs/api/channels/rcs",
+    "https://www.infobip.com/docs/api/channels/sms",
+    "https://www.infobip.com/docs/api/channels/sms/outbound-sms/send-sms-message",
+    "https://www.infobip.com/docs/api/channels/tiktok",
+    "https://www.infobip.com/docs/api/channels/viber",
+    "https://www.infobip.com/docs/api/channels/voice",
+    "https://www.infobip.com/docs/api/channels/webrtc-calls",
+    "https://www.infobip.com/docs/api/channels/whatsapp",
+    "https://www.infobip.com/docs/api/channels/zalo",
+    "https://www.infobip.com/docs/api/connectivity",
+    "https://www.infobip.com/docs/api/connectivity/biometrics",
+    "https://www.infobip.com/docs/api/connectivity/camara",
+    "https://www.infobip.com/docs/api/connectivity/mobile-identity",
+    "https://www.infobip.com/docs/api/connectivity/number-activation-state",
+    "https://www.infobip.com/docs/api/connectivity/number-lookup",
+    "https://www.infobip.com/docs/api/customer-engagement",
+    "https://www.infobip.com/docs/api/customer-engagement/answers",
+    "https://www.infobip.com/docs/api/customer-engagement/common-assets",
+    "https://www.infobip.com/docs/api/customer-engagement/conversations",
+    "https://www.infobip.com/docs/api/customer-engagement/knowledge-base",
+    "https://www.infobip.com/docs/api/customer-engagement/moments",
+    "https://www.infobip.com/docs/api/customer-engagement/people",
+    "https://www.infobip.com/docs/api/customer-engagement/vocalize",
+    "https://www.infobip.com/docs/api/platform",
+    "https://www.infobip.com/docs/api/platform/2fa",
+    "https://www.infobip.com/docs/api/platform/account-management",
+    "https://www.infobip.com/docs/api/platform/account-management/create-session",
+    "https://www.infobip.com/docs/api/platform/account-management/destroy-session",
+    "https://www.infobip.com/docs/api/platform/application-entity",
+    "https://www.infobip.com/docs/api/platform/billing-usage-api",
+    "https://www.infobip.com/docs/api/platform/blocklist",
+    "https://www.infobip.com/docs/api/platform/catalogs-api",
+    "https://www.infobip.com/docs/api/platform/messages-api",
+    "https://www.infobip.com/docs/api/platform/metrics-api",
+    "https://www.infobip.com/docs/api/platform/numbers",
+    "https://www.infobip.com/docs/api/platform/resources",
+    "https://www.infobip.com/docs/api/platform/sending-strategy",
+    "https://www.infobip.com/docs/api/platform/signals",
+    "https://www.infobip.com/docs/api/platform/subscriptions-api",
+    "https://www.infobip.com/docs/api/tools",
+    "https://www.infobip.com/docs/api/tools/openapi",
+    "https://www.infobip.com/docs/api/tools/openapi/get-available-products",
+    "https://www.infobip.com/docs/api/tools/openapi/get-openapi",
+    "https://www.infobip.com/docs/api/tools/openapi/get-product-level-openapi",
+    "https://www.infobip.com/docs/cpaas-x",
+    "https://www.infobip.com/docs/essentials",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authentication",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authentication#api-key-header",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authentication#api-scopes-on-basic-auth-basic",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authentication#errors",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authentication.md",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authorization",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authorization#api-scopes",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-authorization#user-roles-and-api-scopes-api-scopes",
+    "https://www.infobip.com/docs/essentials/api-essentials/api-service-status",
+    "https://www.infobip.com/docs/essentials/api-essentials/base-url",
+    "https://www.infobip.com/docs/essentials/api-essentials/content-types",
+    "https://www.infobip.com/docs/essentials/api-essentials/enum-integration-manual",
+    "https://www.infobip.com/docs/essentials/api-essentials/integration-best-practices",
+    "https://www.infobip.com/docs/essentials/api-essentials/ip-address-safelist",
+    "https://www.infobip.com/docs/essentials/api-essentials/national-language-shift",
+    "https://www.infobip.com/docs/essentials/api-essentials/response-status-and-error-codes",
+    "https://www.infobip.com/docs/essentials/api-essentials/response-status-and-error-codes#http-status-codes",
+    "https://www.infobip.com/docs/essentials/api-essentials/smpp-specification",
+    "https://www.infobip.com/docs/essentials/getting-started/create-an-account",
+    "https://www.infobip.com/docs/essentials/manage-my-account/access-account",
+    "https://www.infobip.com/docs/forms",
+    "https://www.infobip.com/docs/integrations",
+    "https://www.infobip.com/docs/llms.txt",
+    "https://www.infobip.com/docs/mcp",
+    "https://www.infobip.com/docs/mcp.md",
+    "https://www.infobip.com/docs/mcp/examples",
+    "https://www.infobip.com/docs/mcp/using-mcp",
+    "https://www.infobip.com/docs/mcp/using-mcp#available-endpoints",
+    "https://www.infobip.com/docs/mcp/using-mcp.md",
+    "https://www.infobip.com/docs/mobile-push",
+    "https://www.infobip.com/docs/moments/manage-flow",
+    "https://www.infobip.com/docs/moments/manage-flow#launch-create",
+    "https://www.infobip.com/docs/people",
+    "https://www.infobip.com/docs/product-documentation",
+    "https://www.infobip.com/docs/rcs",
+    "https://www.infobip.com/docs/release-notes",
+    "https://www.infobip.com/docs/sdk",
+    "https://www.infobip.com/docs/sms",
+    "https://www.infobip.com/docs/tutorials",
+    "https://www.infobip.com/docs/tutorials/integrate-infobip-mcp-server-with-claude-desktop",
+    "https://www.infobip.com/docs/tutorials/integrate-infobip-mcp-server-with-mcp-client",
+    "https://www.infobip.com/docs/tutorials/integrate-infobip-mcp-server-with-mcp-client.md",
+    "https://www.infobip.com/docs/tutorials/send-sms-with-infobip-mcp-and-ai-client",
+    "https://www.infobip.com/docs/tutorials/send-viber-with-infobip-mcp-and-ai-client",
+    "https://www.infobip.com/docs/tutorials/send-whatsapp-with-infobip-mcp-and-ai-client",
+    "https://www.infobip.com/docs/tutorials?page=1&filter=%26products%3Dinfobip-mcp",
+    "https://www.infobip.com/docs/viber",
+    "https://www.infobip.com/docs/voice-and-video",
+    "https://www.infobip.com/docs/whatsapp",
+    "https://www.infobip.com/glossary",
+    "https://www.infobip.com/policies",
+    "https://www.infobip.com/policies/infobip-website-terms-of-use",
+    "https://www.infobip.com/policies/service-terms-conditions",
+    "https://www.infobip.com/pricing",
+    "https://www.infobip.com/privacy-documents",
+    "https://www.infobip.com/signup",
+    "https://www.infobip.com/undefined",
+    "https://www.infobip.com/use-cases",
+    "https://www.langchain.com/",
+    "https://{baseUrl}/sms/2/text/advanced"
+  ]
+}

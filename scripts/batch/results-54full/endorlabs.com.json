@@ -1,0 +1,593 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "endorlabs.com",
+    "detect": {
+      "domain": "endorlabs.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:22:41.811Z",
+    "summary": "Endor Labs exposes a REST API at `https://api.endorlabs.com/v1`, the `endorctl` CLI, and a local stdio MCP server; all require Endor Labs-issued authentication, primarily an `ENDOR_TOKEN` or API key/secret for CLI-backed flows.",
+    "description": "Endor Labs provides application security and software supply chain security tooling, including dependency, vulnerability, secret, and code scanning. Its platform helps teams analyze and manage risk across source code, open source packages, and AI-assisted development workflows.",
+    "credentials": {
+      "endor_api_key_secret": {
+        "type": "compound",
+        "label": "Endor Labs API key and secret",
+        "generateUrl": "https://docs.endorlabs.com/platform-administration/api-keys",
+        "setup": "In the Endor Labs UI, go to [Manage API keys](https://docs.endorlabs.com/platform-administration/api-keys): **User menu** → **Settings** → **Access Control** → **API Keys** → **Generate API Key**. Choose roles and expiry, then copy the generated `ENDOR_API_CREDENTIALS_KEY` and `ENDOR_API_CREDENTIALS_SECRET`. You can exchange them for an access token with `POST https://api.endorlabs.com/v1/auth/api-key` as described in [REST API authentication](https://docs.endorlabs.com/developers-api/rest-api/authentication)."
+      },
+      "endor_token": {
+        "type": "bearer",
+        "label": "Endor Identity Token (ENDOR_TOKEN)",
+        "generateUrl": "https://docs.endorlabs.com/developers-api/rest-api/authentication",
+        "setup": "Get an Endor Labs access token by either:\n- running `endorctl init` as shown in [Install and configure endorctl](https://docs.endorlabs.com/developers-api/cli/install-and-configure), then printing it with `endorctl auth --print-access-token`; or\n- using headless browser auth or exchanging an API key/secret as described in [REST API authentication](https://docs.endorlabs.com/developers-api/rest-api/authentication).\nUse the resulting token as `ENDOR_TOKEN` and send it as `Authorization: Bearer <token>`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "endor-labs-rest-api",
+        "name": "Endor Labs REST API",
+        "type": "http",
+        "docs": "https://docs.endorlabs.com/developers-api/rest-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.endorlabs.com/developers-api",
+            "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/getting-started",
+            "https://docs.endorlabs.com/developers-api/rest-api/authentication",
+            "https://docs.endorlabs.com/api-reference/openapi.v3.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "endor_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.endorlabs.com/developers-api/rest-api/authentication",
+                  "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/getting-started"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.endorlabs.com/v1"
+      },
+      {
+        "slug": "endorctl",
+        "name": "endorctl",
+        "type": "cli",
+        "docs": "https://docs.endorlabs.com/developers-api/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.endorlabs.com/developers-api",
+            "https://docs.endorlabs.com/developers-api/cli/install-and-configure",
+            "https://docs.endorlabs.com/developers-api/cli/environment-variables",
+            "https://docs.endorlabs.com/developers-api/cli/commands/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "endor_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "endorctl init",
+                    "env": [
+                      "ENDOR_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.endorlabs.com/developers-api/cli/install-and-configure",
+                  "https://docs.endorlabs.com/developers-api/cli/environment-variables"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "endor_api_key_secret",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "ENDOR_API_CREDENTIALS_KEY",
+                      "ENDOR_API_CREDENTIALS_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.endorlabs.com/developers-api/cli/environment-variables",
+                  "https://docs.endorlabs.com/developers-api/rest-api/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "endorctl",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "homebrew",
+            "identifier": "endorlabs/tap/endorctl"
+          }
+        ],
+        "command": "endorctl"
+      },
+      {
+        "slug": "endor-labs-mcp-server",
+        "name": "Endor Labs MCP server",
+        "type": "mcp",
+        "docs": "https://docs.endorlabs.com/setup-deployment/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.endorlabs.com/developers-api",
+            "https://docs.endorlabs.com/setup-deployment/mcp",
+            "https://docs.endorlabs.com/setup-deployment/mcp/claude-code"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "endor_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "endorctl init",
+                    "env": [
+                      "ENDOR_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.endorlabs.com/setup-deployment/mcp",
+                  "https://docs.endorlabs.com/developers-api/cli/environment-variables",
+                  "https://docs.endorlabs.com/developers-api/cli/install-and-configure"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "endor_api_key_secret",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "ENDOR_API_CREDENTIALS_KEY",
+                      "ENDOR_API_CREDENTIALS_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.endorlabs.com/setup-deployment/mcp",
+                  "https://docs.endorlabs.com/developers-api/cli/environment-variables",
+                  "https://docs.endorlabs.com/developers-api/rest-api/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "stdio"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:22:41.812Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 251021,
+    "completion_tokens": 2135,
+    "total_tokens": 253156
+  },
+  "visited": [
+    "https://docs.endorlabs.com/api-reference/openapi.v3.json",
+    "https://docs.endorlabs.com/developers-api",
+    "https://docs.endorlabs.com/developers-api/cli/commands/api",
+    "https://docs.endorlabs.com/developers-api/cli/environment-variables",
+    "https://docs.endorlabs.com/developers-api/cli/install-and-configure",
+    "https://docs.endorlabs.com/developers-api/rest-api/authentication",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/getting-started",
+    "https://docs.endorlabs.com/platform-administration/api-keys",
+    "https://docs.endorlabs.com/setup-deployment/mcp",
+    "https://docs.endorlabs.com/setup-deployment/mcp/claude-code",
+    "https://docs.endorlabs.com/setup-deployment/mcp/devin",
+    "https://docs.endorlabs.com/setup-deployment/mcp/gemini",
+    "https://endorlabs.com/llms.txt"
+  ],
+  "grounding": [
+    "https://api.endorlabs.com",
+    "https://api.endorlabs.com/download/endorlabs/",
+    "https://api.endorlabs.com/download/latest/endorctl_linux_amd64",
+    "https://api.endorlabs.com/download/latest/endorctl_macos_arm64",
+    "https://api.endorlabs.com/download/latest/endorctl_windows_amd64.exe",
+    "https://api.endorlabs.com/meta/version",
+    "https://api.endorlabs.com/sha/latest/endorctl_linux_amd64",
+    "https://api.endorlabs.com/sha/latest/endorctl_macos_arm64",
+    "https://api.endorlabs.com/sha/latest/endorctl_windows_amd64.exe",
+    "https://api.endorlabs.com/v1/auth/api-key",
+    "https://api.endorlabs.com/v1/auth/github?redirect=headless",
+    "https://api.endorlabs.com/v1/auth/gitlab?redirect=headless",
+    "https://api.endorlabs.com/v1/auth/google?redirect=headless",
+    "https://api.endorlabs.com/v1/auth/login?email=",
+    "https://api.endorlabs.com/v1/auth/sso?tenant=",
+    "https://api.endorlabs.com/v1/namespaces/$ENDOR_NAMESPACE/projects",
+    "https://api.endorlabs.com/v1/namespaces/{tenant_meta.namespace}/findings",
+    "https://api.endorlabs.com/v1/namespaces/{tenant_meta.namespace}/findings/{uuid}",
+    "https://api.github.com",
+    "https://app.endorlabs.com",
+    "https://app.endorlabs.com/t/demo/dashboard/",
+    "https://code",
+    "https://curl.se/download.html",
+    "https://dev.azure.com/myorg",
+    "https://docs.endorlabs.com/",
+    "https://docs.endorlabs.com/#",
+    "https://docs.endorlabs.com/#about-authentication",
+    "https://docs.endorlabs.com/#about-requests-to-the-rest-api",
+    "https://docs.endorlabs.com/#accept-encoding",
+    "https://docs.endorlabs.com/#api-key-and-secret",
+    "https://docs.endorlabs.com/#authenticate-to-endor-labs",
+    "https://docs.endorlabs.com/#authentication",
+    "https://docs.endorlabs.com/#authentication-precedence",
+    "https://docs.endorlabs.com/#body-parameters",
+    "https://docs.endorlabs.com/#choose-your-ide-or-platform-to-get-started",
+    "https://docs.endorlabs.com/#commonly-used-resource-types",
+    "https://docs.endorlabs.com/#configure-claude-md",
+    "https://docs.endorlabs.com/#content-area",
+    "https://docs.endorlabs.com/#content-type",
+    "https://docs.endorlabs.com/#create-an-api-key",
+    "https://docs.endorlabs.com/#create-an-api-key-through-endor-labs-api",
+    "https://docs.endorlabs.com/#create-an-api-key-through-the-endor-labs-user-interface",
+    "https://docs.endorlabs.com/#delete-an-api-key",
+    "https://docs.endorlabs.com/#delete-an-api-key-through-endor-labs-api",
+    "https://docs.endorlabs.com/#delete-an-api-key-through-the-endor-labs-user-interface",
+    "https://docs.endorlabs.com/#download-a-specific-version-of-endorctl",
+    "https://docs.endorlabs.com/#download-and-install-endorctl",
+    "https://docs.endorlabs.com/#download-and-install-the-endorctl-binary-directly",
+    "https://docs.endorlabs.com/#endorctl-api-create",
+    "https://docs.endorlabs.com/#endorctl-api-create-examples",
+    "https://docs.endorlabs.com/#endorctl-api-create-interactive-mode",
+    "https://docs.endorlabs.com/#endorctl-api-delete",
+    "https://docs.endorlabs.com/#endorctl-api-delete-example",
+    "https://docs.endorlabs.com/#endorctl-api-get",
+    "https://docs.endorlabs.com/#endorctl-api-get-examples",
+    "https://docs.endorlabs.com/#endorctl-api-list",
+    "https://docs.endorlabs.com/#endorctl-api-list-examples",
+    "https://docs.endorlabs.com/#endorctl-api-list-flags-and-variables",
+    "https://docs.endorlabs.com/#endorctl-api-update",
+    "https://docs.endorlabs.com/#endorctl-api-update-examples",
+    "https://docs.endorlabs.com/#endorctl-api-update-interactive-mode",
+    "https://docs.endorlabs.com/#environment-variables-that-affect-scan-behavior",
+    "https://docs.endorlabs.com/#example-claude-md-instructions",
+    "https://docs.endorlabs.com/#failed-authentication",
+    "https://docs.endorlabs.com/#flags-and-variables",
+    "https://docs.endorlabs.com/#global-flags",
+    "https://docs.endorlabs.com/#headers",
+    "https://docs.endorlabs.com/#headless-mode",
+    "https://docs.endorlabs.com/#how-endor-labs-mcp-server-helps-your-development-workflow",
+    "https://docs.endorlabs.com/#how-to-use-the-endor-labs-mcp-server",
+    "https://docs.endorlabs.com/#http-method",
+    "https://docs.endorlabs.com/#install-endorctl-with-homebrew",
+    "https://docs.endorlabs.com/#install-endorctl-with-npm",
+    "https://docs.endorlabs.com/#install-the-mcp-server",
+    "https://docs.endorlabs.com/#introduction",
+    "https://docs.endorlabs.com/#list-parameters",
+    "https://docs.endorlabs.com/#login-with-an-api-key",
+    "https://docs.endorlabs.com/#login-with-the-init-command",
+    "https://docs.endorlabs.com/#making-a-request",
+    "https://docs.endorlabs.com/#manage-mcp-servers",
+    "https://docs.endorlabs.com/#parameters",
+    "https://docs.endorlabs.com/#path",
+    "https://docs.endorlabs.com/#path-parameters",
+    "https://docs.endorlabs.com/#persistently-set-environment-variables-for-endorctl",
+    "https://docs.endorlabs.com/#print-your-access-token",
+    "https://docs.endorlabs.com/#request-timeout",
+    "https://docs.endorlabs.com/#scope-options",
+    "https://docs.endorlabs.com/#set-endorctl-environment-variables",
+    "https://docs.endorlabs.com/#try-a-test-prompt",
+    "https://docs.endorlabs.com/#usage",
+    "https://docs.endorlabs.com/#using-endorctl",
+    "https://docs.endorlabs.com/#using-the-endor-labs-user-interface",
+    "https://docs.endorlabs.com/#verify-the-installation",
+    "https://docs.endorlabs.com/#what-you-can-do",
+    "https://docs.endorlabs.com/api-reference",
+    "https://docs.endorlabs.com/api-reference/apikeyservice/createapikey",
+    "https://docs.endorlabs.com/api-reference/apikeyservice/deleteapikey",
+    "https://docs.endorlabs.com/api-reference/findingservice/getfinding",
+    "https://docs.endorlabs.com/api-reference/findingservice/listfindings",
+    "https://docs.endorlabs.com/api-reference/openapi.full.v3.json",
+    "https://docs.endorlabs.com/api-reference/openapi.v3.json",
+    "https://docs.endorlabs.com/api-reference/openapiv2.swagger.json",
+    "https://docs.endorlabs.com/api-reference/policyservice/createpolicy",
+    "https://docs.endorlabs.com/best-practices",
+    "https://docs.endorlabs.com/best-practices/build-tools-use-case",
+    "https://docs.endorlabs.com/best-practices/github-security-campaign",
+    "https://docs.endorlabs.com/best-practices/manage-api-keys",
+    "https://docs.endorlabs.com/best-practices/operational-best-practices",
+    "https://docs.endorlabs.com/best-practices/scoping-scans",
+    "https://docs.endorlabs.com/developers-api",
+    "https://docs.endorlabs.com/developers-api/cli",
+    "https://docs.endorlabs.com/developers-api/cli/changelog",
+    "https://docs.endorlabs.com/developers-api/cli/commands",
+    "https://docs.endorlabs.com/developers-api/cli/commands/api",
+    "https://docs.endorlabs.com/developers-api/cli/commands/completion",
+    "https://docs.endorlabs.com/developers-api/cli/commands/container",
+    "https://docs.endorlabs.com/developers-api/cli/commands/help",
+    "https://docs.endorlabs.com/developers-api/cli/commands/host-check",
+    "https://docs.endorlabs.com/developers-api/cli/commands/ignore",
+    "https://docs.endorlabs.com/developers-api/cli/commands/index",
+    "https://docs.endorlabs.com/developers-api/cli/commands/init",
+    "https://docs.endorlabs.com/developers-api/cli/commands/license-notice-report",
+    "https://docs.endorlabs.com/developers-api/cli/commands/recommend",
+    "https://docs.endorlabs.com/developers-api/cli/commands/rule-set",
+    "https://docs.endorlabs.com/developers-api/cli/commands/scan",
+    "https://docs.endorlabs.com/developers-api/cli/commands/sign-artifacts",
+    "https://docs.endorlabs.com/developers-api/cli/commands/sync-org",
+    "https://docs.endorlabs.com/developers-api/cli/commands/toolchains",
+    "https://docs.endorlabs.com/developers-api/cli/environment-variables",
+    "https://docs.endorlabs.com/developers-api/cli/index",
+    "https://docs.endorlabs.com/developers-api/cli/install-and-configure",
+    "https://docs.endorlabs.com/developers-api/index",
+    "https://docs.endorlabs.com/developers-api/rest-api",
+    "https://docs.endorlabs.com/developers-api/rest-api/api-query-builder",
+    "https://docs.endorlabs.com/developers-api/rest-api/authentication",
+    "https://docs.endorlabs.com/developers-api/rest-api/index",
+    "https://docs.endorlabs.com/developers-api/rest-api/quickstart",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/best-practices",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/data-model/resource-kinds",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/errors",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/filters",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/getting-started",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/getting-started/",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/grouping",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/index",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/masks",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/pagination",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/postman",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/sorting",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/troubleshooting",
+    "https://docs.endorlabs.com/developers-api/rest-api/using-the-rest-api/use-cases",
+    "https://docs.endorlabs.com/discover",
+    "https://docs.endorlabs.com/discover/open-source-packages",
+    "https://docs.endorlabs.com/discover/vulnerability-db",
+    "https://docs.endorlabs.com/integrations",
+    "https://docs.endorlabs.com/integrations/email",
+    "https://docs.endorlabs.com/integrations/microsoft-defender-for-cloud",
+    "https://docs.endorlabs.com/integrations/scm",
+    "https://docs.endorlabs.com/integrations/slack",
+    "https://docs.endorlabs.com/integrations/third-party-integrations",
+    "https://docs.endorlabs.com/integrations/vanta",
+    "https://docs.endorlabs.com/integrations/webhooks",
+    "https://docs.endorlabs.com/introduction/docs-mcp-server",
+    "https://docs.endorlabs.com/introduction/endor-labs-ui",
+    "https://docs.endorlabs.com/introduction/getting-started",
+    "https://docs.endorlabs.com/introduction/getting-started#install-endorctl",
+    "https://docs.endorlabs.com/introduction/licenses",
+    "https://docs.endorlabs.com/inventory-insights",
+    "https://docs.endorlabs.com/inventory-insights/licenses",
+    "https://docs.endorlabs.com/inventory-insights/namespaces",
+    "https://docs.endorlabs.com/inventory-insights/notifications",
+    "https://docs.endorlabs.com/inventory-insights/packages",
+    "https://docs.endorlabs.com/inventory-insights/pr-runs",
+    "https://docs.endorlabs.com/inventory-insights/reports",
+    "https://docs.endorlabs.com/inventory-insights/scan-history",
+    "https://docs.endorlabs.com/llms.txt",
+    "https://docs.endorlabs.com/package-firewall",
+    "https://docs.endorlabs.com/platform-administration",
+    "https://docs.endorlabs.com/platform-administration/api-keys",
+    "https://docs.endorlabs.com/platform-administration/configure-system-settings",
+    "https://docs.endorlabs.com/platform-administration/index",
+    "https://docs.endorlabs.com/platform-administration/namespaces",
+    "https://docs.endorlabs.com/platform-administration/policies",
+    "https://docs.endorlabs.com/platform-administration/proxy-server-configuration",
+    "https://docs.endorlabs.com/platform-administration/rbac/authentication-providers#session-duration",
+    "https://docs.endorlabs.com/platform-administration/rbac/authorization-policies",
+    "https://docs.endorlabs.com/platform-administration/rbac/authorization-roles",
+    "https://docs.endorlabs.com/platform-administration/rbac/invitations",
+    "https://docs.endorlabs.com/releasenotes",
+    "https://docs.endorlabs.com/releasenotes/july-2026",
+    "https://docs.endorlabs.com/risk-remediation",
+    "https://docs.endorlabs.com/risk-remediation/automated-pull-requests",
+    "https://docs.endorlabs.com/risk-remediation/upgrade-impact-analysis",
+    "https://docs.endorlabs.com/scan",
+    "https://docs.endorlabs.com/scan/ai-models",
+    "https://docs.endorlabs.com/scan/github-actions",
+    "https://docs.endorlabs.com/scan/malware",
+    "https://docs.endorlabs.com/scan/oss-licenses",
+    "https://docs.endorlabs.com/scan/rspm",
+    "https://docs.endorlabs.com/scan/sca",
+    "https://docs.endorlabs.com/scan/sca/golang#go-standard-library-vulnerability-scanning",
+    "https://docs.endorlabs.com/scan/scan-profiles/build-tools#configure-automated-scan-parameters",
+    "https://docs.endorlabs.com/scan/secrets/secret-rules",
+    "https://docs.endorlabs.com/scan/working-with-monorepos",
+    "https://docs.endorlabs.com/secure-ai-coding",
+    "https://docs.endorlabs.com/secure-ai-coding/agent-kit",
+    "https://docs.endorlabs.com/secure-ai-coding/agentic-ui",
+    "https://docs.endorlabs.com/secure-ai-coding/ai-model-scores",
+    "https://docs.endorlabs.com/secure-ai-coding/ai-security-review",
+    "https://docs.endorlabs.com/setup-deployment",
+    "https://docs.endorlabs.com/setup-deployment/ci-cd/keyless-authentication",
+    "https://docs.endorlabs.com/setup-deployment/cli",
+    "https://docs.endorlabs.com/setup-deployment/ide",
+    "https://docs.endorlabs.com/setup-deployment/index",
+    "https://docs.endorlabs.com/setup-deployment/mcp",
+    "https://docs.endorlabs.com/setup-deployment/mcp/antigravity",
+    "https://docs.endorlabs.com/setup-deployment/mcp/augment-code",
+    "https://docs.endorlabs.com/setup-deployment/mcp/claude-code",
+    "https://docs.endorlabs.com/setup-deployment/mcp/codex",
+    "https://docs.endorlabs.com/setup-deployment/mcp/cursor",
+    "https://docs.endorlabs.com/setup-deployment/mcp/devin",
+    "https://docs.endorlabs.com/setup-deployment/mcp/gemini",
+    "https://docs.endorlabs.com/setup-deployment/mcp/github-agenthq",
+    "https://docs.endorlabs.com/setup-deployment/mcp/index",
+    "https://docs.endorlabs.com/setup-deployment/mcp/intellij",
+    "https://docs.endorlabs.com/setup-deployment/mcp/vscode",
+    "https://docs.endorlabs.com/setup-deployment/outpost",
+    "https://docs.endorlabs.com/setup-deployment/outpost/outpost-configuration",
+    "https://docs.endorlabs.com/setup-deployment/scm-integrations",
+    "https://docs.endorlabs.com/trust-compliance",
+    "https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-cloud-providers",
+    "https://endorlabs.com/llms.txt",
+    "https://example.replaceme.com",
+    "https://github.com/endorlabs",
+    "https://github.com/endorlabs/github-action",
+    "https://github.com/endorlabs/homebrew-tap",
+    "https://modelcontextprotocol.io/introduction",
+    "https://trust.endorlabs.com",
+    "https://twitter.com/EndorLabs",
+    "https://www.endorlabs.com",
+    "https://www.endorlabs.com/",
+    "https://www.endorlabs.com/about",
+    "https://www.endorlabs.com/ai-code-security-review",
+    "https://www.endorlabs.com/ai-platform",
+    "https://www.endorlabs.com/careers",
+    "https://www.endorlabs.com/customers",
+    "https://www.endorlabs.com/demo-request",
+    "https://www.endorlabs.com/demo-request-github",
+    "https://www.endorlabs.com/demo-request-msft",
+    "https://www.endorlabs.com/dont-wait",
+    "https://www.endorlabs.com/event/blackhat-2025",
+    "https://www.endorlabs.com/event/endor-labs-in-vegas",
+    "https://www.endorlabs.com/event/rsa-2025",
+    "https://www.endorlabs.com/events",
+    "https://www.endorlabs.com/events/prioritize-sca-findings-reachability-analysis-webinar",
+    "https://www.endorlabs.com/implementing-software-supply-chain-security",
+    "https://www.endorlabs.com/integrations-languages",
+    "https://www.endorlabs.com/learn",
+    "https://www.endorlabs.com/learn/48-most-popular-open-source-tools-for-npm-applications-scored",
+    "https://www.endorlabs.com/learn/5-federal-software-supply-chain-requirements-you-should-be-aware-of",
+    "https://www.endorlabs.com/learn/5-tips-for-managing-bazel-dependencies-without-losing-friends",
+    "https://www.endorlabs.com/learn/5-types-of-reachability-analysis-and-which-is-right-for-you",
+    "https://www.endorlabs.com/learn/achieving-fedramps-container-scanning-requirements",
+    "https://www.endorlabs.com/learn/address-open-source-risks-with-endor-labs",
+    "https://www.endorlabs.com/learn/ai-security-code-review-a-multi-agent-approach-for-detecting-security-design-flaws-at-scale",
+    "https://www.endorlabs.com/learn/ai-supported-environment-debugging-for-endor-labs",
+    "https://www.endorlabs.com/learn/an-auditors-perspective-on-addressing-oss-vulnerabilities-for-pci-dss-v4",
+    "https://www.endorlabs.com/learn/announcing-the-2024-dependency-management-report",
+    "https://www.endorlabs.com/learn/anti-pattern-avoidance-a-simple-prompt-pattern-for-safer-ai-generated-code",
+    "https://www.endorlabs.com/learn/application-security-posture-management-aspm-explained",
+    "https://www.endorlabs.com/learn/appsec-goes-to-devnexus-lessons-from-a-thriving-modern-java-community",
+    "https://www.endorlabs.com/learn/appsecs-exploitation-era-what-verizon-mandiant-and-datadog-are-telling-us",
+    "https://www.endorlabs.com/learn/artifact-signing-101-on-demand-webinar",
+    "https://www.endorlabs.com/learn/backstage-and-endor-labs-appsec-in-a-devs-dream-workspace",
+    "https://www.endorlabs.com/learn/benchmarking-endor-labs-vs-snyks-github-apps",
+    "https://www.endorlabs.com/learn/benchmarking-opengrep-performance-improvements",
+    "https://www.endorlabs.com/learn/blast-radius-of-the-tj-actions-changed-files-supply-chain-attack",
+    "https://www.endorlabs.com/learn/blocking-with-confidence-relativitys-dev-eloper-experience-journey",
+    "https://www.endorlabs.com/learn/breaking-changes-breaking-trust",
+    "https://www.endorlabs.com/learn/building-a-devsecops-practice-at-starburst",
+    "https://www.endorlabs.com/learn/cisa-and-ncscs-take-on-secure-ai-development",
+    "https://www.endorlabs.com/learn/comparing-sboms-generated-at-different-lifecycle-stages",
+    "https://www.endorlabs.com/learn/container-layer-analysis-clarity-in-remediation",
+    "https://www.endorlabs.com/learn/container-scanning-sca-better-together",
+    "https://www.endorlabs.com/learn/cracking-the-code-solving-the-challenges-of-c-c-software-composition-analysis",
+    "https://www.endorlabs.com/learn/critical-rce-vulnerability-in-apache-parquet-cve-2025-30065---advisory-and-analysis",
+    "https://www.endorlabs.com/learn/critical-sql-injection-vulnerability-in-llamaindex-cve-2025-1793---advisory-and-analysis",
+    "https://www.endorlabs.com/learn/cve-2025-4641-is-critical-but-likely-unreachable",
+    "https://www.endorlabs.com/learn/cve-2025-47949-reveals-flaw-in-samlify-that-opens-door-to-saml-single-sign-on-bypass",
+    "https://www.endorlabs.com/learn/cve-2025-54313-eslint-config-prettier-compromise----high-severity-but-windows-only",
+    "https://www.endorlabs.com/learn/cve-vulnerability-epss-ssvc-reachability-vex",
+    "https://www.endorlabs.com/learn/deepseek-r1-what-security-teams-need-to-know",
+    "https://www.endorlabs.com/learn/demystifying-transitive-dependency-vulnerabilities-sca",
+    "https://www.endorlabs.com/learn/dependency-resolution-in-python-beware-the-phantom-dependency",
+    "https://www.endorlabs.com/learn/detect-end-of-life-eol-software-in-containers-with-endor-labs",
+    "https://www.endorlabs.com/learn/fix-first-security-for-the-vibe-coding-era",
+    "https://www.endorlabs.com/learn/introducing-ai-security-code-review",
+    "https://www.endorlabs.com/learn/major-supply-chain-attack-compromises-popular-npm-packages-including-chalk-and-debug",
+    "https://www.endorlabs.com/learn/meet-the-appsec-platform-built-for-the-ai-era",
+    "https://www.endorlabs.com/learn/nx-build-platform-compromised-by-supply-chain-attack---how-attackers-collude-with-ai-code-assistants",
+    "https://www.endorlabs.com/learn/secure-ai-generated-code-at-the-source",
+    "https://www.endorlabs.com/learn?medium=Blog",
+    "https://www.endorlabs.com/legal",
+    "https://www.endorlabs.com/legal/endor-labs-data-processing",
+    "https://www.endorlabs.com/legal/privacy-policy",
+    "https://www.endorlabs.com/legal/sla",
+    "https://www.endorlabs.com/legal/terms-of-use",
+    "https://www.endorlabs.com/lp/artifact-signing",
+    "https://www.endorlabs.com/lp/campaign/endor-labs-vs-snyk",
+    "https://www.endorlabs.com/lp/code-signing",
+    "https://www.endorlabs.com/lp/contact-us",
+    "https://www.endorlabs.com/lp/dependency-management-report",
+    "https://www.endorlabs.com/lp/endor-labs-partner-deal-registration",
+    "https://www.endorlabs.com/lp/fsisac-meeting",
+    "https://www.endorlabs.com/lp/github",
+    "https://www.endorlabs.com/lp/github-universe-2024-follow-up",
+    "https://www.endorlabs.com/lp/lascon-meeting",
+    "https://www.endorlabs.com/lp/lightsaber-aloft-chicago-mag-mile-march-2025",
+    "https://www.endorlabs.com/lp/lightsaber-palo-alto",
+    "https://www.endorlabs.com/lp/lightsaber-palo-alto-feb-2025",
+    "https://www.endorlabs.com/lp/lightsaber-seattle-september-2025",
+    "https://www.endorlabs.com/lp/microsoft-defender-for-cloud",
+    "https://www.endorlabs.com/lp/patches",
+    "https://www.endorlabs.com/lp/snyk",
+    "https://www.endorlabs.com/lp/upgrades-remediation",
+    "https://www.endorlabs.com/partnerships",
+    "https://www.endorlabs.com/platform",
+    "https://www.endorlabs.com/platform-tour",
+    "https://www.endorlabs.com/platform/developer",
+    "https://www.endorlabs.com/pricing",
+    "https://www.endorlabs.com/privacy-policy",
+    "https://www.endorlabs.com/product/endor-labs-ci-cd",
+    "https://www.endorlabs.com/products/endor-labs-supply-chain",
+    "https://www.endorlabs.com/results",
+    "https://www.endorlabs.com/robots.txt",
+    "https://www.endorlabs.com/search",
+    "https://www.endorlabs.com/sitemap.xml",
+    "https://www.endorlabs.com/tools/calculator",
+    "https://www.endorlabs.com/use-cases",
+    "https://www.endorlabs.com/use-cases/ai-code-governance",
+    "https://www.endorlabs.com/use-cases/code-scanning",
+    "https://www.endorlabs.com/use-cases/container-scanning",
+    "https://www.endorlabs.com/use-cases/malware-detection",
+    "https://www.endorlabs.com/use-cases/reachability-sca",
+    "https://www.endorlabs.com/use-cases/sast-secret-detection",
+    "https://www.instagram.com/endorlabs",
+    "https://www.leanappsec.com/",
+    "https://www.linkedin.com/company/endorlabs",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=endorlabs-b4795f4f",
+    "https://www.npmjs.com/package/endorctl",
+    "https://www.youtube.com/channel/UCtYJpGeyFGDrTBelaWubwEQ"
+  ]
+}

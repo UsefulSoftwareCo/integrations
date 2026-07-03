@@ -1,0 +1,443 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "musixmatch.com",
+    "detect": {
+      "domain": "musixmatch.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:09:27.138Z",
+    "summary": "Musixmatch exposes a public lyrics/catalog HTTP API authenticated by API key, an enterprise distribution HTTP API authenticated with OAuth 2.0 Bearer tokens, and an npm-distributed MCP server CLI for AI-agent access.",
+    "description": "Musixmatch provides licensed song lyrics, music metadata, and related music intelligence services. Its platform also supports enterprise distribution workflows such as lyrics submission, artist claims, catalog feeds, and subscription activation.",
+    "credentials": {
+      "musixmatch_api_key": {
+        "type": "api_key",
+        "label": "Musixmatch API key",
+        "generateUrl": "https://www.musixmatch.com/pro/api/pricing",
+        "setup": "Go to [Musixmatch API pricing](https://www.musixmatch.com/pro/api/pricing) and register for a plan or contact Musixmatch for a custom solution. After registration, Musixmatch provides your API key; the docs say this key is required for most API calls and should be kept secret. You can also use the [Developer Portal](https://developer.musixmatch.com/login) to manage access.",
+        "acquisition": "manual"
+      },
+      "musixmatch_oauth_client": {
+        "type": "oauth2",
+        "label": "Musixmatch enterprise OAuth client",
+        "generateUrl": "mailto:apisupport@musixmatch.com",
+        "setup": "For enterprise integrations, contact [Musixmatch API support](mailto:apisupport@musixmatch.com) to register a client. Musixmatch issues a `client_id` and `client_secret`; for authorization-code integrations you also provide a `redirect_uri`. Token issuance happens at `https://connect.musixmatch.com/oauth/token`, supporting `authorization_code`, `refresh_token`, and `client_credentials` flows. Use the resulting access token as `Authorization: Bearer <access_token>`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "musixmatch-lyrics-api",
+        "name": "Musixmatch Lyrics API",
+        "type": "http",
+        "docs": "https://docs.musixmatch.com/api-reference/overview",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.musixmatch.com/getting-started",
+            "https://docs.musixmatch.com/api-methods",
+            "https://docs.musixmatch.com/openapi.json",
+            "https://api.apis.guru/v2/specs/musixmatch.com/1.1.0/swagger.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "musixmatch_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "apikey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.musixmatch.com/getting-started",
+                  "https://docs.musixmatch.com/api-methods",
+                  "https://api.apis.guru/v2/specs/musixmatch.com/1.1.0/swagger.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.musixmatch.com/ws/1.1"
+      },
+      {
+        "slug": "musixmatch-distribution-api",
+        "name": "Musixmatch Distribution API",
+        "type": "http",
+        "docs": "https://docs.musixmatch.com/enterprises/authentication.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.musixmatch.com/enterprises/authentication.md",
+            "https://docs.musixmatch.com/enterprises/distribution/api/claims/claim-an-artist.md",
+            "https://docs.musixmatch.com/enterprises/distribution/api/lyrics/submit-lyrics.md",
+            "https://docs.musixmatch.com/enterprises/distribution/api/subscriptions/activate-a-subscription.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "musixmatch_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.musixmatch.com/enterprises/authentication.md",
+                  "https://docs.musixmatch.com/enterprises/distribution/api/claims/claim-an-artist.md",
+                  "https://docs.musixmatch.com/enterprises/distribution/api/lyrics/submit-lyrics.md",
+                  "https://docs.musixmatch.com/enterprises/distribution/api/subscriptions/activate-a-subscription.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://varco-{partner}.musixmatch.com/distribution/v1",
+        "variables": [
+          {
+            "name": "partner",
+            "resolveFrom": "Identifier assigned to your organization during onboarding",
+            "description": "Replace `{partner}` in the hostname with the identifier Musixmatch assigns your organization during onboarding."
+          }
+        ]
+      },
+      {
+        "slug": "musixmatch-mcp-server-cli",
+        "name": "Musixmatch MCP server CLI",
+        "type": "cli",
+        "docs": "https://www.musixmatch.com/pro/api/integrations/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.musixmatch.com/pro/api/integrations/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "musixmatch_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.musixmatch.com/pro/api/integrations/mcp",
+                  "https://docs.musixmatch.com/getting-started"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@musixmatch/mcp-server",
+            "runtimeHint": "npx"
+          }
+        ],
+        "command": "npx @musixmatch/mcp-server"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:09:27.138Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 306786,
+    "completion_tokens": 2486,
+    "total_tokens": 309272
+  },
+  "visited": [
+    "https://api.apis.guru/v2/specs/musixmatch.com/1.1.0/swagger.json",
+    "https://developer.musixmatch.com/",
+    "https://developer.musixmatch.com/api-methods",
+    "https://developer.musixmatch.com/api-reference/overview",
+    "https://developer.musixmatch.com/documentation",
+    "https://developer.musixmatch.com/documentation/api-reference",
+    "https://developer.musixmatch.com/getting-started",
+    "https://developer.musixmatch.com/integrations/overview",
+    "https://developer.musixmatch.com/llms.txt",
+    "https://docs.musixmatch.com/api-methods",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-get.md",
+    "https://docs.musixmatch.com/api-reference/overview",
+    "https://docs.musixmatch.com/enterprises/authentication.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/claims/claim-an-artist.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/lyrics/submit-lyrics.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/subscriptions/activate-a-subscription.md",
+    "https://docs.musixmatch.com/getting-started",
+    "https://docs.musixmatch.com/integrations/mcp",
+    "https://docs.musixmatch.com/integrations/overview",
+    "https://docs.musixmatch.com/llms.txt",
+    "https://docs.musixmatch.com/lyrics-api/introduction",
+    "https://docs.musixmatch.com/openapi.json",
+    "https://docs.musixmatch.com/overview",
+    "https://github.com/DavideArena",
+    "https://github.com/Earththing/Music_Search_MCP/blob/main/README.md",
+    "https://github.com/mrnajiboy/mr-magic-mcp-server/",
+    "https://github.com/mrnajiboy/mr-magic-mcp-server/blob/main/CHANGELOG.md",
+    "https://github.com/topics/musixmatch-api?o=asc&s=forks",
+    "https://github.com/topics/musixmatch?l=typescript",
+    "https://www.musixmatch.com/pro/api/integrations/mcp",
+    "https://www.npmjs.com/search?q=Sugar%20Baby%20Gi%E1%BA%A3ng%20V%C3%B5-%3Egaigoi365.vip&page=49&perPage=20",
+    "https://www.npmjs.com/search?q=keywords%3Acommunity&page=9&perPage=20",
+    "https://www.npmjs.com/search?q=scrape&page=3&perPage=20",
+    "https://www.postman.com/musixmatch-dev",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://musixmatch.com/apiterms/",
+    "http://opensource.org/licenses/MIT",
+    "http://www.w3.org/2000/svg",
+    "https://about.musixmatch.com/",
+    "https://about.musixmatch.com/apiterms",
+    "https://about.musixmatch.com/business/lets-talk",
+    "https://about.musixmatch.com/cookie-policy",
+    "https://about.musixmatch.com/copyright",
+    "https://about.musixmatch.com/eula",
+    "https://about.musixmatch.com/privacy-policy",
+    "https://api.apis.guru/v2/cache/logo/https_twitter.com_Musixmatch_profile_image.jpeg",
+    "https://api.apis.guru/v2/specs/musixmatch.com/1.1.0/swagger.json",
+    "https://api.musixmatch.com",
+    "https://api.musixmatch.com/ws/1.1/",
+    "https://api.musixmatch.com/ws/v1.1/track.get?apikey=YOUR_API_KEY",
+    "https://connect.musixmatch.com",
+    "https://connect.musixmatch.com/oauth/authorize",
+    "https://connect.musixmatch.com/oauth/token",
+    "https://connect.musixmatch.com/oauth/token-metadata",
+    "https://developer.musixmatch.com/",
+    "https://developer.musixmatch.com/#build-with-musixmatch-pro-api",
+    "https://developer.musixmatch.com/#content-area",
+    "https://developer.musixmatch.com/#explore-our-platform",
+    "https://developer.musixmatch.com/#popular-resources",
+    "https://developer.musixmatch.com/api-methods",
+    "https://developer.musixmatch.com/api-reference/analysis/analysis-overview",
+    "https://developer.musixmatch.com/api-reference/fingerprint/fingerprint-overview",
+    "https://developer.musixmatch.com/api-reference/lyrics-catalog/lyrics-catalog-overview",
+    "https://developer.musixmatch.com/api-reference/overview",
+    "https://developer.musixmatch.com/checklist",
+    "https://developer.musixmatch.com/content-restrictions",
+    "https://developer.musixmatch.com/documentation",
+    "https://developer.musixmatch.com/documentation/api-methods",
+    "https://developer.musixmatch.com/documentation/api-reference",
+    "https://developer.musixmatch.com/documentation/api-reference/album-get",
+    "https://developer.musixmatch.com/documentation/api-reference/album-tracks-get",
+    "https://developer.musixmatch.com/documentation/api-reference/artist-albums-get",
+    "https://developer.musixmatch.com/documentation/api-reference/artist-chart-get",
+    "https://developer.musixmatch.com/documentation/api-reference/artist-get",
+    "https://developer.musixmatch.com/documentation/api-reference/artist-related-get",
+    "https://developer.musixmatch.com/documentation/api-reference/artist-search",
+    "https://developer.musixmatch.com/documentation/api-reference/catalogue-dump-get",
+    "https://developer.musixmatch.com/documentation/api-reference/matcher-lyrics-get",
+    "https://developer.musixmatch.com/documentation/api-reference/matcher-subtitle-get",
+    "https://developer.musixmatch.com/documentation/api-reference/matcher-track-get",
+    "https://developer.musixmatch.com/documentation/api-reference/music-genres-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-chart-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-lyrics-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-lyrics-mood-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-lyrics-post",
+    "https://developer.musixmatch.com/documentation/api-reference/track-lyrics-translation-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-richsync-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-search",
+    "https://developer.musixmatch.com/documentation/api-reference/track-snippet-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-subtitle-get",
+    "https://developer.musixmatch.com/documentation/api-reference/track-subtitle-translation-get",
+    "https://developer.musixmatch.com/documentation/api-reference/tracking-url-get",
+    "https://developer.musixmatch.com/documentation/api-reference/work/work.post",
+    "https://developer.musixmatch.com/documentation/api-reference/work/work.validity.post",
+    "https://developer.musixmatch.com/documentation/best-practices",
+    "https://developer.musixmatch.com/documentation/checklist-before-going-live",
+    "https://developer.musixmatch.com/documentation/input-parameters",
+    "https://developer.musixmatch.com/documentation/music-meta-data",
+    "https://developer.musixmatch.com/documentation/rights-clearance-on-your-existing-catalog",
+    "https://developer.musixmatch.com/documentation/status-codes",
+    "https://developer.musixmatch.com/enterprises/overview",
+    "https://developer.musixmatch.com/getting-started",
+    "https://developer.musixmatch.com/implementation-guidelines",
+    "https://developer.musixmatch.com/integrations/overview",
+    "https://developer.musixmatch.com/javascript:$.noop(",
+    "https://developer.musixmatch.com/llms.txt",
+    "https://developer.musixmatch.com/login",
+    "https://developer.musixmatch.com/lyrics-views-tracking",
+    "https://developer.musixmatch.com/musixmatch-metadata",
+    "https://developer.musixmatch.com/overview",
+    "https://developer.musixmatch.com/privacy",
+    "https://developer.musixmatch.com/signup",
+    "https://docs.musixmatch.com/#",
+    "https://docs.musixmatch.com/#ai-agents",
+    "https://docs.musixmatch.com/#authentication",
+    "https://docs.musixmatch.com/#build-with-musixmatch-pro-api",
+    "https://docs.musixmatch.com/#check-the-api-terms",
+    "https://docs.musixmatch.com/#content-area",
+    "https://docs.musixmatch.com/#explore-our-platform",
+    "https://docs.musixmatch.com/#filtering",
+    "https://docs.musixmatch.com/#getting-started",
+    "https://docs.musixmatch.com/#grouping",
+    "https://docs.musixmatch.com/#input-parameters",
+    "https://docs.musixmatch.com/#localization",
+    "https://docs.musixmatch.com/#no-code-tools",
+    "https://docs.musixmatch.com/#objects",
+    "https://docs.musixmatch.com/#output-format",
+    "https://docs.musixmatch.com/#popular-resources",
+    "https://docs.musixmatch.com/#querying",
+    "https://docs.musixmatch.com/#result-set-pagination",
+    "https://docs.musixmatch.com/#sorting",
+    "https://docs.musixmatch.com/#start-the-integration-on-your-product",
+    "https://docs.musixmatch.com/#status-codes",
+    "https://docs.musixmatch.com/#what-does-the-musixmatch-api-do",
+    "https://docs.musixmatch.com/api-methods",
+    "https://docs.musixmatch.com/api-methods.md",
+    "https://docs.musixmatch.com/api-reference/analysis/analysis-overview",
+    "https://docs.musixmatch.com/api-reference/analysis/analysis-overview.md",
+    "https://docs.musixmatch.com/api-reference/analysis/track-lyrics-analysis-get.md",
+    "https://docs.musixmatch.com/api-reference/analysis/track-lyrics-analysis-search.md",
+    "https://docs.musixmatch.com/api-reference/analysis/track-lyricslens-get.md",
+    "https://docs.musixmatch.com/api-reference/fingerprint/fingerprint-overview",
+    "https://docs.musixmatch.com/api-reference/fingerprint/fingerprint-overview.md",
+    "https://docs.musixmatch.com/api-reference/fingerprint/track-lyrics-fingerprint-post.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/album-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/album-tracks-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/artist-albums-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/artist-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/artist-search.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/chart-artists-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/chart-tracks-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/languages-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/lyrics-catalog-overview",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/lyrics-catalog-overview.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/matcher-lyrics-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/matcher-subtitle-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/matcher-track-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/music-genres-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-lyrics-get",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-lyrics-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-lyrics-translation-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-richsync-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-search",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-search.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-snippet-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-subtitle-get.md",
+    "https://docs.musixmatch.com/api-reference/lyrics-catalog/track-subtitle-translation-get.md",
+    "https://docs.musixmatch.com/api-reference/overview",
+    "https://docs.musixmatch.com/api-reference/overview.md",
+    "https://docs.musixmatch.com/checklist",
+    "https://docs.musixmatch.com/checklist.md",
+    "https://docs.musixmatch.com/content-restrictions",
+    "https://docs.musixmatch.com/content-restrictions.md",
+    "https://docs.musixmatch.com/enterprise-integration/introduction",
+    "https://docs.musixmatch.com/enterprises/authentication.md",
+    "https://docs.musixmatch.com/enterprises/catalog-feed/overview.md",
+    "https://docs.musixmatch.com/enterprises/catalog-feed/track-dump-get.md",
+    "https://docs.musixmatch.com/enterprises/catalog-feed/tracks-dump-get.md",
+    "https://docs.musixmatch.com/enterprises/catalog-feed/work-post.md",
+    "https://docs.musixmatch.com/enterprises/catalog-feed/work-validity-post.md",
+    "https://docs.musixmatch.com/enterprises/content-restrictions.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/claims/claim-an-artist.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/claims/get-artist-claim-status.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/deliveries/create-a-delivery.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/deliveries/get-delivery-status.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/deliveries/upload-a-release-file.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/lyrics/get-lyrics-status.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/lyrics/submit-lyrics.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/subscriptions/activate-a-subscription.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/subscriptions/revoke-a-subscription.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/transcriptions/get-transcription-status.md",
+    "https://docs.musixmatch.com/enterprises/distribution/api/transcriptions/request-a-transcription.md",
+    "https://docs.musixmatch.com/enterprises/distribution/overview.md",
+    "https://docs.musixmatch.com/enterprises/lyrics-bulk-submission.md",
+    "https://docs.musixmatch.com/enterprises/overview",
+    "https://docs.musixmatch.com/enterprises/overview.md",
+    "https://docs.musixmatch.com/getting-started",
+    "https://docs.musixmatch.com/getting-started.md",
+    "https://docs.musixmatch.com/implementation-guidelines",
+    "https://docs.musixmatch.com/implementation-guidelines.md",
+    "https://docs.musixmatch.com/integrations/chatgpt",
+    "https://docs.musixmatch.com/integrations/chatgpt.md",
+    "https://docs.musixmatch.com/integrations/claude",
+    "https://docs.musixmatch.com/integrations/claude.md",
+    "https://docs.musixmatch.com/integrations/mcp",
+    "https://docs.musixmatch.com/integrations/n8n",
+    "https://docs.musixmatch.com/integrations/n8n.md",
+    "https://docs.musixmatch.com/integrations/overview",
+    "https://docs.musixmatch.com/integrations/overview.md",
+    "https://docs.musixmatch.com/integrations/zapier",
+    "https://docs.musixmatch.com/integrations/zapier.md",
+    "https://docs.musixmatch.com/llms.txt",
+    "https://docs.musixmatch.com/lyrics-api/introduction",
+    "https://docs.musixmatch.com/lyrics-views-tracking",
+    "https://docs.musixmatch.com/lyrics-views-tracking.md",
+    "https://docs.musixmatch.com/musixmatch-metadata",
+    "https://docs.musixmatch.com/musixmatch-metadata.md",
+    "https://docs.musixmatch.com/openapi.json",
+    "https://docs.musixmatch.com/overview",
+    "https://docs.musixmatch.com/overview.md",
+    "https://docs.musixmatch.com/varco/openapi-simplified.json",
+    "https://github.com/DavideArena",
+    "https://github.com/Earththing/Music_Search_MCP/blob/main/README.md",
+    "https://github.com/mrnajiboy/mr-magic-mcp-server/",
+    "https://github.com/mrnajiboy/mr-magic-mcp-server/blob/main/CHANGELOG.md",
+    "https://github.com/musixmatch",
+    "https://github.com/topics/musixmatch-api?o=asc&s=forks",
+    "https://github.com/topics/musixmatch?l=typescript",
+    "https://learning.postman.com/docs/sending-requests/postman-vault/postman-vault-secrets/",
+    "https://linkedin.com/company/musixmatch",
+    "https://musixmatch.com",
+    "https://raw.githubusercontent.com/musixmatch/musixmatch-sdk/master/swagger/swagger.yaml",
+    "https://varco-{partner}.musixmatch.com",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=musixmatch",
+    "https://www.musixmatch.com/lyrics/Lady-Gaga/Alejandro/edit?utm_source=application&utm_campaign=api&utm_medium=musiXmatch+-+internal+use%3A1409624942950",
+    "https://www.musixmatch.com/lyrics/Taylor-Swift/Wildest-Dreams-Taylor-s-Version/edit?utm_source=application&utm_campaign=api&utm_medium=musiXmatch+-+internal+use%3A1409624942950",
+    "https://www.musixmatch.com/pro",
+    "https://www.musixmatch.com/pro/api/integrations/mcp",
+    "https://www.musixmatch.com/pro/api/pricing",
+    "https://www.musixmatch.com/pro/api/pricing?utm_source=docs&utm_medium=web&utm_content=basic_button",
+    "https://www.musixmatch.com/pro/api/pricing?utm_source=docs&utm_medium=web&utm_content=enterprise_button",
+    "https://www.musixmatch.com/pro/api/pricing?utm_source=docs&utm_medium=web&utm_content=grow_button",
+    "https://www.musixmatch.com/pro/api/pricing?utm_source=docs&utm_medium=web&utm_content=introduction_link",
+    "https://www.musixmatch.com/pro/api/pricing?utm_source=docs&utm_medium=web&utm_content=scale_button",
+    "https://www.musixmatch.com/pro/api/pricing?utm_source=docs&utm_medium=web&utm_content=side_button",
+    "https://www.npmjs.com/search?q=Sugar%20Baby%20Gi%E1%BA%A3ng%20V%C3%B5-%3Egaigoi365.vip&page=49&perPage=20",
+    "https://www.npmjs.com/search?q=keywords%3Acommunity&page=9&perPage=20",
+    "https://www.npmjs.com/search?q=scrape&page=3&perPage=20",
+    "https://www.postman.com/musixmatch-dev",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://x.com/musixmatch"
+  ]
+}

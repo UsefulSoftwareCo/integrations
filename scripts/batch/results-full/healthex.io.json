@@ -1,0 +1,237 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "healthex.io",
+    "detect": {
+      "domain": "healthex.io",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:52:28.767Z",
+    "summary": "HealthEx exposes one authenticated REST API at https://api.healthex.io/v1 and one authenticated MCP server at https://api.healthex.io/mcp; both use Bearer tokens, with REST JWTs minted from an API key/secret and MCP patient tokens obtained via OAuth 2.0 + PKCE.",
+    "credentials": {
+      "hx_api_key_secret": {
+        "type": "compound",
+        "label": "HealthEx API key and secret",
+        "generateUrl": "https://docs.healthex.io/authentication",
+        "setup": "Go to the HealthEx web app, open the **Admin** tab, then **Manage API Keys**. Click **Create New** and create an API key. HealthEx shows the API key and secret only once, so copy both immediately and store them safely. Use these to mint JWTs via `POST https://api.healthex.io/v1/auth/token`.",
+        "acquisition": "manual"
+      },
+      "hx_jwt_token": {
+        "type": "bearer",
+        "label": "HealthEx JWT access token",
+        "generateUrl": "https://docs.healthex.io/authentication",
+        "setup": "Mint this by calling `POST https://api.healthex.io/v1/auth/token` with your HealthEx API key and secret. The returned `token` is valid for 24 hours and is sent as `Authorization: Bearer <JWT Token>` on subsequent HealthEx API calls.",
+        "acquisition": "manual"
+      },
+      "hx_oauth_patient_token": {
+        "type": "oauth2",
+        "label": "HealthEx patient OAuth access token",
+        "generateUrl": "https://docs.healthex.io/mcp-server/oauth-flow",
+        "setup": "Complete HealthEx's OAuth 2.0 Authorization Code flow with PKCE for the MCP server. Register your client with HealthEx's dynamic client registration flow, let the user consent in the HealthEx-hosted authorization screen, then exchange the code for an access token. That access token is the `patient token` used by the MCP endpoint.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "healthex-rest-api",
+        "name": "HealthEx REST API",
+        "type": "http",
+        "docs": "https://docs.healthex.io/ | https://docs.healthex.io/authentication | https://docs.healthex.io/test-patients",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.healthex.io/",
+            "https://docs.healthex.io/authentication",
+            "https://docs.healthex.io/test-patients"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hx_jwt_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.healthex.io/authentication",
+                  "https://docs.healthex.io/test-patients"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.healthex.io/v1"
+      },
+      {
+        "slug": "healthex-mcp-server",
+        "name": "HealthEx MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.healthex.io/mcp-server/ | https://docs.healthex.io/mcp-server/api-reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.healthex.io/mcp-server/",
+            "https://docs.healthex.io/mcp-server/api-reference"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hx_oauth_patient_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.healthex.io/mcp-server/",
+                  "https://docs.healthex.io/mcp-server/api-reference"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.healthex.io/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:52:28.768Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 79356,
+    "completion_tokens": 988,
+    "total_tokens": 80344
+  },
+  "visited": [
+    "https://docs.healthex.io/",
+    "https://docs.healthex.io/authentication",
+    "https://docs.healthex.io/mcp-server/",
+    "https://docs.healthex.io/mcp-server/api-reference",
+    "https://docs.healthex.io/test-patients",
+    "https://github.com/chrishayuk/mcp-cli/blob/main/docs/OAUTH.md"
+  ],
+  "grounding": [
+    "https://api.healthex.io/mcp",
+    "https://api.healthex.io/v1/auth/token",
+    "https://api.healthex.io/v1/auth/tokenContent-Type",
+    "https://api.healthex.io/v1/organizations/{orgId}/test-patients",
+    "https://api.healthex.io/v1/organizations/{orgId}/test-patients/{patientId}",
+    "https://api.healthex.io/v1/patients/{patientId}/upload-documents",
+    "https://api.healthex.io/v1/projects/{projectId}/patients",
+    "https://api.healthex.io/v1/projects/{projectId}/test-patients/{patientId}/consent",
+    "https://datatracker.ietf.org/doc/html/rfc6750#section-2.1",
+    "https://docs.healthex.io/",
+    "https://docs.healthex.io/#",
+    "https://docs.healthex.io/#1-create-a-test-patient",
+    "https://docs.healthex.io/#1-register-your-client",
+    "https://docs.healthex.io/#2-generate-a-token",
+    "https://docs.healthex.io/#2-implement-oauth-flow",
+    "https://docs.healthex.io/#3-list-test-patients",
+    "https://docs.healthex.io/#3-make-mcp-requests",
+    "https://docs.healthex.io/#4-add-test-patient-to-project",
+    "https://docs.healthex.io/#5-update-consent-as-the-test-patient",
+    "https://docs.healthex.io/#6-update-a-test-patient-optional---admin",
+    "https://docs.healthex.io/#7-upload-documents-as-the-test-patient",
+    "https://docs.healthex.io/#8-delete-a-test-patient",
+    "https://docs.healthex.io/#9-access-mcp-tools-as-the-test-patient",
+    "https://docs.healthex.io/#__docusaurus_skipToContent_fallback",
+    "https://docs.healthex.io/#api-endpoints",
+    "https://docs.healthex.io/#authentication",
+    "https://docs.healthex.io/#available-tools",
+    "https://docs.healthex.io/#components",
+    "https://docs.healthex.io/#core-capabilities",
+    "https://docs.healthex.io/#creating-an-api-key-and-secret",
+    "https://docs.healthex.io/#curl",
+    "https://docs.healthex.io/#data-access",
+    "https://docs.healthex.io/#email-format",
+    "https://docs.healthex.io/#error-response-format",
+    "https://docs.healthex.io/#error-responses",
+    "https://docs.healthex.io/#generate-a-jwt-token",
+    "https://docs.healthex.io/#getting-started",
+    "https://docs.healthex.io/#http-status-codes",
+    "https://docs.healthex.io/#initialize",
+    "https://docs.healthex.io/#integration-flow",
+    "https://docs.healthex.io/#integration-requirements",
+    "https://docs.healthex.io/#json-rpc-error-codes",
+    "https://docs.healthex.io/#key-features",
+    "https://docs.healthex.io/#management-endpoints",
+    "https://docs.healthex.io/#mcp-endpoint",
+    "https://docs.healthex.io/#mcp-methods",
+    "https://docs.healthex.io/#next-steps",
+    "https://docs.healthex.io/#notes",
+    "https://docs.healthex.io/#notificationsinitialized",
+    "https://docs.healthex.io/#protocol-overview",
+    "https://docs.healthex.io/#quick-start",
+    "https://docs.healthex.io/#request-body",
+    "https://docs.healthex.io/#request-examples",
+    "https://docs.healthex.io/#request-headers",
+    "https://docs.healthex.io/#resourceslist",
+    "https://docs.healthex.io/#search",
+    "https://docs.healthex.io/#token-generation",
+    "https://docs.healthex.io/#toolscall",
+    "https://docs.healthex.io/#toolslist",
+    "https://docs.healthex.io/#using-the-jwt-token-in-api-calls",
+    "https://docs.healthex.io/#what-is-healthex",
+    "https://docs.healthex.io/#who-can-use-healthex-apis",
+    "https://docs.healthex.io/accessing-patient-data",
+    "https://docs.healthex.io/add-patients-to-projects",
+    "https://docs.healthex.io/add-patients-to-projects/",
+    "https://docs.healthex.io/api",
+    "https://docs.healthex.io/api/add-patients",
+    "https://docs.healthex.io/api/create-a-test-patient",
+    "https://docs.healthex.io/api/delete-a-test-patient",
+    "https://docs.healthex.io/api/generate-token",
+    "https://docs.healthex.io/api/get-a-test-patient",
+    "https://docs.healthex.io/api/list-all-test-patients",
+    "https://docs.healthex.io/api/update-a-test-patient",
+    "https://docs.healthex.io/api/update-consent-for-a-test-patient",
+    "https://docs.healthex.io/api/upload-documents",
+    "https://docs.healthex.io/authentication",
+    "https://docs.healthex.io/basic-consent-checking",
+    "https://docs.healthex.io/category/healthex-mcp-server",
+    "https://docs.healthex.io/changelog",
+    "https://docs.healthex.io/data-retrieval-status",
+    "https://docs.healthex.io/fhir-server",
+    "https://docs.healthex.io/key-concepts",
+    "https://docs.healthex.io/mcp-server",
+    "https://docs.healthex.io/mcp-server/",
+    "https://docs.healthex.io/mcp-server/api-reference",
+    "https://docs.healthex.io/mcp-server/mcp-access",
+    "https://docs.healthex.io/mcp-server/mcp-tools",
+    "https://docs.healthex.io/mcp-server/oauth-flow",
+    "https://docs.healthex.io/mcp-server/troubleshooting",
+    "https://docs.healthex.io/patient-demographics",
+    "https://docs.healthex.io/sample-patients/",
+    "https://docs.healthex.io/test-patients",
+    "https://docs.healthex.io/update-patient-data",
+    "https://docs.healthex.io/usage",
+    "https://github.com/chrishayuk/mcp-cli/blob/main/docs/OAUTH.md",
+    "https://healthex.io",
+    "https://your-app.com/callback"
+  ]
+}

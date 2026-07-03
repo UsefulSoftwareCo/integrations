@@ -1,0 +1,607 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "okx.com",
+    "detect": {
+      "domain": "okx.com",
+      "found": [
+        "llms.txt",
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://okx.com"
+          ],
+          "authorizationEndpoint": "https://www.okx.com/account/oauth?flow=code",
+          "tokenEndpoint": "https://www.okx.com/api/v5/mcp/auth/token",
+          "scopes": [
+            "live:read",
+            "demo:read",
+            "live:trade",
+            "demo:trade",
+            "live:earn",
+            "demo:earn",
+            "live:asset_transfer",
+            "demo:asset_transfer",
+            "market:read"
+          ],
+          "registrationEndpoint": "https://www.okx.com/api/v5/mcp/auth/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T18:53:01.076Z",
+    "summary": "Mapped OKX’s public developer surfaces: one REST API at `https://www.okx.com/api/v5`, one local npm-based MCP server, and one npm CLI; auth uses OKX API key/secret/passphrase, with seeded OAuth endpoints also present for MCP OAuth.",
+    "credentials": {
+      "okx_api_keyset": {
+        "type": "compound",
+        "label": "OKX API key, secret key, and passphrase",
+        "generateUrl": "https://www.okx.com/account/my-api",
+        "setup": "In [OKX API](https://www.okx.com/okx-api), click [Create your API Key](https://www.okx.com/account/my-api), or go directly to the [API page](https://www.okx.com/account/my-api). Create API keys for the account or sub-account you want to use; OKX provides an `api_key`, `secret_key`, and `passphrase`. The Agent Trade Kit docs recommend starting with a demo key and using a sub-account API key with only the permissions you need. You can then place these values in `~/.okx/config.toml` via `okx config init` or manual configuration as shown in the [Agent Trade Kit docs](https://www.okx.com/docs-v5/agent_en/)."
+      },
+      "okx_oauth_app": {
+        "type": "oauth2",
+        "label": "OKX OAuth client credentials for MCP OAuth",
+        "generateUrl": "https://www.okx.com/api/v5/mcp/auth/register",
+        "setup": "Register an OAuth client with OKX using the dynamic client registration endpoint `https://www.okx.com/api/v5/mcp/auth/register`. Then send the user through the authorization endpoint `https://www.okx.com/account/oauth?flow=code` and exchange the code at `https://www.okx.com/api/v5/mcp/auth/token`. Available scopes from OKX include `live:read`, `demo:read`, `live:trade`, `demo:trade`, `live:earn`, `demo:earn`, `live:asset_transfer`, `demo:asset_transfer`, and `market:read`. This is the OAuth path seeded for OKX MCP auth.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "okx-rest-api",
+        "name": "OKX REST API",
+        "type": "http",
+        "docs": "https://www.okx.com/docs-v5/en/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.okx.com/okx-api",
+            "https://www.okx.com/docs-v5/en/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "okx_api_keyset",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "OK-ACCESS-KEY"
+                  }
+                },
+                {
+                  "id": "okx_api_keyset",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "OK-ACCESS-SIGN"
+                  }
+                },
+                {
+                  "id": "okx_api_keyset",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "OK-ACCESS-TIMESTAMP"
+                  }
+                },
+                {
+                  "id": "okx_api_keyset",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "OK-ACCESS-PASSPHRASE"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.okx.com/okx-api",
+                  "https://www.okx.com/docs-v5/en/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.okx.com/api/v5"
+      },
+      {
+        "slug": "okx-mcp-server-local-package",
+        "name": "OKX MCP Server (local package)",
+        "type": "mcp",
+        "docs": "https://www.okx.com/docs-v5/agent_en/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.okx.com/docs-v5/agent_en/",
+            "https://www.npmjs.com/package/okx-trade-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "okx_api_keyset",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "okx config init"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.okx.com/docs-v5/agent_en/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "okx_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.okx.com/account/oauth?flow=code",
+                  "https://www.okx.com/api/v5/mcp/auth/token",
+                  "https://www.okx.com/api/v5/mcp/auth/register"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "stdio"
+        ],
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@okx_ai/okx-trade-mcp",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "okx-trade-mcp",
+            "runtimeHint": "node"
+          }
+        ]
+      },
+      {
+        "slug": "okx-cli",
+        "name": "OKX CLI",
+        "type": "cli",
+        "docs": "https://www.okx.com/docs-v5/agent_en/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.okx.com/docs-v5/agent_en/",
+            "https://www.npmjs.com/package/okx-trade-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "okx_api_keyset",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "okx config init"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.okx.com/docs-v5/agent_en/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@okx_ai/okx-trade-cli",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "npm",
+            "identifier": "okx-trade-cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "okx"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T18:53:01.076Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 90437,
+    "completion_tokens": 1516,
+    "total_tokens": 91953
+  },
+  "visited": [
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/okx/agent-trade-kit",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://okx.com/llms.txt",
+    "https://www.npmjs.com/package/okx-trade-cli",
+    "https://www.npmjs.com/package/okx-trade-mcp",
+    "https://www.okx.com/docs-v5/agent_en/",
+    "https://www.okx.com/docs-v5/en/",
+    "https://www.okx.com/docs-v5/en/#overview-rest-authentication",
+    "https://www.okx.com/en-us/help/okx-api-agreement",
+    "https://www.okx.com/okx-api",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://proxy.example.com:8080",
+    "http://status.npmjs.org/",
+    "http://user:p%40ss@proxy.example.com:8080",
+    "http://user:password@proxy.example.com:8080",
+    "https://app.okx.com/en-us/account/login?firstLandingPage=https://www.okx.com/en-us/okx-api",
+    "https://app.okx.com/en-us/account/register?action=header_register_btn&firstLandingPage=https://www.okx.com/en-us/okx-api",
+    "https://archiveprogram.github.com",
+    "https://bundlephobia.com/package/okx-trade-cli",
+    "https://bundlephobia.com/package/okx-trade-mcp",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.npmjs.com",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.blog/tag/npm/",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/advisories",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fokx%2Fagent-trade-kit",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fokx%2Fagent-trade-kit",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/okx",
+    "https://github.com/okx/agent-trade-kit",
+    "https://github.com/okx/agent-trade-kit/blob/github-main/.env.example",
+    "https://github.com/okx/agent-trade-kit/blob/github-main/.gitignore",
+    "https://github.com/okx/agent-trade-kit/blob/master/docs/configuration.md#client-setup-manual",
+    "https://github.com/okx/agent-trade-kit/branches",
+    "https://github.com/okx/agent-trade-kit/commi",
+    "https://github.com/okx/agent-trade-kit/commit/1e027b42690878c4a987e0162cebd669fdfccda5",
+    "https://github.com/okx/agent-trade-kit/commit/7ff9b8bee85ecd09412d82c35087c0c1e73f1f1b",
+    "https://github.com/okx/agent-trade-kit/commit/df755fe61efcb91917764ae44c0fb437fdde6ea4",
+    "https://github.com/okx/agent-trade-kit/commit/eab6c888fb643ffd8960354321221add9716acbf",
+    "https://github.com/okx/agent-trade-kit/commits/github-main/",
+    "https://github.com/okx/agent-trade-kit/commits?author=claude",
+    "https://github.com/okx/agent-trade-kit/discussions",
+    "https://github.com/okx/agent-trade-kit/issues",
+    "https://github.com/okx/agent-trade-kit/projects",
+    "https://github.com/okx/agent-trade-kit/pulse",
+    "https://github.com/okx/agent-trade-kit/security",
+    "https://github.com/okx/agent-trade-kit/tags",
+    "https://github.com/okx/agent-trade-kit/tree/github-main/.github",
+    "https://github.com/okx/agent-trade-kit/tree/github-main/docs",
+    "https://github.com/okx/agent-trade-kit/tree/github-main/packages",
+    "https://github.com/okx/agent-trade-kit/tree/github-main/scripts",
+    "https://github.com/okx/agent-trade-kit/tree/github-main/skills",
+    "https://github.com/okx/agent-trade-kit/tree/github-main/test",
+    "https://github.com/okxapi/okx-sample-market-maker",
+    "https://github.com/okxapi/python-okx/tree/master",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=okx%2Fagent-trade-kit",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://maintainers.github.com",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://modelcontextprotocol.io",
+    "https://npmgraph.js.org/?q=okx-trade-cli",
+    "https://npmgraph.js.org/?q=okx-trade-mcp",
+    "https://okx.com/llms.txt",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://snyk.io/advisor/npm-package/okx-trade-cli",
+    "https://snyk.io/advisor/npm-package/okx-trade-mcp",
+    "https://socket.dev/npm/package/okx-trade-cli",
+    "https://socket.dev/npm/package/okx-trade-mcp",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://web3.okx.com/",
+    "https://www.npmjs.com/#main",
+    "https://www.npmjs.com/#search",
+    "https://www.npmjs.com/#signin",
+    "https://www.npmjs.com/?activeTab=code",
+    "https://www.npmjs.com/?activeTab=dependencies",
+    "https://www.npmjs.com/?activeTab=dependents",
+    "https://www.npmjs.com/?activeTab=readme",
+    "https://www.npmjs.com/?activeTab=versions",
+    "https://www.npmjs.com/about",
+    "https://www.npmjs.com/login",
+    "https://www.npmjs.com/package/okx-trade-cli",
+    "https://www.npmjs.com/package/okx-trade-mcp",
+    "https://www.npmjs.com/policies/",
+    "https://www.npmjs.com/policies/conduct",
+    "https://www.npmjs.com/policies/privacy",
+    "https://www.npmjs.com/policies/terms",
+    "https://www.npmjs.com/press",
+    "https://www.npmjs.com/products",
+    "https://www.npmjs.com/products/pro",
+    "https://www.npmjs.com/products/teams",
+    "https://www.npmjs.com/search?q=keywords:alias",
+    "https://www.npmjs.com/search?q=keywords:cli",
+    "https://www.npmjs.com/search?q=keywords:mcp",
+    "https://www.npmjs.com/search?q=keywords:okx",
+    "https://www.npmjs.com/search?q=keywords:trading",
+    "https://www.npmjs.com/signup",
+    "https://www.npmjs.com/support",
+    "https://www.npmjs.com/support?inquire=security&security-inquire=malware&package=okx-trade-cli&version=1.2.8",
+    "https://www.npmjs.com/support?inquire=security&security-inquire=malware&package=okx-trade-mcp&version=1.2.8",
+    "https://www.okx.com",
+    "https://www.okx.com/#",
+    "https://www.okx.com/#cli",
+    "https://www.okx.com/#community",
+    "https://www.okx.com/#faq",
+    "https://www.okx.com/#introduction",
+    "https://www.okx.com/#introduction-three-ways-to-use-it",
+    "https://www.okx.com/#introduction-what-can-it-do",
+    "https://www.okx.com/#links",
+    "https://www.okx.com/#mcp",
+    "https://www.okx.com/#mcp-startup-options",
+    "https://www.okx.com/#mcp-tools",
+    "https://www.okx.com/#mcp-tools-account-account-management",
+    "https://www.okx.com/#mcp-tools-bot-trading-bots",
+    "https://www.okx.com/#mcp-tools-futures-delivery-contracts",
+    "https://www.okx.com/#mcp-tools-market-market-data",
+    "https://www.okx.com/#mcp-tools-option-options",
+    "https://www.okx.com/#mcp-tools-spot-spot-trading",
+    "https://www.okx.com/#mcp-tools-swap-perpetual-contracts",
+    "https://www.okx.com/#quick-start",
+    "https://www.okx.com/#quick-start-mcp-clients",
+    "https://www.okx.com/#quick-start-mcp-clients-step-1-install",
+    "https://www.okx.com/#quick-start-mcp-clients-step-2-add-your-okx-api-credentials",
+    "https://www.okx.com/#quick-start-mcp-clients-step-3-connect-your-ai-client",
+    "https://www.okx.com/#quick-start-mcp-clients-step-4-try-it",
+    "https://www.okx.com/#quick-start-openclaw",
+    "https://www.okx.com/#safety",
+    "https://www.okx.com/#skills",
+    "https://www.okx.com/about.md",
+    "https://www.okx.com/account/my-api",
+    "https://www.okx.com/account/register",
+    "https://www.okx.com/affiliates",
+    "https://www.okx.com/agent-tradekit",
+    "https://www.okx.com/api/v5/public/instruments?instType=SPOT",
+    "https://www.okx.com/broker/home",
+    "https://www.okx.com/buy-btc",
+    "https://www.okx.com/buy-crypto",
+    "https://www.okx.com/buy-eth",
+    "https://www.okx.com/buy-sol",
+    "https://www.okx.com/community",
+    "https://www.okx.com/contact-us",
+    "https://www.okx.com/convert/btc-to-usd.md",
+    "https://www.okx.com/convert/eth-to-usd.md",
+    "https://www.okx.com/convert/sol-to-usd.md",
+    "https://www.okx.com/docs-v5/agent_en",
+    "https://www.okx.com/docs-v5/agent_en/",
+    "https://www.okx.com/docs-v5/agent_en/#cli",
+    "https://www.okx.com/docs-v5/agent_en/#faq",
+    "https://www.okx.com/docs-v5/agent_en/#mcp",
+    "https://www.okx.com/docs-v5/agent_en/#mcp-clients",
+    "https://www.okx.com/docs-v5/agent_en/#openclaw",
+    "https://www.okx.com/docs-v5/agent_en/#safety",
+    "https://www.okx.com/docs-v5/agent_en/#skills",
+    "https://www.okx.com/docs-v5/broker_en",
+    "https://www.okx.com/docs-v5/en",
+    "https://www.okx.com/docs-v5/en#block-trading",
+    "https://www.okx.com/docs-v5/en#financial-product-earn",
+    "https://www.okx.com/docs-v5/en#funding-account",
+    "https://www.okx.com/docs-v5/en#funding-account-rest-api-convert-trade",
+    "https://www.okx.com/docs-v5/en#order-book-trading",
+    "https://www.okx.com/docs-v5/en#order-book-trading-market-data",
+    "https://www.okx.com/docs-v5/en#overview",
+    "https://www.okx.com/docs-v5/en#public-data",
+    "https://www.okx.com/docs-v5/en#status",
+    "https://www.okx.com/docs-v5/en#sub-account",
+    "https://www.okx.com/docs-v5/en#trading-account",
+    "https://www.okx.com/docs-v5/en#trading-statistics",
+    "https://www.okx.com/docs-v5/en/",
+    "https://www.okx.com/docs-v5/en/#overview-demo-trading-services",
+    "https://www.okx.com/docs-v5/en/#overview-market-maker-program",
+    "https://www.okx.com/docs-v5/en/#overview-rest-authentication",
+    "https://www.okx.com/docs-v5/log_en",
+    "https://www.okx.com/docs-v5/outcomes_en",
+    "https://www.okx.com/docs-v5/trick_en",
+    "https://www.okx.com/download",
+    "https://www.okx.com/earn",
+    "https://www.okx.com/earn/dual",
+    "https://www.okx.com/earn/onchain-earn",
+    "https://www.okx.com/earn/simple-earn",
+    "https://www.okx.com/en-us/about",
+    "https://www.okx.com/en-us/account/my-api",
+    "https://www.okx.com/en-us/account/register",
+    "https://www.okx.com/en-us/agent-tradekit",
+    "https://www.okx.com/en-us/agent-tradekit/skills",
+    "https://www.okx.com/en-us/broker/home",
+    "https://www.okx.com/en-us/buy-btc",
+    "https://www.okx.com/en-us/buy-crypto",
+    "https://www.okx.com/en-us/buy-eth",
+    "https://www.okx.com/en-us/buy-ltc",
+    "https://www.okx.com/en-us/buy-usdc",
+    "https://www.okx.com/en-us/buy-usdt",
+    "https://www.okx.com/en-us/community",
+    "https://www.okx.com/en-us/connect/home",
+    "https://www.okx.com/en-us/contact-us",
+    "https://www.okx.com/en-us/convert",
+    "https://www.okx.com/en-us/convert/btc-to-usd",
+    "https://www.okx.com/en-us/convert/eth-to-usd",
+    "https://www.okx.com/en-us/convert/usdt-to-usd",
+    "https://www.okx.com/en-us/deposit-match/session",
+    "https://www.okx.com/en-us/download",
+    "https://www.okx.com/en-us/fees",
+    "https://www.okx.com/en-us/help",
+    "https://www.okx.com/en-us/help/category/announcements",
+    "https://www.okx.com/en-us/help/how-can-i-do-spot-trading-with-the-jupyter-notebook",
+    "https://www.okx.com/en-us/help/okx-api-agreement",
+    "https://www.okx.com/en-us/help/okx-law-enforcement-request-guide",
+    "https://www.okx.com/en-us/help/okx-us-risk-and-compliance-disclosure",
+    "https://www.okx.com/en-us/help/okx-us-whistleblower-notice",
+    "https://www.okx.com/en-us/help/privacy-notice-us",
+    "https://www.okx.com/en-us/help/section/faq-getting-started",
+    "https://www.okx.com/en-us/help/terms-of-service-us",
+    "https://www.okx.com/en-us/historical-data",
+    "https://www.okx.com/en-us/how-to-buy",
+    "https://www.okx.com/en-us/institutional",
+    "https://www.okx.com/en-us/join-us",
+    "https://www.okx.com/en-us/landingpage/institutionalinsights",
+    "https://www.okx.com/en-us/landingpage/tradingview-spot",
+    "https://www.okx.com/en-us/learn",
+    "https://www.okx.com/en-us/learn/category/blog",
+    "https://www.okx.com/en-us/learn/category/trends",
+    "https://www.okx.com/en-us/liquid-marketplace",
+    "https://www.okx.com/en-us/liquid-marketplace/rfq-builder",
+    "https://www.okx.com/en-us/livestream/dashboard",
+    "https://www.okx.com/en-us/managed-sub-account",
+    "https://www.okx.com/en-us/markets/prices",
+    "https://www.okx.com/en-us/okx-api",
+    "https://www.okx.com/en-us/price",
+    "https://www.okx.com/en-us/price/bitcoin-btc",
+    "https://www.okx.com/en-us/price/ethereum-eth",
+    "https://www.okx.com/en-us/proof-of-reserves",
+    "https://www.okx.com/en-us/protect",
+    "https://www.okx.com/en-us/referral",
+    "https://www.okx.com/en-us/rewards-hub",
+    "https://www.okx.com/en-us/rubix",
+    "https://www.okx.com/en-us/status",
+    "https://www.okx.com/en-us/support-center/channel-verification",
+    "https://www.okx.com/en-us/support-center/history",
+    "https://www.okx.com/en-us/token-listing-apply",
+    "https://www.okx.com/en-us/trade-convert",
+    "https://www.okx.com/en-us/trade-convert#from-page=navigation&from-action=web_header",
+    "https://www.okx.com/en-us/trade-spot",
+    "https://www.okx.com/en-us/usdg",
+    "https://www.okx.com/en-us/ventures",
+    "https://www.okx.com/en-us/vip",
+    "https://www.okx.com/en-us/wallet-security",
+    "https://www.okx.com/en-us/x-drops?pagesource=header",
+    "https://www.okx.com/help",
+    "https://www.okx.com/help/okx-law-enforcement-request-guide",
+    "https://www.okx.com/help/privacy-policy-statement",
+    "https://www.okx.com/help/risk-compliance-disclosure",
+    "https://www.okx.com/help/terms-of-service",
+    "https://www.okx.com/help/whistleblower-notice",
+    "https://www.okx.com/historical-data",
+    "https://www.okx.com/how-to-buy",
+    "https://www.okx.com/how-to-buy/bitcoin-btc",
+    "https://www.okx.com/how-to-buy/ethereum-eth",
+    "https://www.okx.com/how-to-buy/solana-sol",
+    "https://www.okx.com/institutional",
+    "https://www.okx.com/javascript:void(0",
+    "https://www.okx.com/jumpstart",
+    "https://www.okx.com/landingpage/institutionalinsights",
+    "https://www.okx.com/learn",
+    "https://www.okx.com/learn.md",
+    "https://www.okx.com/liquid-marketplace",
+    "https://www.okx.com/loan",
+    "https://www.okx.com/markets/explore",
+    "https://www.okx.com/markets/prices",
+    "https://www.okx.com/okx-api",
+    "https://www.okx.com/p2p-markets/cny/buy-usdt",
+    "https://www.okx.com/p2p-markets/vnd/buy-usdt",
+    "https://www.okx.com/p2p/express",
+    "https://www.okx.com/pre-market",
+    "https://www.okx.com/price-prediction",
+    "https://www.okx.com/price-prediction/bitcoin-btc",
+    "https://www.okx.com/price-prediction/ethereum-eth",
+    "https://www.okx.com/price-prediction/solana-sol",
+    "https://www.okx.com/price.md",
+    "https://www.okx.com/price/bitcoin-btc.md",
+    "https://www.okx.com/price/ethereum-eth.md",
+    "https://www.okx.com/price/solana-sol.md",
+    "https://www.okx.com/proof-of-reserves",
+    "https://www.okx.com/protect",
+    "https://www.okx.com/referral",
+    "https://www.okx.com/status",
+    "https://www.okx.com/token-listing-apply",
+    "https://www.okx.com/trade-convert",
+    "https://www.okx.com/trade-option-chain",
+    "https://www.okx.com/trade-spot",
+    "https://www.okx.com/trade-spot/btc-usdc",
+    "https://www.okx.com/trade-spot/btc-usdt",
+    "https://www.okx.com/trade-spot/eth-usdc",
+    "https://www.okx.com/trade-spot/eth-usdt",
+    "https://www.okx.com/trade-spot/sol-usdc",
+    "https://www.okx.com/trade-spot/sol-usdt",
+    "https://www.okx.com/trade-swap",
+    "https://www.okx.com/trade-swap/btc-usdt-swap",
+    "https://www.okx.com/trade-swap/eth-usdt-swap",
+    "https://www.okx.com/trade-swap/sol-usdt-swap",
+    "https://www.okx.com/trading-bot",
+    "https://www.okx.com/ventures",
+    "https://www.okx.com/wallet-security",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

@@ -2,6 +2,10 @@ import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
+import { fileURLToPath } from "node:url";
+
+const isBuild = process.argv.includes("build");
+const satoriWasmEntry = fileURLToPath(new URL("./node_modules/satori/dist/index.js", import.meta.url));
 
 // One app, one render path: the catalog pages prerender at build time, and the
 // dynamic pages (discovered-surface detail, detect/discover API) render in the
@@ -37,8 +41,12 @@ export default defineConfig({
     // which needs MessageChannel — absent in workerd. Pin the edge build, but
     // only for `astro build`: the dev server renders on Node, where the edge
     // file's CJS `require` breaks (and the browser build works fine).
-    resolve: process.argv.includes("build")
-      ? { alias: { "react-dom/server": "react-dom/server.edge" } }
-      : undefined,
+    define: { "process.env.SATORI_STANDALONE": JSON.stringify("1") },
+    resolve: {
+      alias: {
+        "satori/wasm": satoriWasmEntry,
+        ...(isBuild ? { "react-dom/server": "react-dom/server.edge" } : {}),
+      },
+    },
   },
 });

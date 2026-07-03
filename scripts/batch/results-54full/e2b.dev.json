@@ -1,0 +1,530 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "e2b.dev",
+    "detect": {
+      "domain": "e2b.dev",
+      "found": [
+        "mcp",
+        "llms.txt"
+      ],
+      "mcp": [
+        {
+          "url": "https://e2b.dev/mcp",
+          "source": "probe",
+          "auth": "none"
+        }
+      ],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:17:53.440Z",
+    "summary": "E2B exposes a public docs MCP server at `https://e2b.dev/mcp`, a developer HTTP API for managing sandboxes and sandbox envd endpoints, and an `e2b` CLI installed via npm or Homebrew.",
+    "description": "E2B provides isolated cloud sandboxes where AI agents and applications can execute code, run tools, and manage files and processes safely. It also offers templates and SDKs for creating and controlling those sandbox environments.",
+    "credentials": {
+      "e2b_api_key": {
+        "type": "api_key",
+        "label": "E2B API key",
+        "generateUrl": "https://e2b.dev/dashboard?tab=keys",
+        "setup": "Open the [E2B dashboard keys page](https://e2b.dev/dashboard?tab=keys) to create or copy an API key. Use it as the `E2B_API_KEY` environment variable, or pass it directly in SDK/API configuration as shown in the [API key docs](https://e2b.dev/docs/api-key).",
+        "acquisition": "manual"
+      },
+      "e2b_access_token": {
+        "type": "bearer",
+        "label": "E2B access token (deprecated, CLI login only)",
+        "generateUrl": "https://e2b.dev/dashboard/account",
+        "setup": "Open the [E2B dashboard account page](https://e2b.dev/dashboard/account) to create an access token if your workflow still needs the deprecated interactive CLI login path. The [API key docs](https://e2b.dev/docs/api-key) state new access tokens can no longer be generated after July 1, 2026 and all access tokens stop working on August 1, 2026; prefer `E2B_API_KEY` instead.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "e2b-docs-mcp-server",
+        "name": "E2B Docs MCP server",
+        "type": "mcp",
+        "docs": "https://e2b.dev/mcp",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T20:17:53.440Z"
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://e2b.dev/mcp"
+            ]
+          }
+        },
+        "url": "https://e2b.dev/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "e2b-platform-and-sandbox-http-api",
+        "name": "E2B Platform and Sandbox HTTP API",
+        "type": "http",
+        "docs": "https://e2b.dev/docs/api-reference/sandboxes/create-sandbox",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://e2b.mintlify.app/docs/api-reference/sandboxes/create-sandbox.md",
+            "https://e2b.mintlify.app/docs/api-reference/envd/check-the-health-of-the-service.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "e2b_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "ApiKeyAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://e2b.mintlify.app/docs/api-reference/sandboxes/create-sandbox.md",
+                  "https://e2b.mintlify.app/docs/api-key.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.e2b.app",
+        "requiredHeaders": [
+          {
+            "name": "E2b-Sandbox-Port",
+            "source": {
+              "kind": "static",
+              "value": "49983"
+            },
+            "description": "Required when calling sandbox envd endpoints on the shared sandbox host; default envd port shown in the OpenAPI docs is `49983`."
+          }
+        ],
+        "variables": [
+          {
+            "name": "sandbox_host",
+            "in": "url",
+            "resolveFrom": "OpenAPI server template",
+            "description": "Sandbox envd endpoints use the shared host `https://sandbox.{domain}` with `domain` defaulting to `e2b.app`."
+          }
+        ]
+      },
+      {
+        "slug": "e2b-cli",
+        "name": "E2B CLI",
+        "type": "cli",
+        "docs": "https://e2b.dev/docs/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://e2b.mintlify.app/docs/cli.md",
+            "https://e2b.mintlify.app/docs/api-key.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "e2b_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "e2b auth login"
+                  }
+                },
+                {
+                  "id": "e2b_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "e2b auth configure"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://e2b.mintlify.app/docs/api-key.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "e2b_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "E2B_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://e2b.mintlify.app/docs/api-key.md",
+                  "https://e2b.mintlify.app/docs.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@e2b/cli",
+            "runtimeHint": "Node.js"
+          },
+          {
+            "registryType": "homebrew",
+            "identifier": "e2b"
+          }
+        ],
+        "command": "e2b"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:17:53.441Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 141268,
+    "completion_tokens": 1720,
+    "total_tokens": 142988
+  },
+  "visited": [
+    "https://e2b.dev/",
+    "https://e2b.dev/docs/sdk-reference",
+    "https://e2b.dev/llms.txt",
+    "https://e2b.dev/mcp",
+    "https://e2b.mintlify.app/docs.md",
+    "https://e2b.mintlify.app/docs/api-key.md",
+    "https://e2b.mintlify.app/docs/api-reference/envd/check-the-health-of-the-service.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/create-sandbox.md",
+    "https://e2b.mintlify.app/docs/cli.md",
+    "https://e2b.mintlify.app/docs/sdk-reference",
+    "https://e2b.mintlify.app/openapi-public.yml",
+    "https://github.com/e2b-dev",
+    "https://github.com/e2b-dev/e2b",
+    "https://northflank.com/blog/e2b-vs-sprites-dev",
+    "https://www.make.com/en/integrations/e2b",
+    "https://www.reddit.com/r/LocalLLaMA/comments/1chsx7z/is_there_an_opensource_alternative_to_e2b_e2bdev/"
+  ],
+  "grounding": [
+    "https://api.e2b.app",
+    "https://discord.gg/e2b",
+    "https://e2b.dev",
+    "https://e2b.dev/",
+    "https://e2b.dev/#authenticationerror",
+    "https://e2b.dev/#constructors",
+    "https://e2b.dev/#constructors-10",
+    "https://e2b.dev/#constructors-11",
+    "https://e2b.dev/#constructors-12",
+    "https://e2b.dev/#constructors-2",
+    "https://e2b.dev/#constructors-3",
+    "https://e2b.dev/#constructors-4",
+    "https://e2b.dev/#constructors-5",
+    "https://e2b.dev/#constructors-6",
+    "https://e2b.dev/#constructors-7",
+    "https://e2b.dev/#constructors-8",
+    "https://e2b.dev/#constructors-9",
+    "https://e2b.dev/#content-area",
+    "https://e2b.dev/#deprecated",
+    "https://e2b.dev/#extended-by",
+    "https://e2b.dev/#extended-by-2",
+    "https://e2b.dev/#extended-by-3",
+    "https://e2b.dev/#fileuploaderror",
+    "https://e2b.dev/#gitautherror",
+    "https://e2b.dev/#gitupstreamerror",
+    "https://e2b.dev/#invalidargumenterror",
+    "https://e2b.dev/#notenoughspaceerror",
+    "https://e2b.dev/#notfounderror",
+    "https://e2b.dev/#parameters",
+    "https://e2b.dev/#ratelimiterror",
+    "https://e2b.dev/#returns",
+    "https://e2b.dev/#sandboxerror",
+    "https://e2b.dev/#templateerror",
+    "https://e2b.dev/#timeouterror",
+    "https://e2b.dev/#volumeerror",
+    "https://e2b.dev/dashboard",
+    "https://e2b.dev/dashboard/account",
+    "https://e2b.dev/dashboard?tab=keys",
+    "https://e2b.dev/docs",
+    "https://e2b.dev/docs/api-reference/sandboxes/list-sandboxes",
+    "https://e2b.dev/docs/sdk-reference",
+    "https://e2b.dev/docs/sdk-reference/js-sdk/v2.29.1/errors",
+    "https://e2b.dev/docs/sdk-reference/js-sdk/v2.29.1/sandbox",
+    "https://e2b.dev/docs/sdk-reference/js-sdk/v2.29.1/sandbox-commands",
+    "https://e2b.dev/docs/sdk-reference/js-sdk/v2.29.1/sandbox-filesystem",
+    "https://e2b.dev/docs/sdk-reference/js-sdk/v2.29.1/template",
+    "https://e2b.dev/docs/sdk-reference/js-sdk/v2.29.1/template-logger",
+    "https://e2b.dev/docs/sdk-reference/js-sdk/v2.29.1/template-readycmd",
+    "https://e2b.dev/docs/sdk-reference/js-sdk/v2.29.1/volume",
+    "https://e2b.dev/llms.txt",
+    "https://e2b.dev/mcp",
+    "https://e2b.mintlify.app/",
+    "https://e2b.mintlify.app/#authenticationerror",
+    "https://e2b.mintlify.app/#constructors",
+    "https://e2b.mintlify.app/#constructors-10",
+    "https://e2b.mintlify.app/#constructors-11",
+    "https://e2b.mintlify.app/#constructors-12",
+    "https://e2b.mintlify.app/#constructors-2",
+    "https://e2b.mintlify.app/#constructors-3",
+    "https://e2b.mintlify.app/#constructors-4",
+    "https://e2b.mintlify.app/#constructors-5",
+    "https://e2b.mintlify.app/#constructors-6",
+    "https://e2b.mintlify.app/#constructors-7",
+    "https://e2b.mintlify.app/#constructors-8",
+    "https://e2b.mintlify.app/#constructors-9",
+    "https://e2b.mintlify.app/#content-area",
+    "https://e2b.mintlify.app/#deprecated",
+    "https://e2b.mintlify.app/#extended-by",
+    "https://e2b.mintlify.app/#extended-by-2",
+    "https://e2b.mintlify.app/#extended-by-3",
+    "https://e2b.mintlify.app/#fileuploaderror",
+    "https://e2b.mintlify.app/#gitautherror",
+    "https://e2b.mintlify.app/#gitupstreamerror",
+    "https://e2b.mintlify.app/#invalidargumenterror",
+    "https://e2b.mintlify.app/#notenoughspaceerror",
+    "https://e2b.mintlify.app/#notfounderror",
+    "https://e2b.mintlify.app/#parameters",
+    "https://e2b.mintlify.app/#ratelimiterror",
+    "https://e2b.mintlify.app/#returns",
+    "https://e2b.mintlify.app/#sandboxerror",
+    "https://e2b.mintlify.app/#templateerror",
+    "https://e2b.mintlify.app/#timeouterror",
+    "https://e2b.mintlify.app/#volumeerror",
+    "https://e2b.mintlify.app/docs",
+    "https://e2b.mintlify.app/docs.md",
+    "https://e2b.mintlify.app/docs/agents/amp.md",
+    "https://e2b.mintlify.app/docs/agents/claude-code.md",
+    "https://e2b.mintlify.app/docs/agents/claude-managed-agents.md",
+    "https://e2b.mintlify.app/docs/agents/codex.md",
+    "https://e2b.mintlify.app/docs/agents/devin.md",
+    "https://e2b.mintlify.app/docs/agents/openai-agents-sdk.md",
+    "https://e2b.mintlify.app/docs/agents/openclaw/openclaw-gateway.md",
+    "https://e2b.mintlify.app/docs/agents/openclaw/openclaw-telegram.md",
+    "https://e2b.mintlify.app/docs/agents/opencode.md",
+    "https://e2b.mintlify.app/docs/api-key.md",
+    "https://e2b.mintlify.app/docs/api-reference/envd/check-the-health-of-the-service.md",
+    "https://e2b.mintlify.app/docs/api-reference/envd/get-the-environment-variables.md",
+    "https://e2b.mintlify.app/docs/api-reference/envd/get-the-stats-of-the-service.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/createwatcher.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/download-a-file.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/getwatcherevents.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/listdir.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/makedir.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/move.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/remove.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/removewatcher.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/stat.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/upload-a-file-and-ensure-the-parent-directories-exist-if-the-file-exists-it-will-be-overwritten.md",
+    "https://e2b.mintlify.app/docs/api-reference/filesystem/watchdir.md",
+    "https://e2b.mintlify.app/docs/api-reference/process/closestdin.md",
+    "https://e2b.mintlify.app/docs/api-reference/process/connect.md",
+    "https://e2b.mintlify.app/docs/api-reference/process/list.md",
+    "https://e2b.mintlify.app/docs/api-reference/process/sendinput.md",
+    "https://e2b.mintlify.app/docs/api-reference/process/sendsignal.md",
+    "https://e2b.mintlify.app/docs/api-reference/process/start.md",
+    "https://e2b.mintlify.app/docs/api-reference/process/streaminput.md",
+    "https://e2b.mintlify.app/docs/api-reference/process/update.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/connect-to-sandbox.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/create-sandbox.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/create-snapshot.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/delete-sandbox.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/get-sandbox-logs-v2.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/get-sandbox-logs.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/get-sandbox-metrics.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/get-sandbox.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/list-sandbox-metrics.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/list-sandboxes",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/list-sandboxes-v2.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/list-sandboxes.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/list-snapshots.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/pause-sandbox.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/refresh-sandbox.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/resume-sandbox.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/set-sandbox-timeout.md",
+    "https://e2b.mintlify.app/docs/api-reference/sandboxes/update-sandbox-network.md",
+    "https://e2b.mintlify.app/docs/api-reference/tags/assign-tags.md",
+    "https://e2b.mintlify.app/docs/api-reference/tags/delete-tags.md",
+    "https://e2b.mintlify.app/docs/api-reference/tags/list-template-tags.md",
+    "https://e2b.mintlify.app/docs/api-reference/teams/get-team-metrics-max.md",
+    "https://e2b.mintlify.app/docs/api-reference/teams/get-team-metrics.md",
+    "https://e2b.mintlify.app/docs/api-reference/teams/list-teams.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/create-template-v2.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/create-template-v3.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/create-template.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/delete-template.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/get-build-logs.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/get-build-status.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/get-build-upload-link.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/get-template-by-alias.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/get-template.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/list-templates-v2.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/list-templates.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/rebuild-template.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/start-build-v2.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/start-build.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/update-template-v2.md",
+    "https://e2b.mintlify.app/docs/api-reference/templates/update-template.md",
+    "https://e2b.mintlify.app/docs/api-reference/volumes/create-team-volume.md",
+    "https://e2b.mintlify.app/docs/api-reference/volumes/delete-team-volume.md",
+    "https://e2b.mintlify.app/docs/api-reference/volumes/list-team-volumes.md",
+    "https://e2b.mintlify.app/docs/api-reference/volumes/team-volume.md",
+    "https://e2b.mintlify.app/docs/billing.md",
+    "https://e2b.mintlify.app/docs/byoc.md",
+    "https://e2b.mintlify.app/docs/cli.md",
+    "https://e2b.mintlify.app/docs/cli/auth.md",
+    "https://e2b.mintlify.app/docs/cli/connect-to-sandbox.md",
+    "https://e2b.mintlify.app/docs/cli/create-sandbox.md",
+    "https://e2b.mintlify.app/docs/cli/exec-command.md",
+    "https://e2b.mintlify.app/docs/cli/list-sandboxes.md",
+    "https://e2b.mintlify.app/docs/cli/shutdown-sandboxes.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/analyze-data-with-ai.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/analyze-data-with-ai/pre-installed-libraries.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/contexts.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/create-charts-visualizations.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/create-charts-visualizations/interactive-charts.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/create-charts-visualizations/static-charts.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/customize-template.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/streaming.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/supported-languages.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/supported-languages/bash.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/supported-languages/java.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/supported-languages/javascript.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/supported-languages/python.md",
+    "https://e2b.mintlify.app/docs/code-interpreting/supported-languages/r.md",
+    "https://e2b.mintlify.app/docs/commands.md",
+    "https://e2b.mintlify.app/docs/commands/background.md",
+    "https://e2b.mintlify.app/docs/commands/streaming.md",
+    "https://e2b.mintlify.app/docs/cookbook.md",
+    "https://e2b.mintlify.app/docs/faq/docker-push-authentication-error.md",
+    "https://e2b.mintlify.app/docs/faq/eu-region.md",
+    "https://e2b.mintlify.app/docs/faq/increase-concurrency.md",
+    "https://e2b.mintlify.app/docs/faq/iptables-xt-owner.md",
+    "https://e2b.mintlify.app/docs/faq/paused-sandboxes-concurrency.md",
+    "https://e2b.mintlify.app/docs/faq/pip-install-error.md",
+    "https://e2b.mintlify.app/docs/faq/port-49999-not-open.md",
+    "https://e2b.mintlify.app/docs/faq/public-templates.md",
+    "https://e2b.mintlify.app/docs/faq/template-limit.md",
+    "https://e2b.mintlify.app/docs/filesystem.md",
+    "https://e2b.mintlify.app/docs/filesystem/download.md",
+    "https://e2b.mintlify.app/docs/filesystem/info.md",
+    "https://e2b.mintlify.app/docs/filesystem/metadata.md",
+    "https://e2b.mintlify.app/docs/filesystem/read-write.md",
+    "https://e2b.mintlify.app/docs/filesystem/upload.md",
+    "https://e2b.mintlify.app/docs/filesystem/watch.md",
+    "https://e2b.mintlify.app/docs/mcp.md",
+    "https://e2b.mintlify.app/docs/mcp/available-servers.md",
+    "https://e2b.mintlify.app/docs/mcp/custom-servers.md",
+    "https://e2b.mintlify.app/docs/mcp/custom-templates.md",
+    "https://e2b.mintlify.app/docs/mcp/examples.md",
+    "https://e2b.mintlify.app/docs/mcp/quickstart.md",
+    "https://e2b.mintlify.app/docs/migration/access-token-deprecation.md",
+    "https://e2b.mintlify.app/docs/migration/template-v2.md",
+    "https://e2b.mintlify.app/docs/migration/v1-build-deprecation.md",
+    "https://e2b.mintlify.app/docs/migration/v2.md",
+    "https://e2b.mintlify.app/docs/network/custom-domain.md",
+    "https://e2b.mintlify.app/docs/network/internet-access.md",
+    "https://e2b.mintlify.app/docs/network/ip-tunneling.md",
+    "https://e2b.mintlify.app/docs/network/public-url.md",
+    "https://e2b.mintlify.app/docs/network/restrict-public-access.md",
+    "https://e2b.mintlify.app/docs/quickstart.md",
+    "https://e2b.mintlify.app/docs/quickstart/connect-llms.md",
+    "https://e2b.mintlify.app/docs/quickstart/install-custom-packages.md",
+    "https://e2b.mintlify.app/docs/quickstart/upload-download-files.md",
+    "https://e2b.mintlify.app/docs/sandbox.md",
+    "https://e2b.mintlify.app/docs/sandbox/auto-resume.md",
+    "https://e2b.mintlify.app/docs/sandbox/connect.md",
+    "https://e2b.mintlify.app/docs/sandbox/environment-variables.md",
+    "https://e2b.mintlify.app/docs/sandbox/filesystem-only-snapshots.md",
+    "https://e2b.mintlify.app/docs/sandbox/git-integration.md",
+    "https://e2b.mintlify.app/docs/sandbox/lifecycle-events-api.md",
+    "https://e2b.mintlify.app/docs/sandbox/lifecycle-events-webhooks.md",
+    "https://e2b.mintlify.app/docs/sandbox/list.md",
+    "https://e2b.mintlify.app/docs/sandbox/metadata.md",
+    "https://e2b.mintlify.app/docs/sandbox/metrics.md",
+    "https://e2b.mintlify.app/docs/sandbox/otel-telemetry-export.md",
+    "https://e2b.mintlify.app/docs/sandbox/persistence.md",
+    "https://e2b.mintlify.app/docs/sandbox/pty.md",
+    "https://e2b.mintlify.app/docs/sandbox/secured-access.md",
+    "https://e2b.mintlify.app/docs/sandbox/snapshots.md",
+    "https://e2b.mintlify.app/docs/sandbox/ssh-access.md",
+    "https://e2b.mintlify.app/docs/sdk-reference",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/errors",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/errors.md",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/sandbox",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/sandbox-commands",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/sandbox-commands.md",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/sandbox-filesystem",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/sandbox-filesystem.md",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/sandbox.md",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/template",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/template-logger",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/template-logger.md",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/template-readycmd",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/template-readycmd.md",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/template.md",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/volume",
+    "https://e2b.mintlify.app/docs/sdk-reference/js-sdk/v2.29.1/volume.md",
+    "https://e2b.mintlify.app/docs/storage/archil.md",
+    "https://e2b.mintlify.app/docs/storage/cloud-buckets.md",
+    "https://e2b.mintlify.app/docs/support.md",
+    "https://e2b.mintlify.app/docs/template/base-image.md",
+    "https://e2b.mintlify.app/docs/template/build.md",
+    "https://e2b.mintlify.app/docs/template/caching.md",
+    "https://e2b.mintlify.app/docs/template/defining-template.md",
+    "https://e2b.mintlify.app/docs/template/error-handling.md",
+    "https://e2b.mintlify.app/docs/template/examples/claude-code.md",
+    "https://e2b.mintlify.app/docs/template/examples/desktop.md",
+    "https://e2b.mintlify.app/docs/template/examples/docker.md",
+    "https://e2b.mintlify.app/docs/template/examples/expo.md",
+    "https://e2b.mintlify.app/docs/template/examples/nextjs-bun.md",
+    "https://e2b.mintlify.app/docs/template/examples/nextjs.md",
+    "https://e2b.mintlify.app/docs/template/how-it-works.md",
+    "https://e2b.mintlify.app/docs/template/logging.md",
+    "https://e2b.mintlify.app/docs/template/names.md",
+    "https://e2b.mintlify.app/docs/template/private-registries.md",
+    "https://e2b.mintlify.app/docs/template/quickstart.md",
+    "https://e2b.mintlify.app/docs/template/start-ready-command.md",
+    "https://e2b.mintlify.app/docs/template/tags.md",
+    "https://e2b.mintlify.app/docs/template/user-and-workdir.md",
+    "https://e2b.mintlify.app/docs/use-cases/ci-cd.md",
+    "https://e2b.mintlify.app/docs/use-cases/coding-agents.md",
+    "https://e2b.mintlify.app/docs/use-cases/computer-use.md",
+    "https://e2b.mintlify.app/docs/use-cases/remote-browser.md",
+    "https://e2b.mintlify.app/docs/volumes.md",
+    "https://e2b.mintlify.app/docs/volumes/download.md",
+    "https://e2b.mintlify.app/docs/volumes/info.md",
+    "https://e2b.mintlify.app/docs/volumes/manage.md",
+    "https://e2b.mintlify.app/docs/volumes/migrate.md",
+    "https://e2b.mintlify.app/docs/volumes/mount.md",
+    "https://e2b.mintlify.app/docs/volumes/read-write.md",
+    "https://e2b.mintlify.app/docs/volumes/upload.md",
+    "https://e2b.mintlify.app/llms.txt",
+    "https://e2b.mintlify.app/openapi-public.yml",
+    "https://e2b.mintlify.site/llms.txt",
+    "https://github.com/e2b-dev",
+    "https://github.com/e2b-dev/docs/edit/main/docs/sdk-reference/js-sdk/v2.29.1/errors.mdx",
+    "https://github.com/e2b-dev/docs/issues/new?title=Issue",
+    "https://github.com/e2b-dev/e2b",
+    "https://linkedin.com/company/e2b-dev",
+    "https://northflank.com/blog/e2b-vs-sprites-dev",
+    "https://sandbox.{domain}",
+    "https://www.make.com/en/integrations/e2b",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=e2b",
+    "https://www.reddit.com/r/LocalLLaMA/comments/1chsx7z/is_there_an_opensource_alternative_to_e2b_e2bdev/",
+    "https://x.com/e2b",
+    "https://{port}-{sandboxID}.e2b.app"
+  ]
+}

@@ -1,0 +1,517 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "countly.com",
+    "detect": {
+      "domain": "countly.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:15:46.867Z",
+    "summary": "Countly exposes a server-side HTTP API authenticated by a user API key, plus an official npm-distributed MCP server/CLI that connects to a Countly instance using a Countly auth token.",
+    "description": "Countly is a product analytics platform for web, mobile, desktop, and IoT applications, offered as self-hosted and cloud deployments. It focuses on usage analytics, performance/crash monitoring, engagement features, and privacy-conscious data ownership.",
+    "credentials": {
+      "countly_api_key": {
+        "type": "api_key",
+        "label": "Countly user API key",
+        "generateUrl": "https://support.countly.com/hc/en-us/articles/360037092072-Server-API-Reference",
+        "setup": "In Countly, open your account **Management** menu and copy your account `api_key`. The [Server API Reference](https://support.countly.com/hc/en-us/articles/360037092072-Server-API-Reference) states that `api_key` is your account's API key and is obtained from your account Management menu.",
+        "acquisition": "manual"
+      },
+      "countly_auth_token": {
+        "type": "bearer",
+        "label": "Countly authentication token",
+        "generateUrl": "https://support.countly.com/hc/en-us/articles/26998738930972-Connecting-Countly-to-your-AI-Assistant",
+        "setup": "Create a Countly authentication token for AI assistant/MCP access following [Connecting Countly to your AI Assistant](https://support.countly.com/hc/en-us/articles/26998738930972-Connecting-Countly-to-your-AI-Assistant). The official [Countly MCP server README](https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md) requires a valid Countly authentication token with appropriate permissions and shows it supplied as `COUNTLY_AUTH_TOKEN`, `X-Countly-Auth-Token`, query parameter `auth_token`, or a token file.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "countly-server-api",
+        "name": "Countly Server API",
+        "type": "http",
+        "docs": "https://support.countly.com/hc/en-us/articles/360037092072-Server-API-Reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://support.countly.com/hc/en-us/articles/360037092072-Server-API-Reference"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "countly_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "api_key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://support.countly.com/hc/en-us/articles/360037092072-Server-API-Reference"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<your-countly-instance>"
+      },
+      {
+        "slug": "countly-mcp-server",
+        "name": "Countly MCP Server",
+        "type": "mcp",
+        "docs": "https://support.countly.com/hc/en-us/articles/26998738930972-Connecting-Countly-to-your-AI-Assistant",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://support.countly.com/hc/en-us/articles/26998738930972-Connecting-Countly-to-your-AI-Assistant",
+            "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "countly_auth_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Countly-Auth-Token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "countly_auth_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "auth_token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<your-mcp-host>/mcp",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "mcp_host",
+            "resolveFrom": "your deployed Countly MCP server hostname",
+            "description": "The MCP endpoint host where you run the Countly MCP server; the README example exposes `/mcp` on port 3000."
+          },
+          {
+            "name": "countly_server_url",
+            "resolveFrom": "your Countly instance URL",
+            "description": "Passed separately to the MCP server so it can reach your Countly instance."
+          }
+        ]
+      },
+      {
+        "slug": "countly-mcp-server-cli",
+        "name": "countly-mcp-server CLI",
+        "type": "cli",
+        "docs": "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md",
+            "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/package.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "countly_auth_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "COUNTLY_AUTH_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "countly-mcp-server",
+            "runtimeHint": "node >=18"
+          }
+        ],
+        "command": "countly-mcp-server",
+        "variables": [
+          {
+            "name": "countly_server_url",
+            "resolveFrom": "COUNTLY_SERVER_URL env var",
+            "description": "Base URL of your Countly instance; the CLI README marks it required."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:15:46.867Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 191858,
+    "completion_tokens": 1678,
+    "total_tokens": 193536
+  },
+  "visited": [
+    "https://countly.com/llms.txt",
+    "https://github.com/Countly/countly-mcp-server",
+    "https://github.com/Countly/countly-mcp-server/issues/64",
+    "https://github.com/Countly/countly-sdk-dart/blob/master/example/main.dart",
+    "https://github.com/Countly/countly-server/issues/1735",
+    "https://github.com/Countly/helm/blob/main/docs/VERIFICATION.md",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md",
+    "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/package.json",
+    "https://support.countly.com/hc/en-us/articles/14707287258137-Authentication",
+    "https://support.countly.com/hc/en-us/articles/22074341892380-Main-Agent",
+    "https://support.countly.com/hc/en-us/articles/22292083346460-Spec-Overview",
+    "https://support.countly.com/hc/en-us/articles/26998738930972-Connecting-Countly-to-your-AI-Assistant",
+    "https://support.countly.com/hc/en-us/articles/30243310651289-Surveys",
+    "https://support.countly.com/hc/en-us/articles/360037092072-Server-API-Reference",
+    "https://support.countly.com/hc/en-us/articles/360037502212-Plugin-API-Side",
+    "https://support.countly.com/hc/en-us/articles/360037753291-SDK-Development-Guide",
+    "https://support.countly.com/hc/en-us/articles/4403281285913-User-Visitor-Profiles",
+    "https://support.countly.com/hc/en-us/articles/900005403223-Exporting-Data-from-Countly",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://localhost:3000/health",
+    "http://localhost:3000/mcp",
+    "https://api.count.ly",
+    "https://app.example.com",
+    "https://archiveprogram.github.com",
+    "https://countly.com",
+    "https://countly.com/blog",
+    "https://countly.com/features",
+    "https://countly.com/llms.txt",
+    "https://countly.com/pricing",
+    "https://dash.example.com",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://example.com",
+    "https://example.com:443",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/Countly",
+    "https://github.com/Countly/countly-mcp-server",
+    "https://github.com/Countly/countly-mcp-server/actions",
+    "https://github.com/Countly/countly-mcp-server/branches",
+    "https://github.com/Countly/countly-mcp-server/commit/16bc2a206b1ecc74264a18547fd0419e241ab368",
+    "https://github.com/Countly/countly-mcp-server/commit/35d11a33d35066fc43a1a1f6ef120fc7cdc517ff",
+    "https://github.com/Countly/countly-mcp-server/commit/9b903af8061c754b1817d37a902f9ad46669c842",
+    "https://github.com/Countly/countly-mcp-server/commit/aa137ae988c99bcc2a8e1b2f082eb5b099140714",
+    "https://github.com/Countly/countly-mcp-server/commit/b210891fc664bb853da84aa4f8e6dd12ada26cca",
+    "https://github.com/Countly/countly-mcp-server/commit/bb89d9436f2546bbd8a56bdde72a3d1fb598f729",
+    "https://github.com/Countly/countly-mcp-server/commit/de1801ac769717fc15b7cfa06ef16f80bf9b2e6b",
+    "https://github.com/Countly/countly-mcp-server/commits/main/",
+    "https://github.com/Countly/countly-mcp-server/commits?author=ar2rsawseen",
+    "https://github.com/Countly/countly-mcp-server/issues",
+    "https://github.com/Countly/countly-mcp-server/issues/64",
+    "https://github.com/Countly/countly-mcp-server/models",
+    "https://github.com/Countly/countly-mcp-server/projects",
+    "https://github.com/Countly/countly-mcp-server/pull/113",
+    "https://github.com/Countly/countly-mcp-server/pull/128",
+    "https://github.com/Countly/countly-mcp-server/pulls",
+    "https://github.com/Countly/countly-mcp-server/pulse",
+    "https://github.com/Countly/countly-mcp-server/security",
+    "https://github.com/Countly/countly-mcp-server/tags",
+    "https://github.com/Countly/countly-mcp-server/tree/main/.github",
+    "https://github.com/Countly/countly-mcp-server/tree/main/.husky",
+    "https://github.com/Countly/countly-mcp-server/tree/main/.vscode",
+    "https://github.com/Countly/countly-mcp-server/tree/main/.well-known",
+    "https://github.com/Countly/countly-mcp-server/tree/main/examples",
+    "https://github.com/Countly/countly-mcp-server/tree/main/src",
+    "https://github.com/Countly/countly-mcp-server/tree/main/tests",
+    "https://github.com/Countly/countly-sdk-dart/blob/master/example/main.dart",
+    "https://github.com/Countly/countly-server/issues/1735",
+    "https://github.com/Countly/helm/blob/main/docs/VERIFICATION.md",
+    "https://github.com/accelerator",
+    "https://github.com/advisories/GHSA-5xrq-8626-4rwp",
+    "https://github.com/codecov/codecov-action",
+    "https://github.com/codecov/codecov-action/blob/main/CHANGELOG.md",
+    "https://github.com/codecov/codecov-action/compare/v5...v6",
+    "https://github.com/codecov/codecov-action/releases",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2FCountly%2Fcountly-mcp-server",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FCountly%2Fcountly-mcp-server",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=Countly%2Fcountly-mcp-server",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://maintainers.github.com",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://ops.example.com",
+    "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/README.md",
+    "https://raw.githubusercontent.com/Countly/countly-mcp-server/main/package.json",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://su",
+    "https://support.co",
+    "https://support.countly.com",
+    "https://support.countly.com/#main-content",
+    "https://support.countly.com/hc/en-us",
+    "https://support.countly.com/hc/en-us/articles/14474962938265-License-Manager",
+    "https://support.countly.com/hc/en-us/articles/14704422274585-Gateway",
+    "https://support.countly.com/hc/en-us/articles/14705448075929-Authentication-and-Authorization-Overview",
+    "https://support.countly.com/hc/en-us/articles/14707287258137-Authentication",
+    "https://support.countly.com/hc/en-us/articles/15069765402009-Jira-Integration",
+    "https://support.countly.com/hc/en-us/articles/15254758306588-Setting-Up-Monitoring-and-Alerts",
+    "https://support.countly.com/hc/en-us/articles/15331695235481-Navigating-Through-Countly-Dashboard",
+    "https://support.countly.com/hc/en-us/articles/16102533698588-Hooks",
+    "https://support.countly.com/hc/en-us/articles/16102537607068-User-Management",
+    "https://support.countly.com/hc/en-us/articles/16102538839708-Data-Migration",
+    "https://support.countly.com/hc/en-us/articles/16195129136028-Filtering-rules",
+    "https://support.countly.com/hc/en-us/articles/16837083884188-Amazon-Cognito",
+    "https://support.countly.com/hc/en-us/articles/16837140113948-Okta",
+    "https://support.countly.com/hc/en-us/articles/16837361343516-LDAP-and-Active-Directory",
+    "https://support.countly.com/hc/en-us/articles/16837584514844-OpenID-Connect-OIDC",
+    "https://support.countly.com/hc/en-us/articles/17072500159388-Content-Builder",
+    "https://support.countly.com/hc/en-us/articles/18786472881948-Self-tracking-with-Countly",
+    "https://support.countly.com/hc/en-us/articles/18948651989916-Settings-Overview",
+    "https://support.countly.com/hc/en-us/articles/18995770340380-Integrating-Journeys",
+    "https://support.countly.com/hc/en-us/articles/20469012307996-Countly-Edge-Server",
+    "https://support.countly.com/hc/en-us/articles/21009862931996-App-Separation",
+    "https://support.countly.com/hc/en-us/articles/21009872574236-Designing-Events",
+    "https://support.countly.com/hc/en-us/articles/21009932215964-Views-and-User-Properties",
+    "https://support.countly.com/hc/en-us/articles/21009946563484-Auto-vs-Manual-Tracking",
+    "https://support.countly.com/hc/en-us/articles/21010306424732-Analyzing-Your-Data-Overview",
+    "https://support.countly.com/hc/en-us/articles/21010341600924-Drill",
+    "https://support.countly.com/hc/en-us/articles/21010351317788-Formulas",
+    "https://support.countly.com/hc/en-us/articles/21010354672284-User-Profiles",
+    "https://support.countly.com/hc/en-us/articles/21010384790684-Funnels",
+    "https://support.countly.com/hc/en-us/articles/21010410297756-Cohorts",
+    "https://support.countly.com/hc/en-us/articles/21316747100953-Crash-Symbolication",
+    "https://support.countly.com/hc/en-us/articles/21624628336028-Integrate-an-SDK",
+    "https://support.countly.com/hc/en-us/articles/21655170200220-User-Identification-and-Properties",
+    "https://support.countly.com/hc/en-us/articles/21670133373212-Event-Tracking",
+    "https://support.countly.com/hc/en-us/articles/21670583492124-Session-and-View-Tracking",
+    "https://support.countly.com/hc/en-us/articles/21687198067484-Interacting-with-Users",
+    "https://support.countly.com/hc/en-us/articles/21694463321756-Crash-Tracking",
+    "https://support.countly.com/hc/en-us/articles/21729667311388-Remote-Config-and-A-B-Testing",
+    "https://support.countly.com/hc/en-us/articles/21791284726428-Privacy-and-Security",
+    "https://support.countly.com/hc/en-us/articles/21824325274524-SDK-Hub-Introduction",
+    "https://support.countly.com/hc/en-us/articles/22074253257884-Introduction",
+    "https://support.countly.com/hc/en-us/articles/22074305458588-Getting-Started-with-Cee",
+    "https://support.countly.com/hc/en-us/articles/22074341892380-Main-Agent",
+    "https://support.countly.com/hc/en-us/articles/22074428178460-Data-Privacy-and-Security",
+    "https://support.countly.com/hc/en-us/articles/22208895019676-Cohorts-Agent",
+    "https://support.countly.com/hc/en-us/articles/22208945962652-Funnels-Agent",
+    "https://support.countly.com/hc/en-us/articles/22209005110300-Drill-Agent",
+    "https://support.countly.com/hc/en-us/articles/22209023926812-Drill-Insight-Agent",
+    "https://support.countly.com/hc/en-us/articles/22292083346460-Spec-Overview",
+    "https://support.countly.com/hc/en-us/articles/22537294124444-How-to-Set-Up-A-B-Testing",
+    "https://support.countly.com/hc/en-us/articles/22936597125660-Getting-Started-with-Flex",
+    "https://support.countly.com/hc/en-us/articles/22936691608092-Managing-your-Server",
+    "https://support.countly.com/hc/en-us/articles/24059190433820-Jobs",
+    "https://support.countly.com/hc/en-us/articles/24633626978332-Two-Factor-Authentication-2FA",
+    "https://support.countly.com/hc/en-us/articles/24680249071900-Journeys-Explained",
+    "https://support.countly.com/hc/en-us/articles/25270968412572-Cohorts-Calculation-Explained",
+    "https://support.countly.com/hc/en-us/articles/25324248147740-Cohorts-Explained",
+    "https://support.countly.com/hc/en-us/articles/25480649348892-Getting-Started-with-Countly-Servers",
+    "https://support.countly.com/hc/en-us/articles/25563659752604-Setting-Up-Countly-with-Kubernetes",
+    "https://support.countly.com/hc/en-us/articles/25563708785820-Upgrading-Countly-in-Docker",
+    "https://support.countly.com/hc/en-us/articles/25564752507804-Countly-Server-Hub-Introduction",
+    "https://support.countly.com/hc/en-us/articles/25595667211164-How-to-Set-Up-Remote-Config",
+    "https://support.countly.com/hc/en-us/articles/25623697635356-Dart",
+    "https://support.countly.com/hc/en-us/articles/25697157829916-Managing-Events",
+    "https://support.countly.com/hc/en-us/articles/25697196805020-Managing-User-Properties",
+    "https://support.countly.com/hc/en-us/articles/25705649194140-Managing-Segmentation",
+    "https://support.countly.com/hc/en-us/articles/25727668430748-Managing-Validations",
+    "https://support.countly.com/hc/en-us/articles/25727705234716-Data-Regeneration",
+    "https://support.countly.com/hc/en-us/articles/26173669019804-Api-Settings",
+    "https://support.countly.com/hc/en-us/articles/26174029175964-Frontend-Settings",
+    "https://support.countly.com/hc/en-us/articles/26174060669596-Logs-Settings",
+    "https://support.countly.com/hc/en-us/articles/26174088624796-Security-Settings",
+    "https://support.countly.com/hc/en-us/articles/26174131151900-Tracking-Settings",
+    "https://support.countly.com/hc/en-us/articles/26174173640988-App-Level-Configuration-Settings",
+    "https://support.countly.com/hc/en-us/articles/26174176923420-Feature-Management-Settings",
+    "https://support.countly.com/hc/en-us/articles/26315784437020-Push-Notifications-Overview",
+    "https://support.countly.com/hc/en-us/articles/26328315198620-Integrating-Push-Notifications",
+    "https://support.countly.com/hc/en-us/articles/26338474856092-Push-Notifications-Feature-Layout",
+    "https://support.countly.com/hc/en-us/articles/26339059694748-Creating-Push-Notifications",
+    "https://support.countly.com/hc/en-us/articles/26404933988121-GTM-Template",
+    "https://support.countly.com/hc/en-us/articles/26412512035484-Push-Notification-Introduction",
+    "https://support.countly.com/hc/en-us/articles/26830872036636-Public-Endpoints-for-Restricted-Closed-Deployments",
+    "https://support.countly.com/hc/en-us/articles/26998738930972-Connecting-Countly-to-your-AI-Assistant",
+    "https://support.countly.com/hc/en-us/articles/27089854037276-HarmonyOS",
+    "https://support.countly.com/hc/en-us/articles/27463894709660-Journeys-Overview-and-Creation",
+    "https://support.countly.com/hc/en-us/articles/27464218554012-Journey-Configuration-and-Results",
+    "https://support.countly.com/hc/en-us/articles/27891385279772-App-Key-Rotation",
+    "https://support.countly.com/hc/en-us/articles/28034439942172-Setting-Up-Feedback-Widgets",
+    "https://support.countly.com/hc/en-us/articles/30243310651289-Surveys",
+    "https://support.countly.com/hc/en-us/articles/30243413088921-Net-Promoter-Score",
+    "https://support.countly.com/hc/en-us/articles/30243440966041-Ratings",
+    "https://support.countly.com/hc/en-us/articles/30459042381977-Data-Populator",
+    "https://support.countly.com/hc/en-us/articles/30459276723353-SDK-Manager",
+    "https://support.countly.com/hc/en-us/articles/33103357820441-Alerts",
+    "https://support.countly.com/hc/en-us/articles/33103635384601-Profile-Groups",
+    "https://support.countly.com/hc/en-us/articles/33144178965657-Preset-Management",
+    "https://support.countly.com/hc/en-us/articles/33146272633369-Maintaining-your-Server",
+    "https://support.countly.com/hc/en-us/articles/360036862332-Installing-the-Countly-Server",
+    "https://support.countly.com/hc/en-us/articles/360037092072-Server-API-Reference",
+    "https://support.countly.com/hc/en-us/articles/360037236491-Getting-Started",
+    "https://support.countly.com/hc/en-us/articles/360037236571-SDK-Repos-and-Features",
+    "https://support.countly.com/hc/en-us/articles/360037316931-System-Requirements",
+    "https://support.countly.com/hc/en-us/articles/360037441932-Web-analytics-JavaScript",
+    "https://support.countly.com/hc/en-us/articles/360037442892-NodeJS",
+    "https://support.countly.com/hc/en-us/articles/360037444172-High-Availability-Deployment-Countly-Enterprise",
+    "https://support.countly.com/hc/en-us/articles/360037444912-Countly-Command-Line",
+    "https://support.countly.com/hc/en-us/articles/360037502212-Plugin-API-Side",
+    "https://support.countly.com/hc/en-us/articles/360037753291-SDK-Development-Guide",
+    "https://support.countly.com/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS",
+    "https://support.countly.com/hc/en-us/articles/360037754031-Android",
+    "https://support.countly.com/hc/en-us/articles/360037754691-Windows",
+    "https://support.countly.com/hc/en-us/articles/360037813231-React-Native-Bridge",
+    "https://support.countly.com/hc/en-us/articles/360037813851-Unity",
+    "https://support.countly.com/hc/en-us/articles/360037813891-Java",
+    "https://support.countly.com/hc/en-us/articles/360037814151-Deployment-Scenarios",
+    "https://support.countly.com/hc/en-us/articles/360037814511-Setting-Up-Countly-with-Docker",
+    "https://support.countly.com/hc/en-us/articles/360037814871-Configuring-Countly",
+    "https://support.countly.com/hc/en-us/articles/360037816431-Configuring-HTTPS-and-SSL",
+    "https://support.countly.com/hc/en-us/articles/360037816491-Installing-Let-s-Encrypt-for-HTTPS",
+    "https://support.countly.com/hc/en-us/articles/360037944212-Flutter",
+    "https://support.countly.com/hc/en-us/articles/4403224194841-Revenue",
+    "https://support.countly.com/hc/en-us/articles/4403281285913-User-Visitor-Profiles",
+    "https://support.countly.com/hc/en-us/articles/4403721560857-Events",
+    "https://support.countly.com/hc/en-us/articles/4404213566105-Crashes-Errors",
+    "https://support.countly.com/hc/en-us/articles/4404570865433-Utilities-Overview",
+    "https://support.countly.com/hc/en-us/articles/4404787116569-Management-Overview",
+    "https://support.countly.com/hc/en-us/articles/4405086657049-Cohorts",
+    "https://support.countly.com/hc/en-us/articles/4405186350105-Formulas",
+    "https://support.countly.com/hc/en-us/articles/4414450842009-Retention",
+    "https://support.countly.com/hc/en-us/articles/4415405654553-Dashboards",
+    "https://support.countly.com/hc/en-us/articles/4416163384857-C",
+    "https://support.countly.com/hc/en-us/articles/4416496362393-A-B-Testing",
+    "https://support.countly.com/hc/en-us/articles/4416839480601-Upgrading-Countly-in-Kubernetes",
+    "https://support.countly.com/hc/en-us/articles/4431589003545-Analytics",
+    "https://support.countly.com/hc/en-us/articles/4437429216409-Funnels",
+    "https://support.countly.com/hc/en-us/articles/4444087015065-Drill",
+    "https://support.countly.com/hc/en-us/articles/4444616740249-Flows",
+    "https://support.countly.com/hc/en-us/articles/4519352445593-Report-Manager",
+    "https://support.countly.com/hc/en-us/articles/4652903481753-Feedback-Overview",
+    "https://support.countly.com/hc/en-us/articles/4734457847705-Performance",
+    "https://support.countly.com/hc/en-us/articles/6382403054617-Introduction",
+    "https://support.countly.com/hc/en-us/articles/900000594266-Countly-Enterprise-Images",
+    "https://support.countly.com/hc/en-us/articles/900000908046-Getting-Started-with-SDKs",
+    "https://support.countly.com/hc/en-us/articles/900002198983-Integration-Strategy-Overview",
+    "https://support.countly.com/hc/en-us/articles/900002449486-Tracking-Users-in-Countly",
+    "https://support.countly.com/hc/en-us/articles/900005345323-Countly-Basics",
+    "https://support.countly.com/hc/en-us/articles/900005403223-Exporting-Data-from-Countly",
+    "https://support.countly.com/hc/en-us/articles/9290669873305-A-Deeper-Look-at-SDK-Concepts",
+    "https://support.countly.com/hc/en-us/articles/9895605514009-Remote-Config",
+    "https://support.countly.com/hc/en-us/categories/360002373332-Knowledge-Base",
+    "https://support.countly.com/hc/en-us/requests/new",
+    "https://support.countly.com/hc/en-us/sections/22072301285148-AI-Agent-Cee",
+    "https://support.countly.com/hc/en-us/sections/22074350282268-Agent-Specs",
+    "https://support.countly.com/hc/en-us/sections/24303389864860-Helper-Docs",
+    "https://support.countly.com/hc/en-us/sections/360007309132-Reference-Documents",
+    "https://support.countly.com/hc/en-us/sections/360007405211-User-Guides",
+    "https://support.countly.com/hc/en-us/sections/360007406751-Plugin-Development",
+    "https://support.countly.com/hc/en-us/sections/360007648512-Archive",
+    "https://support.countly.com/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.countly.com%2Fhc%2Fen-us%2Farticles%2F14707287258137-Authentication",
+    "https://support.countly.com/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.countly.com%2Fhc%2Fen-us%2Farticles%2F22074341892380-Main-Agent",
+    "https://support.countly.com/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.countly.com%2Fhc%2Fen-us%2Farticles%2F22292083346460-Spec-Overview",
+    "https://support.countly.com/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.countly.com%2Fhc%2Fen-us%2Farticles%2F26998738930972-Connecting-Countly-to-your-AI-Assistant",
+    "https://support.countly.com/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.countly.com%2Fhc%2Fen-us%2Farticles%2F360037092072-Server-API-Reference",
+    "https://support.countly.com/hc/en-us/signin?return_to=https%3A%2F%2Fsupport.countly.com%2Fhc%2Fen-us%2Farticles%2F360037502212-Plugin-API-Side",
+    "https://support.github.com",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://your-countly-instance.com",
+    "https://your-server.count.ly&auth_token=your-api-key"
+  ]
+}

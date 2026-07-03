@@ -1,0 +1,557 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "cloudinary.com",
+    "detect": {
+      "domain": "cloudinary.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:13:33.362Z",
+    "summary": "Cloudinary exposes REST APIs for upload/admin workflows, an unauthenticated agent account-creation API, a hosted OAuth-protected MCP server, and a Node-based CLI.",
+    "description": "Cloudinary provides cloud-based media management for images and video, including upload, transformation, optimization, storage, and delivery. It also offers digital asset management and AI/agent tooling around those media workflows.",
+    "credentials": {
+      "cloudinary_key_secret": {
+        "type": "basic",
+        "label": "Cloudinary product environment API key and API secret",
+        "generateUrl": "https://console.cloudinary.com",
+        "setup": "Create a Cloudinary account via [free signup](https://cloudinary.com/users/register_free) or the unauthenticated [agent account creation API](https://cloudinary.com/documentation/agent_account_provisioning.md). Then get your product environment credentials from the [Console](https://console.cloudinary.com) / product environment settings, or use the returned `api_key`, `api_secret`, and `CLOUDINARY_URL` from the agent account creation response. Cloudinary's getting-started docs point developers to [Step 1: Register and find credentials](https://cloudinary.com/documentation/dev_kickstart_acct_setup).",
+        "acquisition": "manual"
+      },
+      "cloudinary_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Cloudinary MCP OAuth access token",
+        "generateUrl": "https://cloudinary.com/documentation/cloudinary_llm_mcp",
+        "setup": "Use a Cloudinary-supported MCP client and connect to the hosted MCP server described in [Cloudinary AI Agent Tools and MCP Servers](https://cloudinary.com/documentation/cloudinary_llm_mcp). The hosted server uses OAuth; the server itself responds with `invalid_token` and instructs clients to re-authenticate at its `/authorize` endpoint. In practice, start the OAuth flow from your MCP client against the hosted endpoint `https://asset-management.mcp.cloudinary.com/sse`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "cloudinary-upload-api",
+        "name": "Cloudinary Upload API",
+        "type": "http",
+        "docs": "https://cloudinary.com/documentation/image_upload_api_reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://cloudinary.com/documentation/image_upload_api_reference",
+            "https://cloudinary.com/documentation/agent_account_provisioning.md",
+            "https://cloudinary.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cloudinary_key_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://cloudinary.com/documentation/image_upload_api_reference"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.cloudinary.com/v1_1/{cloud_name}",
+        "variables": [
+          {
+            "name": "cloud_name",
+            "resolveFrom": "your Cloudinary product environment",
+            "description": "Cloudinary cloud name for the target product environment."
+          }
+        ]
+      },
+      {
+        "slug": "cloudinary-agent-account-creation-api",
+        "name": "Cloudinary Agent Account Creation API",
+        "type": "http",
+        "docs": "https://cloudinary.com/documentation/agent_account_provisioning.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://cloudinary.com/documentation/agent_account_provisioning.md",
+            "https://cloudinary.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://cloudinary.com/documentation/agent_account_provisioning.md"
+            ]
+          }
+        },
+        "url": "https://api.cloudinary.com/v1_1/provisioning/agents/accounts"
+      },
+      {
+        "slug": "cloudinary-mcp-server",
+        "name": "Cloudinary MCP Server",
+        "type": "mcp",
+        "docs": "https://cloudinary.com/documentation/cloudinary_llm_mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://cloudinary.com/documentation/cloudinary_llm_mcp",
+            "https://asset-management.mcp.cloudinary.com/sse"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cloudinary_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://asset-management.mcp.cloudinary.com/sse",
+                  "https://cloudinary.com/documentation/cloudinary_llm_mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://asset-management.mcp.cloudinary.com/sse",
+        "transports": [
+          "sse"
+        ]
+      },
+      {
+        "slug": "cloudinary-cli",
+        "name": "Cloudinary CLI",
+        "type": "cli",
+        "docs": "https://cloudinary.com/documentation/cloudinary_cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://cloudinary.com/documentation/cloudinary_cli",
+            "https://github.com/cloudinary/cloudinary-cli",
+            "https://cloudinary.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cloudinary_key_secret",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "CLOUDINARY_URL"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://cloudinary.com/documentation/cloudinary_cli",
+                  "https://cloudinary.com/documentation/agent_account_provisioning.md"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "cloudinary-cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "cld"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:13:33.362Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 216650,
+    "completion_tokens": 1639,
+    "total_tokens": 218289
+  },
+  "visited": [
+    "https://apitracker.io/a/cloudinary",
+    "https://asset-management.mcp.cloudinary.com/sse",
+    "https://blog.scalar.com/p/how-cloudinarys-api-docs-create-a",
+    "https://cloudinary.com/blog/guest_post/upload-images-to-cloudinary-with-node-js-and-react/",
+    "https://cloudinary.com/blog/node_js_file_upload_to_a_local_server_or_to_the_cloud",
+    "https://cloudinary.com/documentation/admin_api",
+    "https://cloudinary.com/documentation/agent_account_provisioning.md",
+    "https://cloudinary.com/documentation/cloudinary_cli",
+    "https://cloudinary.com/documentation/cloudinary_llm_mcp",
+    "https://cloudinary.com/documentation/cloudinary_references",
+    "https://cloudinary.com/documentation/control_access_to_media",
+    "https://cloudinary.com/documentation/dev_kickstart_acct_setup",
+    "https://cloudinary.com/documentation/getting_started_with_cloudinary_node_tutorial",
+    "https://cloudinary.com/documentation/image_upload_api_reference",
+    "https://cloudinary.com/documentation/mediaflows_block_reference",
+    "https://cloudinary.com/documentation/node_integration",
+    "https://cloudinary.com/documentation/node_quickstart",
+    "https://cloudinary.com/llms.txt",
+    "https://github.com/cloudinary/cloudinary-cli"
+  ],
+  "grounding": [
+    "https://api.cloudinary.com/v1_1/provisioning/agents/accounts",
+    "https://apitracker.io/a/cloudinary",
+    "https://app-gallery.cloudinary.com/",
+    "https://archiveprogram.github.com",
+    "https://asset-management.mcp.cloudinary.com/sse",
+    "https://blog.scalar.com/p/how-cloudinarys-api-docs-create-a",
+    "https://cloudinary.com/about",
+    "https://cloudinary.com/addons",
+    "https://cloudinary.com/blog",
+    "https://cloudinary.com/blog/",
+    "https://cloudinary.com/blog/guest_post/upload-images-to-cloudinary-with-node-js-and-react/",
+    "https://cloudinary.com/blog/node_js_file_upload_to_a_local_server_or_to_the_cloud",
+    "https://cloudinary.com/careers",
+    "https://cloudinary.com/demos",
+    "https://cloudinary.com/developers",
+    "https://cloudinary.com/dmca",
+    "https://cloudinary.com/documentation",
+    "https://cloudinary.com/documentation/accessible_media",
+    "https://cloudinary.com/documentation/accessible_media#landingpage",
+    "https://cloudinary.com/documentation/accessible_media_adaptability",
+    "https://cloudinary.com/documentation/accessible_media_images",
+    "https://cloudinary.com/documentation/accessible_media_interactive_controls",
+    "https://cloudinary.com/documentation/accessible_media_video_audio",
+    "https://cloudinary.com/documentation/accessible_media_visual_audio_clarity",
+    "https://cloudinary.com/documentation/account_management",
+    "https://cloudinary.com/documentation/account_management_troubleshooting_tips",
+    "https://cloudinary.com/documentation/account_settings",
+    "https://cloudinary.com/documentation/adaptive_bitrate_streaming",
+    "https://cloudinary.com/documentation/admin_api",
+    "https://cloudinary.com/documentation/advanced_facial_attributes_detection_addon",
+    "https://cloudinary.com/documentation/advanced_management",
+    "https://cloudinary.com/documentation/agent_account_provisioning",
+    "https://cloudinary.com/documentation/agent_account_provisioning.md",
+    "https://cloudinary.com/documentation/agent_account_provisioning.md?referrer=rootllms",
+    "https://cloudinary.com/documentation/ai_in_action",
+    "https://cloudinary.com/documentation/analyze_api_reference",
+    "https://cloudinary.com/documentation/analyze_assets",
+    "https://cloudinary.com/documentation/aspose_document_conversion_addon",
+    "https://cloudinary.com/documentation/asset_management",
+    "https://cloudinary.com/documentation/asset_management_troubleshooting_tips",
+    "https://cloudinary.com/documentation/aws_rekognition_ai_moderation_addon",
+    "https://cloudinary.com/documentation/aws_rekognition_auto_tagging_addon",
+    "https://cloudinary.com/documentation/aws_rekognition_celebrity_and_face_detection_addon",
+    "https://cloudinary.com/documentation/aws_rekognition_video_moderation_addon",
+    "https://cloudinary.com/documentation/billing_and_plans",
+    "https://cloudinary.com/documentation/client_side_uploading",
+    "https://cloudinary.com/documentation/cloudinary_add_ons",
+    "https://cloudinary.com/documentation/cloudinary_ai_background_removal_addon",
+    "https://cloudinary.com/documentation/cloudinary_ai_content_analysis_addon",
+    "https://cloudinary.com/documentation/cloudinary_ai_vision_addon",
+    "https://cloudinary.com/documentation/cloudinary_cli",
+    "https://cloudinary.com/documentation/cloudinary_duplicate_image_detection_addon",
+    "https://cloudinary.com/documentation/cloudinary_glossary",
+    "https://cloudinary.com/documentation/cloudinary_image",
+    "https://cloudinary.com/documentation/cloudinary_image#landingpage",
+    "https://cloudinary.com/documentation/cloudinary_image_troubleshooting_tips",
+    "https://cloudinary.com/documentation/cloudinary_llm_mcp",
+    "https://cloudinary.com/documentation/cloudinary_llm_mcp#skills_installation",
+    "https://cloudinary.com/documentation/cloudinary_llm_mcp.md?referrer=rootllms",
+    "https://cloudinary.com/documentation/cloudinary_moderation",
+    "https://cloudinary.com/documentation/cloudinary_references",
+    "https://cloudinary.com/documentation/cloudinary_sdks",
+    "https://cloudinary.com/documentation/cloudinary_sdks.md?referrer=rootllms",
+    "https://cloudinary.com/documentation/cloudinary_video",
+    "https://cloudinary.com/documentation/cloudinary_video#landingpage",
+    "https://cloudinary.com/documentation/cloudinary_video_player",
+    "https://cloudinary.com/documentation/cloudinary_video_troubleshooting_tips",
+    "https://cloudinary.com/documentation/cloudinary_vscode_extension",
+    "https://cloudinary.com/documentation/code_explorers",
+    "https://cloudinary.com/documentation/code_explorers_demos_index",
+    "https://cloudinary.com/documentation/control_access_to_media",
+    "https://cloudinary.com/documentation/create_assets",
+    "https://cloudinary.com/documentation/custom_metadata",
+    "https://cloudinary.com/documentation/dam_apis",
+    "https://cloudinary.com/documentation/dam_media_library_administration",
+    "https://cloudinary.com/documentation/dam_user_guide",
+    "https://cloudinary.com/documentation/dev_kickstart",
+    "https://cloudinary.com/documentation/dev_kickstart_acct_setup",
+    "https://cloudinary.com/documentation/dev_kickstart_finish",
+    "https://cloudinary.com/documentation/dev_kickstart_optimize",
+    "https://cloudinary.com/documentation/dev_kickstart_sdks",
+    "https://cloudinary.com/documentation/dev_kickstart_transform_intro",
+    "https://cloudinary.com/documentation/dev_kickstart_transform_resize",
+    "https://cloudinary.com/documentation/developer_onboarding_faq",
+    "https://cloudinary.com/documentation/digital_asset_management_overview",
+    "https://cloudinary.com/documentation/digital_asset_management_release_notes",
+    "https://cloudinary.com/documentation/eager_and_incoming_transformations",
+    "https://cloudinary.com/documentation/ecommerce_best_practices",
+    "https://cloudinary.com/documentation/ecommerce_guide",
+    "https://cloudinary.com/documentation/ecommerce_optimize_customize",
+    "https://cloudinary.com/documentation/ecommerce_visual_differentiators",
+    "https://cloudinary.com/documentation/ecommerce_workflows",
+    "https://cloudinary.com/documentation/enterprise_onboarding_faq",
+    "https://cloudinary.com/documentation/feature_demos_index",
+    "https://cloudinary.com/documentation/figma_integration",
+    "https://cloudinary.com/documentation/getting_started_with_cloudinary_node_tutorial",
+    "https://cloudinary.com/documentation/google_ai_video_moderation_addon",
+    "https://cloudinary.com/documentation/google_ai_video_transcription_addon",
+    "https://cloudinary.com/documentation/google_auto_tagging_addon",
+    "https://cloudinary.com/documentation/google_automatic_video_tagging_addon",
+    "https://cloudinary.com/documentation/image_delivery_options",
+    "https://cloudinary.com/documentation/image_generation_addon",
+    "https://cloudinary.com/documentation/image_generation_api_reference",
+    "https://cloudinary.com/documentation/image_transformations",
+    "https://cloudinary.com/documentation/image_upload_api_reference",
+    "https://cloudinary.com/documentation/imagga_auto_tagging_addon",
+    "https://cloudinary.com/documentation/imagga_crop_and_scale_addon",
+    "https://cloudinary.com/documentation/index.md?referrer=rootllms",
+    "https://cloudinary.com/documentation/integrations",
+    "https://cloudinary.com/documentation/llms-cloudinary-assets.txt?referrer=rootllms",
+    "https://cloudinary.com/documentation/llms-image-and-video-apis.txt?referrer=docpage",
+    "https://cloudinary.com/documentation/llms-image-and-video-apis.txt?referrer=rootllms",
+    "https://cloudinary.com/documentation/llms-integrations.txt?referrer=rootllms",
+    "https://cloudinary.com/documentation/llms-mediaflows.txt?referrer=rootllms",
+    "https://cloudinary.com/documentation/llms.txt?referrer=docpage",
+    "https://cloudinary.com/documentation/llms.txt?referrer=rootllms",
+    "https://cloudinary.com/documentation/manage_and_analyze_addons",
+    "https://cloudinary.com/documentation/managing_assets",
+    "https://cloudinary.com/documentation/marketplace_products_sample_project",
+    "https://cloudinary.com/documentation/media_editor",
+    "https://cloudinary.com/documentation/media_library_for_developers",
+    "https://cloudinary.com/documentation/mediaflows",
+    "https://cloudinary.com/documentation/mediaflows_block_reference",
+    "https://cloudinary.com/documentation/mediaflows_easyflows",
+    "https://cloudinary.com/documentation/mediaflows_powerflows",
+    "https://cloudinary.com/documentation/mediaflows_release_notes",
+    "https://cloudinary.com/documentation/microsoft_azure_video_indexer_addon",
+    "https://cloudinary.com/documentation/migration",
+    "https://cloudinary.com/documentation/moderate_assets",
+    "https://cloudinary.com/documentation/more_products",
+    "https://cloudinary.com/documentation/native_mobile_development",
+    "https://cloudinary.com/documentation/node_integration",
+    "https://cloudinary.com/documentation/node_quickstart",
+    "https://cloudinary.com/documentation/notifications",
+    "https://cloudinary.com/documentation/ocr_text_detection_and_extraction_addon",
+    "https://cloudinary.com/documentation/onboarding_resources",
+    "https://cloudinary.com/documentation/optimization_and_delivery_tutorials",
+    "https://cloudinary.com/documentation/perception_point_malware_detection_addon",
+    "https://cloudinary.com/documentation/permissions_api",
+    "https://cloudinary.com/documentation/permissions_overview",
+    "https://cloudinary.com/documentation/pricing.md?referrer=rootllms",
+    "https://cloudinary.com/documentation/product_environment_settings",
+    "https://cloudinary.com/documentation/product_gallery",
+    "https://cloudinary.com/documentation/profile_picture_sample_project",
+    "https://cloudinary.com/documentation/programmable_media_asset_usage_data",
+    "https://cloudinary.com/documentation/programmable_media_guides",
+    "https://cloudinary.com/documentation/programmable_media_overview",
+    "https://cloudinary.com/documentation/programmable_media_overview#landingpage",
+    "https://cloudinary.com/documentation/programmable_media_release_notes",
+    "https://cloudinary.com/documentation/programmatic_asset_management_tutorials",
+    "https://cloudinary.com/documentation/provisioning_api",
+    "https://cloudinary.com/documentation/remove_the_background_image_editing_addon",
+    "https://cloudinary.com/documentation/sdk_generated_refs",
+    "https://cloudinary.com/documentation/sdk_quickstarts",
+    "https://cloudinary.com/documentation/sdk_quickstarts.md?referrer=rootllms",
+    "https://cloudinary.com/documentation/sdks/dart/url-gen/index.html",
+    "https://cloudinary.com/documentation/sdks/js/frontend-frameworks/AngularSDK",
+    "https://cloudinary.com/documentation/sdks/js/frontend-frameworks/ReactSDK",
+    "https://cloudinary.com/documentation/sdks/js/frontend-frameworks/VueSDK",
+    "https://cloudinary.com/documentation/sdks/js/transformation-builder/index.html",
+    "https://cloudinary.com/documentation/sdks/js/url-gen/index.html",
+    "https://cloudinary.com/documentation/sdks/php/index",
+    "https://cloudinary.com/documentation/searching_for_assets",
+    "https://cloudinary.com/documentation/social_media_videos",
+    "https://cloudinary.com/documentation/solution_overview",
+    "https://cloudinary.com/documentation/transformation_counts",
+    "https://cloudinary.com/documentation/transformation_reference",
+    "https://cloudinary.com/documentation/transformation_tutorials",
+    "https://cloudinary.com/documentation/transformations_addons",
+    "https://cloudinary.com/documentation/translation_addons",
+    "https://cloudinary.com/documentation/try_before_you_buy_sample_project",
+    "https://cloudinary.com/documentation/tutorial_screencasts",
+    "https://cloudinary.com/documentation/upload_images",
+    "https://cloudinary.com/documentation/upload_images#landingpage",
+    "https://cloudinary.com/documentation/upload_images_troubleshooting_tips",
+    "https://cloudinary.com/documentation/upload_parameters",
+    "https://cloudinary.com/documentation/upload_presets",
+    "https://cloudinary.com/documentation/upload_widget",
+    "https://cloudinary.com/documentation/url2png_website_screenshots_addon",
+    "https://cloudinary.com/documentation/user_generated_content",
+    "https://cloudinary.com/documentation/user_provisioning",
+    "https://cloudinary.com/documentation/using_cloudinary_postman_collections",
+    "https://cloudinary.com/documentation/video_addons",
+    "https://cloudinary.com/documentation/video_analytics",
+    "https://cloudinary.com/documentation/video_and_audio_optimization",
+    "https://cloudinary.com/documentation/video_best_practices",
+    "https://cloudinary.com/documentation/video_config_reference",
+    "https://cloudinary.com/documentation/video_live_streaming",
+    "https://cloudinary.com/documentation/video_live_streaming_reference",
+    "https://cloudinary.com/documentation/video_manipulation_and_delivery",
+    "https://cloudinary.com/documentation/video_player_profiles_reference",
+    "https://cloudinary.com/documentation/video_review_sample_project",
+    "https://cloudinary.com/documentation/video_transcription",
+    "https://cloudinary.com/documentation/viesus_automatic_image_enhancement_addon",
+    "https://cloudinary.com/documentation/webpurify_image_moderation_addon",
+    "https://cloudinary.com/events",
+    "https://cloudinary.com/glossary",
+    "https://cloudinary.com/guides/digital-asset-management/what-is-digital-asset-management",
+    "https://cloudinary.com/integrations",
+    "https://cloudinary.com/integrations/aws",
+    "https://cloudinary.com/integrations/contentful",
+    "https://cloudinary.com/integrations/shopify",
+    "https://cloudinary.com/integrations/syndigo",
+    "https://cloudinary.com/integrations/wordpress",
+    "https://cloudinary.com/labs",
+    "https://cloudinary.com/llms.txt",
+    "https://cloudinary.com/newsroom",
+    "https://cloudinary.com/partners",
+    "https://cloudinary.com/partners/extensibility",
+    "https://cloudinary.com/platform",
+    "https://cloudinary.com/pricing",
+    "https://cloudinary.com/privacy",
+    "https://cloudinary.com/products/agents",
+    "https://cloudinary.com/products/cloudinary_ai",
+    "https://cloudinary.com/products/digital_asset_management",
+    "https://cloudinary.com/products/digital_asset_management/dam-video",
+    "https://cloudinary.com/products/image",
+    "https://cloudinary.com/products/mediaflows",
+    "https://cloudinary.com/products/moderation",
+    "https://cloudinary.com/products/video",
+    "https://cloudinary.com/resources",
+    "https://cloudinary.com/solutions/3d",
+    "https://cloudinary.com/solutions/agentic-commerce",
+    "https://cloudinary.com/solutions/cloudinary-as-infrastructure",
+    "https://cloudinary.com/solutions/cloudinary-for-startups",
+    "https://cloudinary.com/solutions/composable-architecture",
+    "https://cloudinary.com/solutions/creative-automation",
+    "https://cloudinary.com/solutions/cx-professionals",
+    "https://cloudinary.com/solutions/e-commerce-teams",
+    "https://cloudinary.com/solutions/headless",
+    "https://cloudinary.com/solutions/industries/cloudinary-for-nonprofits",
+    "https://cloudinary.com/solutions/industries/media_entertainment",
+    "https://cloudinary.com/solutions/industries/travel_hospitality",
+    "https://cloudinary.com/solutions/it-teams",
+    "https://cloudinary.com/solutions/marketing-teams",
+    "https://cloudinary.com/solutions/performance_optimization",
+    "https://cloudinary.com/solutions/product-and-engineering-teams",
+    "https://cloudinary.com/solutions/retail",
+    "https://cloudinary.com/solutions/user-generated-content",
+    "https://cloudinary.com/tools",
+    "https://cloudinary.com/tou",
+    "https://cloudinary.com/users/register_free",
+    "https://console.cloudinary.com",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/cloudinary",
+    "https://github.com/cloudinary/cloudinary-cli",
+    "https://github.com/cloudinary/cloudinary-cli/actions",
+    "https://github.com/cloudinary/cloudinary-cli/blob/master/.gitignore",
+    "https://github.com/cloudinary/cloudinary-cli/blob/master/CHANGELOG.md",
+    "https://github.com/cloudinary/cloudinary-cli/blob/master/DOCKER.md",
+    "https://github.com/cloudinary/cloudinary-cli/blob/master/Dockerfile",
+    "https://github.com/cloudinary/cloudinary-cli/branches",
+    "https://github.com/cloudinary/cloudinary-cli/commit/0e661ea40f09b3208c787e97931939cdde458c1b",
+    "https://github.com/cloudinary/cloudinary-cli/commit/5a769f5e9c083114cb52403a552d286108dc4b51",
+    "https://github.com/cloudinary/cloudinary-cli/commit/855cef9f576a452f650d82aa929fc51ce324e953",
+    "https://github.com/cloudinary/cloudinary-cli/commit/c9cb433c288c6ee5bc791ce6085dbfd501a35f3c",
+    "https://github.com/cloudinary/cloudinary-cli/commits/master/",
+    "https://github.com/cloudinary/cloudinary-cli/issues",
+    "https://github.com/cloudinary/cloudinary-cli/projects",
+    "https://github.com/cloudinary/cloudinary-cli/pulls",
+    "https://github.com/cloudinary/cloudinary-cli/pulse",
+    "https://github.com/cloudinary/cloudinary-cli/security",
+    "https://github.com/cloudinary/cloudinary-cli/tags",
+    "https://github.com/cloudinary/cloudinary-cli/tree/master/.github",
+    "https://github.com/cloudinary/cloudinary-cli/tree/master/cloudinary_cli",
+    "https://github.com/cloudinary/cloudinary-cli/tree/master/test",
+    "https://github.com/cloudinary/cloudinary-cli/tree/master/tools",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fcloudinary%2Fcloudinary-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fcloudinary%2Fcloudinary-cli",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=cloudinary%2Fcloudinary-cli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://maintainers.github.com",
+    "https://pkg.go.dev/github.com/cloudinary/cloudinary-go",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.cloudinary.com/hc/en-us",
+    "https://support.cloudinary.com/hc/en-us/requests/new",
+    "https://support.github.com",
+    "https://training.cloudinary.com/",
+    "https://www.youtube.com/playlist?list=PL8dVGjLA2oMoa7hMD3Shp9gXecjoQI8bb",
+    "https://www.youtube.com/playlist?list=PL8dVGjLA2oMowBlDwt7FabARmk3VdilO3",
+    "https://www.youtube.com/playlist?list=PL8dVGjLA2oMpaTbvoKCaRNBMQzBUIv7N8"
+  ]
+}

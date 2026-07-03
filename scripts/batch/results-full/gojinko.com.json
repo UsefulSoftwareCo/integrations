@@ -1,0 +1,480 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "gojinko.com",
+    "detect": {
+      "domain": "gojinko.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:50:21.057Z",
+    "summary": "Jinko exposes one authenticated REST API, one remote MCP endpoint, and one CLI; auth is via `jnk_` API keys or OAuth, with separate sandbox and production environments.",
+    "credentials": {
+      "jnk_api_key": {
+        "type": "api_key",
+        "label": "Jinko API key",
+        "generateUrl": "https://gojinko.com/dashboard/keys",
+        "setup": "Go to the [API keys dashboard](https://gojinko.com/dashboard/keys), sign in, and click **Create key**. The key is shown once and starts with `jnk_`. Copy it into your secret store immediately. Use the same key for REST, the CLI (`jinko auth login --key ...` or `JINKO_API_KEY`), and MCP clients that need direct bearer auth. Jinko uses separate keys for production and sandbox.",
+        "acquisition": "manual"
+      },
+      "jinko_oauth": {
+        "type": "oauth2",
+        "label": "Jinko OAuth token",
+        "setup": "Use the browser-based OAuth flow described in the docs. For the CLI, run `jinko auth login` and complete the device flow in your browser. For MCP clients that support OAuth/DCR, add the remote MCP endpoint and let the client discover/register with Jinko Auth automatically. OAuth tokens are separate from `jnk_` API keys and are not interchangeable with MCP bearer-key mode.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "jinko-public-api",
+        "name": "Jinko Public API",
+        "type": "http",
+        "docs": "https://docs.gojinko.com/api-reference/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.gojinko.com/api-reference/introduction",
+            "https://docs.gojinko.com/authentication/api-keys",
+            "https://docs.gojinko.com/authentication/oauth"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "jnk_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "ApiKeyAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gojinko.com/api-reference/introduction",
+                  "https://docs.gojinko.com/authentication/api-keys"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "jnk_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gojinko.com/api-reference/introduction",
+                  "https://docs.gojinko.com/authentication/api-keys"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "jinko_oauth",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gojinko.com/authentication/oauth",
+                  "https://docs.gojinko.com/api-reference/introduction"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.gojinko.com"
+      },
+      {
+        "slug": "jinko-mcp",
+        "name": "Jinko MCP",
+        "type": "mcp",
+        "docs": "https://docs.gojinko.com/connect/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.gojinko.com/connect/mcp",
+            "https://docs.gojinko.com/authentication/oauth",
+            "https://docs.gojinko.com/authentication/api-keys"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "jinko_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gojinko.com/authentication/oauth",
+                  "https://docs.gojinko.com/connect/mcp"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "jnk_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gojinko.com/connect/mcp",
+                  "https://docs.gojinko.com/authentication/api-keys"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.builders.gojinko.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "jinko-cli",
+        "name": "Jinko CLI",
+        "type": "cli",
+        "docs": "https://docs.gojinko.com/connect/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.gojinko.com/connect/cli",
+            "https://docs.gojinko.com/authentication/api-keys",
+            "https://docs.gojinko.com/authentication/oauth"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "jinko_oauth",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "jinko auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gojinko.com/connect/cli",
+                  "https://docs.gojinko.com/authentication/oauth"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "jnk_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "jinko auth login --key jnk_your_key",
+                    "env": [
+                      "JINKO_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gojinko.com/connect/cli",
+                  "https://docs.gojinko.com/authentication/api-keys"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@gojinko/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "jinko"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:50:21.057Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 123735,
+    "completion_tokens": 1448,
+    "total_tokens": 125183
+  },
+  "visited": [
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
+    "https://docs.gojinko.com",
+    "https://docs.gojinko.com/api",
+    "https://docs.gojinko.com/api-reference/introduction",
+    "https://docs.gojinko.com/authentication/api-keys",
+    "https://docs.gojinko.com/authentication/oauth",
+    "https://docs.gojinko.com/cli",
+    "https://docs.gojinko.com/connect/cli",
+    "https://docs.gojinko.com/connect/mcp",
+    "https://docs.gojinko.com/mcp",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://gojinko.com",
+    "https://gojinko.com/products/api",
+    "https://gojinko.com/products/mcp-cli",
+    "https://mcpmarket.com/es/tools/skills/graphql-api-cli-integration",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.gojinko.com",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "https://api.example.com/v1/find_destination",
+    "https://api.gojinko.com",
+    "https://api.gojinko.com/v1/flight_search",
+    "https://api.sandbox.gojinko.com",
+    "https://auth.gojinko.com/device",
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
+    "https://discord.gg/zw6t5MprgP",
+    "https://docs.gojinko.com",
+    "https://docs.gojinko.com/",
+    "https://docs.gojinko.com/#api-key-mode",
+    "https://docs.gojinko.com/#authenticate",
+    "https://docs.gojinko.com/#authentication",
+    "https://docs.gojinko.com/#authorization-x-api-key",
+    "https://docs.gojinko.com/#base-url",
+    "https://docs.gojinko.com/#body-adults",
+    "https://docs.gojinko.com/#body-ages",
+    "https://docs.gojinko.com/#body-cabin-class",
+    "https://docs.gojinko.com/#body-children",
+    "https://docs.gojinko.com/#body-currency",
+    "https://docs.gojinko.com/#body-departure-date-ranges",
+    "https://docs.gojinko.com/#body-departure-dates",
+    "https://docs.gojinko.com/#body-destination-type",
+    "https://docs.gojinko.com/#body-destinations",
+    "https://docs.gojinko.com/#body-direct-only",
+    "https://docs.gojinko.com/#body-flights-per-destination",
+    "https://docs.gojinko.com/#body-infants-in-lap",
+    "https://docs.gojinko.com/#body-infants-in-seat",
+    "https://docs.gojinko.com/#body-intent",
+    "https://docs.gojinko.com/#body-limit",
+    "https://docs.gojinko.com/#body-locale",
+    "https://docs.gojinko.com/#body-max-total",
+    "https://docs.gojinko.com/#body-offset",
+    "https://docs.gojinko.com/#body-origin-type",
+    "https://docs.gojinko.com/#body-origins",
+    "https://docs.gojinko.com/#body-residency-country",
+    "https://docs.gojinko.com/#body-return-date-ranges",
+    "https://docs.gojinko.com/#body-return-dates",
+    "https://docs.gojinko.com/#body-sort-by",
+    "https://docs.gojinko.com/#body-stay-days",
+    "https://docs.gojinko.com/#body-stay-days-range",
+    "https://docs.gojinko.com/#body-student",
+    "https://docs.gojinko.com/#body-trip-type",
+    "https://docs.gojinko.com/#body-youth",
+    "https://docs.gojinko.com/#claude-code",
+    "https://docs.gojinko.com/#cli-oauth-device-flow",
+    "https://docs.gojinko.com/#commands-by-capability",
+    "https://docs.gojinko.com/#common-failures",
+    "https://docs.gojinko.com/#content-area",
+    "https://docs.gojinko.com/#cursor",
+    "https://docs.gojinko.com/#endpoint",
+    "https://docs.gojinko.com/#endpoint-groups",
+    "https://docs.gojinko.com/#environments",
+    "https://docs.gojinko.com/#environments-prod-%2F-sandbox",
+    "https://docs.gojinko.com/#environments-prod-/-sandbox",
+    "https://docs.gojinko.com/#first-request",
+    "https://docs.gojinko.com/#get-a-key",
+    "https://docs.gojinko.com/#install",
+    "https://docs.gojinko.com/#mcp-oauth-dcr",
+    "https://docs.gojinko.com/#observability",
+    "https://docs.gojinko.com/#output",
+    "https://docs.gojinko.com/#quotas",
+    "https://docs.gojinko.com/#response-destinations",
+    "https://docs.gojinko.com/#response-envelope",
+    "https://docs.gojinko.com/#response-next-page-token",
+    "https://docs.gojinko.com/#response-total",
+    "https://docs.gojinko.com/#rotation",
+    "https://docs.gojinko.com/#sandbox",
+    "https://docs.gojinko.com/#sandbox-keys",
+    "https://docs.gojinko.com/#supported-clients",
+    "https://docs.gojinko.com/#the-trip-one-booking-unit-for-the-whole-journey",
+    "https://docs.gojinko.com/#three-ways-to-connect",
+    "https://docs.gojinko.com/#typical-request",
+    "https://docs.gojinko.com/#use-a-key",
+    "https://docs.gojinko.com/#what-happens-under-the-hood",
+    "https://docs.gojinko.com/#what-you-can-build",
+    "https://docs.gojinko.com/#where-to-go-next",
+    "https://docs.gojinko.com/#which-auth-should-i-use",
+    "https://docs.gojinko.com/#workos-oauth-on-the-rest-api",
+    "https://docs.gojinko.com/analytics/demand-destination",
+    "https://docs.gojinko.com/api",
+    "https://docs.gojinko.com/api-reference/introduction",
+    "https://docs.gojinko.com/api/agent-payment/submit",
+    "https://docs.gojinko.com/api/audience",
+    "https://docs.gojinko.com/api/audience/trend",
+    "https://docs.gojinko.com/api/checkout",
+    "https://docs.gojinko.com/api/destination",
+    "https://docs.gojinko.com/api/destination/trend",
+    "https://docs.gojinko.com/api/exchange/commit",
+    "https://docs.gojinko.com/api/exchange/price",
+    "https://docs.gojinko.com/api/exchange/shop",
+    "https://docs.gojinko.com/api/exchange/status",
+    "https://docs.gojinko.com/api/find-dates",
+    "https://docs.gojinko.com/api/find-destination",
+    "https://docs.gojinko.com/api/flight-calendar",
+    "https://docs.gojinko.com/api/flight-search",
+    "https://docs.gojinko.com/api/get-booking",
+    "https://docs.gojinko.com/api/hotel-cancel",
+    "https://docs.gojinko.com/api/hotel-details",
+    "https://docs.gojinko.com/api/hotel-search",
+    "https://docs.gojinko.com/api/lowest-fare",
+    "https://docs.gojinko.com/api/market",
+    "https://docs.gojinko.com/api/market/trend",
+    "https://docs.gojinko.com/api/price-monitoring",
+    "https://docs.gojinko.com/api/refund/check",
+    "https://docs.gojinko.com/api/refund/commit",
+    "https://docs.gojinko.com/api/refund/status",
+    "https://docs.gojinko.com/api/select-ancillaries",
+    "https://docs.gojinko.com/api/trend",
+    "https://docs.gojinko.com/api/trip",
+    "https://docs.gojinko.com/api/trip-status",
+    "https://docs.gojinko.com/api/trip/ancillaries",
+    "https://docs.gojinko.com/api/webhooks",
+    "https://docs.gojinko.com/api/webhooks/test",
+    "https://docs.gojinko.com/authentication/api-keys",
+    "https://docs.gojinko.com/authentication/api-keys#sandbox-keys",
+    "https://docs.gojinko.com/authentication/oauth",
+    "https://docs.gojinko.com/cli",
+    "https://docs.gojinko.com/cli/agent-pay/submit",
+    "https://docs.gojinko.com/cli/auth/login",
+    "https://docs.gojinko.com/cli/auth/logout",
+    "https://docs.gojinko.com/cli/auth/status",
+    "https://docs.gojinko.com/cli/checkout",
+    "https://docs.gojinko.com/cli/config/set",
+    "https://docs.gojinko.com/cli/config/show",
+    "https://docs.gojinko.com/cli/exchange/commit",
+    "https://docs.gojinko.com/cli/exchange/price",
+    "https://docs.gojinko.com/cli/exchange/shop",
+    "https://docs.gojinko.com/cli/exchange/status",
+    "https://docs.gojinko.com/cli/find-dates",
+    "https://docs.gojinko.com/cli/find-destination",
+    "https://docs.gojinko.com/cli/flight-calendar",
+    "https://docs.gojinko.com/cli/flight-search",
+    "https://docs.gojinko.com/cli/get-ancillaries",
+    "https://docs.gojinko.com/cli/get-booking",
+    "https://docs.gojinko.com/cli/hotel-cancel",
+    "https://docs.gojinko.com/cli/hotel-details",
+    "https://docs.gojinko.com/cli/hotel-search",
+    "https://docs.gojinko.com/cli/lowest-fare",
+    "https://docs.gojinko.com/cli/overview",
+    "https://docs.gojinko.com/cli/price-monitoring",
+    "https://docs.gojinko.com/cli/refund/check",
+    "https://docs.gojinko.com/cli/refund/commit",
+    "https://docs.gojinko.com/cli/refund/status",
+    "https://docs.gojinko.com/cli/schema",
+    "https://docs.gojinko.com/cli/select-ancillaries",
+    "https://docs.gojinko.com/cli/travel-demand/audience",
+    "https://docs.gojinko.com/cli/travel-demand/audience-trend",
+    "https://docs.gojinko.com/cli/travel-demand/destination",
+    "https://docs.gojinko.com/cli/travel-demand/destination-trend",
+    "https://docs.gojinko.com/cli/travel-demand/market",
+    "https://docs.gojinko.com/cli/travel-demand/market-trend",
+    "https://docs.gojinko.com/cli/travel-demand/trend",
+    "https://docs.gojinko.com/cli/trip",
+    "https://docs.gojinko.com/cli/trip-status",
+    "https://docs.gojinko.com/concepts/ancillaries",
+    "https://docs.gojinko.com/concepts/errors",
+    "https://docs.gojinko.com/concepts/llms-txt",
+    "https://docs.gojinko.com/concepts/overview",
+    "https://docs.gojinko.com/concepts/rate-limits",
+    "https://docs.gojinko.com/connect/cli",
+    "https://docs.gojinko.com/connect/cli#environments-prod-sandbox",
+    "https://docs.gojinko.com/connect/mcp",
+    "https://docs.gojinko.com/connect/sdk",
+    "https://docs.gojinko.com/connect/sdk#environments-prod-sandbox",
+    "https://docs.gojinko.com/connect/skills",
+    "https://docs.gojinko.com/guides/flight-booking",
+    "https://docs.gojinko.com/guides/flight-hotel-booking",
+    "https://docs.gojinko.com/guides/hotel-booking",
+    "https://docs.gojinko.com/guides/webhooks",
+    "https://docs.gojinko.com/introduction",
+    "https://docs.gojinko.com/llms.txt",
+    "https://docs.gojinko.com/mcp",
+    "https://docs.gojinko.com/quickstart",
+    "https://docs.gojinko.com/quickstart#connect-via-api-key",
+    "https://docs.gojinko.com/tools/find-destination",
+    "https://docs.gojinko.com/tools/overview",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://gojinko.com",
+    "https://gojinko.com/chatgpt",
+    "https://gojinko.com/dashboard",
+    "https://gojinko.com/dashboard/keys",
+    "https://gojinko.com/pricing",
+    "https://gojinko.com/pricing/",
+    "https://gojinko.com/privacy",
+    "https://gojinko.com/products/api",
+    "https://gojinko.com/products/flights/",
+    "https://gojinko.com/products/hotels/",
+    "https://gojinko.com/products/mcp-cli",
+    "https://gojinko.com/solutions/builders/",
+    "https://gojinko.com/solutions/consumers/",
+    "https://gojinko.com/solutions/entrepreneurs/",
+    "https://gojinko.com/terms",
+    "https://gojinko.com/usecases/",
+    "https://images.gojinko.com/destinations/par.jpg",
+    "https://mcp.builders.gojinko.com/.well-known/oauth-authorization-server",
+    "https://mcp.builders.gojinko.com/mcp",
+    "https://mcp.builders.sandbox.gojinko.com/mcp",
+    "https://mcpmarket.com/es/tools/skills/graphql-api-cli-integration",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.gojinko.com",
+    "https://www.gojinko.com/pricing",
+    "https://www.gojinko.com/pricing/",
+    "https://www.gojinko.com/privacy",
+    "https://www.gojinko.com/products/flights/",
+    "https://www.gojinko.com/products/hotels/",
+    "https://www.gojinko.com/solutions/builders/",
+    "https://www.gojinko.com/solutions/consumers/",
+    "https://www.gojinko.com/solutions/entrepreneurs/",
+    "https://www.gojinko.com/terms",
+    "https://www.gojinko.com/usecases/",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=jinko",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

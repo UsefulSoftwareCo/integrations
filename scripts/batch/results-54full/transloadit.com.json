@@ -1,0 +1,553 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "transloadit.com",
+    "detect": {
+      "domain": "transloadit.com",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:01:25.242Z",
+    "summary": "Transloadit exposes a JSON REST API at api2.transloadit.com, a hosted MCP endpoint at /mcp, a self-hostable MCP server package, and a Node-distributed CLI (`transloadit`).",
+    "description": "Transloadit is a file uploading and media-processing service that lets developers define workflows as JSON Assembly Instructions. It handles uploads, transformations, and exports to external storage providers through a hosted API platform.",
+    "credentials": {
+      "transloadit_auth_pair": {
+        "type": "compound",
+        "label": "Transloadit Auth Key + Auth Secret",
+        "generateUrl": "https://transloadit.com/c/credentials/",
+        "setup": "Create a Transloadit account/workspace, then open the [Credentials](https://transloadit.com/c/credentials/) page to copy your `Auth Key` and `Auth Secret`. Signature Authentication settings are managed in [Workspace Settings](https://transloadit.com/c/settings/). Use this pair either to sign API `params` requests or to mint short-lived Bearer tokens via [`POST /token`](https://transloadit.com/docs/api/token-post/)."
+      },
+      "transloadit_bearer_token": {
+        "type": "bearer",
+        "label": "Transloadit short-lived Bearer token",
+        "generateUrl": "https://transloadit.com/docs/api/token-post/",
+        "setup": "Mint a short-lived access token from [`POST /token`](https://transloadit.com/docs/api/token-post/) using HTTP Basic Auth with your `Auth Key` and `Auth Secret`, or run `npx -y @transloadit/node auth token` (use `--aud mcp` for the hosted MCP endpoint). Tokens are valid for 6 hours and are then sent as `Authorization: Bearer <access_token>`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "transloadit-rest-api",
+        "name": "Transloadit REST API",
+        "type": "http",
+        "docs": "https://transloadit.com/docs/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://transloadit.com/docs/api/",
+            "https://transloadit.com/docs/api/assemblies-post/",
+            "https://transloadit.com/docs/api/authentication/",
+            "https://transloadit.com/docs/api/token-post/",
+            "https://transloadit.com/docs/api/resumable-uploads/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "transloadit_auth_pair",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://transloadit.com/docs/api/authentication/",
+                  "https://transloadit.com/docs/api/assemblies-post/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "transloadit_auth_pair",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://transloadit.com/docs/api/token-post/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "transloadit_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://transloadit.com/docs/api/token-post/",
+                  "https://transloadit.com/docs/sdks/mcp-server/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api2.transloadit.com"
+      },
+      {
+        "slug": "transloadit-hosted-mcp-server",
+        "name": "Transloadit hosted MCP server",
+        "type": "mcp",
+        "docs": "https://transloadit.com/docs/sdks/mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://transloadit.com/docs/sdks/mcp-server/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "transloadit_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://transloadit.com/docs/sdks/mcp-server/",
+                  "https://transloadit.com/docs/api/token-post/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api2.transloadit.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "transloadit-cli",
+        "name": "Transloadit CLI",
+        "type": "cli",
+        "docs": "https://transloadit.com/docs/sdks/node-sdk/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://transloadit.com/docs/sdks/node-sdk/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "transloadit_auth_pair",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "TRANSLOADIT_KEY",
+                      "TRANSLOADIT_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://transloadit.com/docs/sdks/node-sdk/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@transloadit/node",
+            "runtimeHint": "npx / Node.js"
+          }
+        ],
+        "command": "transloadit"
+      },
+      {
+        "slug": "transloadit-self-hosted-mcp-server",
+        "name": "Transloadit self-hosted MCP server",
+        "type": "mcp",
+        "docs": "https://transloadit.com/docs/sdks/mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://transloadit.com/docs/sdks/mcp-server/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "transloadit_auth_pair",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "npx -y @transloadit/mcp-server http",
+                    "env": [
+                      "TRANSLOADIT_KEY",
+                      "TRANSLOADIT_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://transloadit.com/docs/sdks/mcp-server/"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:01:25.242Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 72514,
+    "completion_tokens": 1497,
+    "total_tokens": 74011
+  },
+  "visited": [
+    "https://github.com/transloadit/transloadify",
+    "https://transloadit.com/blog/2017/02/transloadify/",
+    "https://transloadit.com/docs/",
+    "https://transloadit.com/docs/api/",
+    "https://transloadit.com/docs/api/assemblies-post/",
+    "https://transloadit.com/docs/api/authentication/",
+    "https://transloadit.com/docs/api/resumable-uploads/",
+    "https://transloadit.com/docs/api/token-post/",
+    "https://transloadit.com/docs/sdks/",
+    "https://transloadit.com/docs/sdks/mcp-server/",
+    "https://transloadit.com/docs/sdks/node-sdk/",
+    "https://transloadit.com/llms.txt"
+  ],
+  "grounding": [
+    "http://api2.morven.transloadit.com/assemblies/0fce5b1063e611e88d8eb130f7921d8a",
+    "https://[your-workspace",
+    "https://api2-freja.transloadit.com/assemblies/b841ea401e1a11e7b37d7bda1b503cdd",
+    "https://api2-freja.transloadit.com/resumable/files/",
+    "https://api2-freja.transloadit.com/resumable/files/136058f2ef4dc9de3f5c23ceed591545",
+    "https://api2-freja.transloadit.com/ws20277",
+    "https://api2-morven.transloadit.com/assemblies/0fce5b1063e611e88d8eb130f7921d8a",
+    "https://api2-morven.transloadit.com/resumable/files/",
+    "https://api2-morven.transloadit.com/uppy-server/",
+    "https://api2-morven.transloadit.com/ws20243",
+    "https://api2.transloadit.com/assemblies",
+    "https://api2.transloadit.com/mcp",
+    "https://api2.transloadit.com/token",
+    "https://community.transloadit.com/",
+    "https://community.transloadit.com/c/transloadit",
+    "https://demos.transloadit.com/",
+    "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp",
+    "https://example.org/watermark.png",
+    "https://github.com/transloadit/android-sdk",
+    "https://github.com/transloadit/convex",
+    "https://github.com/transloadit/go-sdk",
+    "https://github.com/transloadit/java-sdk",
+    "https://github.com/transloadit/node-sdk",
+    "https://github.com/transloadit/node-sdk#readme",
+    "https://github.com/transloadit/node-sdk/blob/main/MIGRATION.md",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/docs/intent-commands.md",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/convert_to_webp.ts",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/credentials.ts",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/face_detect_download.ts",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/fetch_costs_of_all_assemblies_in_timeframe.ts",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/rasterize_svg_to_png.ts",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/resize_an_image.ts",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/retry.ts",
+    "https://github.com/transloadit/node-sdk/blob/main/packages/node/examples/template_api.ts",
+    "https://github.com/transloadit/node-sdk/blob/main/src/Transloadit.ts",
+    "https://github.com/transloadit/node-sdk/tree/main/packages/mcp-server",
+    "https://github.com/transloadit/node-sdk/tree/v2",
+    "https://github.com/transloadit/node-sdk/tree/v3",
+    "https://github.com/transloadit/php-sdk",
+    "https://github.com/transloadit/python-sdk",
+    "https://github.com/transloadit/ruby-sdk",
+    "https://github.com/transloadit/skills/tree/main/skills/transform-generate-image-with-transloadit",
+    "https://github.com/transloadit/terraform-provider-transloadit",
+    "https://github.com/transloadit/transloadify",
+    "https://github.com/transloadit/transloaditkit",
+    "https://github.com/transloadit/uppy",
+    "https://github.com/undefined",
+    "https://npmjs.com",
+    "https://stackoverflow.com/tags/transloadit",
+    "https://status.transloadit.com/",
+    "https://survey.typeform.com/to/kRg47Xi5",
+    "https://transloadit.com/#automation",
+    "https://transloadit.com/#installation",
+    "https://transloadit.com/#introduction",
+    "https://transloadit.com/#making-the-most-of-transloadit",
+    "https://transloadit.com/#processing-a-video",
+    "https://transloadit.com/#registration--authentication",
+    "https://transloadit.com/#specifying-assembly-instructions",
+    "https://transloadit.com/#templates",
+    "https://transloadit.com/about/",
+    "https://transloadit.com/assemblies/",
+    "https://transloadit.com/assemblies/${err.assemblyId}",
+    "https://transloadit.com/blog/",
+    "https://transloadit.com/blog/2017/02/transloadify/",
+    "https://transloadit.com/blog/tags/",
+    "https://transloadit.com/blog/tags/devtimes/",
+    "https://transloadit.com/blog/tags/integrations/",
+    "https://transloadit.com/blog/tags/transloadify/",
+    "https://transloadit.com/c/",
+    "https://transloadit.com/c/credentials/",
+    "https://transloadit.com/c/login/",
+    "https://transloadit.com/c/settings/",
+    "https://transloadit.com/c/signup/",
+    "https://transloadit.com/c/template-credentials/",
+    "https://transloadit.com/c/templates/new/",
+    "https://transloadit.com/casestudies/",
+    "https://transloadit.com/compare/",
+    "https://transloadit.com/demos/",
+    "https://transloadit.com/devtips/",
+    "https://transloadit.com/docs.md",
+    "https://transloadit.com/docs/",
+    "https://transloadit.com/docs/api.md",
+    "https://transloadit.com/docs/api/",
+    "https://transloadit.com/docs/api/assemblies-assembly-id-delete/",
+    "https://transloadit.com/docs/api/assemblies-assembly-id-get/",
+    "https://transloadit.com/docs/api/assemblies-assembly-id-replay-post/",
+    "https://transloadit.com/docs/api/assemblies-assembly-id-stream-get/",
+    "https://transloadit.com/docs/api/assemblies-get/",
+    "https://transloadit.com/docs/api/assemblies-post/",
+    "https://transloadit.com/docs/api/assembly-notifications-assembly-id-replay-post/",
+    "https://transloadit.com/docs/api/assembly-status-response/",
+    "https://transloadit.com/docs/api/authentication/",
+    "https://transloadit.com/docs/api/bill-date-get/",
+    "https://transloadit.com/docs/api/metadata/",
+    "https://transloadit.com/docs/api/queues-job-slots-get/",
+    "https://transloadit.com/docs/api/queues/",
+    "https://transloadit.com/docs/api/rate-limiting/",
+    "https://transloadit.com/docs/api/response-codes/",
+    "https://transloadit.com/docs/api/resumable-uploads/",
+    "https://transloadit.com/docs/api/security/",
+    "https://transloadit.com/docs/api/template-credentials-credentials-id-delete/",
+    "https://transloadit.com/docs/api/template-credentials-credentials-id-get/",
+    "https://transloadit.com/docs/api/template-credentials-credentials-id-put/",
+    "https://transloadit.com/docs/api/template-credentials-get/",
+    "https://transloadit.com/docs/api/template-credentials-post/",
+    "https://transloadit.com/docs/api/templates-get/",
+    "https://transloadit.com/docs/api/templates-post/",
+    "https://transloadit.com/docs/api/templates-template-id-delete/",
+    "https://transloadit.com/docs/api/templates-template-id-get/",
+    "https://transloadit.com/docs/api/templates-template-id-put/",
+    "https://transloadit.com/docs/api/token-post/",
+    "https://transloadit.com/docs/best-practices/",
+    "https://transloadit.com/docs/community-projects/",
+    "https://transloadit.com/docs/faq/",
+    "https://transloadit.com/docs/getting-started/my-first-app/",
+    "https://transloadit.com/docs/getting-started/saving-conversion-results/",
+    "https://transloadit.com/docs/robots/",
+    "https://transloadit.com/docs/robots/ai-chat.md",
+    "https://transloadit.com/docs/robots/audio-artwork.md",
+    "https://transloadit.com/docs/robots/audio-concat.md",
+    "https://transloadit.com/docs/robots/audio-encode.md",
+    "https://transloadit.com/docs/robots/audio-loop.md",
+    "https://transloadit.com/docs/robots/audio-merge.md",
+    "https://transloadit.com/docs/robots/audio-split.md",
+    "https://transloadit.com/docs/robots/audio-waveform.md",
+    "https://transloadit.com/docs/robots/azure-import.md",
+    "https://transloadit.com/docs/robots/azure-store.md",
+    "https://transloadit.com/docs/robots/backblaze-import.md",
+    "https://transloadit.com/docs/robots/backblaze-store.md",
+    "https://transloadit.com/docs/robots/box-import.md",
+    "https://transloadit.com/docs/robots/box-store.md",
+    "https://transloadit.com/docs/robots/cloudfiles-import.md",
+    "https://transloadit.com/docs/robots/cloudfiles-store.md",
+    "https://transloadit.com/docs/robots/cloudflare-import.md",
+    "https://transloadit.com/docs/robots/cloudflare-store.md",
+    "https://transloadit.com/docs/robots/digitalocean-import.md",
+    "https://transloadit.com/docs/robots/digitalocean-store.md",
+    "https://transloadit.com/docs/robots/document-autorotate.md",
+    "https://transloadit.com/docs/robots/document-convert.md",
+    "https://transloadit.com/docs/robots/document-extract.md",
+    "https://transloadit.com/docs/robots/document-merge.md",
+    "https://transloadit.com/docs/robots/document-ocr.md",
+    "https://transloadit.com/docs/robots/document-optimize.md",
+    "https://transloadit.com/docs/robots/document-split.md",
+    "https://transloadit.com/docs/robots/document-thumbs.md",
+    "https://transloadit.com/docs/robots/dropbox-import.md",
+    "https://transloadit.com/docs/robots/dropbox-store.md",
+    "https://transloadit.com/docs/robots/edgly-deliver.md",
+    "https://transloadit.com/docs/robots/file-compress.md",
+    "https://transloadit.com/docs/robots/file-decompress.md",
+    "https://transloadit.com/docs/robots/file-filter.md",
+    "https://transloadit.com/docs/robots/file-filter/",
+    "https://transloadit.com/docs/robots/file-filter/#form-fields-in-instructions",
+    "https://transloadit.com/docs/robots/file-hash.md",
+    "https://transloadit.com/docs/robots/file-preview.md",
+    "https://transloadit.com/docs/robots/file-read.md",
+    "https://transloadit.com/docs/robots/file-serve.md",
+    "https://transloadit.com/docs/robots/file-verify.md",
+    "https://transloadit.com/docs/robots/file-virusscan.md",
+    "https://transloadit.com/docs/robots/ftp-import.md",
+    "https://transloadit.com/docs/robots/ftp-store.md",
+    "https://transloadit.com/docs/robots/google-import.md",
+    "https://transloadit.com/docs/robots/google-store.md",
+    "https://transloadit.com/docs/robots/html-convert.md",
+    "https://transloadit.com/docs/robots/http-import.md",
+    "https://transloadit.com/docs/robots/image-bgremove.md",
+    "https://transloadit.com/docs/robots/image-copyrightdetect.md",
+    "https://transloadit.com/docs/robots/image-describe.md",
+    "https://transloadit.com/docs/robots/image-enhance.md",
+    "https://transloadit.com/docs/robots/image-facedetect.md",
+    "https://transloadit.com/docs/robots/image-generate.md",
+    "https://transloadit.com/docs/robots/image-merge.md",
+    "https://transloadit.com/docs/robots/image-ocr.md",
+    "https://transloadit.com/docs/robots/image-optimize.md",
+    "https://transloadit.com/docs/robots/image-resize.md",
+    "https://transloadit.com/docs/robots/image-upscale.md",
+    "https://transloadit.com/docs/robots/mega-import.md",
+    "https://transloadit.com/docs/robots/mega-store.md",
+    "https://transloadit.com/docs/robots/meta-write.md",
+    "https://transloadit.com/docs/robots/minio-import.md",
+    "https://transloadit.com/docs/robots/minio-store.md",
+    "https://transloadit.com/docs/robots/s3-import.md",
+    "https://transloadit.com/docs/robots/s3-store.md",
+    "https://transloadit.com/docs/robots/script-run.md",
+    "https://transloadit.com/docs/robots/sftp-import.md",
+    "https://transloadit.com/docs/robots/sftp-store.md",
+    "https://transloadit.com/docs/robots/speech-transcribe.md",
+    "https://transloadit.com/docs/robots/supabase-import.md",
+    "https://transloadit.com/docs/robots/supabase-store.md",
+    "https://transloadit.com/docs/robots/swift-import.md",
+    "https://transloadit.com/docs/robots/swift-store.md",
+    "https://transloadit.com/docs/robots/text-speak.md",
+    "https://transloadit.com/docs/robots/text-translate.md",
+    "https://transloadit.com/docs/robots/tigris-import.md",
+    "https://transloadit.com/docs/robots/tigris-store.md",
+    "https://transloadit.com/docs/robots/tlcdn-deliver.md",
+    "https://transloadit.com/docs/robots/tus-store.md",
+    "https://transloadit.com/docs/robots/upload-handle.md",
+    "https://transloadit.com/docs/robots/video-adaptive.md",
+    "https://transloadit.com/docs/robots/video-artwork.md",
+    "https://transloadit.com/docs/robots/video-concat.md",
+    "https://transloadit.com/docs/robots/video-encode.md",
+    "https://transloadit.com/docs/robots/video-generate.md",
+    "https://transloadit.com/docs/robots/video-merge.md",
+    "https://transloadit.com/docs/robots/video-ondemand.md",
+    "https://transloadit.com/docs/robots/video-split.md",
+    "https://transloadit.com/docs/robots/video-subtitle.md",
+    "https://transloadit.com/docs/robots/video-thumbs.md",
+    "https://transloadit.com/docs/robots/vimeo-import.md",
+    "https://transloadit.com/docs/robots/vimeo-store.md",
+    "https://transloadit.com/docs/robots/wasabi-import.md",
+    "https://transloadit.com/docs/robots/wasabi-store.md",
+    "https://transloadit.com/docs/robots/youtube-store.md",
+    "https://transloadit.com/docs/sdks.md",
+    "https://transloadit.com/docs/sdks/",
+    "https://transloadit.com/docs/sdks/android-sdk/",
+    "https://transloadit.com/docs/sdks/convex/",
+    "https://transloadit.com/docs/sdks/curl/",
+    "https://transloadit.com/docs/sdks/go-sdk/",
+    "https://transloadit.com/docs/sdks/java-sdk/",
+    "https://transloadit.com/docs/sdks/jquery-sdk/",
+    "https://transloadit.com/docs/sdks/mcp-server/",
+    "https://transloadit.com/docs/sdks/multipart-form/",
+    "https://transloadit.com/docs/sdks/node-sdk/",
+    "https://transloadit.com/docs/sdks/php-sdk/",
+    "https://transloadit.com/docs/sdks/python-sdk/",
+    "https://transloadit.com/docs/sdks/rawtemplate/",
+    "https://transloadit.com/docs/sdks/ruby-sdk/",
+    "https://transloadit.com/docs/sdks/terraform-provider-transloadit/",
+    "https://transloadit.com/docs/sdks/transloaditkit/",
+    "https://transloadit.com/docs/sdks/uppy/",
+    "https://transloadit.com/docs/sdks/zapier/",
+    "https://transloadit.com/docs/supported-formats/",
+    "https://transloadit.com/docs/topics/ai-agents/",
+    "https://transloadit.com/docs/topics/assembly-execution-progress/",
+    "https://transloadit.com/docs/topics/assembly-instructions.md",
+    "https://transloadit.com/docs/topics/assembly-instructions/",
+    "https://transloadit.com/docs/topics/assembly-instructions/#assembly-variables",
+    "https://transloadit.com/docs/topics/assembly-variables/",
+    "https://transloadit.com/docs/topics/builtin-templates/",
+    "https://transloadit.com/docs/topics/dynamic-evaluation/",
+    "https://transloadit.com/docs/topics/ignore-errors/",
+    "https://transloadit.com/docs/topics/resize-strategies/",
+    "https://transloadit.com/docs/topics/template-credentials/",
+    "https://transloadit.com/docs/topics/templates.md",
+    "https://transloadit.com/docs/topics/templates/",
+    "https://transloadit.com/docs/topics/use-parameter/",
+    "https://transloadit.com/docs/topics/webhooks/",
+    "https://transloadit.com/docs/topics/workspaces/",
+    "https://transloadit.com/jobs/",
+    "https://transloadit.com/legal/imprint/",
+    "https://transloadit.com/legal/privacy/",
+    "https://transloadit.com/legal/terms-of-service/",
+    "https://transloadit.com/llms-full.txt",
+    "https://transloadit.com/llms.txt",
+    "https://transloadit.com/newsletters/",
+    "https://transloadit.com/open-source/",
+    "https://transloadit.com/press/",
+    "https://transloadit.com/pricing/",
+    "https://transloadit.com/security/",
+    "https://transloadit.com/services/",
+    "https://transloadit.com/services/content-delivery/",
+    "https://transloadit.com/solutions/",
+    "https://transloadit.com/support/",
+    "https://transloaditstatus.com",
+    "https://tus.io",
+    "https://tus.io/faq",
+    "https://tus.io/implementations",
+    "https://tus.io/protocols/resumable-upload",
+    "https://tus.io/protocols/resumable-upload#patch",
+    "https://tus.io/protocols/resumable-upload#post",
+    "https://tus.io/protocols/resumable-upload#upload-metadata",
+    "https://twitter.com/transloadit",
+    "https://uppy.io",
+    "https://uppy.io/",
+    "https://www.ietf.org/rfc/rfc6234.txt"
+  ]
+}

@@ -1,48 +1,88 @@
 ---
 // The domain page, markup + head — rendered two ways with zero drift:
-//  - prerendered at build ([domain].astro) with the catalog seed only; the
-//    island mounts idle and offers "Map integration surface".
-//  - SSR'd in the worker (ssr/[domain].astro) when a stored discovery exists
-//    in KV; `initialData` bakes the discovered map into the HTML so the page
+//  - prerendered at build ([domain].astro) with baseline discovery data when a
+//    concrete baseline exists; otherwise the island mounts idle and offers
+//    "Map integration surface".
+//  - SSR'd in the worker (ssr/[domain].astro) when stored discovery exists in
+//    KV; `initialData` bakes the discovered map into the HTML so the page
 //    arrives already in the "done" state — no idle-button flash.
 import Base from "~/layouts/Base.astro";
 import Breadcrumb from "~/components/Breadcrumb.astro";
 import Surfaces from "~/components/Surfaces.tsx";
-import type { CatalogSection, DiscoverData } from "~/components/Surfaces.tsx";
 import { faviconUrl } from "~/lib/favicon.ts";
-import { KIND_ORDER, SECTION_LABEL, SHORT_LABEL } from "~/lib/domain-labels.ts";
+import { KIND_ORDER, SHORT_LABEL } from "~/lib/domain-labels.ts";
+import { kindOf, type DiscoverData } from "~/lib/surface-sections.ts";
 import type { Kind } from "~/lib/types.ts";
 import "~/styles/discovery.css";
 
 interface Props {
   domain: string;
-  catalog: CatalogSection[];
-  /** Stored discovery to bake in (SSR path). */
+  /** Discovery to bake in (KV or baseline fallback). */
   initialData?: DiscoverData | null;
 }
 
-const { domain, catalog, initialData = null } = Astro.props;
+const { domain, initialData = null } = Astro.props;
 
-// Header line: counts and kinds from the catalog; a discovered-only domain
-// (no catalog records, e.g. mapped live from the 404 page) falls back to the
-// discovery's surfaces.
-const catalogKinds = KIND_ORDER.filter((k) => catalog.some((s) => s.kind === k && s.items.length));
-const total = catalog.reduce((n, s) => n + s.items.length, 0);
-const discoveredKinds = KIND_ORDER.filter((k) =>
-  (initialData?.surfaces ?? []).some((s) => (s.type === "http" || s.type === "rest" ? "openapi" : s.type) === k),
-);
-const kinds = catalogKinds.length ? catalogKinds : discoveredKinds;
-const count = total || (initialData?.surfaces?.length ?? 0);
+// Header line: counts and kinds from the discovery document only.
+const surfaces = initialData?.surfaces ?? [];
+const kinds = KIND_ORDER.filter((k) => surfaces.some((s) => kindOf(s.type) === k));
+const count = surfaces.length;
+const serviceDescription = initialData?.description?.trim();
 
 const icon = faviconUrl(domain);
 const letter = (domain[0] ?? "?").toUpperCase();
 
-const formatList = kinds.map((k) => SECTION_LABEL[k as Kind].replace(" · ", "/")).join(", ");
+const countByKind = (kind: Kind) => surfaces.filter((s) => kindOf(s.type) === kind).length;
+const FORMAT_LABEL: Record<Kind, [string, string]> = {
+  mcp: ["MCP server", "MCP servers"],
+  openapi: ["REST API", "REST APIs"],
+  graphql: ["GraphQL API", "GraphQL APIs"],
+  cli: ["CLI", "CLI tools"],
+};
+const sentenceList = (items: string[]) => {
+  if (items.length <= 1) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+};
+const clipDescription = (s: string) => {
+  const clean = s.replace(/\s+/g, " ").trim();
+  if (clean.length <= 159) return clean;
+  const clipped = clean.slice(0, 156).replace(/\s+\S*$/, "");
+  return `${clipped || clean.slice(0, 156)}...`;
+};
+const formatList = sentenceList(kinds.map((k) => FORMAT_LABEL[k as Kind][countByKind(k as Kind) === 1 ? 0 : 1]));
 const title = `${domain} — integrations`;
-const description = `${count} integration${count === 1 ? "" : "s"} for ${domain} across ${formatList} — readable by you and your agent.`;
+const description = clipDescription(
+  count
+    ? `${formatList || "Integration surfaces"} for ${domain} — endpoints, specs, and how to authenticate.`
+    : `Map integration surfaces for ${domain} — REST APIs, MCP servers, GraphQL, and CLI.`,
+);
+const meta = [
+  `${count} integration${count === 1 ? "" : "s"}`,
+  ...kinds.map((k) => SHORT_LABEL[k as Kind]),
+].join(" · ");
+const surfaceUrl = (slug: string) => new URL(`/${encodeURIComponent(domain)}/${encodeURIComponent(slug)}/`, Astro.site).href;
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: surfaces.map((surface, idx) => ({
+      "@type": "ListItem",
+      position: idx + 1,
+      name: surface.name,
+      url: surfaceUrl(surface.slug),
+    })),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: domain,
+    logo: `https://integrations.sh/logo/${encodeURIComponent(domain)}`,
+  },
+];
 ---
 
-<Base title={title} description={description} path={`/${domain}/`}>
+<Base title={title} description={description} path={`/${domain}/`} ogImagePath={`/og/${encodeURIComponent(domain)}.png`} jsonLd={jsonLd}>
   <div class="container">
     <article>
       <Breadcrumb
@@ -59,14 +99,12 @@ const description = `${count} integration${count === 1 ? "" : "s"} for ${domain}
         </div>
         <div class="head-body">
           <h1>{domain}</h1>
-          <p class="meta">
-            {count} integration{count === 1 ? "" : "s"}
-            {" · "}{kinds.map((k) => SHORT_LABEL[k as Kind]).join(" · ")}
-          </p>
+          {serviceDescription && <p class="domain-desc">{serviceDescription}</p>}
+          <p class="meta">{meta}</p>
         </div>
       </header>
 
-      <Surfaces domain={domain} catalog={catalog} initialData={initialData} client:visible />
+      <Surfaces domain={domain} initialData={initialData} client:visible />
     </article>
   </div>
 </Base>

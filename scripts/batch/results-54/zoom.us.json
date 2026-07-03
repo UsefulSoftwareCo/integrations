@@ -1,0 +1,489 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "zoom.us",
+    "detect": {
+      "domain": "zoom.us",
+      "found": [
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://zoom.us"
+          ],
+          "authorizationEndpoint": "https://zoom.us/oauth/authorize",
+          "tokenEndpoint": "https://zoom.us/oauth/token",
+          "dcr": false,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "refresh_token",
+            "client_credentials",
+            "urn:ietf:params:oauth:grant-type:jwt-bearer"
+          ]
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T18:49:35.829Z",
+    "summary": "Mapped Zoom’s public developer integration surface on zoom.us: one REST API, one GraphQL API, and the Zoom Rooms SSH CLI; auth is via Zoom OAuth app credentials, Server-to-Server OAuth app credentials, or per-room Zoom Rooms CSAPI SSH password.",
+    "credentials": {
+      "zoom_oauth_app": {
+        "type": "oauth2",
+        "label": "Zoom OAuth app client credentials",
+        "generateUrl": "https://marketplace.zoom.us/",
+        "setup": "In the [Zoom App Marketplace](https://marketplace.zoom.us/), go to **Develop** → **Build an App** and create a **General** app. Configure the app's OAuth redirect URL and scopes on the app's build pages. Use the app's `client_id` and `client_secret` for the authorization-code, device, or client-credentials OAuth flows documented in [OAuth 2.0](https://developers.zoom.us/docs/integrations/oauth/).",
+        "acquisition": "manual"
+      },
+      "zoom_s2s_app": {
+        "type": "oauth2_cc",
+        "label": "Zoom Server-to-Server OAuth app credentials",
+        "generateUrl": "https://marketplace.zoom.us/",
+        "setup": "In the [Zoom App Marketplace](https://marketplace.zoom.us/), go to **Develop** → **Build an App** and create a **Server-to-Server OAuth App** as described in [Create a Server-to-Server OAuth app](https://developers.zoom.us/docs/internal-apps/create/). On the app's **App credentials** page, copy the `account_id`, `client_id`, and `client_secret`, add the scopes you need, then activate the app. Exchange them at `https://zoom.us/oauth/token` with `grant_type=account_credentials` to mint a bearer access token.",
+        "acquisition": "manual"
+      },
+      "zoom_rooms_cli_password": {
+        "type": "basic",
+        "label": "Zoom Rooms CSAPI SSH credentials",
+        "setup": "On the Zoom web portal, open the configuration for a Zoom Room and enable the Zoom Rooms Control System API (ZR-CSAPI). Set the SSH passcode for that room as described in [Zoom Rooms Control System API](https://developers.zoom.us/docs/rooms/cli/). Connect with username `zoom` and the per-room SSH password you configured.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "zoom-rest-api",
+        "name": "Zoom REST API",
+        "type": "http",
+        "docs": "https://developers.zoom.us/docs/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.zoom.us/docs/api/",
+            "https://developers.zoom.us/docs/integrations/oauth/",
+            "https://developers.zoom.us/docs/internal-apps/s2s-oauth/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zoom_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "zoom_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.zoom.us/docs/api/",
+                  "https://developers.zoom.us/docs/integrations/oauth/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "zoom_s2s_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "zoom_s2s_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.zoom.us/docs/api/",
+                  "https://developers.zoom.us/docs/internal-apps/s2s-oauth/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.zoom.us/v2/"
+      },
+      {
+        "slug": "zoom-graphql-api",
+        "name": "Zoom GraphQL API",
+        "type": "graphql",
+        "docs": "https://developers.zoom.us/docs/api/graphql/get-started/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.zoom.us/docs/api/graphql/get-started/",
+            "https://developers.zoom.us/docs/integrations/oauth/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zoom_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.zoom.us/docs/api/graphql/get-started/",
+                  "https://developers.zoom.us/docs/integrations/oauth/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "zoom_s2s_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.zoom.us/docs/api/graphql/get-started/",
+                  "https://developers.zoom.us/docs/internal-apps/s2s-oauth/"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "https://api.zoom.us/v3/graphql"
+      },
+      {
+        "slug": "zoom-rooms-control-system-api",
+        "name": "Zoom Rooms Control System API",
+        "type": "cli",
+        "docs": "https://developers.zoom.us/docs/rooms/cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.zoom.us/docs/rooms/cli/",
+            "https://developers.zoom.us/docs/rooms/cli/zCommands/",
+            "https://developers.zoom.us/docs/rooms/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "zoom_rooms_cli_password",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "ssh -p 2244 zoom@<zoom-room-ip>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.zoom.us/docs/rooms/cli/"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "ssh",
+        "notes": "SSH CLI exposed by each Zoom Room on port 2244; plain-text interactive terminal only, with commands such as `zCommand`, `zStatus`, and `zConfiguration`."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T18:49:35.830Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 131577,
+    "completion_tokens": 1558,
+    "total_tokens": 133135
+  },
+  "visited": [
+    "https://blog.postman.com/exploring-zooms-rest-and-graphql-apis-with-postman/",
+    "https://developers.zoom.us/blog/announcing-agent-skills/",
+    "https://developers.zoom.us/blog/developer-summit-2026-recap/",
+    "https://developers.zoom.us/blog/graphql-api-playground/",
+    "https://developers.zoom.us/docs/api/",
+    "https://developers.zoom.us/docs/api/ai-companion/",
+    "https://developers.zoom.us/docs/api/graphql/get-started/",
+    "https://developers.zoom.us/docs/api/marketplace/ma/",
+    "https://developers.zoom.us/docs/api/meetings/",
+    "https://developers.zoom.us/docs/api/rest/using-zoom-apis/",
+    "https://developers.zoom.us/docs/api/rooms/",
+    "https://developers.zoom.us/docs/api/users/",
+    "https://developers.zoom.us/docs/integrations/oauth/",
+    "https://developers.zoom.us/docs/internal-apps/create/",
+    "https://developers.zoom.us/docs/internal-apps/s2s-oauth/",
+    "https://developers.zoom.us/docs/meeting-sdk/linux/",
+    "https://developers.zoom.us/docs/rooms/",
+    "https://developers.zoom.us/docs/rooms/cli/",
+    "https://developers.zoom.us/docs/rooms/cli/zCommands/",
+    "https://devforum.zoom.us/t/invalid-access-token-usermeetingrecordings-field-does-not-contain-required-scopes/112401",
+    "https://github.com/zoom/skills/blob/main/skills/rest-api/references/graphql.md"
+  ],
+  "grounding": [
+    "https://api.zoom.us",
+    "https://api.zoom.us/v2/",
+    "https://api.zoom.us/v2/users/me",
+    "https://api.zoom.us/v2/users/me/meetings?page_size=30&next_page_token=abc3445rg",
+    "https://api.zoom.us/v3/graphql",
+    "https://blog.postman.com/exploring-zooms-rest-and-graphql-apis-with-postman/",
+    "https://datatracker.ietf.org/doc/html/rfc6749",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-10.12",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.1",
+    "https://datatracker.ietf.org/doc/html/rfc7617",
+    "https://dev.to/zoom/the-zoom-graphql-api-playground-your-new-favorite-development-tool-59n5",
+    "https://developers.zoom.us/#access-token-best-practices",
+    "https://developers.zoom.us/#accounts",
+    "https://developers.zoom.us/#app-type-all",
+    "https://developers.zoom.us/#app-type-general",
+    "https://developers.zoom.us/#app-type-general-1",
+    "https://developers.zoom.us/#app-type-general-2",
+    "https://developers.zoom.us/#app-type-general-3",
+    "https://developers.zoom.us/#app-type-general-4",
+    "https://developers.zoom.us/#app-type-general-5",
+    "https://developers.zoom.us/#app-type-server-to-server",
+    "https://developers.zoom.us/#app-type-server-to-server-1",
+    "https://developers.zoom.us/#arrays",
+    "https://developers.zoom.us/#authentication",
+    "https://developers.zoom.us/#before-you-start",
+    "https://developers.zoom.us/#build-platform",
+    "https://developers.zoom.us/#business-services",
+    "https://developers.zoom.us/#code-samples",
+    "https://developers.zoom.us/#connecting-the-automation-controller-to-zr-csapi",
+    "https://developers.zoom.us/#create-an-authorization-token",
+    "https://developers.zoom.us/#enabling-the-zr-csapi-per-zoom-room",
+    "https://developers.zoom.us/#example-request",
+    "https://developers.zoom.us/#example-request-1",
+    "https://developers.zoom.us/#example-request-2",
+    "https://developers.zoom.us/#example-request-3",
+    "https://developers.zoom.us/#example-request-4",
+    "https://developers.zoom.us/#example-request-5",
+    "https://developers.zoom.us/#example-request-6",
+    "https://developers.zoom.us/#example-request-7",
+    "https://developers.zoom.us/#exchange-authorization-code-for-access-token",
+    "https://developers.zoom.us/#generate-access-token",
+    "https://developers.zoom.us/#get-a-new-access-token",
+    "https://developers.zoom.us/#get-a-user-authorization-code",
+    "https://developers.zoom.us/#get-app-credentials",
+    "https://developers.zoom.us/#get-started-in-postman",
+    "https://developers.zoom.us/#installing-and-launching",
+    "https://developers.zoom.us/#json-format-reply-structure",
+    "https://developers.zoom.us/#learn-more",
+    "https://developers.zoom.us/#make-api-requests",
+    "https://developers.zoom.us/#make-your-first-graphql-query",
+    "https://developers.zoom.us/#marketplace",
+    "https://developers.zoom.us/#pagination",
+    "https://developers.zoom.us/#postman",
+    "https://developers.zoom.us/#powershell",
+    "https://developers.zoom.us/#prerequisites",
+    "https://developers.zoom.us/#query-meetings",
+    "https://developers.zoom.us/#rate-limits",
+    "https://developers.zoom.us/#refresh-an-access-token",
+    "https://developers.zoom.us/#remove-server-to-server-oauth-app",
+    "https://developers.zoom.us/#request-an-access-token",
+    "https://developers.zoom.us/#revoke-an-access-token",
+    "https://developers.zoom.us/#samples",
+    "https://developers.zoom.us/#samples-on-github",
+    "https://developers.zoom.us/#status-and-error-codes",
+    "https://developers.zoom.us/#steps-to-create-a-server-to-server-oauth-app",
+    "https://developers.zoom.us/#subscribe-to-events",
+    "https://developers.zoom.us/#terminal-command-line-curl-method",
+    "https://developers.zoom.us/#to-generate-an-access-token",
+    "https://developers.zoom.us/#user-authorization-flow",
+    "https://developers.zoom.us/#using-proof-key-for-code-exchange-pkce",
+    "https://developers.zoom.us/#workplace",
+    "https://developers.zoom.us/#zcommand",
+    "https://developers.zoom.us/#zcommand-bookings-list",
+    "https://developers.zoom.us/#zcommand-call-disconnect---in-meeting",
+    "https://developers.zoom.us/#zcommand-call-info---in-meeting",
+    "https://developers.zoom.us/#zcommand-call-muteall---in-meeting",
+    "https://developers.zoom.us/#zcommand-dial-join",
+    "https://developers.zoom.us/#zcommand-dial-start",
+    "https://developers.zoom.us/#zcommand-dial-startpmi",
+    "https://developers.zoom.us/#zcommand-request-closedcaption",
+    "https://developers.zoom.us/#zconfiguration",
+    "https://developers.zoom.us/#zevent",
+    "https://developers.zoom.us/#zr-csapi-basic-commands",
+    "https://developers.zoom.us/#zr-csapi-cli-commands",
+    "https://developers.zoom.us/#zr-csapi-features-version-11",
+    "https://developers.zoom.us/#zr-csapi-process-verification",
+    "https://developers.zoom.us/#zstatus",
+    "https://developers.zoom.us/blog/announcing-agent-skills/",
+    "https://developers.zoom.us/blog/developer-summit-2026-recap/",
+    "https://developers.zoom.us/blog/graphql-api-playground/",
+    "https://developers.zoom.us/docs/",
+    "https://developers.zoom.us/docs/ai-services/",
+    "https://developers.zoom.us/docs/api.md",
+    "https://developers.zoom.us/docs/api/",
+    "https://developers.zoom.us/docs/api/accounts/",
+    "https://developers.zoom.us/docs/api/ai-companion/",
+    "https://developers.zoom.us/docs/api/ai-services/",
+    "https://developers.zoom.us/docs/api/auto-dialer/",
+    "https://developers.zoom.us/docs/api/calendar/",
+    "https://developers.zoom.us/docs/api/canvas/",
+    "https://developers.zoom.us/docs/api/chat/",
+    "https://developers.zoom.us/docs/api/chatbot/",
+    "https://developers.zoom.us/docs/api/clips/",
+    "https://developers.zoom.us/docs/api/cobrowse-sdk/",
+    "https://developers.zoom.us/docs/api/commerce/",
+    "https://developers.zoom.us/docs/api/contact-center/",
+    "https://developers.zoom.us/docs/api/crc/",
+    "https://developers.zoom.us/docs/api/customer-managed-keys-hybrid/",
+    "https://developers.zoom.us/docs/api/errors/",
+    "https://developers.zoom.us/docs/api/events/",
+    "https://developers.zoom.us/docs/api/graphql/beta-faq/",
+    "https://developers.zoom.us/docs/api/graphql/get-started.md",
+    "https://developers.zoom.us/docs/api/graphql/get-started/",
+    "https://developers.zoom.us/docs/api/graphql/using-graphql/",
+    "https://developers.zoom.us/docs/api/healthcare/",
+    "https://developers.zoom.us/docs/api/iq/",
+    "https://developers.zoom.us/docs/api/mail/",
+    "https://developers.zoom.us/docs/api/marketplace/",
+    "https://developers.zoom.us/docs/api/marketplace/ma/",
+    "https://developers.zoom.us/docs/api/meetings/",
+    "https://developers.zoom.us/docs/api/number-management/",
+    "https://developers.zoom.us/docs/api/pagination/",
+    "https://developers.zoom.us/docs/api/phone/",
+    "https://developers.zoom.us/docs/api/qss/",
+    "https://developers.zoom.us/docs/api/quality-management/",
+    "https://developers.zoom.us/docs/api/rate-limits/",
+    "https://developers.zoom.us/docs/api/rest/using-zoom-apis/",
+    "https://developers.zoom.us/docs/api/rooms/",
+    "https://developers.zoom.us/docs/api/rooms/events/",
+    "https://developers.zoom.us/docs/api/scheduler/",
+    "https://developers.zoom.us/docs/api/scim2/",
+    "https://developers.zoom.us/docs/api/tasks/",
+    "https://developers.zoom.us/docs/api/users/",
+    "https://developers.zoom.us/docs/api/users/#tag/users/get/users/{userId}",
+    "https://developers.zoom.us/docs/api/using-zoom-apis/",
+    "https://developers.zoom.us/docs/api/using-zoom-apis/#api-requests",
+    "https://developers.zoom.us/docs/api/video-management/",
+    "https://developers.zoom.us/docs/api/video-sdk/",
+    "https://developers.zoom.us/docs/api/virtual-agent/",
+    "https://developers.zoom.us/docs/api/webhooks/",
+    "https://developers.zoom.us/docs/api/websockets/",
+    "https://developers.zoom.us/docs/api/whiteboard/",
+    "https://developers.zoom.us/docs/api/workforce-management/",
+    "https://developers.zoom.us/docs/distribute/app-ownership/transfer-s2s-app-ownership/",
+    "https://developers.zoom.us/docs/integrations/",
+    "https://developers.zoom.us/docs/integrations/create/",
+    "https://developers.zoom.us/docs/integrations/oauth.md",
+    "https://developers.zoom.us/docs/integrations/oauth/",
+    "https://developers.zoom.us/docs/internal-apps/",
+    "https://developers.zoom.us/docs/internal-apps/#assign-permissions-to-access-scopes",
+    "https://developers.zoom.us/docs/internal-apps/#enable-the-server-to-server-oauth-role",
+    "https://developers.zoom.us/docs/internal-apps/create.md",
+    "https://developers.zoom.us/docs/internal-apps/create/",
+    "https://developers.zoom.us/docs/internal-apps/oauth-scopes-overview/",
+    "https://developers.zoom.us/docs/internal-apps/s2s-oauth.md",
+    "https://developers.zoom.us/docs/internal-apps/s2s-oauth/",
+    "https://developers.zoom.us/docs/internal-apps/s2s-oauth/#zoom-account-credentials-grant-type",
+    "https://developers.zoom.us/docs/meeting-sdk/linux/",
+    "https://developers.zoom.us/docs/rivet/",
+    "https://developers.zoom.us/docs/rooms.md",
+    "https://developers.zoom.us/docs/rooms/",
+    "https://developers.zoom.us/docs/rooms/cli.md",
+    "https://developers.zoom.us/docs/rooms/cli/",
+    "https://developers.zoom.us/docs/rooms/cli/zCommands/",
+    "https://developers.zoom.us/docs/rooms/controller/getting-started/",
+    "https://developers.zoom.us/docs/rooms/s2s-oauth/",
+    "https://developers.zoom.us/docs/rooms/za/za-digi-sign/",
+    "https://developers.zoom.us/docs/rooms/za/za-pzr/",
+    "https://developers.zoom.us/docs/rooms/za/za-szr/",
+    "https://developers.zoom.us/docs/rooms/za/za-zrc/",
+    "https://developers.zoom.us/llms.txt",
+    "https://developers.zoom.us/support/",
+    "https://devforum.zoom.us/",
+    "https://devforum.zoom.us/t/invalid-access-token-usermeetingrecordings-field-does-not-contain-required-scopes/112401",
+    "https://example.com/?code=Wk9PTV9BVVRIT1JJWkFUSU9OX0NPREU",
+    "https://example.com/callback?code=AUTH_CODE",
+    "https://example.com/j/123456789",
+    "https://example.com/j/987654321",
+    "https://explore.zoom.us/docs/en-us/zoom_api_license_and_tou.html",
+    "https://explore.zoom.us/en/cookie-policy/",
+    "https://explore.zoom.us/en/marketplace-developer-agreement/",
+    "https://explore.zoom.us/en/privacy/",
+    "https://github.com/zoom",
+    "https://github.com/zoom/server-to-server-oauth-starter-api",
+    "https://github.com/zoom/server-to-server-oauth-token",
+    "https://github.com/zoom/skills/blob/main/skills/rest-api/references/graphql.md",
+    "https://learning.postman.com/docs/sending-requests/variables/",
+    "https://link.example.com/a/11111111111",
+    "https://link.example.com/a/22222222222?pwd=000000000000000000000000000000.0",
+    "https://link.example.com/a/33333333333",
+    "https://marketplace.zoom.us/",
+    "https://nws.zoom.us/graphql/playground",
+    "https://success.zoom.us/j/804452190",
+    "https://success.zoom.us/skype/804452190",
+    "https://support.zoom.us/hc/articles/115001078646",
+    "https://support.zoom.us/hc/en-us/articles/115000342983-Zoom-Rooms-Location-Hierarchy",
+    "https://support.zoom.us/hc/en-us/articles/360034967471-Getting-started-guide-for-new-users",
+    "https://www.postman.com/zoom-developer",
+    "https://www.postman.com/zoom-developer/zoom-public-workspace/collection/rzauu5q/get-started-fast-with-zoom-apis",
+    "https://www.youtube.com/@ZoomDevelopers",
+    "https://zoom.us/hardware",
+    "https://zoom.us/j/371440459",
+    "https://zoom.us/oauth/authorize?response_type=code&client_id=ZOOM_CLIENT_ID&redirect_uri=REDIRECT_URI",
+    "https://zoom.us/oauth/authorize?response_type=code&client_id=ZOOM_CLIENT_ID&redirect_uri=ZOOM_REDIRECT_URI",
+    "https://zoom.us/oauth/device/complete/Wk9PTV9WRVJJRklDQVRJT05fVVJJX0NPTVBMRVRF",
+    "https://zoom.us/oauth/devicecode?client_id=Wk9PTV9DTElFTlRfSUQ",
+    "https://zoom.us/oauth/devicecode?client_id=ZOOM_CLIENT_ID",
+    "https://zoom.us/oauth/revoke",
+    "https://zoom.us/oauth/revoke?token=",
+    "https://zoom.us/oauth/token",
+    "https://zoom.us/oauth/token?grant_type=account_credentials&account_id=Wk9PTV9BQ0NPVU5UX0lE",
+    "https://zoom.us/oauth/token?grant_type=account_credentials&account_id={accountId}",
+    "https://zoom.us/oauth/token?grant_type=authorization_code&code=Wk9PTV9BVVRIT1JJWkFUSU9OX0NPREU&redirect_uri=https://example.com",
+    "https://zoom.us/oauth/token?grant_type=client_credentials",
+    "https://zoom.us/oauth/token?grant_type=refresh_token&refresh_token=",
+    "https://zoom.us/oauth/token?grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=Wk9PTV9ERVZJQ0VfQ09ERQ",
+    "https://zoom.us/oauth_device",
+    "https://zoom.us/privacy",
+    "https://zoom.us/terms",
+    "https://zoom.us/u/ackaxrkh2e",
+    "https://zoom.us/u/acpJ3PkjBo",
+    "https://zoom.us/v3/graphql"
+  ]
+}

@@ -1,0 +1,479 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "twitter.com",
+    "detect": {
+      "domain": "twitter.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:03:26.582Z",
+    "summary": "twitter.com exposes two documented HTTP API generations (current v2 and legacy v1.1), plus hosted MCP endpoints for the API and docs, and an official `xurl` CLI used to authenticate and bridge MCP access.",
+    "description": "Twitter, now branded as X, is a social networking platform for publishing and consuming short-form posts, media, conversations, and related account and advertising data. Its developer platform provides programmatic access to X content and account capabilities through APIs and AI-tool integrations.",
+    "credentials": {
+      "x_bearer_token": {
+        "type": "bearer",
+        "label": "X API bearer token",
+        "generateUrl": "https://console.x.com/",
+        "setup": "Create an app in the [X Developer Console](https://console.x.com/) and use the quickstart in [Make your first request](https://developer.x.com/x-api/getting-started/make-your-first-request) to obtain API credentials. The X API v2 OpenAPI defines a `BearerToken` security scheme, and X's hosted MCP announcement says the bridge injects a fresh Bearer token after OAuth login. For MCP, the easiest path is to create an app with OAuth 2.0 enabled in the console, register redirect URI `http://localhost:8080/callback`, then authenticate through `xurl` as described in [Announcing the hosted X MCP](https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558)."
+      },
+      "x_oauth_app": {
+        "type": "oauth2",
+        "label": "X OAuth app (client ID and client secret)",
+        "generateUrl": "https://console.x.com/",
+        "setup": "Create an app in the [X Developer Console](https://console.x.com/). For the hosted MCP flow, X documents creating an app with OAuth 2.0 enabled, registering redirect URI `http://localhost:8080/callback` (or setting `REDIRECT_URI`), and placing `CLIENT_ID` and `CLIENT_SECRET` in the MCP client config before running `xurl mcp https://api.x.com/mcp` as described in [Announcing the hosted X MCP](https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558). On first run, `xurl` opens a browser for one-time OAuth login and caches/refreshes the token."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "twitter-api-v2",
+        "name": "Twitter API v2",
+        "type": "http",
+        "docs": "https://developer.x.com/en/docs/twitter-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.apis.guru/v2/specs/twitter.com/current/2.61/openapi.json",
+            "https://developer.x.com/en/docs/twitter-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.apis.guru/v2/specs/twitter.com/current/2.61/openapi.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.twitter.com"
+      },
+      {
+        "slug": "twitter-api-v1-1-legacy",
+        "name": "Twitter API v1.1 (legacy)",
+        "type": "http",
+        "docs": "http://api.apigee.com/v1/consoles/twitter/apidescription?format=wadl",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.apis.guru/v2/specs/twitter.com/legacy/1.1/swagger.json",
+            "http://api.apigee.com/v1/consoles/twitter/apidescription?format=wadl"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://api.twitter.com/1.1"
+      },
+      {
+        "slug": "hosted-x-mcp",
+        "name": "Hosted X MCP",
+        "type": "mcp",
+        "docs": "https://docs.x.com/tools/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "xurl mcp https://api.x.com/mcp",
+                    "env": [
+                      "CLIENT_ID",
+                      "CLIENT_SECRET",
+                      "REDIRECT_URI"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.x.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "x-docs-mcp",
+        "name": "X Docs MCP",
+        "type": "mcp",
+        "docs": "https://docs.x.com/tools/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "xurl",
+        "name": "xurl",
+        "type": "cli",
+        "docs": "https://github.com/xdevplatform/xurl",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://github.com/xdevplatform/xurl",
+            "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "x_oauth_app",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "xurl auth oauth2 --headless",
+                    "env": [
+                      "CLIENT_ID",
+                      "CLIENT_SECRET",
+                      "REDIRECT_URI"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@xdevplatform/xurl",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "xurl"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:03:26.582Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 370979,
+    "completion_tokens": 2091,
+    "total_tokens": 373070
+  },
+  "visited": [
+    "http://api.apigee.com/v1/consoles/twitter/apidescription?format=wadl",
+    "https://api.apis.guru/v2/specs/twitter.com/current/2.61/openapi.json",
+    "https://api.apis.guru/v2/specs/twitter.com/legacy/1.1/swagger.json",
+    "https://community.make.com/t/how-to-configure-http-module-to-use-twitter-api/5810",
+    "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558",
+    "https://devcommunity.x.com/t/client-forbidden-when-authenticating-requests-to-the-twitter-api-v2-endpoints-you-must-use-keys-and-tokens-from-a-twitter-developer-app-that-is-attached-to-a-project-you-can-create-a-project-via-the-developer-portal/242883",
+    "https://developer.x.com/en/docs/authentication/overview",
+    "https://developer.x.com/en/docs/platform-objects-and-data",
+    "https://developer.x.com/en/docs/twitter-api",
+    "https://developer.x.com/fundamentals/developer-apps",
+    "https://developer.x.com/fundamentals/developer-portal",
+    "https://developer.x.com/tools/ai",
+    "https://developer.x.com/x-ads-api/introduction",
+    "https://developer.x.com/x-api/getting-started/make-your-first-request",
+    "https://docs.x.com/overview",
+    "https://github.com/xdevplatform/xurl",
+    "https://mcpservers.org/servers/mbelinky/x-mcp-server"
+  ],
+  "grounding": [
+    "http://api.apigee.com/v1/consoles/twitter/apidescription?format=wadl",
+    "http://localhost:8080/callback",
+    "http://project.ioni.st",
+    "https://abs.twimg.com/favicons/twitter.3.ico",
+    "https://api.apis.guru/v2/cache/logo/https_twitter.com_twitter_profile_image.png",
+    "https://api.apis.guru/v2/specs/twitter.com/current/2.61/openapi.json",
+    "https://api.apis.guru/v2/specs/twitter.com/legacy/1.1/swagger.json",
+    "https://api.twitter.com",
+    "https://api.twitter.com/2/openapi.json",
+    "https://api.x.com/mcp",
+    "https://archiveprogram.github.com",
+    "https://community.make.com/t/how-to-configure-http-module-to-use-twitter-api/5810",
+    "https://console.x.com",
+    "https://dev.twitter.com",
+    "https://dev.twitter.com/docs/api/1.1/get/account/settings",
+    "https://dev.twitter.com/docs/api/1.1/get/application/rate_limit_status",
+    "https://dev.twitter.com/docs/api/1.1/post/account/settings",
+    "https://dev.twitter.com/docs/api/1.1/post/account/update_delivery_device",
+    "https://dev.twitter.com/docs/api/1.1/post/account/update_profile",
+    "https://dev.twitter.com/docs/api/1.1/post/account/update_profile_background_image",
+    "https://dev.twitter.com/docs/api/1.1/post/account/update_profile_colors",
+    "https://dev.twitter.com/docs/api/1.1/post/account/update_profile_image",
+    "https://dev.twitter.com/docs/api/1/get/users/profile_image/:screen_name",
+    "https://devcommunity.x.com",
+    "https://devcommunity.x.com/#main-container",
+    "https://devcommunity.x.com/c/academic-research/62",
+    "https://devcommunity.x.com/c/advertiser-api/27",
+    "https://devcommunity.x.com/c/announcements/22",
+    "https://devcommunity.x.com/c/dev-rules-and-policies/43",
+    "https://devcommunity.x.com/c/developer-portal/50",
+    "https://devcommunity.x.com/c/events/19",
+    "https://devcommunity.x.com/c/libraries-and-sdks/63",
+    "https://devcommunity.x.com/c/oauth/12",
+    "https://devcommunity.x.com/c/publisher/41",
+    "https://devcommunity.x.com/c/x-api/64",
+    "https://devcommunity.x.com/c/x-api/x-api-v2/65",
+    "https://devcommunity.x.com/categories",
+    "https://devcommunity.x.com/g/x-staff",
+    "https://devcommunity.x.com/latest",
+    "https://devcommunity.x.com/t/429-usage-capped-on-pay-per-use-across-multiple-read-endpoints-despite-healthy-rate-limits-and-console-limits/269581/2",
+    "https://devcommunity.x.com/t/access-to-own-account-details/259245",
+    "https://devcommunity.x.com/t/access-to-own-account-details/259245/1",
+    "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558",
+    "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558/1",
+    "https://devcommunity.x.com/t/announcing-the-hosted-x-mcp/269558/3",
+    "https://devcommunity.x.com/t/can-i-include-data-obtained-via-the-x-api-e-g-tweet-body-in-a-prompt-for-a-conversation-with-an-ai-that-includes-grok/242424",
+    "https://devcommunity.x.com/t/can-i-include-data-obtained-via-the-x-api-e-g-tweet-body-in-a-prompt-for-a-conversation-with-an-ai-that-includes-grok/242424/1",
+    "https://devcommunity.x.com/t/can-i-include-data-obtained-via-the-x-api-e-g-tweet-body-in-a-prompt-for-a-conversation-with-an-ai-that-includes-grok/242424/4",
+    "https://devcommunity.x.com/t/client-forbidden-when-authenticating-requests-to-the-twitter-api-v2-endpoints-you-must-use-keys-and-tokens-from-a-twitter-developer-app-that-is-attached-to-a-project-you-can-create-a-project-via-the-developer-portal/242883",
+    "https://devcommunity.x.com/t/request-for-starter-free-credits-building-with-the-x-api-on-record-a-live-verified-media-platform/269619",
+    "https://devcommunity.x.com/t/request-for-starter-free-credits-building-with-the-x-api-on-record-a-live-verified-media-platform/269619/1",
+    "https://devcommunity.x.com/t/request-for-starter-free-credits-building-with-the-x-api-on-record-a-live-verified-media-platform/269619/2",
+    "https://devcommunity.x.com/t/to-know-about-pricing-of-business-api/268251",
+    "https://devcommunity.x.com/t/to-know-about-pricing-of-business-api/268251/1",
+    "https://devcommunity.x.com/t/to-know-about-pricing-of-business-api/268251/2",
+    "https://devcommunity.x.com/t/x-pro-media-apis-documentation/224031",
+    "https://devcommunity.x.com/t/x-pro-media-apis-documentation/224031/1",
+    "https://devcommunity.x.com/tag/ads/119",
+    "https://devcommunity.x.com/tag/api/395",
+    "https://devcommunity.x.com/tag/cards/206",
+    "https://devcommunity.x.com/tag/oauth/34",
+    "https://devcommunity.x.com/tag/python/86",
+    "https://devcommunity.x.com/tag/restapi/7",
+    "https://devcommunity.x.com/tag/webhooks/296",
+    "https://devcommunity.x.com/tags",
+    "https://devcommunity.x.com/u/taycaldwell",
+    "https://developer.twitter.com/",
+    "https://developer.twitter.com/en/developer-terms/agreement-and-policy.html",
+    "https://developer.twitter.com/en/docs/twitter-api",
+    "https://developer.twitter.com/en/docs/twitter-api/bookmarks",
+    "https://developer.twitter.com/en/docs/twitter-api/compliance/batch-compliance/api-reference/get-compliance-jobs",
+    "https://developer.twitter.com/en/docs/twitter-api/compliance/batch-compliance/api-reference/get-compliance-jobs-id",
+    "https://developer.twitter.com/en/docs/twitter-api/compliance/batch-compliance/api-reference/post-compliance-jobs",
+    "https://developer.twitter.com/en/docs/twitter-api/compliance/batch-tweet/introduction",
+    "https://developer.twitter.com/en/docs/twitter-api/direct-messages",
+    "https://developer.twitter.com/en/docs/twitter-api/lists",
+    "https://developer.twitter.com/en/docs/twitter-api/spaces",
+    "https://developer.twitter.com/en/docs/twitter-api/tweets/lookup",
+    "https://developer.twitter.com/en/docs/twitter-api/users/lookup",
+    "https://developer.x.com/",
+    "https://developer.x.com/#comparison",
+    "https://developer.x.com/#content-area",
+    "https://developer.x.com/#features",
+    "https://developer.x.com/#get-started",
+    "https://developer.x.com/#other-products",
+    "https://developer.x.com/#pricing",
+    "https://developer.x.com/#products",
+    "https://developer.x.com/#resources",
+    "https://developer.x.com/changelog",
+    "https://developer.x.com/developer-guidelines",
+    "https://developer.x.com/developer-terms",
+    "https://developer.x.com/en/docs/authentication/overview",
+    "https://developer.x.com/en/docs/platform-objects-and-data",
+    "https://developer.x.com/en/docs/twitter-api",
+    "https://developer.x.com/en/portal/dashboard",
+    "https://developer.x.com/en/portal/petition/essential/basic-info",
+    "https://developer.x.com/enterprise-api/introduction",
+    "https://developer.x.com/enterprise/customer-directory",
+    "https://developer.x.com/enterprise/partner-directory",
+    "https://developer.x.com/exhibit",
+    "https://developer.x.com/forms/billing-support",
+    "https://developer.x.com/fundamentals/counting-characters",
+    "https://developer.x.com/fundamentals/developer-apps",
+    "https://developer.x.com/fundamentals/developer-portal",
+    "https://developer.x.com/fundamentals/rate-limits",
+    "https://developer.x.com/fundamentals/security",
+    "https://developer.x.com/fundamentals/x-ids",
+    "https://developer.x.com/livestreams",
+    "https://developer.x.com/llms.txt",
+    "https://developer.x.com/make-your-first-request",
+    "https://developer.x.com/newsletter",
+    "https://developer.x.com/overview",
+    "https://developer.x.com/status",
+    "https://developer.x.com/success-stories",
+    "https://developer.x.com/support",
+    "https://developer.x.com/tools-and-libraries",
+    "https://developer.x.com/tools/ai",
+    "https://developer.x.com/tutorials",
+    "https://developer.x.com/what-to-build",
+    "https://developer.x.com/x-ads-api/introduction",
+    "https://developer.x.com/x-api/getting-started/make-your-first-request",
+    "https://developer.x.com/x-api/getting-started/pricing#free-xai-api-credits",
+    "https://developer.x.com/x-api/getting-started/pricing#owned-reads",
+    "https://developer.x.com/x-api/introduction",
+    "https://developer.x.com/x-api/overview",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.x.ai",
+    "https://docs.x.com",
+    "https://docs.x.com/changelog",
+    "https://docs.x.com/developer-terms",
+    "https://docs.x.com/mcp",
+    "https://docs.x.com/overview",
+    "https://docs.x.com/tools/mcp",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Fxdevplatform%2Fxurl",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fxdevplatform%2Fxurl",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/mermade/oas-kit",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=xdevplatform%2Fxurl",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.com/xdevplatform",
+    "https://github.com/xdevplatform/xurl",
+    "https://github.com/xdevplatform/xurl/actions",
+    "https://github.com/xdevplatform/xurl/branches",
+    "https://github.com/xdevplatform/xurl/commit/080123e4931571ffdf211a7ff9ed7499f5165fb5",
+    "https://github.com/xdevplatform/xurl/commit/67e27675c5a6f813193542d958b31ba5ebd10eb6",
+    "https://github.com/xdevplatform/xurl/commit/a312d5df4402be9a6875076bb76bc2f6083c5d3b",
+    "https://github.com/xdevplatform/xurl/commit/bfb0f365d14f5ed63416d29aa3abbb21a613f5cb",
+    "https://github.com/xdevplatform/xurl/commit/dea95bf7e15855e2e41dc18bd3cad60cd9649c8a",
+    "https://github.com/xdevplatform/xurl/commits/main/",
+    "https://github.com/xdevplatform/xurl/commits?author=santiagomed",
+    "https://github.com/xdevplatform/xurl/issues",
+    "https://github.com/xdevplatform/xurl/projects",
+    "https://github.com/xdevplatform/xurl/pull/78",
+    "https://github.com/xdevplatform/xurl/pull/81",
+    "https://github.com/xdevplatform/xurl/pulls",
+    "https://github.com/xdevplatform/xurl/pulse",
+    "https://github.com/xdevplatform/xurl/security",
+    "https://github.com/xdevplatform/xurl/tags",
+    "https://github.com/xdevplatform/xurl/tree/main/.github/workflows",
+    "https://github.com/xdevplatform/xurl/tree/main/.vscode",
+    "https://github.com/xdevplatform/xurl/tree/main/api",
+    "https://github.com/xdevplatform/xurl/tree/main/assets",
+    "https://github.com/xdevplatform/xurl/tree/main/auth",
+    "https://help.x.com/en/rules-and-policies/x-cookies",
+    "https://maintainers.github.com",
+    "https://mcpservers.org/servers/mbelinky/x-mcp-server",
+    "https://raw.githubusercontent.com/APIs-guru/unofficial_openapi_specs/master/twitter.com/1.1/twitter.json",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://static.ads-twitter.com/uwt.js",
+    "https://support.github.com",
+    "https://ton.twimg.com/dataproducts/developerlanding",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/255-3981a3d1f3561bd8.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/339-b31e0013326b3582.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/460-0cd09668a7cbfe6c.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/675-3ca27895d0c94807.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/7-a8fd0260a648123e.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/86-2c7ad7b3d4cbc9d8.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/920-284f49ed43634192.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/app/layout-c5fa5928883af7a9.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/app/page-e081b254c34737ba.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/main-app-2b0bce390b28c7a5.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/polyfills-42372ed130431b0a.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/chunks/webpack-aa89f11beae3b8b2.js",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/css/a79b70afd83d970f.css",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/media/0336a89fb4e7fc1d-s.p.woff2",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/media/38b988e3273f70aa-s.p.woff2",
+    "https://ton.twimg.com/dataproducts/developerlanding/_next/static/media/3975e96899c16a52-s.p.ttf",
+    "https://ton.twimg.com/dataproducts/developerlanding/og.png",
+    "https://x.com/en/privacy",
+    "https://x.com/en/tos",
+    "https://x.com/login?redirect_after_login=https%3A%2F%2Fconsole.x.com%2F",
+    "https://x.com/xdevelopers"
+  ]
+}

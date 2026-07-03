@@ -1,0 +1,415 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "posthog.com",
+    "detect": {
+      "domain": "posthog.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:18:13.943Z",
+    "summary": "PostHog exposes one developer API surface (REST/OpenAPI), one OAuth server, and one official MCP server; authentication uses project tokens for public ingestion, personal API keys for private API access and MCP, or OAuth access tokens for third-party apps.",
+    "credentials": {
+      "posthog_project_token": {
+        "type": "bearer",
+        "label": "PostHog project token",
+        "generateUrl": "https://app.posthog.com/project/settings",
+        "setup": "Go to your PostHog project settings in the [PostHog app](https://app.posthog.com/project/settings) and copy the project token for the project you want to send events to. Use it for public ingestion endpoints such as `https://us.i.posthog.com` or `https://eu.i.posthog.com`. It is not the same as your personal API key.",
+        "acquisition": "manual"
+      },
+      "posthog_personal_api_key": {
+        "type": "bearer",
+        "label": "PostHog personal API key",
+        "generateUrl": "https://app.posthog.com/api/personal-api-keys",
+        "setup": "Create a personal API key in the [Personal API keys](https://app.posthog.com/api/personal-api-keys) page of your PostHog account. This is the credential for private API access and for the official MCP server. Prefer this when integrating your own scripts or automations. Keep it secret; leaked `phx_` keys are automatically rotated.",
+        "acquisition": "manual"
+      },
+      "posthog_oauth_access_token": {
+        "type": "bearer",
+        "label": "PostHog OAuth access token",
+        "generateUrl": "https://posthog.com/docs/api/oauth",
+        "setup": "If you are building an app for other PostHog users, register an OAuth app and have users authorize it. The resulting access token is the credential for private API access on behalf of a user. PostHog documents OAuth in its API auth guide.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "posthog-mcp-server",
+        "name": "PostHog MCP server",
+        "type": "mcp",
+        "docs": "https://posthog.com/docs/web-analytics/query-traffic-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://posthog.com/docs/web-analytics/query-traffic-mcp",
+            "https://posthog.com/docs/model-context-protocol"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "posthog_personal_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/web-analytics/query-traffic-mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "posthog-api-schema-explorer",
+        "name": "PostHog API schema explorer",
+        "type": "http",
+        "docs": "https://posthog.com/docs/api.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://posthog.com/docs/api.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "posthog_personal_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/api.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://app.posthog.com/api/schema/swagger-ui/",
+        "spec": "https://app.posthog.com/api/schema/"
+      },
+      {
+        "slug": "posthog-api",
+        "name": "PostHog API",
+        "type": "http",
+        "docs": "https://posthog.com/docs/api.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://posthog.com/docs/api.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "posthog_project_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "scheme": "token",
+                    "paramName": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/api.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "posthog_personal_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/api.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "posthog_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://posthog.com/docs/api.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://us.i.posthog.com",
+        "spec": "https://us.i.posthog.com/api/schema/"
+      },
+      {
+        "slug": "posthog-oauth-server",
+        "name": "PostHog OAuth server",
+        "type": "http",
+        "docs": "https://posthog.com/docs/api/oauth.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://posthog.com/docs/api/oauth.md"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://posthog.com/docs/api/oauth.md"
+            ]
+          }
+        },
+        "url": "https://oauth.posthog.com"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:18:13.943Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 111734,
+    "completion_tokens": 1515,
+    "total_tokens": 113249
+  },
+  "visited": [
+    "https://composio.dev/auth/posthog",
+    "https://github.com/d3-inc/posthog-mcp-server",
+    "https://posthog.com/docs/api",
+    "https://posthog.com/docs/api.md",
+    "https://posthog.com/docs/api/early-access-feature",
+    "https://posthog.com/docs/api/oauth.md",
+    "https://posthog.com/docs/api/personal-api-keys.md",
+    "https://posthog.com/docs/mcp-analytics",
+    "https://posthog.com/docs/model-context-protocol",
+    "https://posthog.com/docs/web-analytics/query-traffic-mcp",
+    "https://posthog.com/llms.txt"
+  ],
+  "grounding": [
+    "https://app.posthog.com",
+    "https://app.posthog.com/api/schema/",
+    "https://app.posthog.com/api/schema/redoc/",
+    "https://app.posthog.com/api/schema/swagger-ui/",
+    "https://app.posthog.com/project/settings",
+    "https://app.posthog.com/settings/organization-security#organization-personal-api-keys",
+    "https://app.posthog.com/signup",
+    "https://composio.dev/auth/posthog",
+    "https://datatracker.ietf.org/doc/draft-parecki-oauth-client-id-metadata-document/",
+    "https://datatracker.ietf.org/doc/html/rfc6749",
+    "https://datatracker.ietf.org/doc/html/rfc8414",
+    "https://datatracker.ietf.org/doc/html/rfc9728",
+    "https://eu.i.posthog.com",
+    "https://eu.posthog.com",
+    "https://eu.posthog.com/.well-known/oauth-authorization-server",
+    "https://eu.posthog.com/.well-known/oauth-protected-resource",
+    "https://github.com/d3-inc/posthog-mcp-server",
+    "https://myapp.example.com/logo.png",
+    "https://myapp.example.com/oauth-client",
+    "https://myapp.example.com/oauth/callback",
+    "https://oauth.posthog.com",
+    "https://oauth.posthog.com/.well-known/oauth-authorization-server",
+    "https://oauth.posthog.com/.well-known/oauth-protected-resource",
+    "https://posthog.com/",
+    "https://posthog.com/about",
+    "https://posthog.com/ai-observability.md",
+    "https://posthog.com/ai.md",
+    "https://posthog.com/careers",
+    "https://posthog.com/cdp.md",
+    "https://posthog.com/changelog",
+    "https://posthog.com/code.md",
+    "https://posthog.com/customers",
+    "https://posthog.com/data-warehouse.md",
+    "https://posthog.com/demo",
+    "https://posthog.com/docs",
+    "https://posthog.com/docs/activity.md",
+    "https://posthog.com/docs/advanced/browser-extension.md",
+    "https://posthog.com/docs/advanced/cdp.md",
+    "https://posthog.com/docs/advanced/content-security-policy.md",
+    "https://posthog.com/docs/advanced/infra-as-code.md",
+    "https://posthog.com/docs/advanced/proxy.md",
+    "https://posthog.com/docs/advanced/proxy/caddy.md",
+    "https://posthog.com/docs/advanced/proxy/cloudflare.md",
+    "https://posthog.com/docs/advanced/proxy/cloudfront.md",
+    "https://posthog.com/docs/advanced/proxy/kubernetes-ingress-controller.md",
+    "https://posthog.com/docs/advanced/proxy/managed-reverse-proxy.md",
+    "https://posthog.com/docs/advanced/proxy/netlify.md",
+    "https://posthog.com/docs/advanced/proxy/nextjs-middleware.md",
+    "https://posthog.com/docs/advanced/proxy/nextjs.md",
+    "https://posthog.com/docs/advanced/proxy/nginx.md",
+    "https://posthog.com/docs/advanced/proxy/node.md",
+    "https://posthog.com/docs/advanced/proxy/nuxt.md",
+    "https://posthog.com/docs/advanced/proxy/pomerium.md",
+    "https://posthog.com/docs/advanced/proxy/proxy-reference.md",
+    "https://posthog.com/docs/advanced/proxy/railway.md",
+    "https://posthog.com/docs/advanced/proxy/remix.md",
+    "https://posthog.com/docs/advanced/proxy/sveltekit.md",
+    "https://posthog.com/docs/advanced/proxy/vercel.md",
+    "https://posthog.com/docs/ai-engineering.md",
+    "https://posthog.com/docs/ai-engineering/ai-wizard",
+    "https://posthog.com/docs/ai-engineering/ai-wizard.md",
+    "https://posthog.com/docs/ai-engineering/markdown-llms-txt.md",
+    "https://posthog.com/docs/ai-engineering/skills-store.md",
+    "https://posthog.com/docs/ai-evals.md",
+    "https://posthog.com/docs/ai-evals/datasets.md",
+    "https://posthog.com/docs/ai-evals/taggers.md",
+    "https://posthog.com/docs/ai-observability.md",
+    "https://posthog.com/docs/ai-observability/analyze-traces-ai.md",
+    "https://posthog.com/docs/ai-observability/basics.md",
+    "https://posthog.com/docs/ai-observability/calculating-costs.md",
+    "https://posthog.com/docs/ai-observability/changelog.md",
+    "https://posthog.com/docs/ai-observability/clusters.md",
+    "https://posthog.com/docs/ai-observability/collect-user-feedback.md",
+    "https://posthog.com/docs/ai-observability/custom-parser.md",
+    "https://posthog.com/docs/ai-observability/custom-properties.md",
+    "https://posthog.com/docs/ai-observability/dashboard.md",
+    "https://posthog.com/docs/ai-observability/data-retention.md",
+    "https://posthog.com/docs/ai-observability/demos.md",
+    "https://posthog.com/docs/ai-observability/embeddings.md",
+    "https://posthog.com/docs/ai-observability/errors.md",
+    "https://posthog.com/docs/ai-observability/generations.md",
+    "https://posthog.com/docs/ai-observability/installation.md",
+    "https://posthog.com/docs/ai-observability/installation/anthropic.md",
+    "https://posthog.com/docs/ai-observability/installation/autogen.md",
+    "https://posthog.com/docs/ai-observability/installation/aws-bedrock.md",
+    "https://posthog.com/docs/ai-observability/installation/azure-openai.md",
+    "https://posthog.com/docs/ai-observability/installation/cerebras.md",
+    "https://posthog.com/docs/ai-observability/installation/claude-agent-sdk.md",
+    "https://posthog.com/docs/ai-observability/installation/claude-code.md",
+    "https://posthog.com/docs/ai-observability/installation/cloudflare-ai-gateway.md",
+    "https://posthog.com/docs/ai-observability/installation/cohere.md",
+    "https://posthog.com/docs/ai-observability/installation/convex.md",
+    "https://posthog.com/docs/ai-observability/installation/crewai.md",
+    "https://posthog.com/docs/ai-observability/installation/dedalus.md",
+    "https://posthog.com/docs/ai-observability/installation/deepseek.md",
+    "https://posthog.com/docs/ai-observability/installation/dspy.md",
+    "https://posthog.com/docs/ai-observability/installation/fireworks-ai.md",
+    "https://posthog.com/docs/ai-observability/installation/google.md",
+    "https://posthog.com/docs/ai-observability/installation/groq.md",
+    "https://posthog.com/docs/ai-observability/installation/helicone.md",
+    "https://posthog.com/docs/ai-observability/installation/hugging-face.md",
+    "https://posthog.com/docs/ai-observability/installation/instructor.md",
+    "https://posthog.com/docs/ai-observability/installation/langchain.md",
+    "https://posthog.com/docs/ai-observability/installation/langgraph.md",
+    "https://posthog.com/docs/ai-observability/installation/litellm.md",
+    "https://posthog.com/docs/ai-observability/installation/llamaindex.md",
+    "https://posthog.com/docs/ai-observability/installation/manual-capture.md",
+    "https://posthog.com/docs/ai-observability/installation/mastra.md",
+    "https://posthog.com/docs/ai-observability/installation/mirascope.md",
+    "https://posthog.com/docs/ai-observability/installation/mistral.md",
+    "https://posthog.com/docs/ai-observability/installation/ollama.md",
+    "https://posthog.com/docs/ai-observability/installation/openai-agents.md",
+    "https://posthog.com/docs/ai-observability/installation/openai.md",
+    "https://posthog.com/docs/ai-observability/installation/openclaw.md",
+    "https://posthog.com/docs/ai-observability/installation/openrouter.md",
+    "https://posthog.com/docs/ai-observability/installation/opentelemetry.md",
+    "https://posthog.com/docs/ai-observability/installation/perplexity.md",
+    "https://posthog.com/docs/ai-observability/installation/pi.md",
+    "https://posthog.com/docs/ai-observability/installation/portkey.md",
+    "https://posthog.com/docs/ai-observability/installation/pydantic-ai.md",
+    "https://posthog.com/docs/ai-observability/integrations.md",
+    "https://posthog.com/docs/ai-observability/integrations/helicone-posthog.md",
+    "https://posthog.com/docs/ai-observability/integrations/keywords-ai-posthog.md",
+    "https://posthog.com/docs/ai-observability/integrations/langfuse-posthog.md",
+    "https://posthog.com/docs/ai-observability/link-error-tracking.md",
+    "https://posthog.com/docs/ai-observability/link-session-replay.md",
+    "https://posthog.com/docs/ai-observability/playground.md",
+    "https://posthog.com/docs/ai-observability/privacy-mode.md",
+    "https://posthog.com/docs/ai-observability/query-traces-mcp.md",
+    "https://posthog.com/docs/ai-observability/start-here.md",
+    "https://posthog.com/docs/ai-observability/troubleshooting.md",
+    "https://posthog.com/docs/ai-observability/tutorials.md",
+    "https://posthog.com/docs/ai-observability/user-feedback/manual-event-capture.md",
+    "https://posthog.com/docs/ai-observability/user-feedback/use-thumb-survey.md",
+    "https://posthog.com/docs/api",
+    "https://posthog.com/docs/api.md",
+    "https://posthog.com/docs/api/early-access-feature",
+    "https://posthog.com/docs/api/oauth.md",
+    "https://posthog.com/docs/api/personal-api-keys.md",
+    "https://posthog.com/docs/data-warehouse.md",
+    "https://posthog.com/docs/error-tracking/capture.md",
+    "https://posthog.com/docs/experiments/adding-experiment-code.md",
+    "https://posthog.com/docs/feature-flags/adding-feature-flag-code.md",
+    "https://posthog.com/docs/libraries.md",
+    "https://posthog.com/docs/mcp-analytics",
+    "https://posthog.com/docs/model-context-protocol",
+    "https://posthog.com/docs/model-context-protocol#manual-install",
+    "https://posthog.com/docs/privacy/hipaa-compliance",
+    "https://posthog.com/docs/surveys/creating-surveys.md",
+    "https://posthog.com/docs/web-analytics",
+    "https://posthog.com/docs/web-analytics/query-traffic-mcp",
+    "https://posthog.com/dpa",
+    "https://posthog.com/endpoints.md",
+    "https://posthog.com/error-tracking.md",
+    "https://posthog.com/experiments.md",
+    "https://posthog.com/feature-flags.md",
+    "https://posthog.com/handbook",
+    "https://posthog.com/handbook/company/security#soc-2",
+    "https://posthog.com/llms.txt",
+    "https://posthog.com/logs.md",
+    "https://posthog.com/merch",
+    "https://posthog.com/platform.md",
+    "https://posthog.com/pricing",
+    "https://posthog.com/privacy",
+    "https://posthog.com/product-analytics.md",
+    "https://posthog.com/products",
+    "https://posthog.com/questions",
+    "https://posthog.com/session-replay.md",
+    "https://posthog.com/slack-app.md",
+    "https://posthog.com/surveys.md",
+    "https://posthog.com/talk-to-a-human",
+    "https://posthog.com/terms",
+    "https://posthog.com/trash",
+    "https://posthog.com/web-analytics.md",
+    "https://posthog.com/workflows.md",
+    "https://us.i.posthog.com",
+    "https://us.posthog.com",
+    "https://us.posthog.com/.well-known/oauth-authorization-server",
+    "https://us.posthog.com/.well-known/oauth-protected-resource",
+    "https://us.posthog.com/settings/user-api-keys"
+  ]
+}

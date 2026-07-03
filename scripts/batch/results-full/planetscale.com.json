@@ -1,0 +1,469 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "planetscale.com",
+    "detect": {
+      "domain": "planetscale.com",
+      "found": [
+        "api-catalog",
+        "llms.txt"
+      ],
+      "apiCatalog": {
+        "rest": [
+          "https://api.planetscale.com/v1"
+        ],
+        "openapi": [
+          "https://planetscale.com/docs/openapi.yaml"
+        ],
+        "docs": [
+          "https://planetscale.com/docs/api/openapi-spec"
+        ],
+        "status": [],
+        "mcp": []
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:17:55.462Z",
+    "summary": "PlanetScale exposes one HTTP API, one hosted MCP server, and the `pscale` CLI; API/CLI use service tokens, while MCP uses OAuth-based auth.",
+    "credentials": {
+      "ps_service_token": {
+        "type": "compound",
+        "label": "PlanetScale service token",
+        "generateUrl": "https://app.planetscale.com/~/settings/service-tokens",
+        "setup": "Go to [Settings > Service tokens](https://app.planetscale.com/~/settings/service-tokens) in your PlanetScale organization, click **New service token**, give it a name, create it, then copy both the `SERVICE_TOKEN_ID` and `SERVICE_TOKEN` values immediately (the secret is only shown once).",
+        "acquisition": "manual"
+      },
+      "ps_oauth_app": {
+        "type": "oauth2",
+        "label": "PlanetScale OAuth application",
+        "generateUrl": "https://app.planetscale.com/~/settings/oauth-applications",
+        "setup": "Create an OAuth application in your PlanetScale organization under [Settings > OAuth applications](https://app.planetscale.com/~/settings/oauth-applications). Configure the app name, domain, and redirect URI, then copy the app `ID`, `Client ID`, `Client secret`, and redirect URL from the app settings. Save the client secret right away because it is shown only once.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "planetscale-api",
+        "name": "PlanetScale API",
+        "type": "http",
+        "docs": "https://planetscale.com/docs/api/reference/getting-started-with-planetscale-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://planetscale.com/docs/api/reference/getting-started-with-planetscale-api",
+            "https://planetscale.com/docs/api/openapi-spec",
+            "https://planetscale.com/docs/api/planetscale-api-oauth-applications"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ps_service_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Authorization"
+                  }
+                },
+                {
+                  "id": "ps_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Authorization"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://planetscale.com/docs/api/reference/getting-started-with-planetscale-api",
+                  "https://planetscale.com/docs/api/reference/service-tokens",
+                  "https://planetscale.com/docs/api/reference/oauth"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://planetscale.com/docs/openapi.yaml",
+        "url": "https://api.planetscale.com/v1"
+      },
+      {
+        "slug": "planetscale-mcp-server",
+        "name": "PlanetScale MCP server",
+        "type": "mcp",
+        "docs": "https://planetscale.com/docs/connect/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://planetscale.com/docs/connect/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ps_oauth_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://planetscale.com/docs/connect/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.pscale.dev/mcp/planetscale",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "planetscale-cli",
+        "name": "PlanetScale CLI",
+        "type": "cli",
+        "docs": "https://planetscale.com/docs/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://planetscale.com/docs/cli",
+            "https://planetscale.com/docs/cli/auth",
+            "https://planetscale.com/docs/cli/service-tokens",
+            "https://planetscale.com/docs/cli/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ps_service_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "pscale --service-token <TOKEN> --service-token-id <TOKEN_ID>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://planetscale.com/docs/cli/auth",
+                  "https://planetscale.com/docs/cli/service-tokens"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "ps_service_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "pscale auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://planetscale.com/docs/cli/auth"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "pscale",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "pscale"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:17:55.463Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 156954,
+    "completion_tokens": 1223,
+    "total_tokens": 158177
+  },
+  "visited": [
+    "https://planetscale.com/docs/api/openapi-spec",
+    "https://planetscale.com/docs/api/planetscale-api-oauth-applications",
+    "https://planetscale.com/docs/api/reference/getting-started-with-planetscale-api",
+    "https://planetscale.com/docs/api/reference/oauth",
+    "https://planetscale.com/docs/api/reference/service-tokens",
+    "https://planetscale.com/docs/cli",
+    "https://planetscale.com/docs/cli/api",
+    "https://planetscale.com/docs/cli/auth",
+    "https://planetscale.com/docs/cli/service-tokens",
+    "https://planetscale.com/docs/connect/mcp",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "https://ampcode.com/",
+    "https://api.planetscale.com/",
+    "https://api.planetscale.com/v1",
+    "https://api.planetscale.com/v1/organizations",
+    "https://api.planetscale.com/v1/organizations/ORGANIZATION_NAME/databases/DATABASE_NAME/branches",
+    "https://api.planetscale.com/v1/organizations/taylorhackyplace/databases/example-test/branches/new-feature",
+    "https://app.planetscale.com/taylorhackyplace/example-test/new-feature",
+    "https://app.planetscale.com/~/settings/service-tokens",
+    "https://auth.planetscale.com/oauth/authorize?client_id=CLIENT_ID&redirect_uri=REDIRECT_URI&state=STATE",
+    "https://auth.planetscale.com/oauth/token?client_id=CLIENT_ID&client_secret=CLIENT_SECRET&code=CODE&grant_type=authorization_code&redirect_uri=REDIRECT_URI",
+    "https://auth.planetscale.com/oauth/token?client_id=CLIENT_ID&client_secret=CLIENT_SECRET&grant_type=refresh_token&refresh_token=REFRESH_TOKEN",
+    "https://auth.planetscale.com/sign-in",
+    "https://auth.planetscale.com/sign-up",
+    "https://claude.com/connectors/planetscale",
+    "https://code.claude.com/docs/en/overview",
+    "https://cursor.com/en-US/install-mcp?name=PlanetScale&config=eyJ1cmwiOiJodHRwczovL21jcC5wc2NhbGUuZGV2L21jcC9wbGFuZXRzY2FsZSJ9",
+    "https://developers.openai.com/codex/cli/",
+    "https://geminicli.com/",
+    "https://github.com/planetscale",
+    "https://github.com/planetscale/claude-plugin",
+    "https://mcp.pscale.dev/mcp/planetscale",
+    "https://mcp.pscale.dev/mcp/planetscale-insights-only",
+    "https://my-redirect-uri.com?code=AUTHORIZATION_CODE&state=STATE",
+    "https://oauth.net/2/grant-types/authorization-code/",
+    "https://opencode.ai/",
+    "https://opencode.ai/config.json",
+    "https://opencode.ai/docs/config/#precedence-order",
+    "https://planetscale.com",
+    "https://planetscale.com/#0-prerequisites",
+    "https://planetscale.com/#1-creating-an-oauth-application-in-planetscale",
+    "https://planetscale.com/#1-user-authorizes-your-oauth-application-on-their-account",
+    "https://planetscale.com/#2-credentials-to-copy-to-your-application-code",
+    "https://planetscale.com/#2-the-authorization-code-returns-to-your-application",
+    "https://planetscale.com/#3-oauth-application-access-scopes",
+    "https://planetscale.com/#3a-exchange-authorization-code-for-an-oauth-token",
+    "https://planetscale.com/#3b-refreshing-an-oauth-token",
+    "https://planetscale.com/#4-using-the-oauth-token",
+    "https://planetscale.com/#access-permissions",
+    "https://planetscale.com/#add-database-access-permissions",
+    "https://planetscale.com/#add-database-permissions",
+    "https://planetscale.com/#add-organization-permissions",
+    "https://planetscale.com/#add-permissions-for-all-databases",
+    "https://planetscale.com/#amp-cli",
+    "https://planetscale.com/#assign-service-token-permissions",
+    "https://planetscale.com/#authentication",
+    "https://planetscale.com/#authorization-header",
+    "https://planetscale.com/#available-commands",
+    "https://planetscale.com/#available-flags",
+    "https://planetscale.com/#available-sub-commands",
+    "https://planetscale.com/#available-tools",
+    "https://planetscale.com/#claude-ai-and-claude-for-desktop",
+    "https://planetscale.com/#claude-code",
+    "https://planetscale.com/#claude-managed-agents",
+    "https://planetscale.com/#codex-cli",
+    "https://planetscale.com/#content-area",
+    "https://planetscale.com/#create-a-new-service-token",
+    "https://planetscale.com/#create-service-tokens-using-the-planetscale-dashboard",
+    "https://planetscale.com/#creating-a-planetscale-branch-with-service-tokens",
+    "https://planetscale.com/#creating-a-service-token",
+    "https://planetscale.com/#cursor",
+    "https://planetscale.com/#database-access-permissions",
+    "https://planetscale.com/#delete-a-service-token",
+    "https://planetscale.com/#delete-a-service-token-2",
+    "https://planetscale.com/#endpoint",
+    "https://planetscale.com/#example",
+    "https://planetscale.com/#example-workflows",
+    "https://planetscale.com/#examples",
+    "https://planetscale.com/#flags",
+    "https://planetscale.com/#gemini-cli",
+    "https://planetscale.com/#getting-started",
+    "https://planetscale.com/#global-flags",
+    "https://planetscale.com/#headers",
+    "https://planetscale.com/#help-your-agent-target-your-project%E2%80%99s-database",
+    "https://planetscale.com/#http-methods",
+    "https://planetscale.com/#installation-instructions",
+    "https://planetscale.com/#manage-service-tokens-using-the-planetscale-cli",
+    "https://planetscale.com/#modify-service-token-permissions",
+    "https://planetscale.com/#need-help",
+    "https://planetscale.com/#notion",
+    "https://planetscale.com/#oauth-applications",
+    "https://planetscale.com/#oauth-authorization-flow",
+    "https://planetscale.com/#opencode",
+    "https://planetscale.com/#organization-access-permissions",
+    "https://planetscale.com/#overview",
+    "https://planetscale.com/#param-access-token",
+    "https://planetscale.com/#param-client-id",
+    "https://planetscale.com/#param-client-id-1",
+    "https://planetscale.com/#param-client-id-2",
+    "https://planetscale.com/#param-client-secret",
+    "https://planetscale.com/#param-client-secret-1",
+    "https://planetscale.com/#param-code",
+    "https://planetscale.com/#param-code-1",
+    "https://planetscale.com/#param-expires-in",
+    "https://planetscale.com/#param-grant-type",
+    "https://planetscale.com/#param-grant-type-1",
+    "https://planetscale.com/#param-redirect-uri",
+    "https://planetscale.com/#param-redirect-uri-1",
+    "https://planetscale.com/#param-refresh-token",
+    "https://planetscale.com/#param-refresh-token-1",
+    "https://planetscale.com/#param-scope",
+    "https://planetscale.com/#param-state",
+    "https://planetscale.com/#param-state-1",
+    "https://planetscale.com/#param-token-type",
+    "https://planetscale.com/#planetscale-api-overview",
+    "https://planetscale.com/#planetscale-cli-mcp-server",
+    "https://planetscale.com/#postgres-database-targeting",
+    "https://planetscale.com/#postgres-row-level-security",
+    "https://planetscale.com/#potential-errors",
+    "https://planetscale.com/#query-handling",
+    "https://planetscale.com/#query-parameters",
+    "https://planetscale.com/#query-parameters-2",
+    "https://planetscale.com/#query-parameters-3",
+    "https://planetscale.com/#query-parameters-4",
+    "https://planetscale.com/#quick-start",
+    "https://planetscale.com/#read-queries",
+    "https://planetscale.com/#remove-database-access-permissions",
+    "https://planetscale.com/#request-body",
+    "https://planetscale.com/#scopes-and-permissions",
+    "https://planetscale.com/#security-and-credentials",
+    "https://planetscale.com/#service-token",
+    "https://planetscale.com/#service-token-id",
+    "https://planetscale.com/#service-tokens",
+    "https://planetscale.com/#service-tokens-and-deploy-requests-approvals",
+    "https://planetscale.com/#service-tokens-permissions",
+    "https://planetscale.com/#the-api-command",
+    "https://planetscale.com/#the-auth-command",
+    "https://planetscale.com/#the-check-sub-command",
+    "https://planetscale.com/#the-login-sub-command",
+    "https://planetscale.com/#the-logout-sub-command",
+    "https://planetscale.com/#to-add-a-note-on-a-database-from-the-content-of-a-file",
+    "https://planetscale.com/#to-create-a-database",
+    "https://planetscale.com/#to-create-a-database-branch-from-a-file",
+    "https://planetscale.com/#to-create-a-database-branch-from-stdin-override-the-name",
+    "https://planetscale.com/#to-delete-a-database",
+    "https://planetscale.com/#to-get-a-database",
+    "https://planetscale.com/#to-get-the-current-user",
+    "https://planetscale.com/#to-list-an-organization%E2%80%99s-databases",
+    "https://planetscale.com/#to-list-an-organization’s-databases",
+    "https://planetscale.com/#troubleshooting",
+    "https://planetscale.com/#use-a-service-token-with-the-planetscale-api",
+    "https://planetscale.com/#use-a-service-token-with-the-planetscale-cli",
+    "https://planetscale.com/#use-cases",
+    "https://planetscale.com/#vs-code",
+    "https://planetscale.com/#what-is-the-planetscale-mcp-server",
+    "https://planetscale.com/#write-query-safeguards",
+    "https://planetscale.com/benchmarks",
+    "https://planetscale.com/blog",
+    "https://planetscale.com/contact",
+    "https://planetscale.com/contact?initial=support",
+    "https://planetscale.com/docs",
+    "https://planetscale.com/docs/api/openapi-spec",
+    "https://planetscale.com/docs/api/planetscale-api-oauth-applications",
+    "https://planetscale.com/docs/api/reference",
+    "https://planetscale.com/docs/api/reference/create_branch",
+    "https://planetscale.com/docs/api/reference/create_deploy_request",
+    "https://planetscale.com/docs/api/reference/create_password",
+    "https://planetscale.com/docs/api/reference/get_deploy_request",
+    "https://planetscale.com/docs/api/reference/getting-started-with-planetscale-api",
+    "https://planetscale.com/docs/api/reference/oauth",
+    "https://planetscale.com/docs/api/reference/oauth-access-scopes",
+    "https://planetscale.com/docs/api/reference/oauth/create-token",
+    "https://planetscale.com/docs/api/reference/pagination",
+    "https://planetscale.com/docs/api/reference/rate-limits",
+    "https://planetscale.com/docs/api/reference/service-tokens",
+    "https://planetscale.com/docs/api/reference/service-tokens#access-permissions",
+    "https://planetscale.com/docs/api/reference/service-tokens#database-access-permissions",
+    "https://planetscale.com/docs/api/reference/service-tokens#organization-access-permissions",
+    "https://planetscale.com/docs/api/service-tokens",
+    "https://planetscale.com/docs/api/service-tokens#creating-databases-with-service-tokens",
+    "https://planetscale.com/docs/api/webhook-events",
+    "https://planetscale.com/docs/api/webhooks",
+    "https://planetscale.com/docs/billing",
+    "https://planetscale.com/docs/cli",
+    "https://planetscale.com/docs/cli/api",
+    "https://planetscale.com/docs/cli/audit-log",
+    "https://planetscale.com/docs/cli/auth",
+    "https://planetscale.com/docs/cli/backup",
+    "https://planetscale.com/docs/cli/branch",
+    "https://planetscale.com/docs/cli/completion",
+    "https://planetscale.com/docs/cli/connect",
+    "https://planetscale.com/docs/cli/connections",
+    "https://planetscale.com/docs/cli/database",
+    "https://planetscale.com/docs/cli/deploy-request",
+    "https://planetscale.com/docs/cli/keyspace",
+    "https://planetscale.com/docs/cli/mcp",
+    "https://planetscale.com/docs/cli/org",
+    "https://planetscale.com/docs/cli/password",
+    "https://planetscale.com/docs/cli/ping",
+    "https://planetscale.com/docs/cli/planetscale-environment-setup",
+    "https://planetscale.com/docs/cli/region",
+    "https://planetscale.com/docs/cli/role",
+    "https://planetscale.com/docs/cli/service-token",
+    "https://planetscale.com/docs/cli/service-tokens",
+    "https://planetscale.com/docs/cli/shell",
+    "https://planetscale.com/docs/cli/signup",
+    "https://planetscale.com/docs/cli/size",
+    "https://planetscale.com/docs/cli/traffic-control",
+    "https://planetscale.com/docs/cli/webhook",
+    "https://planetscale.com/docs/cli/workflow",
+    "https://planetscale.com/docs/connect/cloudflare",
+    "https://planetscale.com/docs/connect/mcp",
+    "https://planetscale.com/docs/connect/stripe-projects",
+    "https://planetscale.com/docs/how-we-use-ai",
+    "https://planetscale.com/docs/llms.txt",
+    "https://planetscale.com/docs/openapi.yaml",
+    "https://planetscale.com/docs/planetscale-plans",
+    "https://planetscale.com/docs/plans/deployment-options",
+    "https://planetscale.com/docs/plans/planetscale-skus",
+    "https://planetscale.com/docs/plans/regions",
+    "https://planetscale.com/docs/postgres",
+    "https://planetscale.com/docs/postgres-vs-vitess",
+    "https://planetscale.com/docs/postgres/connecting/roles",
+    "https://planetscale.com/docs/postgres/traffic-control",
+    "https://planetscale.com/docs/security",
+    "https://planetscale.com/docs/security/access-control",
+    "https://planetscale.com/docs/security/audit-log#review-your-organization-audit-log",
+    "https://planetscale.com/docs/security/vulnerability-disclosure",
+    "https://planetscale.com/docs/support",
+    "https://planetscale.com/docs/terraform",
+    "https://planetscale.com/docs/vitess",
+    "https://planetscale.com/docs/vitess/backups",
+    "https://planetscale.com/docs/vitess/connecting/connection-strings",
+    "https://planetscale.com/docs/vitess/connecting/network-latency",
+    "https://planetscale.com/docs/vitess/regions",
+    "https://planetscale.com/docs/vitess/schema-changes/branching",
+    "https://planetscale.com/docs/vitess/schema-changes/deploy-requests#create-a-deploy-request",
+    "https://planetscale.com/docs/vitess/schema-changes/deploy-requests#gated-deployments",
+    "https://planetscale.com/docs/vitess/tutorials/connect-any-application",
+    "https://planetscale.com/docs/vitess/tutorials/connect-any-application#option-2-connect-using-the-planetscale-proxy",
+    "https://planetscale.com/docs/vitess/tutorials/planetscale-serverless-driver",
+    "https://planetscale.com/docs/what-is-planetscale",
+    "https://planetscale.com/vscode:mcp/install?%7B%22name%22%3A%22PlanetScale%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.pscale.dev%2Fmcp%2Fplanetscale%22%7D",
+    "https://planetscale.com/vscode:mcp/install?%7B%22url%22%3A%22https%3A%2F%2Fmcp.pscale.dev%2Fmcp%2Fplanetscale%22%2C%22name%22%3A%22PlanetScale%22%2C%22type%22%3A%22http%22%7D",
+    "https://platform.claude.com",
+    "https://pscale.link/community",
+    "https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp",
+    "https://twitter.com/planetscale",
+    "https://www.facebook.com/planetscaledata",
+    "https://www.gravatar.com/avatar/2a44999e8816311f19eea3d7516d9204?d=https%3A%2F%2Fapp.planetscale.com%2Fgravatar-fallback.png&s=64",
+    "https://www.linkedin.com/company/planetscale",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=planetscale-2",
+    "https://www.planetscalestatus.com/",
+    "https://www.youtube.com/c/PlanetScale",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

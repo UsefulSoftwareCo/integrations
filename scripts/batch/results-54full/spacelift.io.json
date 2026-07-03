@@ -1,0 +1,520 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "spacelift.io",
+    "detect": {
+      "domain": "spacelift.io",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:57:57.820Z",
+    "summary": "Spacelift exposes a GraphQL API, an MCP server, and the `spacectl` CLI; all require Spacelift-issued credentials, with docs indicating support for API tokens and API keys.",
+    "description": "Spacelift is an infrastructure-as-code orchestration platform for managing Terraform, OpenTofu, Ansible, and related infrastructure workflows. It helps teams automate infrastructure delivery, governance, and operations across cloud environments.",
+    "credentials": {
+      "spacelift_api_key": {
+        "type": "compound",
+        "label": "Spacelift API key (key ID + key secret)",
+        "generateUrl": "https://spacelift.io/login",
+        "setup": "Sign in to your Spacelift account from [Login](https://spacelift.io/login), then create an API key in your account/app UI. Spacelift docs reference API keys and role assignment for them in [API key role bindings](https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys). Keep both the key ID and key secret; `spacectl` docs indicate API-key-based authentication is supported.",
+        "acquisition": "manual"
+      },
+      "spacelift_api_token": {
+        "type": "bearer",
+        "label": "Spacelift API token",
+        "generateUrl": "https://spacelift.io/login",
+        "setup": "Sign in to your Spacelift account from [Login](https://spacelift.io/login) and generate a Spacelift API token in the account UI. The `spacectl` docs explicitly list `SPACELIFT_API_TOKEN` as a supported authentication method in [spacectl, the Spacelift CLI](https://docs.spacelift.io/concepts/spacectl).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "spacelift-graphql-api",
+        "name": "Spacelift GraphQL API",
+        "type": "graphql",
+        "docs": "https://docs.spacelift.io/integrations/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.spacelift.io/integrations/api",
+            "https://docs.spacelift.io/concepts/spacectl",
+            "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "spacelift_api_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.spacelift.io/concepts/spacectl",
+                  "https://docs.spacelift.io/integrations/api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "spacelift_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.spacelift.io/concepts/spacectl",
+                  "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys",
+                  "https://docs.spacelift.io/integrations/api"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "notes": "Docs confirm a GraphQL API exists for controlling a Spacelift account programmatically. The exact public SaaS GraphQL endpoint URL and HTTP header mechanics were not recoverable from the scraped docs."
+      },
+      {
+        "slug": "spacectl",
+        "name": "spacectl",
+        "type": "cli",
+        "docs": "https://docs.spacelift.io/concepts/spacectl",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.spacelift.io/concepts/spacectl"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "spacelift_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "SPACELIFT_API_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.spacelift.io/concepts/spacectl"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "spacelift_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "SPACELIFT_API_KEY_ID",
+                      "SPACELIFT_API_KEY_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.spacelift.io/concepts/spacectl",
+                  "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "spacelift-io/spacelift-cli"
+          }
+        ],
+        "command": "spacectl"
+      },
+      {
+        "slug": "spacelift-mcp-server",
+        "name": "Spacelift MCP server",
+        "type": "mcp",
+        "docs": "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp",
+            "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting",
+            "https://docs.spacelift.io/integrations/api-development-with-mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "spacelift_api_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp",
+                  "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "spacelift_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp",
+                  "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "streamable-http"
+        ],
+        "notes": "Docs state the previous `/intent/mcp` endpoint was unified into a single `/mcp` endpoint that also exposes the full Spacelift GraphQL API, but the exact connect URL was not recoverable from the scraped page content."
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:57:57.820Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 282632,
+    "completion_tokens": 1847,
+    "total_tokens": 284479
+  },
+  "visited": [
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#setup",
+    "https://docs.spacelift.io/concepts/intent",
+    "https://docs.spacelift.io/concepts/intent/intent-to-iac",
+    "https://docs.spacelift.io/concepts/spacectl",
+    "https://docs.spacelift.io/concepts/spacectl#authentication",
+    "https://docs.spacelift.io/concepts/spacectl#installation",
+    "https://docs.spacelift.io/integrations/api",
+    "https://docs.spacelift.io/integrations/api#authentication",
+    "https://docs.spacelift.io/integrations/api-development-with-mcp",
+    "https://docs.spacelift.io/integrations/api-development-with-mcp#setup",
+    "https://docs.spacelift.io/self-hosted/latest/integrations/api-development-with-mcp",
+    "https://docs.spacelift.io/self-hosted/latest/vendors/terraform/terraform-provider",
+    "https://docs.spacelift.io/self-hosted/v0.0.7/integrations/api",
+    "https://github.com/spacelift-io/setup-spacectl",
+    "https://pkg.go.dev/github.com/spacelift-io/spacelift-cli/client",
+    "https://spacelift.io/llms.txt"
+  ],
+  "grounding": [
+    "https://doc",
+    "https://docs.spacelift.i",
+    "https://docs.spacelift.io/",
+    "https://docs.spacelift.io/concepts/authorization",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#api-key-authentication-failures",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#api-key-role-bindings",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#assign-roles",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#assign-roles-to-api-keys-directly-using-login-policies",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#assign-roles-to-api-keys-directly-using-the-terraform-provider",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#assign-roles-to-api-keys-directly-using-the-web-ui",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#assign-roles-to-api-keys-using-idp-groups",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#by-key-name",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#by-key-pattern",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#cicd-pipeline-keys",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#conditional-api-key-access",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#debugging",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#find-role-ids",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#inconsistent-behavior",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#infrastructure-tools",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#ip-restricted-api-keys",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#multi-environment-keys",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#multiple-roles",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#permission-denied-errors",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#related-topics",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#remove-an-api-key-role-binding",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#separate-keys-per-environment",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-api-keys#troubleshooting",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-groups",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-stacks",
+    "https://docs.spacelift.io/concepts/authorization/assigning-roles-users",
+    "https://docs.spacelift.io/concepts/authorization/rbac-system",
+    "https://docs.spacelift.io/concepts/blueprint",
+    "https://docs.spacelift.io/concepts/blueprint/export-to-template",
+    "https://docs.spacelift.io/concepts/configuration",
+    "https://docs.spacelift.io/concepts/configuration/context",
+    "https://docs.spacelift.io/concepts/configuration/environment",
+    "https://docs.spacelift.io/concepts/configuration/runtime-configuration",
+    "https://docs.spacelift.io/concepts/configuration/runtime-configuration/runtime-yaml-reference",
+    "https://docs.spacelift.io/concepts/intelligence",
+    "https://docs.spacelift.io/concepts/intelligence/ai-integrations",
+    "https://docs.spacelift.io/concepts/intelligence/infra-assistant",
+    "https://docs.spacelift.io/concepts/intelligence/intent",
+    "https://docs.spacelift.io/concepts/intelligence/intent/execution",
+    "https://docs.spacelift.io/concepts/intelligence/intent/get-started",
+    "https://docs.spacelift.io/concepts/intelligence/intent/handy-commands-and-prompts",
+    "https://docs.spacelift.io/concepts/intelligence/intent/intent-to-iac",
+    "https://docs.spacelift.io/concepts/intelligence/intent/setting-up-azure-and-gcp-credentials",
+    "https://docs.spacelift.io/concepts/intelligence/intent/spacelift-modules",
+    "https://docs.spacelift.io/concepts/intelligence/intent/troubleshooting",
+    "https://docs.spacelift.io/concepts/intelligence/intent/working-with-projects",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp#spacelift-mcp",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#authenticating-with-a-spacectl-token",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#authentication",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#browser-based-oauth",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#choosing-which-tools-to-expose",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#configure-your-coding-assistant",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#connecting-to-the-spacelift-mcp-server",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#next-steps",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#scopes",
+    "https://docs.spacelift.io/concepts/intelligence/spacelift-mcp/connecting#setup",
+    "https://docs.spacelift.io/concepts/intent",
+    "https://docs.spacelift.io/concepts/intent/intent-to-iac",
+    "https://docs.spacelift.io/concepts/policy",
+    "https://docs.spacelift.io/concepts/policy/approval-policy",
+    "https://docs.spacelift.io/concepts/policy/deprecated",
+    "https://docs.spacelift.io/concepts/policy/deprecated/migrate-to-approval-policy",
+    "https://docs.spacelift.io/concepts/policy/deprecated/migrate-to-spaces",
+    "https://docs.spacelift.io/concepts/policy/deprecated/run-initialization-policy",
+    "https://docs.spacelift.io/concepts/policy/deprecated/task-run-policy",
+    "https://docs.spacelift.io/concepts/policy/intent-policy",
+    "https://docs.spacelift.io/concepts/policy/login-policy",
+    "https://docs.spacelift.io/concepts/policy/notification-policy",
+    "https://docs.spacelift.io/concepts/policy/push-policy",
+    "https://docs.spacelift.io/concepts/policy/push-policy/run-external-dependencies",
+    "https://docs.spacelift.io/concepts/policy/stack-access-policy",
+    "https://docs.spacelift.io/concepts/policy/terraform-plan-policy",
+    "https://docs.spacelift.io/concepts/policy/trigger-policy",
+    "https://docs.spacelift.io/concepts/repos",
+    "https://docs.spacelift.io/concepts/repos/managing-repos",
+    "https://docs.spacelift.io/concepts/resources",
+    "https://docs.spacelift.io/concepts/resources/configuration-management",
+    "https://docs.spacelift.io/concepts/run",
+    "https://docs.spacelift.io/concepts/run/ignored-triggers",
+    "https://docs.spacelift.io/concepts/run/proposed",
+    "https://docs.spacelift.io/concepts/run/pull-request-comments",
+    "https://docs.spacelift.io/concepts/run/run-promotion",
+    "https://docs.spacelift.io/concepts/run/summarization",
+    "https://docs.spacelift.io/concepts/run/task",
+    "https://docs.spacelift.io/concepts/run/test-case",
+    "https://docs.spacelift.io/concepts/run/tracked",
+    "https://docs.spacelift.io/concepts/run/user-provided-metadata",
+    "https://docs.spacelift.io/concepts/spacectl",
+    "https://docs.spacelift.io/concepts/spacectl#authenticating-using-account-profiles",
+    "https://docs.spacelift.io/concepts/spacectl#authenticating-using-environment-variables",
+    "https://docs.spacelift.io/concepts/spacectl#authentication",
+    "https://docs.spacelift.io/concepts/spacectl#community-supported-packages",
+    "https://docs.spacelift.io/concepts/spacectl#getting-help",
+    "https://docs.spacelift.io/concepts/spacectl#github-tokens",
+    "https://docs.spacelift.io/concepts/spacectl#installation",
+    "https://docs.spacelift.io/concepts/spacectl#quick-start",
+    "https://docs.spacelift.io/concepts/spacectl#spacectl-the-spacelift-cli",
+    "https://docs.spacelift.io/concepts/spacectl#spacelift-api-keys",
+    "https://docs.spacelift.io/concepts/spacectl#spacelift-api-tokens",
+    "https://docs.spacelift.io/concepts/spacectl#spacelift-supported-packages",
+    "https://docs.spacelift.io/concepts/spacectl#usage-example",
+    "https://docs.spacelift.io/concepts/spaces",
+    "https://docs.spacelift.io/concepts/spaces/access-control",
+    "https://docs.spacelift.io/concepts/spaces/allowing-non-root-admins-to-manage-spaces",
+    "https://docs.spacelift.io/concepts/spaces/creating-a-space",
+    "https://docs.spacelift.io/concepts/spaces/migrating-out-of-the-legacy-space",
+    "https://docs.spacelift.io/concepts/spaces/structuring-your-spaces-tree",
+    "https://docs.spacelift.io/concepts/stack",
+    "https://docs.spacelift.io/concepts/stack/creating-a-stack",
+    "https://docs.spacelift.io/concepts/stack/drift-detection",
+    "https://docs.spacelift.io/concepts/stack/organizing-stacks",
+    "https://docs.spacelift.io/concepts/stack/scheduling",
+    "https://docs.spacelift.io/concepts/stack/stack-dependencies",
+    "https://docs.spacelift.io/concepts/stack/stack-settings",
+    "https://docs.spacelift.io/concepts/template",
+    "https://docs.spacelift.io/concepts/template/configuration",
+    "https://docs.spacelift.io/concepts/template/deployments",
+    "https://docs.spacelift.io/concepts/template/workbench",
+    "https://docs.spacelift.io/concepts/user-management",
+    "https://docs.spacelift.io/concepts/user-management/admin",
+    "https://docs.spacelift.io/concepts/user-management/user",
+    "https://docs.spacelift.io/concepts/vcs-agent-pools",
+    "https://docs.spacelift.io/concepts/worker-pools",
+    "https://docs.spacelift.io/concepts/worker-pools/docker-based-workers",
+    "https://docs.spacelift.io/concepts/worker-pools/kubernetes-workers",
+    "https://docs.spacelift.io/faq",
+    "https://docs.spacelift.io/faq/support_kb",
+    "https://docs.spacelift.io/getting-started",
+    "https://docs.spacelift.io/getting-started/create-stack",
+    "https://docs.spacelift.io/getting-started/integrate-cloud",
+    "https://docs.spacelift.io/getting-started/integrate-cloud/AWS",
+    "https://docs.spacelift.io/getting-started/integrate-cloud/Azure",
+    "https://docs.spacelift.io/getting-started/integrate-cloud/GCP",
+    "https://docs.spacelift.io/getting-started/integrate-source-code",
+    "https://docs.spacelift.io/getting-started/integrate-source-code/Azure-DevOps",
+    "https://docs.spacelift.io/getting-started/integrate-source-code/Bitbucket-Cloud",
+    "https://docs.spacelift.io/getting-started/integrate-source-code/Bitbucket-DataCenter",
+    "https://docs.spacelift.io/getting-started/integrate-source-code/GitHub",
+    "https://docs.spacelift.io/getting-started/integrate-source-code/GitLab",
+    "https://docs.spacelift.io/getting-started/invite-teammates",
+    "https://docs.spacelift.io/integrations/api",
+    "https://docs.spacelift.io/integrations/api#authentication",
+    "https://docs.spacelift.io/integrations/api#example-request-and-response",
+    "https://docs.spacelift.io/integrations/api#graphql",
+    "https://docs.spacelift.io/integrations/api#graphql-api",
+    "https://docs.spacelift.io/integrations/api-development-with-mcp",
+    "https://docs.spacelift.io/integrations/api-development-with-mcp#setup",
+    "https://docs.spacelift.io/integrations/audit-trail",
+    "https://docs.spacelift.io/integrations/chatops/msteams",
+    "https://docs.spacelift.io/integrations/chatops/slack",
+    "https://docs.spacelift.io/integrations/cloud-providers",
+    "https://docs.spacelift.io/integrations/cloud-providers/aws",
+    "https://docs.spacelift.io/integrations/cloud-providers/azure",
+    "https://docs.spacelift.io/integrations/cloud-providers/gcp",
+    "https://docs.spacelift.io/integrations/cloud-providers/oidc",
+    "https://docs.spacelift.io/integrations/cloud-providers/oidc/aws-oidc",
+    "https://docs.spacelift.io/integrations/cloud-providers/oidc/azure-oidc",
+    "https://docs.spacelift.io/integrations/cloud-providers/oidc/gcp-oidc",
+    "https://docs.spacelift.io/integrations/cloud-providers/oidc/subject-template",
+    "https://docs.spacelift.io/integrations/cloud-providers/oidc/vault-oidc",
+    "https://docs.spacelift.io/integrations/docker",
+    "https://docs.spacelift.io/integrations/observability",
+    "https://docs.spacelift.io/integrations/observability/datadog",
+    "https://docs.spacelift.io/integrations/observability/prometheus",
+    "https://docs.spacelift.io/integrations/plugins",
+    "https://docs.spacelift.io/integrations/single-sign-on",
+    "https://docs.spacelift.io/integrations/source-control",
+    "https://docs.spacelift.io/integrations/source-control/azure-devops",
+    "https://docs.spacelift.io/integrations/source-control/bitbucket-cloud",
+    "https://docs.spacelift.io/integrations/source-control/bitbucket-datacenter-server",
+    "https://docs.spacelift.io/integrations/source-control/github",
+    "https://docs.spacelift.io/integrations/source-control/gitlab",
+    "https://docs.spacelift.io/integrations/source-control/raw-git",
+    "https://docs.spacelift.io/legal/privacy",
+    "https://docs.spacelift.io/legal/terms",
+    "https://docs.spacelift.io/self-hosted/latest/integrations/api-development-with-mcp",
+    "https://docs.spacelift.io/self-hosted/latest/vendors/terraform/terraform-provider",
+    "https://docs.spacelift.io/self-hosted/v0.0.7/integrations/api",
+    "https://docs.spacelift.io/vendors/ansible",
+    "https://docs.spacelift.io/vendors/ansible/ansible-galaxy",
+    "https://docs.spacelift.io/vendors/ansible/getting-started",
+    "https://docs.spacelift.io/vendors/ansible/policies",
+    "https://docs.spacelift.io/vendors/ansible/reference",
+    "https://docs.spacelift.io/vendors/cloudformation",
+    "https://docs.spacelift.io/vendors/cloudformation/getting-started",
+    "https://docs.spacelift.io/vendors/cloudformation/integrating-with-cdk",
+    "https://docs.spacelift.io/vendors/cloudformation/integrating-with-sam",
+    "https://docs.spacelift.io/vendors/cloudformation/integrating-with-the-serverless-framework",
+    "https://docs.spacelift.io/vendors/cloudformation/reference",
+    "https://docs.spacelift.io/vendors/kubernetes",
+    "https://docs.spacelift.io/vendors/kubernetes/authenticating",
+    "https://docs.spacelift.io/vendors/kubernetes/custom-resources",
+    "https://docs.spacelift.io/vendors/kubernetes/getting-started",
+    "https://docs.spacelift.io/vendors/kubernetes/helm",
+    "https://docs.spacelift.io/vendors/kubernetes/kustomize",
+    "https://docs.spacelift.io/vendors/kubernetes/workflow-tool",
+    "https://docs.spacelift.io/vendors/pulumi",
+    "https://docs.spacelift.io/vendors/pulumi/c-sharp",
+    "https://docs.spacelift.io/vendors/pulumi/golang",
+    "https://docs.spacelift.io/vendors/pulumi/python",
+    "https://docs.spacelift.io/vendors/pulumi/typescript",
+    "https://docs.spacelift.io/vendors/terraform",
+    "https://docs.spacelift.io/vendors/terraform/cdktf",
+    "https://docs.spacelift.io/vendors/terraform/cli-configuration",
+    "https://docs.spacelift.io/vendors/terraform/debugging-guide",
+    "https://docs.spacelift.io/vendors/terraform/dependency-lock-file",
+    "https://docs.spacelift.io/vendors/terraform/external-modules",
+    "https://docs.spacelift.io/vendors/terraform/external-state-access",
+    "https://docs.spacelift.io/vendors/terraform/handling-tfvars",
+    "https://docs.spacelift.io/vendors/terraform/infracost",
+    "https://docs.spacelift.io/vendors/terraform/module-registry",
+    "https://docs.spacelift.io/vendors/terraform/provider-registry",
+    "https://docs.spacelift.io/vendors/terraform/resource-sanitization",
+    "https://docs.spacelift.io/vendors/terraform/state-management",
+    "https://docs.spacelift.io/vendors/terraform/storing-complex-variables",
+    "https://docs.spacelift.io/vendors/terraform/terraform-provider",
+    "https://docs.spacelift.io/vendors/terraform/terragrunt",
+    "https://docs.spacelift.io/vendors/terraform/version-management",
+    "https://docs.spacelift.io/vendors/terraform/workflow-tool",
+    "https://docs.spacelift.io/vendors/terragrunt",
+    "https://docs.spacelift.io/vendors/terragrunt/getting-started",
+    "https://docs.spacelift.io/vendors/terragrunt/limitations",
+    "https://docs.spacelift.io/vendors/terragrunt/reference",
+    "https://docs.spacelift.io/vendors/terragrunt/run-all",
+    "https://docs.spacelift.io/vendors/terragrunt/terragrunt-tool",
+    "https://github.com/spacelift-io/setup-spacectl",
+    "https://pkg.go.dev/github.com/spacelift-io/spacelift-cli/client",
+    "https://spacelift.io",
+    "https://spacelift.io/about-us",
+    "https://spacelift.io/atlantis-alternative",
+    "https://spacelift.io/blog",
+    "https://spacelift.io/careers",
+    "https://spacelift.io/ci-cd-for-infrastructure",
+    "https://spacelift.io/collaboration",
+    "https://spacelift.io/contact",
+    "https://spacelift.io/customers",
+    "https://spacelift.io/developer-velocity",
+    "https://spacelift.io/devops-conferences-events",
+    "https://spacelift.io/drift-detection",
+    "https://spacelift.io/elevate-your-ansible-automation",
+    "https://spacelift.io/free-trial",
+    "https://spacelift.io/how-it-works",
+    "https://spacelift.io/infrastructure-at-scale",
+    "https://spacelift.io/infrastructure-governance",
+    "https://spacelift.io/integrations",
+    "https://spacelift.io/llms.txt",
+    "https://spacelift.io/login",
+    "https://spacelift.io/newsletter",
+    "https://spacelift.io/opentofu",
+    "https://spacelift.io/pricing",
+    "https://spacelift.io/product-overview",
+    "https://spacelift.io/resources",
+    "https://spacelift.io/resources?type=MISSION_GUIDES",
+    "https://spacelift.io/schedule-demo",
+    "https://spacelift.io/security",
+    "https://spacelift.io/terraform-at-scale",
+    "https://spacelift.io/terraform-cloud-alternative",
+    "https://spacelift.io/terraform-enterprise-alternative"
+  ]
+}

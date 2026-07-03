@@ -1,0 +1,359 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "openbanking.org.uk",
+    "detect": {
+      "domain": "openbanking.org.uk",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T15:05:02.548Z",
+    "summary": "Open Banking UK exposes several developer surfaces: Read/Write Data APIs (authenticated via Directory/DCR-issued client credentials plus bearer tokens), Dynamic Client Registration, Open Data APIs, and MI Reporting APIs; no MCP or CLI surface was confirmed.",
+    "credentials": {
+      "ob_directory_cert": {
+        "type": "two_step",
+        "label": "Open Banking Directory registration certificate and signing credentials",
+        "generateUrl": "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1150124033/Directory+2.0+Technical+Overview+v1.6",
+        "setup": "Register in the Open Banking Directory, then follow the Directory onboarding flow to obtain your eIDAS/OB certificate material used for trust and client authentication. The public docs point developers to the [Directory 2.0 Technical Overview](https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1150124033/Directory+2.0+Technical+Overview+v1.6) and the Dynamic Client Registration specs.",
+        "acquisition": "manual"
+      },
+      "ob_client_secret": {
+        "type": "oauth2_cc",
+        "label": "Open Banking OAuth client credentials",
+        "generateUrl": "https://openbankinguk.github.io/dcr-docs-pub/v3.3/dynamic-client-registration.html",
+        "setup": "Use Dynamic Client Registration to register your application and mint the OAuth client credentials required by Open Banking APIs. Start from the [DCR specification](https://openbankinguk.github.io/dcr-docs-pub/v3.3/dynamic-client-registration.html) and the Directory onboarding process; the registration flow yields the client credentials used by the data APIs.",
+        "acquisition": "manual"
+      },
+      "ob_access_token": {
+        "type": "bearer",
+        "label": "Open Banking access token",
+        "generateUrl": "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/",
+        "setup": "Obtain an access token through the Open Banking authorization flow after registering your client. The public API docs reference the Read/Write API specs and DCR docs; those APIs are called with a bearer token in `Authorization: Bearer <token>`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "open-banking-read-write-data-apis",
+        "name": "Open Banking Read/Write Data APIs",
+        "type": "http",
+        "docs": "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/profiles/read-write-data-api-profile.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://standards.openbanking.org.uk/api-specifications/",
+            "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/profiles/read-write-data-api-profile.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ob_directory_cert",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "tls_client_auth"
+                  }
+                },
+                {
+                  "id": "ob_client_secret",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://openbankinguk.github.io/dcr-docs-pub/v3.3/dynamic-client-registration.html",
+                  "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/profiles/read-write-data-api-profile.html"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "ob_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/profiles/read-write-data-api-profile.html"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "open-banking-open-data-apis",
+        "name": "Open Banking Open Data APIs",
+        "type": "http",
+        "docs": "https://openbankinguk.github.io/opendata-api-docs-pub/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://standards.openbanking.org.uk/api-specifications/",
+            "https://openbankinguk.github.io/opendata-api-docs-pub/"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      },
+      {
+        "slug": "open-banking-dynamic-client-registration-dcr",
+        "name": "Open Banking Dynamic Client Registration (DCR)",
+        "type": "http",
+        "docs": "https://openbankinguk.github.io/dcr-docs-pub/v3.3/dynamic-client-registration.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://standards.openbanking.org.uk/api-specifications/",
+            "https://openbankinguk.github.io/dcr-docs-pub/v3.3/dynamic-client-registration.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ob_directory_cert",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "tls_client_auth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://openbankinguk.github.io/dcr-docs-pub/v3.3/dynamic-client-registration.html"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "open-banking-mi-reporting-aspsp-apis",
+        "name": "Open Banking MI Reporting / ASPSP APIs",
+        "type": "http",
+        "docs": "https://openbankinguk.github.io/mi-docs-pub/v3.1.11-aspsp/specification/mi-data-reporting-api-specification.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://standards.openbanking.org.uk/api-specifications/",
+            "https://openbankinguk.github.io/mi-docs-pub/v3.1.11-aspsp/specification/mi-data-reporting-api-specification.html"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T15:05:02.548Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 234581,
+    "completion_tokens": 1868,
+    "total_tokens": 236449
+  },
+  "visited": [
+    "https://github.com/OpenBankingUK",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/16385802/Specifications",
+    "https://openbankinguk.github.io/dcr-docs-pub/v3.3/dynamic-client-registration.html",
+    "https://openbankinguk.github.io/knowledge-base-pub/standards/",
+    "https://openbankinguk.github.io/mi-docs-pub/v3.1.11-aspsp/specification/mi-data-reporting-api-specification.html",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/",
+    "https://openbankinguk.github.io/read-write-api-site3/v3.1.2/profiles/read-write-data-api-profile",
+    "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/",
+    "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/openapi.json",
+    "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/profiles/read-write-data-api-profile.html",
+    "https://standards.openbanking.org.uk/api-specifications/",
+    "https://www.openbanking.org.uk/api-performance/",
+    "https://www.openbanking.org.uk/news/open-banking-publishes-open-banking-standards-version-3-0/"
+  ],
+  "grounding": [
+    "https://github.com/OpenBankingUK",
+    "https://github.com/OpenBankingUK/External_Internal_CodeSets",
+    "https://openbanking.atlassian.net/#AkBanner",
+    "https://openbanking.atlassian.net/#AkMainContent",
+    "https://openbanking.atlassian.net/#_Rkqkrt8r5ba_",
+    "https://openbanking.atlassian.net/#side-navigation",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/history/16385802",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/overview?homepageId=17236165",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1000702294/Read+Write+Data+API+Specification+-+v3.1.1",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1061584956/Conformance+Certification+Service",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1077805207/Read+Write+Data+API+Specification+-+v3.1.2",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1078034771/Dynamic+Client+Registration+-+v3.2",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1103233381/Open+Data+API+Specifications+v2.3",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1120207073/Propositions",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1150124033/Directory+2.0+Technical+Overview+v1.5",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1150124033/Directory+2.0+Technical+Overview+v1.6",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1150124033/Directory+2.0+Technical+Overview+v1.7",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1165263140/Open+Data+API+Dashboard",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/120291503/Open+Data+API+Specifications+v2.2.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/127009221/Read+Write+Data+API+Specification+-+v2.0.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/1326154437/Directory+Services+FAQs",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/13402380/Open+Data+API+Specifications+v2.1.1",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/13598810/Open+Data+API+Specifications+v2.0.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/16254920/Documentation",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/16385802/Specifications",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/17236479/Knowledge+Base",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/19103924/MIT+Licence",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/195068329/FCA+Service+Metrics+API+Specification+-+v1.0.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/2012873330/ECA",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/2013888689/ECA+Standard+-+RC1",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/23889051/Open+Data+API+Specification+v1.2.4",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/23922689/ARCHIVE+-+Specifications",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/24150429/Open+Data+API+Specification+v1.3.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/333415047/CMA+SQM+API+Specification+-+v1.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/3592781896/v4.0+Updated+Examples",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/36667724/OpenBanking+OpenID+Dynamic+Client+Registration+Specification+-+v1.0.0-rc2",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/4010944/Account+and+Transaction+API+Specification+-+v1.0.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/4011436/Payment+Initiation+API+Specification+-+v1.0.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/432800080/CMA+SQM+API+Specification+-+v1.0.1",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/47546479/Known+Specification+Issues",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/4798406/Open+Banking+Security+Profile+-+Implementer+s+Draft+v1.0.1",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/5491751/Open+Data+API+Specifications+v2.1.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/574456101/Guidelines+for+using+the+data+available+via+Open+Banking+API+Endpoint",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/5785171/Account+and+Transaction+API+Specification+-+v1.1.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/5786479/Payment+Initiation+API+Specification+-+v1.1.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/641992418/Read+Write+Data+API+Specification+-+v3.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/68550784/Open+Banking+Security+Profile+-+Implementer+s+Draft+v1.1.1",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/7046134/Open+Banking+Security+Profile+-+Implementer+s+Draft+v1.1.0",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/83919096/Open+Banking+Security+Profile+-+Implementer+s+Draft+v1.1.2",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/937066600/Dynamic+Client+Registration+-+v3.1",
+    "https://openbanking.atlassian.net/wiki/spaces/DZ/pages/937656404/Read+Write+Data+API+Specification+-+v3.1",
+    "https://openbankinguk.github.io/#basics",
+    "https://openbankinguk.github.io/#change-log",
+    "https://openbankinguk.github.io/#delete-register-clientid",
+    "https://openbankinguk.github.io/#discovery",
+    "https://openbankinguk.github.io/#document-structure",
+    "https://openbankinguk.github.io/#endpoints",
+    "https://openbankinguk.github.io/#get-register-clientid",
+    "https://openbankinguk.github.io/#of-jws-jwks",
+    "https://openbankinguk.github.io/#overview",
+    "https://openbankinguk.github.io/#post-register",
+    "https://openbankinguk.github.io/#problem-space",
+    "https://openbankinguk.github.io/#put-register-clientid",
+    "https://openbankinguk.github.io/#self-signed-ssa",
+    "https://openbankinguk.github.io/#software-statement",
+    "https://openbankinguk.github.io/#underlying-specifications",
+    "https://openbankinguk.github.io/#versions",
+    "https://openbankinguk.github.io/dcr-docs-pub/",
+    "https://openbankinguk.github.io/dcr-docs-pub/v3.1/dynamic-client-registration.html",
+    "https://openbankinguk.github.io/dcr-docs-pub/v3.2/dynamic-client-registration.html",
+    "https://openbankinguk.github.io/dcr-docs-pub/v3.3/dynamic-client-registration.html",
+    "https://openbankinguk.github.io/dcr-docs-pub/v3.4/dynamic-client-registration.html",
+    "https://openbankinguk.github.io/knowledge-base-pub/",
+    "https://openbankinguk.github.io/knowledge-base-pub/conformance-",
+    "https://openbankinguk.github.io/knowledge-base-pub/conformance-tools/dynamic-client-registration-tool/",
+    "https://openbankinguk.github.io/knowledge-base-pub/conformance-tools/functional-conformance-tool/",
+    "https://openbankinguk.github.io/knowledge-base-pub/conformance-tools/secu",
+    "https://openbankinguk.github.io/knowledge-base-pub/conformance-tools/security-conformance-tool/",
+    "https://openbankinguk.github.io/knowledge-base-pub/standards/",
+    "https://openbankinguk.github.io/mi-docs-pub/v3.1.10-TPP/logical-data-dictionary.html",
+    "https://openbankinguk.github.io/mi-docs-pub/v3.1.10-aspsp/specification/mi-data-reporting-api-specification.html",
+    "https://openbankinguk.github.io/mi-docs-pub/v3.1.11-TPP/logical-data-dictionary.html",
+    "https://openbankinguk.github.io/mi-docs-pub/v3.1.11-aspsp/specification/mi-data-reporting-api-specification.html",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/v2.4.0/",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/v2.4.0/atmlocator/atm-locator.html",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/v2.4.0/bca/business-current-account.html",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/v2.4.0/branchlocator/branch-locator.html",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/v2.4.0/pca/personal-current-account.html",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/v2.4.0/smeccc/sme-commercial-credit-card.html",
+    "https://openbankinguk.github.io/opendata-api-docs-pub/v2.4.0/smeloan/sme-loan.html",
+    "https://openbankinguk.github.io/read-write-api-site3/v3.1.10/profiles/read-write-data-api-profile.html",
+    "https://openbankinguk.github.io/read-write-api-site3/v3.1.2/profiles/read-write-data-api-profile",
+    "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/",
+    "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/openapi.json",
+    "https://openbankinguk.github.io/read-write-api-site3/v4.0.1/profiles/read-write-data-api-profile.html",
+    "https://openbankinguk.github.io/read-write-api-site3/v4.0/",
+    "https://openbankinguk.github.io/read-write-api-site3/v4.0/profiles/read-write-data-api-profile.html",
+    "https://openid.net/specs/openid-financial-api-ciba.html",
+    "https://openid.net/specs/openid-financial-api-part-2-1_0.html",
+    "https://standards.openbanking.org.uk",
+    "https://standards.openbanking.org.uk/",
+    "https://standards.openbanking.org.uk/#",
+    "https://standards.openbanking.org.uk/#main",
+    "https://standards.openbanking.org.uk/#search",
+    "https://standards.openbanking.org.uk/api-specifications/",
+    "https://standards.openbanking.org.uk/api-specifications/latest/",
+    "https://standards.openbanking.org.uk/api-specifications/v3-1-10/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/account-information-services/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/appendices/common-terminology/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/appendices/common-terminology/v3-1-9/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/appendices/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/appendices/v3-1-10/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/authentication-methods/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/card-based-payment-instrument-issuers-cbpiis/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/change-log/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/customer-experience-checklist/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/dashboards/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/introduction/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/latest/",
+    "https://standards.openbanking.org.uk/customer-experience-guidelines/payment-initiation-services/latest/",
+    "https://standards.openbanking.org.uk/get-started/",
+    "https://standards.openbanking.org.uk/get-started/propositions",
+    "https://standards.openbanking.org.uk/get-started/propositions#corep",
+    "https://standards.openbanking.org.uk/get-started/propositions#corep/",
+    "https://standards.openbanking.org.uk/get-started/propositions#pothers",
+    "https://standards.openbanking.org.uk/get-started/propositions#pothers/",
+    "https://standards.openbanking.org.uk/get-started/propositions#premiumapis",
+    "https://standards.openbanking.org.uk/get-started/propositions/",
+    "https://standards.openbanking.org.uk/good-practice/",
+    "https://standards.openbanking.org.uk/good-practice/bc-and-dr/latest/",
+    "https://standards.openbanking.org.uk/good-practice/change-log/latest/",
+    "https://standards.openbanking.org.uk/good-practice/change-management/latest/",
+    "https://standards.openbanking.org.uk/good-practice/contract-supplier-management/latest/",
+    "https://standards.openbanking.org.uk/good-practice/data-mgmt/latest/",
+    "https://standards.openbanking.org.uk/good-practice/imp-guidelines/latest/",
+    "https://standards.openbanking.org.uk/good-practice/issues-disputes/latest/",
+    "https://standards.openbanking.org.uk/good-practice/latest/",
+    "https://standards.openbanking.org.uk/good-practice/other-introduction/latest/",
+    "https://standards.openbanking.org.uk/good-practice/testing/latest/",
+    "https://standards.openbanking.org.uk/good-practice/vrp-for-sweeping-guidelines/latest/",
+    "https://standards.openbanking.org.uk/guidance-when-implementing-the-standard/",
+    "https://standards.openbanking.org.uk/guidelines/",
+    "https://standards.openbanking.org.uk/operational-guidelines/",
+    "https://standards.openbanking.org.uk/operational-guidelines/availability-and-performance/latest/",
+    "https://standards.openbanking.org.uk/operational-guidelines/change-and-communication-management/latest/",
+    "https://standards.openbanking.org.uk/operational-guidelines/change-log/latest/",
+    "https://standards.openbanking.org.uk/operational-guidelines/dedicated-interface-requirements/latest/",
+    "https://standards.openbanking.org.uk/operational-guidelines/introduction/latest/",
+    "https://standards.openbanking.org.uk/operational-guidelines/latest/",
+    "https://standards.openbanking.org.uk/operational-guidelines/problem-resolution/latest/",
+    "https://standards.openbanking.org.uk/operational-guidelines/the-operational-guidelines-checklist/latest/",
+    "https://standards.openbanking.org.uk/other-guidelines/imp-guidelines/latest/",
+    "https://standards.openbanking.org.uk/reference/",
+    "https://standards.openbanking.org.uk/security-profiles/",
+    "https://standards.openbanking.org.uk/specifications/",
+    "https://standards.openbanking.org.uk/wp-content/uploads/2022/04/CoP-CRM-Draft-Standards-070721.pdf",
+    "https://www.atlassian.com/legal/cookies",
+    "https://www.openbanking.org.uk",
+    "https://www.openbanking.org.uk/",
+    "https://www.openbanking.org.uk/api-performance/",
+    "https://www.openbanking.org.uk/news/open-banking-publishes-open-banking-standards-version-3-0/",
+    "https://www.openbanking.org.uk/open-licence",
+    "https://www.openbanking.org.uk/wp-content/uploads/OBIE-Security-Counter-Fraud-GUIDE.pdf"
+  ]
+}

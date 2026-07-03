@@ -1,0 +1,408 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "fly.io",
+    "detect": {
+      "domain": "fly.io",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T13:19:21.922Z",
+    "summary": "Fly.io exposes the Machines REST API, a public GraphQL API, and an MCP server/proxy surface; auth is via Fly API bearer tokens plus optional MCP basic or bearer credentials for remote proxying.",
+    "credentials": {
+      "fly_api_token": {
+        "type": "bearer",
+        "label": "Fly API access token",
+        "generateUrl": "https://fly.io/dashboard",
+        "setup": "Get it from the Fly dashboard: go to [Tokens](https://fly.io/dashboard), choose your organization, then create an organization token and copy it. For CLI access, `fly auth login` can also mint the login session that `flyctl` uses; the Machines API docs show `fly tokens deploy` for a deploy-scoped token. Use the token as `Authorization: Bearer ...` or via `FLY_API_TOKEN` / `FLY_ACCESS_TOKEN` depending on the surface.",
+        "acquisition": "manual"
+      },
+      "fly_mcp_basic": {
+        "type": "basic",
+        "label": "Fly MCP basic auth credentials",
+        "setup": "For a remote MCP server/proxy, set two secrets such as `FLY_MCP_USER` and `FLY_MCP_PASSWORD` on the Fly app. The docs show `fly secrets set FLY_MCP_USER=Admin FLY_MCP_PASSWORD=S3cr3t`, and the client passes the same values to `fly mcp proxy` with `--user` and `--password`.",
+        "acquisition": "manual"
+      },
+      "fly_mcp_bearer": {
+        "type": "bearer",
+        "label": "Fly MCP bearer token",
+        "setup": "For a remote MCP server/proxy, set `FLY_MCP_BEARER_TOKEN` on the Fly app. The docs show generating a token with `openssl rand -base64 18`, storing it with `fly secrets set FLY_MCP_BEARER_TOKEN=T0k3n`, and using `fly mcp proxy --bearer-token`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "fly-graphql-api",
+        "name": "Fly GraphQL API",
+        "type": "graphql",
+        "docs": "https://fly.io/docs/mcp/deploy-with/machines-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://fly.io/docs/mcp/deploy-with/machines-api/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fly_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/mcp/deploy-with/machines-api/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.fly.io/graphql"
+      },
+      {
+        "slug": "flyctl-mcp-server",
+        "name": "flyctl MCP server",
+        "type": "mcp",
+        "docs": "https://fly.io/docs/mcp/flyctl-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://fly.io/docs/mcp/flyctl-server/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fly_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "fly auth login",
+                    "env": [
+                      "FLY_ACCESS_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/mcp/flyctl-server/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "http://127.0.0.1:6274",
+        "transports": [
+          "sse",
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "fly-mcp-proxy-authenticated-remote-mcp",
+        "name": "fly mcp proxy-authenticated remote MCP",
+        "type": "mcp",
+        "docs": "https://fly.io/docs/mcp/access-control/http-authorization/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://fly.io/docs/mcp/access-control/http-authorization/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fly_mcp_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                },
+                {
+                  "id": "fly_mcp_basic",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "fly mcp proxy --user --password"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/mcp/access-control/http-authorization/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "fly_mcp_bearer",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "fly_mcp_bearer",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "fly mcp proxy --bearer-token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/mcp/access-control/http-authorization/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.fly.dev/",
+        "transports": [
+          "sse",
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T13:19:21.923Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 54860,
+    "completion_tokens": 1399,
+    "total_tokens": 56259
+  },
+  "visited": [
+    "https://community.fly.io/t/authenticating-with-the-graphql-api/4004",
+    "https://fly.io/docs/flyctl/auth-login/",
+    "https://fly.io/docs/flyctl/auth-signup/",
+    "https://fly.io/docs/flyctl/install/",
+    "https://fly.io/docs/machines/api/working-with-machines-api/",
+    "https://fly.io/docs/mcp/",
+    "https://fly.io/docs/mcp/access-control/http-authorization/",
+    "https://fly.io/docs/mcp/deploy-with/machines-api/",
+    "https://fly.io/docs/mcp/flyctl-server/",
+    "https://til.simonwillison.net/fly/undocumented-graphql-api",
+    "https://www.descope.com/blog/post/mcp-flyio"
+  ],
+  "grounding": [
+    "http://127.0.0.1:6274",
+    "http://_api.internal:4280",
+    "https://${APP",
+    "https://api.fly.io/graphql",
+    "https://api.machines.dev",
+    "https://brew.sh",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fflyctl%2Fcmd%2Ffly_auth_login.md",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fflyctl%2Fcmd%2Ffly_auth_signup.md",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fflyctl%2Finstall.html.markerb",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fmachines%2Fapi%2Fworking-with-machines-api.html.markerb",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fmcp%2Faccess-control%2Fhttp-authorization.html.md",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fmcp%2Fflyctl-server.html.md",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fmcp%2Findex.html.markerb",
+    "https://community.fly.io/",
+    "https://community.fly.io/t/authenticating-with-the-graphql-api/4004",
+    "https://curl.se/",
+    "https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-12",
+    "https://datatracker.ietf.org/doc/html/rfc7617",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Authorization",
+    "https://docs.machines.dev/#description/introduction",
+    "https://docs.npmjs.com/downloading-and-installing-node-js-and-npm",
+    "https://fly.io/",
+    "https://fly.io/#",
+    "https://fly.io/#api-addresses",
+    "https://fly.io/#authentication",
+    "https://fly.io/#connecting-to-the-api",
+    "https://fly.io/#environment-setup",
+    "https://fly.io/#global-options",
+    "https://fly.io/#linux",
+    "https://fly.io/#macos",
+    "https://fly.io/#main-content-start",
+    "https://fly.io/#next-steps",
+    "https://fly.io/#options",
+    "https://fly.io/#rate-limits",
+    "https://fly.io/#response-codes",
+    "https://fly.io/#see-also",
+    "https://fly.io/#usage",
+    "https://fly.io/#windows",
+    "https://fly.io/./access-control",
+    "https://fly.io/./deploy-on",
+    "https://fly.io/./deploy-with",
+    "https://fly.io/./examples",
+    "https://fly.io/./flyctl-server",
+    "https://fly.io/./launch",
+    "https://fly.io/./transports",
+    "https://fly.io/app/sign-in/",
+    "https://fly.io/app/sign-up/",
+    "https://fly.io/blog/mcp-provisioning/",
+    "https://fly.io/dashboard",
+    "https://fly.io/docs/",
+    "https://fly.io/docs/about/brand/",
+    "https://fly.io/docs/about/support/",
+    "https://fly.io/docs/apps/overview/",
+    "https://fly.io/docs/apps/secrets/",
+    "https://fly.io/docs/blueprints/",
+    "https://fly.io/docs/blueprints/per-user-dev-environments/",
+    "https://fly.io/docs/flyctl",
+    "https://fly.io/docs/flyctl/",
+    "https://fly.io/docs/flyctl/apps/",
+    "https://fly.io/docs/flyctl/auth-login/",
+    "https://fly.io/docs/flyctl/auth-signup/",
+    "https://fly.io/docs/flyctl/auth/",
+    "https://fly.io/docs/flyctl/certs/",
+    "https://fly.io/docs/flyctl/checks/",
+    "https://fly.io/docs/flyctl/config/",
+    "https://fly.io/docs/flyctl/console/",
+    "https://fly.io/docs/flyctl/consul/",
+    "https://fly.io/docs/flyctl/dashboard/",
+    "https://fly.io/docs/flyctl/deploy/",
+    "https://fly.io/docs/flyctl/docs/",
+    "https://fly.io/docs/flyctl/image/",
+    "https://fly.io/docs/flyctl/install/",
+    "https://fly.io/docs/flyctl/integrating/",
+    "https://fly.io/docs/flyctl/ips/",
+    "https://fly.io/docs/flyctl/launch/",
+    "https://fly.io/docs/flyctl/litefs-cloud/",
+    "https://fly.io/docs/flyctl/logs/",
+    "https://fly.io/docs/flyctl/machine/",
+    "https://fly.io/docs/flyctl/mcp-proxy/",
+    "https://fly.io/docs/flyctl/mcp-wrap/",
+    "https://fly.io/docs/flyctl/mpg/",
+    "https://fly.io/docs/flyctl/orgs/",
+    "https://fly.io/docs/flyctl/ping/",
+    "https://fly.io/docs/flyctl/platform/",
+    "https://fly.io/docs/flyctl/postgres/",
+    "https://fly.io/docs/flyctl/proxy/",
+    "https://fly.io/docs/flyctl/redis/",
+    "https://fly.io/docs/flyctl/releases/",
+    "https://fly.io/docs/flyctl/scale/",
+    "https://fly.io/docs/flyctl/secrets/",
+    "https://fly.io/docs/flyctl/services/",
+    "https://fly.io/docs/flyctl/settings/",
+    "https://fly.io/docs/flyctl/sftp/",
+    "https://fly.io/docs/flyctl/ssh/",
+    "https://fly.io/docs/flyctl/status/",
+    "https://fly.io/docs/flyctl/storage/",
+    "https://fly.io/docs/flyctl/tokens/",
+    "https://fly.io/docs/flyctl/version/",
+    "https://fly.io/docs/flyctl/volumes/",
+    "https://fly.io/docs/flyctl/wireguard/",
+    "https://fly.io/docs/getting-started/launch/",
+    "https://fly.io/docs/machines",
+    "https://fly.io/docs/machines/",
+    "https://fly.io/docs/machines/api",
+    "https://fly.io/docs/machines/api/",
+    "https://fly.io/docs/machines/api/apps-resource/",
+    "https://fly.io/docs/machines/api/apps-resource/#create-a-fly-app",
+    "https://fly.io/docs/machines/api/certificates-resource/",
+    "https://fly.io/docs/machines/api/machines-resource/",
+    "https://fly.io/docs/machines/api/machines-resource/#get-a-machine",
+    "https://fly.io/docs/machines/api/machines-resource/#machine-config-object-properties",
+    "https://fly.io/docs/machines/api/tokens-resource",
+    "https://fly.io/docs/machines/api/tokens-resource/",
+    "https://fly.io/docs/machines/api/volumes-resource/",
+    "https://fly.io/docs/machines/api/working-with-machines-api/",
+    "https://fly.io/docs/machines/api/working-with-machines-api/#api-addresses",
+    "https://fly.io/docs/machines/api/working-with-machines-api/#rate-limits",
+    "https://fly.io/docs/machines/cpu-performance/",
+    "https://fly.io/docs/machines/flyctl/fly-machine-run/",
+    "https://fly.io/docs/machines/flyctl/fly-machine-update/",
+    "https://fly.io/docs/machines/guides-examples/functions-with-machines/",
+    "https://fly.io/docs/machines/guides-examples/machine-placement/",
+    "https://fly.io/docs/machines/guides-examples/machine-restart-policy/",
+    "https://fly.io/docs/machines/guides-examples/machine-sizing/",
+    "https://fly.io/docs/machines/guides-examples/managing-machines-with-the-api/",
+    "https://fly.io/docs/machines/guides-examples/multi-container-machines/",
+    "https://fly.io/docs/machines/guides-examples/network-policies/",
+    "https://fly.io/docs/machines/guides-examples/one-app-per-user-why/",
+    "https://fly.io/docs/machines/machine-states/",
+    "https://fly.io/docs/machines/overview/",
+    "https://fly.io/docs/machines/runtime-environment/",
+    "https://fly.io/docs/mcp",
+    "https://fly.io/docs/mcp/",
+    "https://fly.io/docs/mcp/access-control",
+    "https://fly.io/docs/mcp/access-control/",
+    "https://fly.io/docs/mcp/access-control/flycast/",
+    "https://fly.io/docs/mcp/access-control/http-authorization/",
+    "https://fly.io/docs/mcp/access-control/reverse-proxy/",
+    "https://fly.io/docs/mcp/deploy-on/",
+    "https://fly.io/docs/mcp/deploy-on/container/",
+    "https://fly.io/docs/mcp/deploy-on/fly-machine/",
+    "https://fly.io/docs/mcp/deploy-on/your-app/",
+    "https://fly.io/docs/mcp/deploy-with",
+    "https://fly.io/docs/mcp/deploy-with/",
+    "https://fly.io/docs/mcp/deploy-with/fly-launch/",
+    "https://fly.io/docs/mcp/deploy-with/flyctl-machines/",
+    "https://fly.io/docs/mcp/deploy-with/machines-api/",
+    "https://fly.io/docs/mcp/examples/",
+    "https://fly.io/docs/mcp/flyctl-server/",
+    "https://fly.io/docs/mcp/launch/",
+    "https://fly.io/docs/mcp/transports/",
+    "https://fly.io/docs/mcp/transports/sse/",
+    "https://fly.io/docs/mcp/transports/stdio/",
+    "https://fly.io/docs/mcp/transports/streaming-http/",
+    "https://fly.io/docs/networking/private-networking/",
+    "https://fly.io/docs/reference/regions/#fly-io-regions",
+    "https://fly.io/docs/security/tokens/",
+    "https://fly.io/docs/volumes/",
+    "https://fly.io/install.ps1",
+    "https://fly.io/install.sh",
+    "https://fly.io/pricing/",
+    "https://formulae.brew.sh/formula/node",
+    "https://github.com/modelcontextprotocol/servers?tab=readme-ov-file#model-context-protocol-servers",
+    "https://github.com/superfly/docs/edit/main/flyctl/cmd/fly_auth_login.md",
+    "https://github.com/superfly/docs/edit/main/flyctl/cmd/fly_auth_signup.md",
+    "https://github.com/superfly/docs/edit/main/flyctl/install.html.markerb",
+    "https://github.com/superfly/docs/edit/main/machines/api/working-with-machines-api.html.markerb",
+    "https://github.com/superfly/docs/edit/main/mcp/access-control/http-authorization.html.md",
+    "https://github.com/superfly/docs/edit/main/mcp/deploy-with/machines-api.html.md",
+    "https://github.com/superfly/docs/edit/main/mcp/flyctl-server.html.md",
+    "https://github.com/superfly/docs/edit/main/mcp/index.html.markerb",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+HTTP+Authorization%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fmcp%2Faccess-control%2Fhttp-authorization%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fmcp%2Faccess-control%2Fhttp-authorization.html.md%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22HTTP+Authorization%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+Install+flyctl%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fflyctl%2Finstall%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fflyctl%2Finstall.html.markerb%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22Install+flyctl%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+Model+Context+Protocol%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fmcp%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fmcp%2Findex.html.markerb%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22Model+Context+Protocol%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+Working+with+the+Machines+API%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fmachines%2Fapi%2Fworking-with-machines-api%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fmachines%2Fapi%2Fworking-with-machines-api.html.markerb%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22Working+with+the+Machines+API%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+fly+auth+login%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fflyctl%2Fauth-login%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fflyctl%2Fcmd%2Ffly_auth_login.md%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22fly+auth+login%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+fly+auth+signup%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fflyctl%2Fauth-signup%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fflyctl%2Fcmd%2Ffly_auth_signup.md%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22fly+auth+signup%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+flyctl+mcp+server%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fmcp%2Fflyctl-server%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fmcp%2Fflyctl-server.html.md%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22flyctl+mcp+server%22+doc",
+    "https://github.com/superfly/fly-go/blob/main/LICENSE",
+    "https://github.com/superfly/fly-go/blob/main/resource",
+    "https://github.com/superfly/fly-go/blob/main/resource_ip_addresses.go",
+    "https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows",
+    "https://mcp.fly.dev/",
+    "https://modelcontextprotocol.io/docs/concepts/transports#server-sent-events-sse",
+    "https://modelcontextprotocol.io/docs/tools/inspector",
+    "https://modelcontextprotocol.io/introduction",
+    "https://modelcontextprotocol.io/sdk/java/mcp-overview",
+    "https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization",
+    "https://til.simonwillison.net/fly/undocumented-graphql-api",
+    "https://www.anthropic.com/news/model-context-protocol",
+    "https://www.descope.com/blog/post/mcp-flyio",
+    "https://www.youtube.com/watch?v=74c1ByGvFPE"
+  ]
+}

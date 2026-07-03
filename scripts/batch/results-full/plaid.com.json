@@ -1,0 +1,546 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "plaid.com",
+    "detect": {
+      "domain": "plaid.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:17:48.168Z",
+    "summary": "Plaid exposes a broad HTTP API suite (including OAuth), a remote MCP dashboard server, and a Plaid CLI; all require Plaid credentials, with the dashboard MCP using a Plaid OAuth access token.",
+    "credentials": {
+      "plaid_client_id_secret": {
+        "type": "compound",
+        "label": "Plaid API client credentials",
+        "generateUrl": "https://dashboard.plaid.com/signup",
+        "setup": "Create a Plaid account in the [Dashboard signup](https://dashboard.plaid.com/signup). After signup/verification, the Dashboard provides your live `client_id` and `secret`. The CLI can also log you in with `plaid login` and fetch keys automatically. Keep `client_id` and `secret` together; Plaid API requests typically send them in `PLAID-CLIENT-ID` and `PLAID-SECRET` headers or in the JSON body.",
+        "acquisition": "manual"
+      },
+      "plaid_oauth_token": {
+        "type": "bearer",
+        "label": "Plaid OAuth access token",
+        "generateUrl": "https://plaid.com/docs/api/oauth/",
+        "setup": "Obtain this by calling Plaid's OAuth token endpoint with your Plaid API credentials. For example, use `grant_type=client_credentials` and request a scope such as `mcp:dashboard` from the OAuth docs. The response returns an `access_token` (and often a `refresh_token`).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "plaid-api",
+        "name": "Plaid API",
+        "type": "http",
+        "docs": "https://plaid.com/docs/api/index.html.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://plaid.com/docs/api/index.html.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "plaid_client_id_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "PLAID-CLIENT-ID"
+                  }
+                },
+                {
+                  "id": "plaid_client_id_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "PLAID-SECRET"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://plaid.com/docs/api/index.html.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://sandbox.plaid.com",
+        "notes": "Plaid also supports sending `client_id` and `secret` in the JSON body for most endpoints. Production host is `https://production.plaid.com`; Sandbox host is `https://sandbox.plaid.com`. OpenAPI definition is in the GitHub repo `plaid/plaid-openapi`."
+      },
+      {
+        "slug": "plaid-oauth-api",
+        "name": "Plaid OAuth API",
+        "type": "http",
+        "docs": "https://plaid.com/docs/api/oauth/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://plaid.com/docs/api/oauth/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "plaid_client_id_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "PLAID-CLIENT-ID"
+                  }
+                },
+                {
+                  "id": "plaid_client_id_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "PLAID-SECRET"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://plaid.com/docs/api/oauth/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://production.plaid.com/oauth",
+        "notes": "OAuth endpoints include `/oauth/token`, `/oauth/introspect`, and `/oauth/revoke`. The docs state `client_id` and `secret` can be provided in headers or body; `/oauth/token` also supports form-urlencoded and JSON."
+      },
+      {
+        "slug": "plaid-dashboard-mcp-server",
+        "name": "Plaid Dashboard MCP server",
+        "type": "mcp",
+        "docs": "https://plaid.com/docs/resources/mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://plaid.com/docs/resources/mcp/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "plaid_oauth_token",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://plaid.com/docs/resources/mcp/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.dashboard.plaid.com/mcp/",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "plaid-cli",
+        "name": "Plaid CLI",
+        "type": "cli",
+        "docs": "https://plaid.com/docs/resources/cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://plaid.com/docs/resources/cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "plaid_client_id_secret",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "plaid login",
+                    "env": [
+                      "PLAID_CLIENT_ID",
+                      "PLAID_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://plaid.com/docs/resources/cli/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "plaid/plaid-cli/plaid",
+            "runtimeHint": "brew"
+          }
+        ],
+        "command": "plaid"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:17:48.169Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 149588,
+    "completion_tokens": 1257,
+    "total_tokens": 150845
+  },
+  "visited": [
+    "https://plaid.com/docs/api/index.html.md",
+    "https://plaid.com/docs/api/libraries/",
+    "https://plaid.com/docs/api/oauth/",
+    "https://plaid.com/docs/llms.txt",
+    "https://plaid.com/docs/resources/",
+    "https://plaid.com/docs/resources/cli/",
+    "https://plaid.com/docs/resources/mcp/",
+    "https://plaid.com/docs/resources/mcp/#connection-options",
+    "https://plaid.com/llms.txt",
+    "https://www.theneo.io/blog/llms-txt-mcp-api-discovery"
+  ],
+  "grounding": [
+    "https://api.dashboard.plaid.com/mcp/",
+    "https://aws.amazon.com/blogs/apn/how-to-build-a-fintech-app-on-aws-using-the-plaid-api/",
+    "https://brew.sh/",
+    "https://codesandbox.io/examples/package/plaid",
+    "https://dashboard.plaid.com",
+    "https://dashboard.plaid.com/",
+    "https://dashboard.plaid.com/developers/launch-center",
+    "https://dashboard.plaid.com/overview/production",
+    "https://dashboard.plaid.com/signin?redirect=docs",
+    "https://dashboard.plaid.com/signup",
+    "https://dashboard.plaid.com/support/new",
+    "https://dashboard.plaid.com/support/new/product-and-development/developer-lifecycle/developer-resources",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-3.3",
+    "https://demo.plaid.com",
+    "https://developers.openai.com/api/docs/guides/tools-connectors-mcp",
+    "https://discord.gg/sf57M8DW3y",
+    "https://docs.incident.io/status-pages/api",
+    "https://github.com/aws-samples/aws-plaid-demo-app",
+    "https://github.com/dsnchz/solid-plaid-link",
+    "https://github.com/heysanil/plaid-fetch",
+    "https://github.com/jclaessens97/vue-plaid-link",
+    "https://github.com/jorgefspereira/plaid_flutter",
+    "https://github.com/maxint-app/plaid_universal/",
+    "https://github.com/modelcontextprotocol/inspector",
+    "https://github.com/plaid",
+    "https://github.com/plaid/ai-coding-toolkit/tree/main/rules",
+    "https://github.com/plaid/ai-coding-toolkit/tree/main/sandbox",
+    "https://github.com/plaid/credit-attributes",
+    "https://github.com/plaid/plaid-go",
+    "https://github.com/plaid/plaid-java",
+    "https://github.com/plaid/plaid-link-android",
+    "https://github.com/plaid/plaid-link-ios",
+    "https://github.com/plaid/plaid-node",
+    "https://github.com/plaid/plaid-openapi",
+    "https://github.com/plaid/plaid-postman",
+    "https://github.com/plaid/plaid-python",
+    "https://github.com/plaid/plaid-ruby",
+    "https://github.com/plaid/react-native-plaid-link-sdk",
+    "https://github.com/plaid/react-plaid-link",
+    "https://github.com/plaid/sandbox-custom-users",
+    "https://github.com/topics/plaid",
+    "https://github.com/tylerwray/elixir-plaid",
+    "https://github.com/viceroypenguin/Going.Plaid",
+    "https://github.com/wfgilman/plaid-elixir",
+    "https://hackerone.com/plaid",
+    "https://llmstxt.org/",
+    "https://modelcontextprotocol.io/",
+    "https://ofdss.org/#documents",
+    "https://plaid.com/",
+    "https://plaid.com/contact/",
+    "https://plaid.com/core-exchange/docs/llms-full.txt",
+    "https://plaid.com/core-exchange/docs/llms.txt",
+    "https://plaid.com/docs/",
+    "https://plaid.com/docs/account/activity/index.html.md",
+    "https://plaid.com/docs/account/activity/index.html.md#troubleshooting-institution-status",
+    "https://plaid.com/docs/account/billing/#trial-plans",
+    "https://plaid.com/docs/account/billing/index.html.md",
+    "https://plaid.com/docs/account/index.html.md",
+    "https://plaid.com/docs/account/resellers/index.html.md",
+    "https://plaid.com/docs/account/security/index.html.md",
+    "https://plaid.com/docs/account/teams/index.html.md",
+    "https://plaid.com/docs/api/",
+    "https://plaid.com/docs/api/accounts/",
+    "https://plaid.com/docs/api/accounts/index.html.md",
+    "https://plaid.com/docs/api/consent/",
+    "https://plaid.com/docs/api/consent/index.html.md",
+    "https://plaid.com/docs/api/index.html.md",
+    "https://plaid.com/docs/api/institutions/",
+    "https://plaid.com/docs/api/institutions/index.html.md",
+    "https://plaid.com/docs/api/items/",
+    "https://plaid.com/docs/api/items/index.html.md",
+    "https://plaid.com/docs/api/kyc-aml-users/",
+    "https://plaid.com/docs/api/kyc-aml-users/index.html.md",
+    "https://plaid.com/docs/api/libraries/",
+    "https://plaid.com/docs/api/libraries/#client-libraries",
+    "https://plaid.com/docs/api/libraries/#community-libraries",
+    "https://plaid.com/docs/api/libraries/#link-client-sdks",
+    "https://plaid.com/docs/api/libraries/#quickstart--example-apps",
+    "https://plaid.com/docs/api/libraries/index.html.md",
+    "https://plaid.com/docs/api/link/",
+    "https://plaid.com/docs/api/link/index.html.md",
+    "https://plaid.com/docs/api/network/",
+    "https://plaid.com/docs/api/network/index.html.md",
+    "https://plaid.com/docs/api/oauth/",
+    "https://plaid.com/docs/api/oauth/#create-or-refresh-an-oauth-access-token",
+    "https://plaid.com/docs/api/oauth/#endpoints",
+    "https://plaid.com/docs/api/oauth/#get-metadata-about-an-oauth-token",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-request-client-id",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-request-client-secret",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-request-secret",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-request-token",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-active",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-aud",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-client-id",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-exp",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-iat",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-iss",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-request-id",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-scope",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-sub",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-token-type",
+    "https://plaid.com/docs/api/oauth/#oauth-introspect-response-user-id",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-audience",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-client-id",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-client-secret",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-grant-type",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-refresh-token",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-resource",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-scope",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-secret",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-subject-token",
+    "https://plaid.com/docs/api/oauth/#oauth-token-request-subject-token-type",
+    "https://plaid.com/docs/api/oauth/#oauth-token-response-access-token",
+    "https://plaid.com/docs/api/oauth/#oauth-token-response-expires-in",
+    "https://plaid.com/docs/api/oauth/#oauth-token-response-refresh-token",
+    "https://plaid.com/docs/api/oauth/#oauth-token-response-request-id",
+    "https://plaid.com/docs/api/oauth/#oauth-token-response-token-type",
+    "https://plaid.com/docs/api/oauth/#oauthintrospect",
+    "https://plaid.com/docs/api/oauth/#oauthrevoke",
+    "https://plaid.com/docs/api/oauth/#oauthtoken",
+    "https://plaid.com/docs/api/oauth/index.html.md",
+    "https://plaid.com/docs/api/partner/",
+    "https://plaid.com/docs/api/partner/index.html.md",
+    "https://plaid.com/docs/api/postman/",
+    "https://plaid.com/docs/api/postman/index.html.md",
+    "https://plaid.com/docs/api/processor-partners/",
+    "https://plaid.com/docs/api/processor-partners/index.html.md",
+    "https://plaid.com/docs/api/processors/",
+    "https://plaid.com/docs/api/processors/index.html.md",
+    "https://plaid.com/docs/api/products/assets/",
+    "https://plaid.com/docs/api/products/assets/index.html.md",
+    "https://plaid.com/docs/api/products/assets/index.html.md#asset_reportpdfget",
+    "https://plaid.com/docs/api/products/auth/",
+    "https://plaid.com/docs/api/products/auth/index.html.md",
+    "https://plaid.com/docs/api/products/beacon/index.html.md",
+    "https://plaid.com/docs/api/products/check/",
+    "https://plaid.com/docs/api/products/check/index.html.md",
+    "https://plaid.com/docs/api/products/enrich/",
+    "https://plaid.com/docs/api/products/enrich/index.html.md",
+    "https://plaid.com/docs/api/products/identity-verification/",
+    "https://plaid.com/docs/api/products/identity-verification/index.html.md",
+    "https://plaid.com/docs/api/products/identity/",
+    "https://plaid.com/docs/api/products/identity/index.html.md",
+    "https://plaid.com/docs/api/products/income/",
+    "https://plaid.com/docs/api/products/income/index.html.md",
+    "https://plaid.com/docs/api/products/investments-move/",
+    "https://plaid.com/docs/api/products/investments-move/index.html.md",
+    "https://plaid.com/docs/api/products/investments/",
+    "https://plaid.com/docs/api/products/investments/index.html.md",
+    "https://plaid.com/docs/api/products/layer/",
+    "https://plaid.com/docs/api/products/layer/index.html.md",
+    "https://plaid.com/docs/api/products/liabilities/",
+    "https://plaid.com/docs/api/products/liabilities/index.html.md",
+    "https://plaid.com/docs/api/products/monitor/",
+    "https://plaid.com/docs/api/products/monitor/index.html.md",
+    "https://plaid.com/docs/api/products/payment-initiation/",
+    "https://plaid.com/docs/api/products/payment-initiation/index.html.md",
+    "https://plaid.com/docs/api/products/signal/",
+    "https://plaid.com/docs/api/products/signal/index.html.md",
+    "https://plaid.com/docs/api/products/statements/",
+    "https://plaid.com/docs/api/products/statements/index.html.md",
+    "https://plaid.com/docs/api/products/transactions/",
+    "https://plaid.com/docs/api/products/transactions/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/",
+    "https://plaid.com/docs/api/products/transfer/account-linking/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/initiating-transfers/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/ledger/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/metrics/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/platform-payments/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/reading-transfers/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/recurring-transfers/index.html.md",
+    "https://plaid.com/docs/api/products/transfer/refunds/index.html.md",
+    "https://plaid.com/docs/api/products/virtual-accounts/",
+    "https://plaid.com/docs/api/products/virtual-accounts/index.html.md",
+    "https://plaid.com/docs/api/sandbox/",
+    "https://plaid.com/docs/api/sandbox/index.html.md",
+    "https://plaid.com/docs/api/users/",
+    "https://plaid.com/docs/api/users/index.html.md",
+    "https://plaid.com/docs/api/users/migrate-to-new-user-apis/index.html.md",
+    "https://plaid.com/docs/api/users/user-apis/index.html.md",
+    "https://plaid.com/docs/api/versioning/",
+    "https://plaid.com/docs/api/versioning/index.html.md",
+    "https://plaid.com/docs/api/webhooks/",
+    "https://plaid.com/docs/api/webhooks/index.html.md",
+    "https://plaid.com/docs/api/webhooks/webhook-verification/index.html.md",
+    "https://plaid.com/docs/assets/add-to-app/index.html.md",
+    "https://plaid.com/docs/assets/index.html.md",
+    "https://plaid.com/docs/assets/partnerships/index.html.md",
+    "https://plaid.com/docs/assets/partnerships/ocrolus/index.html.md",
+    "https://plaid.com/docs/auth",
+    "https://plaid.com/docs/auth/add-to-app/index.html.md",
+    "https://plaid.com/docs/auth/coverage/automated/index.html.md",
+    "https://plaid.com/docs/auth/coverage/database-auth/index.html.md",
+    "https://plaid.com/docs/auth/coverage/database/index.html.md",
+    "https://plaid.com/docs/auth/coverage/flow-options/index.html.md",
+    "https://plaid.com/docs/auth/coverage/index.html.md",
+    "https://plaid.com/docs/auth/coverage/instant/index.html.md",
+    "https://plaid.com/docs/auth/coverage/microdeposit-events/index.html.md",
+    "https://plaid.com/docs/auth/coverage/same-day-link-best-practices/index.html.md",
+    "https://plaid.com/docs/auth/coverage/same-day/index.html.md",
+    "https://plaid.com/docs/auth/coverage/testing/index.html.md",
+    "https://plaid.com/docs/auth/index.html.md",
+    "https://plaid.com/docs/auth/partnerships/dwolla/index.html.md",
+    "https://plaid.com/docs/auth/partnerships/index.html.md",
+    "https://plaid.com/docs/auth/partnerships/stripe/index.html.md",
+    "https://plaid.com/docs/auth/pay-by-bank-ux/index.html.md",
+    "https://plaid.com/docs/balance/",
+    "https://plaid.com/docs/balance/add-to-app/index.html.md",
+    "https://plaid.com/docs/balance/index.html.md",
+    "https://plaid.com/docs/balance/migration-guide/index.html.md",
+    "https://plaid.com/docs/changelog/index.html.md",
+    "https://plaid.com/docs/check",
+    "https://plaid.com/docs/check/add-to-app/index.html.md",
+    "https://plaid.com/docs/check/index.html.md",
+    "https://plaid.com/docs/check/migrate-from-assets/index.html.md",
+    "https://plaid.com/docs/check/migrate-from-income/index.html.md",
+    "https://plaid.com/docs/index.html.md",
+    "https://plaid.com/docs/institutions/",
+    "https://plaid.com/docs/institutions/europe/",
+    "https://plaid.com/docs/investments/",
+    "https://plaid.com/docs/liabilities/",
+    "https://plaid.com/docs/link/",
+    "https://plaid.com/docs/link/android",
+    "https://plaid.com/docs/link/hosted-link/",
+    "https://plaid.com/docs/link/ios",
+    "https://plaid.com/docs/link/oauth/",
+    "https://plaid.com/docs/link/react-native/",
+    "https://plaid.com/docs/link/web",
+    "https://plaid.com/docs/link/web/",
+    "https://plaid.com/docs/llms-full.txt",
+    "https://plaid.com/docs/llms.txt",
+    "https://plaid.com/docs/quickstart/glossary/#item",
+    "https://plaid.com/docs/resources/",
+    "https://plaid.com/docs/resources/#ai-developer-tools",
+    "https://plaid.com/docs/resources/#ask-bill",
+    "https://plaid.com/docs/resources/#bank-coverage-explorer",
+    "https://plaid.com/docs/resources/#community",
+    "https://plaid.com/docs/resources/#credit-attributes-library",
+    "https://plaid.com/docs/resources/#dashboard-mcp-server",
+    "https://plaid.com/docs/resources/#demos",
+    "https://plaid.com/docs/resources/#demos-video-tutorials-and-guides",
+    "https://plaid.com/docs/resources/#developer-tools",
+    "https://plaid.com/docs/resources/#enrich-test-transaction-library",
+    "https://plaid.com/docs/resources/#integration-support",
+    "https://plaid.com/docs/resources/#launch-center",
+    "https://plaid.com/docs/resources/#llm-friendly-documentation",
+    "https://plaid.com/docs/resources/#local-mcp-server",
+    "https://plaid.com/docs/resources/#openapi-file",
+    "https://plaid.com/docs/resources/#partner-directory",
+    "https://plaid.com/docs/resources/#plaid-cli",
+    "https://plaid.com/docs/resources/#postman",
+    "https://plaid.com/docs/resources/#sample-apps",
+    "https://plaid.com/docs/resources/#sdks",
+    "https://plaid.com/docs/resources/#security-portal-audits-and-certifications",
+    "https://plaid.com/docs/resources/#test-data-libraries",
+    "https://plaid.com/docs/resources/#third-party-resources",
+    "https://plaid.com/docs/resources/#vibe-coding-guides",
+    "https://plaid.com/docs/resources/#vibe-coding-tips",
+    "https://plaid.com/docs/resources/#video-tutorials",
+    "https://plaid.com/docs/resources/cli/",
+    "https://plaid.com/docs/resources/cli/#access",
+    "https://plaid.com/docs/resources/cli/#command-guide",
+    "https://plaid.com/docs/resources/cli/#configuration",
+    "https://plaid.com/docs/resources/cli/#configuration-1",
+    "https://plaid.com/docs/resources/cli/#creating-a-sandbox-item",
+    "https://plaid.com/docs/resources/cli/#creating-an-account",
+    "https://plaid.com/docs/resources/cli/#environment-variables",
+    "https://plaid.com/docs/resources/cli/#feedback",
+    "https://plaid.com/docs/resources/cli/#getting-started",
+    "https://plaid.com/docs/resources/cli/#installing-the-cli",
+    "https://plaid.com/docs/resources/cli/#json-output-for-agents-and-scripts",
+    "https://plaid.com/docs/resources/cli/#linking-an-item",
+    "https://plaid.com/docs/resources/cli/#products",
+    "https://plaid.com/docs/resources/cli/#querying-personal-financial-management-pfm-product-data",
+    "https://plaid.com/docs/resources/cli/#signing-up-for-the-trial-plan",
+    "https://plaid.com/docs/resources/cli/#utilities",
+    "https://plaid.com/docs/resources/mcp/",
+    "https://plaid.com/docs/resources/mcp/#api-integration-with-remote-mcp",
+    "https://plaid.com/docs/resources/mcp/#connection-options",
+    "https://plaid.com/docs/resources/mcp/#creating-an-oauth-token",
+    "https://plaid.com/docs/resources/mcp/#dashboard-mcp-tools",
+    "https://plaid.com/docs/resources/mcp/#expired-tokens",
+    "https://plaid.com/docs/resources/mcp/#mcp-client-setup",
+    "https://plaid.com/docs/resources/mcp/#passing-the-mcp-server-to-a-model-api",
+    "https://plaid.com/docs/resources/mcp/#requirements",
+    "https://plaid.com/docs/resources/vibe-coding/",
+    "https://plaid.com/docs/sandbox/",
+    "https://plaid.com/docs/sandbox/user-custom/",
+    "https://plaid.com/docs/support/?showChat=true",
+    "https://plaid.com/docs/transactions/",
+    "https://plaid.com/documents/enrich_sandbox_preset_transactions.csv",
+    "https://plaid.com/legal/#all-audiences",
+    "https://plaid.com/legal/#cookie-policy",
+    "https://plaid.com/link-demo",
+    "https://plaid.com/llms.txt",
+    "https://plaid.com/partner-directory/",
+    "https://plaid.com/safety/",
+    "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+    "https://production.plaid.com",
+    "https://production.plaid.com/oauth/token",
+    "https://sandbox.plaid.com",
+    "https://security.plaid.com/",
+    "https://stackoverflow.com/questions/tagged/plaid?tab=Newest",
+    "https://status.plaid.com",
+    "https://status.plaid.com/api/v2/incidents.json",
+    "https://status.plaid.com/api/v2/status.json",
+    "https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp",
+    "https://twitter.com/plaiddev",
+    "https://v1.humbledevs.com/solutions",
+    "https://webhookdb.com/docs/plai",
+    "https://www.humbledevs.com/",
+    "https://www.theneo.io/blog/llms-txt-mcp-api-discovery",
+    "https://www.youtube.com/playlist?list=PLyKH4ZiEQ1bE7XBcpX81BQWLy1olem1wf",
+    "https://www.youtube.com/playlist?list=PLyKH4ZiEQ1bEAnnIiFMRGat7tFQl3gcJv",
+    "https://www.youtube.com/playlist?list=PLyKH4ZiEQ1bH5wpCt9SiyVfHlV2HecFBq"
+  ]
+}

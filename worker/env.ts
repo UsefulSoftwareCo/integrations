@@ -40,7 +40,13 @@ export interface EdgeCaches {
   default: Cache;
 }
 
+export interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 export interface Env {
+  /** Per-IP limiter for LLM discovery runs (wrangler `unsafe.bindings` ratelimit). */
+  DISCOVER_LIMITER?: RateLimiter;
   ASSETS: Fetcher;
   /** PostHog project token for server-side captures (same value as the public
    * client token — it can only ingest). */
@@ -52,8 +58,8 @@ export interface Env {
    * POSTHOG_KEY. Optional so a missing secret degrades to site-only. */
   POSTHOG_EXECUTOR_KEY?: string;
   MCP: DurableObjectNamespace;
-  /** Durable per-domain store of discovery results — written on completion,
-   * read at page render (merged with the static catalog). */
+  /** Durable per-domain store of discovery results — written on completion
+   * and read at page render as the page's only surface source. */
   DISCOVERY: KVNamespace;
   /** context.dev API key (secret). When set, the discover agent reads docs via
    * context.dev's JS-rendered Markdown scrape + web search; else a naive fetch. */

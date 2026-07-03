@@ -1,0 +1,388 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "gitea.io",
+    "detect": {
+      "domain": "gitea.io",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:50:29.664Z",
+    "summary": "Gitea exposes one public developer HTTP API, one MCP server, and the Tea CLI; all require a Gitea account-derived access token, with additional API access via BasicAuth for token minting and SSH-signature support on the API.",
+    "credentials": {
+      "gitea_api_token": {
+        "type": "api_key",
+        "label": "Gitea personal access token",
+        "generateUrl": "https://gitea.com/user/settings/applications",
+        "setup": "Log in to Gitea, open [User Settings → Applications](https://gitea.com/user/settings/applications), and create a new access token in **Manage Access Tokens**. Copy the token once when it is shown; Gitea does not redisplay it. Use the token in API requests as `Authorization: token ...`, `access_token=...`, or `token=...` per the API docs.",
+        "acquisition": "manual"
+      },
+      "gitea_basic_password": {
+        "type": "basic",
+        "label": "Gitea account password for token minting",
+        "generateUrl": "https://gitea.com/user/login",
+        "setup": "Use your normal Gitea username and password when calling the token-creation endpoint `POST /users/:name/tokens` or when the docs show `BasicAuth` for token minting. This is not a separate API credential; it is only the login used to create a new access token.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "gitea-api",
+        "name": "Gitea API",
+        "type": "http",
+        "docs": "https://docs.gitea.com/api/1.20/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.gitea.com/api/1.20/",
+            "https://docs.gitea.com/next/development/api-usage"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "gitea_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gitea.com/next/development/api-usage"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gitea_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "scheme": "query",
+                    "paramName": "access_token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gitea.com/next/development/api-usage"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gitea_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "scheme": "query",
+                    "paramName": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gitea.com/next/development/api-usage"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gitea_basic_password",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "BasicAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gitea.com/api/1.20/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "gitea_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Signature",
+                    "scheme": "Signature"
+                  }
+                },
+                {
+                  "id": "gitea_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-ssh-certificate",
+                    "scheme": "ssh certificate"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.gitea.com/next/development/api-usage"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://gitea.com/api/v1"
+      },
+      {
+        "slug": "gitea-mcp-server",
+        "name": "Gitea MCP Server",
+        "type": "mcp",
+        "docs": "https://about.gitea.com/resources/tutorials/gitea-mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://about.gitea.com/resources/tutorials/gitea-mcp-server/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "gitea_api_token",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://about.gitea.com/resources/tutorials/gitea-mcp-server/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://gitea.com/gitea/gitea-mcp",
+        "transports": [
+          "streamable-http",
+          "sse"
+        ]
+      },
+      {
+        "slug": "tea-cli",
+        "name": "Tea CLI",
+        "type": "cli",
+        "docs": "https://about.gitea.com/resources/tutorials/gitea-mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://about.gitea.com/resources/tutorials/gitea-mcp-server/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "gitea_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "tea login",
+                    "env": [
+                      "GITEA_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://about.gitea.com/resources/tutorials/gitea-mcp-server/"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "tea"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:50:29.664Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 108658,
+    "completion_tokens": 1588,
+    "total_tokens": 110246
+  },
+  "visited": [
+    "http://readthedocs.eupraxia.io/docs/mcp-servers/gitea/",
+    "https://about.gitea.com/resources/tutorials/gitea-mcp-server/",
+    "https://docs.gitea.com/api/1.20/",
+    "https://docs.gitea.com/api/1.26/",
+    "https://docs.gitea.com/api/next/",
+    "https://docs.gitea.com/next/development/api-usage",
+    "https://github.com/go-gitea/gitea/issues/23382",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://localhost/api/v1/repos/search?limit=1",
+    "http://localhost/api/v1/repos/search?limit=1&page=2",
+    "http://localhost/api/v1/repos/search?limit=1&page=5252",
+    "http://localhost:4000/api/v1/repos/test1/test1/issues",
+    "http://localhost:8080/sse",
+    "http://readthedocs.eupraxia.io/docs/mcp-servers/gitea/",
+    "https://about.gitea.com/",
+    "https://about.gitea.com/#main-content",
+    "https://about.gitea.com/about/compliance",
+    "https://about.gitea.com/about/devops",
+    "https://about.gitea.com/about/support-release-policy",
+    "https://about.gitea.com/about/whygitea",
+    "https://about.gitea.com/blog",
+    "https://about.gitea.com/community/supporters/",
+    "https://about.gitea.com/contact/contact",
+    "https://about.gitea.com/education/",
+    "https://about.gitea.com/news",
+    "https://about.gitea.com/pricing",
+    "https://about.gitea.com/pricing/",
+    "https://about.gitea.com/privacy-policy/",
+    "https://about.gitea.com/products/cloud",
+    "https://about.gitea.com/products/cloud/",
+    "https://about.gitea.com/products/gitea",
+    "https://about.gitea.com/products/gitea-enterprise",
+    "https://about.gitea.com/products/gitea-enterprise/",
+    "https://about.gitea.com/products/gitea/",
+    "https://about.gitea.com/products/runner",
+    "https://about.gitea.com/products/runner/",
+    "https://about.gitea.com/products/tea",
+    "https://about.gitea.com/products/tea/",
+    "https://about.gitea.com/resources/tutorials/",
+    "https://about.gitea.com/resources/tutorials/gitea-mcp-server/",
+    "https://about.gitea.com/resources/tutorials?category=integration",
+    "https://about.gitea.com/terms-of-service/",
+    "https://blog.gitea.com",
+    "https://bsky.app/profile/gitea.com",
+    "https://cloud.gitea.com",
+    "https://datatracker.ietf.org/doc/html/draft-cavage-http-signatures",
+    "https://discord.gg/Mhujcj2M",
+    "https://discord.gg/gitea",
+    "https://docs.gitea.com",
+    "https://docs.gitea.com/",
+    "https://docs.gitea.com/#",
+    "https://docs.gitea.com/#__docusaurus_skipToContent_fallback",
+    "https://docs.gitea.com/#api-guide",
+    "https://docs.gitea.com/#authentication",
+    "https://docs.gitea.com/#enablingconfiguring-api-access",
+    "https://docs.gitea.com/#generating-and-listing-api-tokens",
+    "https://docs.gitea.com/#more-on-the-authorization-header",
+    "https://docs.gitea.com/#oauth2-provider",
+    "https://docs.gitea.com/#pagination",
+    "https://docs.gitea.com/#sdks",
+    "https://docs.gitea.com/#sudo",
+    "https://docs.gitea.com/#token-api",
+    "https://docs.gitea.com/#user-interface",
+    "https://docs.gitea.com/1.19/",
+    "https://docs.gitea.com/1.20/",
+    "https://docs.gitea.com/1.21/",
+    "https://docs.gitea.com/1.22/",
+    "https://docs.gitea.com/1.22/development/api-usage",
+    "https://docs.gitea.com/1.23/",
+    "https://docs.gitea.com/1.23/development/api-usage",
+    "https://docs.gitea.com/1.24/",
+    "https://docs.gitea.com/1.24/development/api-usage",
+    "https://docs.gitea.com/1.25/",
+    "https://docs.gitea.com/1.25/development/api-usage",
+    "https://docs.gitea.com/1.27/",
+    "https://docs.gitea.com/1.27/development/api-usage",
+    "https://docs.gitea.com/api/",
+    "https://docs.gitea.com/api/1.19/",
+    "https://docs.gitea.com/api/1.20/",
+    "https://docs.gitea.com/api/1.21/",
+    "https://docs.gitea.com/api/1.22/",
+    "https://docs.gitea.com/api/1.23/",
+    "https://docs.gitea.com/api/1.24/",
+    "https://docs.gitea.com/api/1.25/",
+    "https://docs.gitea.com/api/1.26/",
+    "https://docs.gitea.com/api/1.27/",
+    "https://docs.gitea.com/api/next/",
+    "https://docs.gitea.com/development/api-usage",
+    "https://docs.gitea.com/enterprise",
+    "https://docs.gitea.com/help/support",
+    "https://docs.gitea.com/next/",
+    "https://docs.gitea.com/next/administration/config-cheat-sheet",
+    "https://docs.gitea.com/next/category/administration",
+    "https://docs.gitea.com/next/category/development",
+    "https://docs.gitea.com/next/category/help",
+    "https://docs.gitea.com/next/category/installation",
+    "https://docs.gitea.com/next/category/usage",
+    "https://docs.gitea.com/next/contributing/contributing",
+    "https://docs.gitea.com/next/development/api-usage",
+    "https://docs.gitea.com/next/development/hacking-on-gitea",
+    "https://docs.gitea.com/next/development/integrations",
+    "https://docs.gitea.com/next/development/migrations-interfaces",
+    "https://docs.gitea.com/next/development/oauth2-provider",
+    "https://docs.gitea.com/runner/0.2.11/",
+    "https://docs.gitea.com/runner/1.0.8/",
+    "https://docs.gitea.com/runner/next/",
+    "https://docs.gitea.com/zh-cn/api/1.20/",
+    "https://docs.gitea.com/zh-cn/api/1.26/",
+    "https://docs.gitea.com/zh-cn/next/development/api-usage",
+    "https://docs.gitea.com/zh-tw/api/1.20/",
+    "https://docs.gitea.com/zh-tw/api/1.26/",
+    "https://docs.gitea.com/zh-tw/next/development/api-usage",
+    "https://forum.gitea.com",
+    "https://forum.gitea.com/",
+    "https://gitea.com",
+    "https://gitea.com/api/swagger",
+    "https://gitea.com/gitea",
+    "https://gitea.com/gitea/awesome-gitea",
+    "https://gitea.com/gitea/awesome-gitea#user-content-sdk",
+    "https://gitea.com/gitea/docs/src/branch/main/docs/development/api-usage.md",
+    "https://gitea.com/gitea/gitea-mcp.git",
+    "https://gitea.com/gitea/gitea-mcp/issues",
+    "https://gitea.com/gitea/gitea-mcp/releases",
+    "https://gitea.com/gitea/gitea-mcp/src/branch/main/LICENSE",
+    "https://gitea.com/gitea/go-sdk",
+    "https://gitea.com/gitea/tea",
+    "https://gitea.com/lunny",
+    "https://gitea.com/user/login",
+    "https://gitea.your.host/api/swagger",
+    "https://gitea.your.host/api/v1/users/",
+    "https://gitea.your.host/api/v1/users/{username}/tokens",
+    "https://gitea.your.host/swagger.v1.json",
+    "https://github.com/go-gitea/gitea",
+    "https://github.com/go-gitea/gitea/blob/6efdcaed86565c91a3dc77631372a9cc45a58e89/modules/auth/auth.go#L47",
+    "https://github.com/go-gitea/gitea/issues/23382",
+    "https://linkedin.com/company/commitgo",
+    "https://modelcontextprotocol.io/clients",
+    "https://social.gitea.io",
+    "https://social.gitea.io/@gitea",
+    "https://stackoverflow.com/questions/tagged/gitea",
+    "https://status.gitea.com",
+    "https://translate.gitea.com",
+    "https://twitter.com/giteaio",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://yourusername:password@gitea.your.host/api/v1/users/",
+    "https://yourusername:yourpassword@gitea.your.host/api/v1/users/yourusername/tokens"
+  ]
+}

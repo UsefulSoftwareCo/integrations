@@ -1,0 +1,534 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "smtp2go.com",
+    "detect": {
+      "domain": "smtp2go.com",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:57:28.767Z",
+    "summary": "SMTP2GO exposes a REST/JSON API, a remote Streamable HTTP MCP server, and SMTP relay access; the API and MCP use SMTP2GO API keys, while SMTP relay uses SMTP user credentials.",
+    "description": "SMTP2GO is an email delivery service that lets customers send email and SMS, manage senders and account settings, and view delivery activity and statistics. It also provides SMTP relay infrastructure and tooling for integrating those capabilities into applications.",
+    "credentials": {
+      "smtp2go_api_key": {
+        "type": "api_key",
+        "label": "SMTP2GO API key",
+        "generateUrl": "https://app.smtp2go.com/sending/apikeys/",
+        "setup": "Log in to the [SMTP2GO App](https://app.smtp2go.com) and go to [Sending > API Keys](https://app.smtp2go.com/sending/apikeys/). Click **Add API Key** to create a key, then copy it. SMTP2GO docs note keys have an `api-` prefix and can be permission-scoped per endpoint.",
+        "acquisition": "manual"
+      },
+      "smtp2go_smtp_user": {
+        "type": "basic",
+        "label": "SMTP2GO SMTP user credentials",
+        "generateUrl": "https://app.smtp2go.com/",
+        "setup": "Log in to the [SMTP2GO App](https://app.smtp2go.com) and create an SMTP User from the **Sending > SMTP Users** section described in the [SMTP Relay guide](https://developers.smtp2go.com/docs/smtp-relay). Use the generated SMTP username and password to authenticate to `mail.smtp2go.com` (or region-specific SMTP hosts).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "smtp2go-mcp-server",
+        "name": "SMTP2GO MCP server",
+        "type": "mcp",
+        "docs": "https://developers.smtp2go.com/docs/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.smtp2go.com/docs/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "smtp2go_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Smtp2go-Api-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.smtp2go.com/docs/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://developers.smtp2go.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "smtp2go-smtp-relay",
+        "name": "SMTP2GO SMTP relay",
+        "type": "http",
+        "docs": "https://developers.smtp2go.com/docs/smtp-relay",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.smtp2go.com/docs/smtp-relay"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "smtp2go_smtp_user",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.smtp2go.com/docs/smtp-relay"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "mail.smtp2go.com"
+      },
+      {
+        "slug": "smtp2go-api",
+        "name": "SMTP2GO API",
+        "type": "http",
+        "docs": "https://developers.smtp2go.com/reference/general-api-resources",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.smtp2go.com/reference/general-api-resources",
+            "https://developers.smtp2go.com/reference/general-api-resources.md",
+            "https://developers.smtp2go.com/reference/send-standard-email.md",
+            "https://developers.smtp2go.com/reference/authentication.md",
+            "https://developers.smtp2go.com/docs/getting-started"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "smtp2go_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "sec0"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.smtp2go.com/reference/send-standard-email.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "smtp2go_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "api_key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.smtp2go.com/reference/authentication.md",
+                  "https://developers.smtp2go.com/reference/general-api-resources.md",
+                  "https://developers.smtp2go.com/docs/getting-started"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.smtp2go.com/v3",
+        "variables": [
+          {
+            "name": "region",
+            "description": "Optional region-specific host; docs list `https://us-api.smtp2go.com/v3`, `https://eu-api.smtp2go.com/v3`, and `https://au-api.smtp2go.com/v3` as alternatives to the global base URL."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:57:28.767Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 105296,
+    "completion_tokens": 1775,
+    "total_tokens": 107071
+  },
+  "visited": [
+    "https://developers.smtp2go.com/docs/api-features-guide",
+    "https://developers.smtp2go.com/docs/endpoints",
+    "https://developers.smtp2go.com/docs/getting-started",
+    "https://developers.smtp2go.com/docs/introduction-guide",
+    "https://developers.smtp2go.com/docs/mcp",
+    "https://developers.smtp2go.com/docs/official-libraries",
+    "https://developers.smtp2go.com/docs/send-an-email",
+    "https://developers.smtp2go.com/docs/smtp-relay",
+    "https://developers.smtp2go.com/llms.txt",
+    "https://developers.smtp2go.com/reference/authentication",
+    "https://developers.smtp2go.com/reference/authentication.md",
+    "https://developers.smtp2go.com/reference/general-api-resources",
+    "https://developers.smtp2go.com/reference/general-api-resources.md",
+    "https://developers.smtp2go.com/reference/send-standard-email.md",
+    "https://github.com/H190K/email-sending-worker",
+    "https://github.com/SolvingMan/Angular_Project_Sending_Email_Contact_Form",
+    "https://github.com/gonzague/idees-supabase",
+    "https://github.com/makeplane/plane/issues/7042",
+    "https://github.com/masonjames/emdash-smtp",
+    "https://github.com/siemsene/resilience/blob/main/HOSTING.md",
+    "https://www.smtp2go.com/benefit/smtp-api/"
+  ],
+  "grounding": [
+    "https://affiliates.smtp2go.com/",
+    "https://api.smtp2go.com/v3",
+    "https://api.smtp2go.com/v3/email/send",
+    "https://apidoc.smtp2go.com/documentation/#/README",
+    "https://app.smtp2go.com",
+    "https://app.smtp2go.com/",
+    "https://app.smtp2go.com/sending/apikeys/",
+    "https://au-api.smtp2go.com/v3",
+    "https://de",
+    "https://developers.smtp2go.com/#api",
+    "https://developers.smtp2go.com/#api-key-settings-and-customisation",
+    "https://developers.smtp2go.com/#attachments",
+    "https://developers.smtp2go.com/#authentication-api-key",
+    "https://developers.smtp2go.com/#authentication-notes",
+    "https://developers.smtp2go.com/#claude-code",
+    "https://developers.smtp2go.com/#claude-desktop",
+    "https://developers.smtp2go.com/#codex-app--codex-cli",
+    "https://developers.smtp2go.com/#confirm-it-works",
+    "https://developers.smtp2go.com/#content",
+    "https://developers.smtp2go.com/#craft-a-simple-message",
+    "https://developers.smtp2go.com/#cursor",
+    "https://developers.smtp2go.com/#endpoints",
+    "https://developers.smtp2go.com/#further-specific-settings",
+    "https://developers.smtp2go.com/#gemini-cli",
+    "https://developers.smtp2go.com/#global-infrastructure",
+    "https://developers.smtp2go.com/#introducing-standard-email",
+    "https://developers.smtp2go.com/#lovable",
+    "https://developers.smtp2go.com/#maximum-email-size",
+    "https://developers.smtp2go.com/#maximum-number-of-recipients-per-email",
+    "https://developers.smtp2go.com/#points-to-note",
+    "https://developers.smtp2go.com/#prerequisites",
+    "https://developers.smtp2go.com/#rate-limiting",
+    "https://developers.smtp2go.com/#response-codes",
+    "https://developers.smtp2go.com/#responses",
+    "https://developers.smtp2go.com/#sender-verification",
+    "https://developers.smtp2go.com/#setup-guides",
+    "https://developers.smtp2go.com/#smtp-settings",
+    "https://developers.smtp2go.com/#smtp2go-mcp",
+    "https://developers.smtp2go.com/#subaccounts",
+    "https://developers.smtp2go.com/#support",
+    "https://developers.smtp2go.com/#take-it-further",
+    "https://developers.smtp2go.com/#technical-details",
+    "https://developers.smtp2go.com/#the-full-request",
+    "https://developers.smtp2go.com/#the-request-structure",
+    "https://developers.smtp2go.com/#the-requirements-to-send-using-smtp",
+    "https://developers.smtp2go.com/#welcome",
+    "https://developers.smtp2go.com/#what-is-smtp2go",
+    "https://developers.smtp2go.com/docs",
+    "https://developers.smtp2go.com/docs/adding-attachments",
+    "https://developers.smtp2go.com/docs/adding-attachments.md",
+    "https://developers.smtp2go.com/docs/api-features-guide",
+    "https://developers.smtp2go.com/docs/api-features-guide.md",
+    "https://developers.smtp2go.com/docs/cpanelwhm-automation-plugin",
+    "https://developers.smtp2go.com/docs/cpanelwhm-automation-plugin.md",
+    "https://developers.smtp2go.com/docs/endpoints",
+    "https://developers.smtp2go.com/docs/endpoints.md",
+    "https://developers.smtp2go.com/docs/getting-started",
+    "https://developers.smtp2go.com/docs/getting-started#sender-verification",
+    "https://developers.smtp2go.com/docs/getting-started-with-templates",
+    "https://developers.smtp2go.com/docs/getting-started-with-templates.md",
+    "https://developers.smtp2go.com/docs/getting-started.md",
+    "https://developers.smtp2go.com/docs/introduction-guide",
+    "https://developers.smtp2go.com/docs/introduction-guide.md",
+    "https://developers.smtp2go.com/docs/mcp",
+    "https://developers.smtp2go.com/docs/mcp.md",
+    "https://developers.smtp2go.com/docs/official-libraries",
+    "https://developers.smtp2go.com/docs/official-libraries.md",
+    "https://developers.smtp2go.com/docs/rate-limiting",
+    "https://developers.smtp2go.com/docs/rate-limiting.md",
+    "https://developers.smtp2go.com/docs/report-on-email-delivery",
+    "https://developers.smtp2go.com/docs/report-on-email-delivery.md",
+    "https://developers.smtp2go.com/docs/response-codes",
+    "https://developers.smtp2go.com/docs/response-codes.md",
+    "https://developers.smtp2go.com/docs/send-an-email",
+    "https://developers.smtp2go.com/docs/send-an-email.md",
+    "https://developers.smtp2go.com/docs/setup-a-webhook",
+    "https://developers.smtp2go.com/docs/setup-a-webhook.md",
+    "https://developers.smtp2go.com/docs/slack-app",
+    "https://developers.smtp2go.com/docs/slack-app.md",
+    "https://developers.smtp2go.com/docs/smtp-relay",
+    "https://developers.smtp2go.com/docs/smtp-relay.md",
+    "https://developers.smtp2go.com/docs/view-account-activity",
+    "https://developers.smtp2go.com/docs/view-account-activity.md",
+    "https://developers.smtp2go.com/docs/webhooks-overview",
+    "https://developers.smtp2go.com/docs/webhooks-overview.md",
+    "https://developers.smtp2go.com/docs/wordpress-plugin",
+    "https://developers.smtp2go.com/docs/wordpress-plugin.md",
+    "https://developers.smtp2go.com/llms.txt",
+    "https://developers.smtp2go.com/login?redirect_uri=/docs/getting-started",
+    "https://developers.smtp2go.com/login?redirect_uri=/docs/introduction-guide",
+    "https://developers.smtp2go.com/login?redirect_uri=/docs/mcp",
+    "https://developers.smtp2go.com/login?redirect_uri=/docs/official-libraries",
+    "https://developers.smtp2go.com/login?redirect_uri=/docs/send-an-email",
+    "https://developers.smtp2go.com/login?redirect_uri=/docs/smtp-relay",
+    "https://developers.smtp2go.com/login?redirect_uri=/reference/general-api-resources",
+    "https://developers.smtp2go.com/mcp",
+    "https://developers.smtp2go.com/reference",
+    "https://developers.smtp2go.com/reference/",
+    "https://developers.smtp2go.com/reference/add-a-single-sender-email",
+    "https://developers.smtp2go.com/reference/add-a-single-sender-email.md",
+    "https://developers.smtp2go.com/reference/add-a-suppression",
+    "https://developers.smtp2go.com/reference/add-a-suppression.md",
+    "https://developers.smtp2go.com/reference/add-allowed-recipients",
+    "https://developers.smtp2go.com/reference/add-allowed-recipients.md",
+    "https://developers.smtp2go.com/reference/add-allowed-senders",
+    "https://developers.smtp2go.com/reference/add-allowed-senders.md",
+    "https://developers.smtp2go.com/reference/add-an-email-template",
+    "https://developers.smtp2go.com/reference/add-an-email-template.md",
+    "https://developers.smtp2go.com/reference/add-an-smtp-user",
+    "https://developers.smtp2go.com/reference/add-an-smtp-user.md",
+    "https://developers.smtp2go.com/reference/add-api-key",
+    "https://developers.smtp2go.com/reference/add-api-key.md",
+    "https://developers.smtp2go.com/reference/add-ip-allowlist",
+    "https://developers.smtp2go.com/reference/add-sender-domain",
+    "https://developers.smtp2go.com/reference/add-sender-domain.md",
+    "https://developers.smtp2go.com/reference/add-subaccount",
+    "https://developers.smtp2go.com/reference/add-subaccount.md",
+    "https://developers.smtp2go.com/reference/add-webhook",
+    "https://developers.smtp2go.com/reference/add-webhook.md",
+    "https://developers.smtp2go.com/reference/authentication",
+    "https://developers.smtp2go.com/reference/authentication.md",
+    "https://developers.smtp2go.com/reference/changelog",
+    "https://developers.smtp2go.com/reference/changelog.md",
+    "https://developers.smtp2go.com/reference/close-a-subaccount",
+    "https://developers.smtp2go.com/reference/close-a-subaccount.md",
+    "https://developers.smtp2go.com/reference/edit-an-smtp-user",
+    "https://developers.smtp2go.com/reference/edit-an-smtp-user.md",
+    "https://developers.smtp2go.com/reference/edit-api-key",
+    "https://developers.smtp2go.com/reference/edit-api-key.md",
+    "https://developers.smtp2go.com/reference/edit-ip-allowlist",
+    "https://developers.smtp2go.com/reference/edit-return-path-domain",
+    "https://developers.smtp2go.com/reference/edit-return-path-domain.md",
+    "https://developers.smtp2go.com/reference/edit-subaccount-access",
+    "https://developers.smtp2go.com/reference/edit-subaccount-access.md",
+    "https://developers.smtp2go.com/reference/edit-tracking-domain",
+    "https://developers.smtp2go.com/reference/edit-tracking-domain.md",
+    "https://developers.smtp2go.com/reference/edit-webhook",
+    "https://developers.smtp2go.com/reference/email-archive",
+    "https://developers.smtp2go.com/reference/email-archive.md",
+    "https://developers.smtp2go.com/reference/email-bounces",
+    "https://developers.smtp2go.com/reference/email-bounces.md",
+    "https://developers.smtp2go.com/reference/email-cycle",
+    "https://developers.smtp2go.com/reference/email-cycle.md",
+    "https://developers.smtp2go.com/reference/email-history",
+    "https://developers.smtp2go.com/reference/email-history.md",
+    "https://developers.smtp2go.com/reference/email-spam",
+    "https://developers.smtp2go.com/reference/email-spam.md",
+    "https://developers.smtp2go.com/reference/email-summary",
+    "https://developers.smtp2go.com/reference/email-summary.md",
+    "https://developers.smtp2go.com/reference/email-unsubscribes",
+    "https://developers.smtp2go.com/reference/email-unsubscribes.md",
+    "https://developers.smtp2go.com/reference/general-api-resources",
+    "https://developers.smtp2go.com/reference/general-api-resources.md",
+    "https://developers.smtp2go.com/reference/ip-allowlist",
+    "https://developers.smtp2go.com/reference/patch-an-smtp-user",
+    "https://developers.smtp2go.com/reference/patch-an-smtp-user.md",
+    "https://developers.smtp2go.com/reference/patch-api-key",
+    "https://developers.smtp2go.com/reference/patch-api-key.md",
+    "https://developers.smtp2go.com/reference/patch-ip-auth",
+    "https://developers.smtp2go.com/reference/patch-ip-auth.md",
+    "https://developers.smtp2go.com/reference/remove-a-single-sender-email",
+    "https://developers.smtp2go.com/reference/remove-a-single-sender-email.md",
+    "https://developers.smtp2go.com/reference/remove-a-suppression",
+    "https://developers.smtp2go.com/reference/remove-a-suppression.md",
+    "https://developers.smtp2go.com/reference/remove-allowed-recipients",
+    "https://developers.smtp2go.com/reference/remove-allowed-recipients.md",
+    "https://developers.smtp2go.com/reference/remove-allowed-senders",
+    "https://developers.smtp2go.com/reference/remove-allowed-senders.md",
+    "https://developers.smtp2go.com/reference/remove-an-email-template",
+    "https://developers.smtp2go.com/reference/remove-an-email-template.md",
+    "https://developers.smtp2go.com/reference/remove-an-smtp-user",
+    "https://developers.smtp2go.com/reference/remove-an-smtp-user.md",
+    "https://developers.smtp2go.com/reference/remove-api-key",
+    "https://developers.smtp2go.com/reference/remove-api-key.md",
+    "https://developers.smtp2go.com/reference/remove-ip-allowlist",
+    "https://developers.smtp2go.com/reference/remove-ip-auth",
+    "https://developers.smtp2go.com/reference/remove-ip-auth.md",
+    "https://developers.smtp2go.com/reference/remove-scheduled-emails",
+    "https://developers.smtp2go.com/reference/remove-scheduled-emails.md",
+    "https://developers.smtp2go.com/reference/remove-sender-domain",
+    "https://developers.smtp2go.com/reference/remove-sender-domain.md",
+    "https://developers.smtp2go.com/reference/remove-webhook",
+    "https://developers.smtp2go.com/reference/reopen-a-closed-subaccount",
+    "https://developers.smtp2go.com/reference/reopen-a-closed-subaccount.md",
+    "https://developers.smtp2go.com/reference/resend-subaccount-invitation",
+    "https://developers.smtp2go.com/reference/resend-subaccount-invitation.md",
+    "https://developers.smtp2go.com/reference/search-activity",
+    "https://developers.smtp2go.com/reference/search-activity.md",
+    "https://developers.smtp2go.com/reference/search-archived-pages",
+    "https://developers.smtp2go.com/reference/search-archived-pages.md",
+    "https://developers.smtp2go.com/reference/search-email-templates",
+    "https://developers.smtp2go.com/reference/search-email-templates.md",
+    "https://developers.smtp2go.com/reference/search-scheduled-emails",
+    "https://developers.smtp2go.com/reference/search-scheduled-emails.md",
+    "https://developers.smtp2go.com/reference/search-subaccounts",
+    "https://developers.smtp2go.com/reference/search-subaccounts.md",
+    "https://developers.smtp2go.com/reference/send-email-batch",
+    "https://developers.smtp2go.com/reference/send-email-batch.md",
+    "https://developers.smtp2go.com/reference/send-mime-email",
+    "https://developers.smtp2go.com/reference/send-mime-email.md",
+    "https://developers.smtp2go.com/reference/send-sms",
+    "https://developers.smtp2go.com/reference/send-sms.md",
+    "https://developers.smtp2go.com/reference/send-standard-email",
+    "https://developers.smtp2go.com/reference/send-standard-email.md",
+    "https://developers.smtp2go.com/reference/sms-summary",
+    "https://developers.smtp2go.com/reference/sms-summary.md",
+    "https://developers.smtp2go.com/reference/update-a-subaccount",
+    "https://developers.smtp2go.com/reference/update-a-subaccount.md",
+    "https://developers.smtp2go.com/reference/update-allowed-recipients",
+    "https://developers.smtp2go.com/reference/update-allowed-recipients.md",
+    "https://developers.smtp2go.com/reference/update-allowed-senders",
+    "https://developers.smtp2go.com/reference/update-allowed-senders.md",
+    "https://developers.smtp2go.com/reference/update-an-email-template",
+    "https://developers.smtp2go.com/reference/update-an-email-template.md",
+    "https://developers.smtp2go.com/reference/verify-a-sender-domain",
+    "https://developers.smtp2go.com/reference/verify-a-sender-domain.md",
+    "https://developers.smtp2go.com/reference/view-all-single-sender-emails",
+    "https://developers.smtp2go.com/reference/view-all-single-sender-emails.md",
+    "https://developers.smtp2go.com/reference/view-allowed-recipients",
+    "https://developers.smtp2go.com/reference/view-allowed-recipients.md",
+    "https://developers.smtp2go.com/reference/view-allowed-senders",
+    "https://developers.smtp2go.com/reference/view-allowed-senders.md",
+    "https://developers.smtp2go.com/reference/view-an-archived-email",
+    "https://developers.smtp2go.com/reference/view-an-archived-email.md",
+    "https://developers.smtp2go.com/reference/view-api-key-permissions",
+    "https://developers.smtp2go.com/reference/view-api-key-permissions.md",
+    "https://developers.smtp2go.com/reference/view-api-keys",
+    "https://developers.smtp2go.com/reference/view-api-keys.md",
+    "https://developers.smtp2go.com/reference/view-dedicated-ips",
+    "https://developers.smtp2go.com/reference/view-dedicated-ips.md",
+    "https://developers.smtp2go.com/reference/view-ip-allowlist",
+    "https://developers.smtp2go.com/reference/view-ip-auth",
+    "https://developers.smtp2go.com/reference/view-ip-auth.md",
+    "https://developers.smtp2go.com/reference/view-received-sms",
+    "https://developers.smtp2go.com/reference/view-received-sms.md",
+    "https://developers.smtp2go.com/reference/view-sender-domains",
+    "https://developers.smtp2go.com/reference/view-sender-domains.md",
+    "https://developers.smtp2go.com/reference/view-sent-emails",
+    "https://developers.smtp2go.com/reference/view-sent-emails.md",
+    "https://developers.smtp2go.com/reference/view-sent-sms",
+    "https://developers.smtp2go.com/reference/view-sent-sms.md",
+    "https://developers.smtp2go.com/reference/view-smtp-users",
+    "https://developers.smtp2go.com/reference/view-smtp-users.md",
+    "https://developers.smtp2go.com/reference/view-suppressions",
+    "https://developers.smtp2go.com/reference/view-suppressions.md",
+    "https://developers.smtp2go.com/reference/view-template-details",
+    "https://developers.smtp2go.com/reference/view-template-details.md",
+    "https://developers.smtp2go.com/reference/view-webhook",
+    "https://eu-api.smtp2go.com/v3",
+    "https://files.readme.io/1fb8e14-API_Keys_-_Authentication.png",
+    "https://github.com/H190K/email-sending-worker",
+    "https://github.com/SolvingMan/Angular_Project_Sending_Email_Contact_Form",
+    "https://github.com/gonzague/idees-supabase",
+    "https://github.com/makeplane/plane/issues/7042",
+    "https://github.com/masonjames/emdash-smtp",
+    "https://github.com/siemsene/resilience/blob/main/HOSTING.md",
+    "https://github.com/smtp2go-oss",
+    "https://github.com/smtp2go-oss/nodejs",
+    "https://github.com/smtp2go-oss/smtp2go-django",
+    "https://github.com/smtp2go-oss/smtp2go-go",
+    "https://github.com/smtp2go-oss/smtp2go-php",
+    "https://github.com/smtp2go-oss/smtp2go-python",
+    "https://github.com/smtp2go-oss/smtp2go-ruby",
+    "https://github.com/smtp2go-oss/smtp2go-rust",
+    "https://github.com/smtp2go-oss/wordpress-plugin",
+    "https://lovable.dev/dashboard",
+    "https://myserver.com/mypicture.jpg",
+    "https://smtp2gostatus.com/",
+    "https://support.smtp2go.com/hc/en-gb",
+    "https://support.smtp2go.com/hc/en-gb/articles/115003599568-Email-Archiving",
+    "https://support.smtp2go.com/hc/en-gb/articles/115004408567-Verified-Senders",
+    "https://support.smtp2go.com/hc/en-gb/articles/115004851734-Email-Auditing",
+    "https://support.smtp2go.com/hc/en-gb/articles/12747932085145-Getting-Started-with-SMTP2GO",
+    "https://support.smtp2go.com/hc/en-gb/articles/12813014000921-Troubleshooting-Connection-Issues",
+    "https://support.smtp2go.com/hc/en-gb/articles/13645646122777-SMTP-Users",
+    "https://support.smtp2go.com/hc/en-gb/articles/13990494697369-Common-Sending-Errors",
+    "https://support.smtp2go.com/hc/en-gb/articles/223087327-Allow-List-IP-Addresses-With-Your-Incoming-MX-Server",
+    "https://support.smtp2go.com/hc/en-gb/articles/223087467-Alternatives-to-SMTP-Authentication",
+    "https://support.smtp2go.com/hc/en-gb/articles/223087547-Maximum-Attachment-Size",
+    "https://support.smtp2go.com/hc/en-gb/articles/223087587-Maximum-Number-of-Recipients-Per-Email",
+    "https://support.smtp2go.com/hc/en-gb/articles/223087607-Unsubscribe-Footer",
+    "https://support.smtp2go.com/hc/en-gb/articles/223087647-Maximum-Sending-Speed",
+    "https://support.smtp2go.com/hc/en-gb/articles/223087667-Connecting-to-an-IP-Address",
+    "https://support.smtp2go.com/hc/en-gb/articles/227835308-Worldwide-Server-Locations-IP-Addresses-and-Email-Routing",
+    "https://support.smtp2go.com/hc/en-gb/articles/28543815517209-SPF-DKIM-and-DMARC",
+    "https://support.smtp2go.com/hc/en-gb/articles/29736421853337-Sandbox-Mode",
+    "https://support.smtp2go.com/hc/en-gb/articles/360003124714-Open-Tracking",
+    "https://support.smtp2go.com/hc/en-gb/articles/360005171574",
+    "https://support.smtp2go.com/hc/en-gb/articles/360023602974-Bounce-Notifications",
+    "https://support.smtp2go.com/hc/en-gb/articles/4741818447129",
+    "https://support.smtp2go.com/hc/en-gb/articles/4741818447129-Location-Specific-Services",
+    "https://support.smtp2go.com/hc/en-gb/articles/900002237106-Click-Tracking",
+    "https://support.smtp2go.com/hc/en-gb/articles/900003891586-Disabling-an-SMTP-Username-IP-Address-or-API-Key",
+    "https://support.smtp2go.com/hc/en-gb/articles/9150216032537-Verified-Senders-Sender-Domain-vs-Single-Sender-Emails",
+    "https://us-api.smtp2go.com/v3",
+    "https://www.nuget.org/packages/Smtp2Go.ApiClient/",
+    "https://www.smtp2go.com/",
+    "https://www.smtp2go.com/about",
+    "https://www.smtp2go.com/benefit/smtp-api/",
+    "https://www.smtp2go.com/blog",
+    "https://www.smtp2go.com/comparison",
+    "https://www.smtp2go.com/contact",
+    "https://www.smtp2go.com/contact/",
+    "https://www.smtp2go.com/customer-success",
+    "https://www.smtp2go.com/faq",
+    "https://www.smtp2go.com/infrastructure",
+    "https://www.smtp2go.com/jobs",
+    "https://www.smtp2go.com/managed-service-providers",
+    "https://www.smtp2go.com/pricing",
+    "https://www.smtp2go.com/pricing/",
+    "https://www.smtp2go.com/privacy",
+    "https://www.smtp2go.com/resellers",
+    "https://www.smtp2go.com/setup",
+    "https://www.smtp2go.com/setupguide/",
+    "https://www.smtp2go.com/terms",
+    "https://www.smtp2go.com/tour"
+  ]
+}

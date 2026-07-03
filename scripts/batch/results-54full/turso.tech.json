@@ -1,0 +1,540 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "turso.tech",
+    "detect": {
+      "domain": "turso.tech",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:04:26.265Z",
+    "summary": "Turso exposes a REST Platform API, a per-database SQL-over-HTTP API, a hosted MCP server, and the `turso` CLI; all require authentication via Turso-issued tokens or OAuth login.",
+    "description": "Turso provides SQLite-compatible databases that can run locally, in the cloud, or in a synced local-first model. Its cloud platform lets users manage organizations, groups, and databases and access those databases remotely.",
+    "credentials": {
+      "platform_api_token": {
+        "type": "api_key",
+        "label": "Turso Platform API token",
+        "generateUrl": "https://docs.turso.tech/api-reference/tokens/create",
+        "setup": "Create a Platform API token with the Turso CLI after logging in: `turso auth login` or `turso auth signup`, then mint a token such as `turso auth api-tokens mint my-token --org my-org`. The API docs also show token creation via the [Create API Token endpoint](https://docs.turso.tech/api-reference/tokens/create). See [API authentication](https://docs.turso.tech/api-reference/authentication) for scoping guidance.",
+        "acquisition": "manual"
+      },
+      "db_auth_token": {
+        "type": "jwt",
+        "label": "Turso database auth token",
+        "setup": "Create a database or group token with the Turso CLI, for example `turso db tokens create <database-name>` or `turso group tokens create <group-name>`. You can add flags like `--read-only`, `--permissions`, and `--expiration`. The docs note you can also create these via the [Platform API](https://docs.turso.tech/api-reference/databases/create-token). See [Platform Tokens](https://docs.turso.tech/sdk/authorization/tokens) and [SDK authentication](https://docs.turso.tech/sdk/authentication).",
+        "acquisition": "manual"
+      },
+      "cli_login": {
+        "type": "oauth2",
+        "label": "Turso CLI login session",
+        "generateUrl": "https://docs.turso.tech/cli/authentication",
+        "setup": "Install the CLI from [CLI installation](https://docs.turso.tech/cli/installation), then run `turso auth login` (or `turso auth signup`). The CLI opens a browser for GitHub-based login; in remote/WSL/CI-style environments you can use `turso auth login --headless`. The docs say the CLI uses an access token and requires reauthentication after one week.",
+        "acquisition": "manual"
+      },
+      "mcp_oauth": {
+        "type": "oauth2",
+        "label": "Turso MCP OAuth grant",
+        "generateUrl": "https://docs.turso.tech/integrations/mcp",
+        "setup": "Point an MCP client at `https://mcp.turso.ai/mcp` and start authentication from the client (for example `codex mcp login turso`, or in Claude choose **Authenticate** after adding the connector). Approval happens in the browser on Turso, where you choose an organization and optionally scope access to a group and permissions. The docs state there is no API token to copy or paste.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "turso-platform-api",
+        "name": "Turso Platform API",
+        "type": "http",
+        "docs": "https://docs.turso.tech/api-reference/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.turso.tech/api-reference/introduction",
+            "https://docs.turso.tech/api-reference/quickstart",
+            "https://docs.turso.tech/api-reference/authentication",
+            "https://docs.turso.tech/api-reference/tokens/list"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "platform_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.turso.tech/api-reference/authentication",
+                  "https://docs.turso.tech/api-reference/tokens/list"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.turso.tech/v1"
+      },
+      {
+        "slug": "turso-sql-over-http-api",
+        "name": "Turso SQL over HTTP API",
+        "type": "http",
+        "docs": "https://docs.turso.tech/sdk/http/reference",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.turso.tech/sdk/http/quickstart",
+            "https://docs.turso.tech/sdk/http/reference",
+            "https://docs.turso.tech/sdk/authentication",
+            "https://docs.turso.tech/sdk/authorization/tokens"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "db_auth_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.turso.tech/sdk/http/reference",
+                  "https://docs.turso.tech/sdk/http/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://[databaseName]-[organizationSlug].turso.io",
+        "notes": "Query endpoint is `POST /v2/pipeline` on the database HTTP URL; docs also list `GET /version`, `GET /health`, `GET /dump`, `GET /v1/jobs`, `GET /v1/jobs/:id`, and `GET /beta/listen` on the same per-database base URL."
+      },
+      {
+        "slug": "turso-mcp-server",
+        "name": "Turso MCP server",
+        "type": "mcp",
+        "docs": "https://docs.turso.tech/integrations/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.turso.tech/integrations/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.turso.tech/integrations/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.turso.ai/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "turso-cli",
+        "name": "Turso CLI",
+        "type": "cli",
+        "docs": "https://docs.turso.tech/cli/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.turso.tech/cli/introduction",
+            "https://docs.turso.tech/cli/installation",
+            "https://docs.turso.tech/cli/authentication",
+            "https://docs.turso.tech/cli/headless-mode"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "turso auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.turso.tech/cli/authentication",
+                  "https://docs.turso.tech/cli/headless-mode"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "tursodatabase/tap/turso"
+          },
+          {
+            "registryType": "shell",
+            "identifier": "https://get.tur.so/install.sh",
+            "runtimeHint": "bash"
+          }
+        ],
+        "command": "turso"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:04:26.266Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 434135,
+    "completion_tokens": 1996,
+    "total_tokens": 436131
+  },
+  "visited": [
+    "https://docs.turso.tech/agentfs/reference/cli",
+    "https://docs.turso.tech/api-reference/authentication",
+    "https://docs.turso.tech/api-reference/introduction",
+    "https://docs.turso.tech/api-reference/locations",
+    "https://docs.turso.tech/api-reference/quickstart",
+    "https://docs.turso.tech/api-reference/tokens/create",
+    "https://docs.turso.tech/api-reference/tokens/list",
+    "https://docs.turso.tech/cli/authentication",
+    "https://docs.turso.tech/cli/headless-mode",
+    "https://docs.turso.tech/cli/installation",
+    "https://docs.turso.tech/cli/introduction",
+    "https://docs.turso.tech/features/platform-api",
+    "https://docs.turso.tech/integrations/mcp",
+    "https://docs.turso.tech/sdk/authentication",
+    "https://docs.turso.tech/sdk/authorization",
+    "https://docs.turso.tech/sdk/authorization/tokens",
+    "https://docs.turso.tech/sdk/http/quickstart",
+    "https://docs.turso.tech/sdk/http/reference",
+    "https://docs.turso.tech/turso-cloud",
+    "https://turso.tech/blog/introducing-the-turso-database-mcp-server",
+    "https://turso.tech/llms.txt"
+  ],
+  "grounding": [
+    "https://[databaseName",
+    "https://[primary-instance-id",
+    "https://api.turso.tech",
+    "https://api.turso.tech/v1/auth/api-tokens",
+    "https://api.turso.tech/v1/auth/api-tokens/{tokenName}",
+    "https://api.turso.tech/v1/locations",
+    "https://api.turso.tech/v1/organizations/{organizationSlug}/databases",
+    "https://api.turso.tech/v1/organizations/{organizationSlug}/groups",
+    "https://app.turso.tech",
+    "https://app.turso.tech/signup",
+    "https://claude.ai/code",
+    "https://discord.gg/turso",
+    "https://docs.turso.tech",
+    "https://docs.turso.tech/",
+    "https://docs.turso.tech/#api-resources",
+    "https://docs.turso.tech/#auth-tokens",
+    "https://docs.turso.tech/#authentication",
+    "https://docs.turso.tech/#authorization-authorization",
+    "https://docs.turso.tech/#authorize-access",
+    "https://docs.turso.tech/#base-url",
+    "https://docs.turso.tech/#body-group",
+    "https://docs.turso.tech/#body-organization",
+    "https://docs.turso.tech/#body-scopes",
+    "https://docs.turso.tech/#common-use-cases",
+    "https://docs.turso.tech/#connect",
+    "https://docs.turso.tech/#content-area",
+    "https://docs.turso.tech/#database-per-user-%2F-database-per-agent-multi-tenant",
+    "https://docs.turso.tech/#database-per-user-/-database-per-agent-multi-tenant",
+    "https://docs.turso.tech/#database-url",
+    "https://docs.turso.tech/#endpoints",
+    "https://docs.turso.tech/#get-%2Fbeta%2Flisten",
+    "https://docs.turso.tech/#get-%2Fdump",
+    "https://docs.turso.tech/#get-%2Fhealth",
+    "https://docs.turso.tech/#get-%2Fv1%2Fjobs",
+    "https://docs.turso.tech/#get-%2Fv1%2Fjobs%2Fid",
+    "https://docs.turso.tech/#get-%2Fversion",
+    "https://docs.turso.tech/#get-/beta/listen",
+    "https://docs.turso.tech/#get-/dump",
+    "https://docs.turso.tech/#get-/health",
+    "https://docs.turso.tech/#get-/v1/jobs",
+    "https://docs.turso.tech/#get-/v1/jobs/id",
+    "https://docs.turso.tech/#get-/version",
+    "https://docs.turso.tech/#group-scoped-tokens",
+    "https://docs.turso.tech/#how-it-works",
+    "https://docs.turso.tech/#interactive-query",
+    "https://docs.turso.tech/#invalidating-tokens",
+    "https://docs.turso.tech/#issuing-tokens",
+    "https://docs.turso.tech/#lifecycle",
+    "https://docs.turso.tech/#linux",
+    "https://docs.turso.tech/#listen-to-changes",
+    "https://docs.turso.tech/#login",
+    "https://docs.turso.tech/#logout",
+    "https://docs.turso.tech/#macos",
+    "https://docs.turso.tech/#managing-organization-tokens",
+    "https://docs.turso.tech/#param-action",
+    "https://docs.turso.tech/#param-error",
+    "https://docs.turso.tech/#param-error-1",
+    "https://docs.turso.tech/#param-id",
+    "https://docs.turso.tech/#param-job-id",
+    "https://docs.turso.tech/#param-job-id-1",
+    "https://docs.turso.tech/#param-migrations",
+    "https://docs.turso.tech/#param-namespace",
+    "https://docs.turso.tech/#param-progress",
+    "https://docs.turso.tech/#param-schema-version",
+    "https://docs.turso.tech/#param-status",
+    "https://docs.turso.tech/#param-status-1",
+    "https://docs.turso.tech/#param-status-2",
+    "https://docs.turso.tech/#param-table",
+    "https://docs.turso.tech/#parameter-binding",
+    "https://docs.turso.tech/#parameter-token-name",
+    "https://docs.turso.tech/#path-parameters",
+    "https://docs.turso.tech/#platform-%2F-reseller",
+    "https://docs.turso.tech/#platform-/-reseller",
+    "https://docs.turso.tech/#post-%2Fv2%2Fpipeline",
+    "https://docs.turso.tech/#post-/v2/pipeline",
+    "https://docs.turso.tech/#presets",
+    "https://docs.turso.tech/#query-parameters",
+    "https://docs.turso.tech/#quickstart-with-the-typescript-sdk",
+    "https://docs.turso.tech/#resources",
+    "https://docs.turso.tech/#response-fields",
+    "https://docs.turso.tech/#response-fields-2",
+    "https://docs.turso.tech/#response-id",
+    "https://docs.turso.tech/#response-locations",
+    "https://docs.turso.tech/#response-name",
+    "https://docs.turso.tech/#response-token",
+    "https://docs.turso.tech/#response-tokens",
+    "https://docs.turso.tech/#response-types",
+    "https://docs.turso.tech/#schema-migration-status",
+    "https://docs.turso.tech/#scope-vocabulary",
+    "https://docs.turso.tech/#scoping-levels",
+    "https://docs.turso.tech/#signup",
+    "https://docs.turso.tech/#simple-query",
+    "https://docs.turso.tech/#using-tokens",
+    "https://docs.turso.tech/#verify-installation",
+    "https://docs.turso.tech/#what-the-agent-can-do",
+    "https://docs.turso.tech/#windows",
+    "https://docs.turso.tech/agentfs",
+    "https://docs.turso.tech/agentfs/introduction",
+    "https://docs.turso.tech/agentfs/reference/cli",
+    "https://docs.turso.tech/api-reference",
+    "https://docs.turso.tech/api-reference/audit-logs",
+    "https://docs.turso.tech/api-reference/audit-logs/list",
+    "https://docs.turso.tech/api-reference/authentication",
+    "https://docs.turso.tech/api-reference/databases",
+    "https://docs.turso.tech/api-reference/databases/create-token",
+    "https://docs.turso.tech/api-reference/databases/retrieve",
+    "https://docs.turso.tech/api-reference/groups",
+    "https://docs.turso.tech/api-reference/groups/invalidate-tokens",
+    "https://docs.turso.tech/api-reference/introduction",
+    "https://docs.turso.tech/api-reference/introduction#quickstart-with-the-typescript-sdk",
+    "https://docs.turso.tech/api-reference/locations",
+    "https://docs.turso.tech/api-reference/locations/closest-region",
+    "https://docs.turso.tech/api-reference/locations/list",
+    "https://docs.turso.tech/api-reference/organizations",
+    "https://docs.turso.tech/api-reference/quickstart",
+    "https://docs.turso.tech/api-reference/response-codes",
+    "https://docs.turso.tech/api-reference/tokens",
+    "https://docs.turso.tech/api-reference/tokens/create",
+    "https://docs.turso.tech/api-reference/tokens/list",
+    "https://docs.turso.tech/api-reference/tokens/list-organization",
+    "https://docs.turso.tech/api-reference/tokens/revoke",
+    "https://docs.turso.tech/api-reference/tokens/revoke-organization",
+    "https://docs.turso.tech/api-reference/tokens/validate",
+    "https://docs.turso.tech/authentication",
+    "https://docs.turso.tech/cli",
+    "https://docs.turso.tech/cli/auth",
+    "https://docs.turso.tech/cli/auth/login",
+    "https://docs.turso.tech/cli/authentication",
+    "https://docs.turso.tech/cli/contact",
+    "https://docs.turso.tech/cli/db",
+    "https://docs.turso.tech/cli/db/show",
+    "https://docs.turso.tech/cli/group",
+    "https://docs.turso.tech/cli/headless-mode",
+    "https://docs.turso.tech/cli/help",
+    "https://docs.turso.tech/cli/installation",
+    "https://docs.turso.tech/cli/introduction",
+    "https://docs.turso.tech/cli/org",
+    "https://docs.turso.tech/cli/plan",
+    "https://docs.turso.tech/cli/plan/overages/enable",
+    "https://docs.turso.tech/cli/upgrading",
+    "https://docs.turso.tech/cloud/allow-rules",
+    "https://docs.turso.tech/cloud/durability",
+    "https://docs.turso.tech/cloud/encryption",
+    "https://docs.turso.tech/cloud/limitations",
+    "https://docs.turso.tech/cloud/migrate-to-turso",
+    "https://docs.turso.tech/cloud/private-endpoints",
+    "https://docs.turso.tech/features/ai-and-embeddings",
+    "https://docs.turso.tech/features/branching",
+    "https://docs.turso.tech/features/embedded-replicas",
+    "https://docs.turso.tech/features/multi-db-schemas",
+    "https://docs.turso.tech/features/organizations",
+    "https://docs.turso.tech/features/platform-api",
+    "https://docs.turso.tech/features/point-in-time-recovery",
+    "https://docs.turso.tech/features/sqlite-extensions",
+    "https://docs.turso.tech/help/usage-and-billing",
+    "https://docs.turso.tech/integrations/mcp",
+    "https://docs.turso.tech/integrations/vercel",
+    "https://docs.turso.tech/introduction",
+    "https://docs.turso.tech/libsql",
+    "https://docs.turso.tech/llms.txt",
+    "https://docs.turso.tech/local-development",
+    "https://docs.turso.tech/quickstart",
+    "https://docs.turso.tech/sdk",
+    "https://docs.turso.tech/sdk/activerecord/guides/rails",
+    "https://docs.turso.tech/sdk/authentication",
+    "https://docs.turso.tech/sdk/authorization",
+    "https://docs.turso.tech/sdk/authorization#jwks-authentication-providers",
+    "https://docs.turso.tech/sdk/authorization/fine-grained-permissions",
+    "https://docs.turso.tech/sdk/authorization/jwks",
+    "https://docs.turso.tech/sdk/authorization/tokens",
+    "https://docs.turso.tech/sdk/c/quickstart",
+    "https://docs.turso.tech/sdk/flutter/integrations/drift",
+    "https://docs.turso.tech/sdk/go/quickstart",
+    "https://docs.turso.tech/sdk/http",
+    "https://docs.turso.tech/sdk/http/quickstart",
+    "https://docs.turso.tech/sdk/http/reference",
+    "https://docs.turso.tech/sdk/http/reference#parameter-binding",
+    "https://docs.turso.tech/sdk/introduction",
+    "https://docs.turso.tech/sdk/kotlin/quickstart",
+    "https://docs.turso.tech/sdk/php/quickstart",
+    "https://docs.turso.tech/sdk/python/guides/flask",
+    "https://docs.turso.tech/sdk/python/orm/sqlalchemy",
+    "https://docs.turso.tech/sdk/python/quickstart",
+    "https://docs.turso.tech/sdk/ruby/quickstart",
+    "https://docs.turso.tech/sdk/rust/quickstart",
+    "https://docs.turso.tech/sdk/swift/quickstart",
+    "https://docs.turso.tech/sdk/ts/guides/astro",
+    "https://docs.turso.tech/sdk/ts/guides/elysia",
+    "https://docs.turso.tech/sdk/ts/guides/hono",
+    "https://docs.turso.tech/sdk/ts/guides/nextjs",
+    "https://docs.turso.tech/sdk/ts/guides/nuxt",
+    "https://docs.turso.tech/sdk/ts/guides/remix",
+    "https://docs.turso.tech/sdk/ts/guides/sveltekit",
+    "https://docs.turso.tech/sdk/ts/orm/drizzle",
+    "https://docs.turso.tech/sdk/ts/orm/prisma",
+    "https://docs.turso.tech/sdk/ts/quickstart",
+    "https://docs.turso.tech/support",
+    "https://docs.turso.tech/sync/usage",
+    "https://docs.turso.tech/turso-cloud",
+    "https://get.tur.so/install.sh",
+    "https://github.com/tursodatabase",
+    "https://github.com/tursodatabase/libsql",
+    "https://github.com/tursodatabase/libsql/blob/main/docs/HRANA_3_SPEC.md#hrana-over-http",
+    "https://github.com/tursodatabase/libsql/blob/main/docs/HTTP_V2_SPEC.md",
+    "https://github.com/tursodatabase/turso",
+    "https://github.com/tursodatabase/turso-docs/edit/main/api-reference/authentication.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/api-reference/introduction.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/api-reference/locations/list.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/api-reference/quickstart.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/api-reference/tokens/create.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/api-reference/tokens/list.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/cli/authentication.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/cli/headless-mode.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/cli/installation.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/cli/introduction.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/features/platform-api.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/integrations/mcp.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/sdk/authentication.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/sdk/authorization.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/sdk/authorization/tokens.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/sdk/http/quickstart.mdx",
+    "https://github.com/tursodatabase/turso-docs/edit/main/sdk/http/reference.mdx",
+    "https://github.com/tursodatabase/turso-docs/issues/new?title=Issue",
+    "https://github.com/tursodatabase/turso-mcp",
+    "https://github.com/tursodatabase/turso/blob/main/CHANGELOG.md",
+    "https://github.com/tursodatabase/turso/pull/2606",
+    "https://github.com/tursodatabase/turso/releases",
+    "https://learn.microsoft.com/en-us/windows/wsl/install",
+    "https://mcp.turso.ai/mcp",
+    "https://modelcontextprotocol.io",
+    "https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fturso.tech%2Fblog%2Fintroducing-the-turso-database-mcp-server&t=Introducing",
+    "https://status.turso.tech",
+    "https://trust.turso.tech",
+    "https://tur.so/discord",
+    "https://turso.tech",
+    "https://turso.tech/",
+    "https://turso.tech/#command-breakdown",
+    "https://turso.tech/#example-usage",
+    "https://turso.tech/#getting-started",
+    "https://turso.tech/#managing-mcp-servers",
+    "https://turso.tech/#quick-setup",
+    "https://turso.tech/#try-it-today",
+    "https://turso.tech/#using-with-claude-code",
+    "https://turso.tech/#using-with-claude-desktop",
+    "https://turso.tech/#why-mcp-changes-everything",
+    "https://turso.tech/about",
+    "https://turso.tech/app",
+    "https://turso.tech/author/glauber-costa",
+    "https://turso.tech/author/jamie-barton",
+    "https://turso.tech/blog",
+    "https://turso.tech/blog/feed.xml",
+    "https://turso.tech/blog/introducing-read-only-database-attach-in-turso",
+    "https://turso.tech/blog/introducing-the-turso-database-mcp-server",
+    "https://turso.tech/blog/introducing-turso-serverless-javascript-driver",
+    "https://turso.tech/blog/react-native-bindings-for-turso",
+    "https://turso.tech/blog/turso-cloud-works-with-capacitor",
+    "https://turso.tech/blog/turso-sqlite-current-status",
+    "https://turso.tech/brand",
+    "https://turso.tech/llms.txt",
+    "https://turso.tech/pricing",
+    "https://turso.tech/pricing.md",
+    "https://turso.tech/privacy-policy",
+    "https://turso.tech/private-beta",
+    "https://turso.tech/signin",
+    "https://turso.tech/terms-of-use",
+    "https://turso.tech/what-is-turso",
+    "https://twitter.com/intent/tweet?text=Check%20out%20this%20awesome%20post%20on%20the%20%40tursodatabase%20blog%3A%20Introducing%20the%20Turso%20Database%20MCP%0A%0A&url=https%3A%2F%2Fturso.tech%2Fblog%2Fintroducing-the-turso-database-mcp-server",
+    "https://twitter.com/tursodatabase",
+    "https://www.anthropic.com/news/model-context-protocol",
+    "https://www.linkedin.com/company/turso",
+    "https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fturso.tech%2Fblog%2Fintroducing-the-turso-database-mcp-server",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=turso",
+    "https://www.npmjs.com/package/@tursodatabase/api",
+    "https://www.npmjs.com/package/@tursodatabase/database",
+    "https://www.npmjs.com/package/@tursodatabase/sync-react-native",
+    "https://www.youtube.com/@tursodatabase",
+    "https://x.com/tursodatabase"
+  ]
+}

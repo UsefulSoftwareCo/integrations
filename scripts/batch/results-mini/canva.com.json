@@ -1,0 +1,297 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "canva.com",
+    "detect": {
+      "domain": "canva.com",
+      "found": [
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://canva.com"
+          ],
+          "authorizationEndpoint": "https://www.canva.com/api/oauth/authorize",
+          "tokenEndpoint": "https://api.canva.com/auth/v1/oauth/token",
+          "dcr": false,
+          "cimd": false
+        }
+      },
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T09:04:35.858Z",
+    "summary": "Canva exposes the Connect REST APIs (OpenAPI at https://www.canva.dev/sources/connect/api/latest/api.yml) with OAuth 2.0 PKCE auth, plus a public local Dev MCP server; OAuth token/revoke endpoints use Canva client credentials with Basic auth or body params.",
+    "credentials": {
+      "canva_oauth_client": {
+        "type": "oauth2",
+        "label": "Canva Connect OAuth client",
+        "generateUrl": "https://www.canva.com/developers/integrations",
+        "setup": "Create an integration in the [Canva Developer Portal](https://www.canva.com/developers/) and open [Your integrations](https://www.canva.com/developers/integrations). In the integration settings, copy the `Client ID`, click `Generate secret` to mint and save the `Client secret`, and add at least one authorized redirect URL. Canva Connect uses OAuth 2.0 Authorization Code flow with PKCE, so your app also generates its own `code_verifier`/`code_challenge` pair when starting authorization.",
+        "acquisition": "manual"
+      },
+      "canva_client_basic": {
+        "type": "basic",
+        "label": "Canva OAuth client credentials (Basic auth)",
+        "generateUrl": "https://www.canva.com/developers/integrations",
+        "setup": "Use the `Client ID` and `Client secret` from your Canva integration in the [Developer Portal](https://www.canva.com/developers/integrations). For token and revoke requests, encode `client_id:client_secret` as HTTP Basic credentials and send it in `Authorization: Basic ...` on the `/rest/v1/oauth/token` and `/rest/v1/oauth/revoke` endpoints. Canva recommends Basic auth over putting `client_id` and `client_secret` in the body.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "canva-connect-apis",
+        "name": "Canva Connect APIs",
+        "type": "http",
+        "docs": "https://www.canva.dev/docs/connect/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.canva.dev/docs/connect/",
+            "https://www.canva.dev/docs/connect/authentication/",
+            "https://www.canva.dev/docs/connect/api-reference/authentication/",
+            "https://www.canva.dev/docs/connect/api-requests-responses/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "canva_oauth_client",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.canva.dev/docs/connect/authentication/",
+                  "https://www.canva.dev/docs/connect/api-reference/authentication/"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://www.canva.dev/sources/connect/api/latest/api.yml"
+      },
+      {
+        "slug": "canva-oauth-token-endpoint",
+        "name": "Canva OAuth token endpoint",
+        "type": "http",
+        "docs": "https://www.canva.dev/docs/connect/api-reference/authentication/generate-access-token/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.canva.dev/docs/connect/api-reference/authentication/generate-access-token/",
+            "https://www.canva.dev/docs/connect/api-requests-responses/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "canva_client_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                },
+                {
+                  "id": "canva_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "code_verifier"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.canva.dev/docs/connect/api-reference/authentication/generate-access-token/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "canva_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "client_id"
+                  }
+                },
+                {
+                  "id": "canva_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "client_secret"
+                  }
+                },
+                {
+                  "id": "canva_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "code_verifier"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.canva.dev/docs/connect/api-reference/authentication/generate-access-token/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.canva.com/rest/v1/oauth/token",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/x-www-form-urlencoded"
+            },
+            "description": "Required for the token endpoint."
+          }
+        ]
+      },
+      {
+        "slug": "canva-oauth-revoke-endpoint",
+        "name": "Canva OAuth revoke endpoint",
+        "type": "http",
+        "docs": "https://www.canva.dev/docs/connect/api-reference/authentication/revoke-token/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.canva.dev/docs/connect/api-reference/authentication/revoke-token/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "canva_client_basic",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.canva.dev/docs/connect/api-reference/authentication/revoke-token/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "canva_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "client_id"
+                  }
+                },
+                {
+                  "id": "canva_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "paramName": "client_secret"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.canva.dev/docs/connect/api-reference/authentication/revoke-token/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.canva.com/rest/v1/oauth/revoke",
+        "requiredHeaders": [
+          {
+            "name": "Content-Type",
+            "source": {
+              "kind": "static",
+              "value": "application/x-www-form-urlencoded"
+            },
+            "description": "Required for the revoke endpoint."
+          }
+        ]
+      },
+      {
+        "slug": "canva-dev-mcp-server",
+        "name": "Canva Dev MCP server",
+        "type": "mcp",
+        "docs": "https://www.canva.dev/docs/connect/mcp-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.canva.dev/docs/connect/mcp-server/"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://www.canva.dev/docs/connect/mcp-server/"
+            ]
+          }
+        },
+        "url": "https://www.canva.dev/docs/connect/mcp-server/",
+        "transports": [
+          "stdio"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T09:04:35.859Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 188065,
+    "completion_tokens": 1589,
+    "total_tokens": 189654
+  },
+  "visited": [
+    "https://dev.to/zuplo/canva-api-a-comprehensive-guide-513j",
+    "https://github.com/canva-sdks/canva-connect-api-starter-kit",
+    "https://www.canva.com/developers/",
+    "https://www.canva.dev/",
+    "https://www.canva.dev/docs/connect/",
+    "https://www.canva.dev/docs/connect/api-reference/authentication/",
+    "https://www.canva.dev/docs/connect/api-reference/authentication/generate-access-token/",
+    "https://www.canva.dev/docs/connect/api-reference/authentication/revoke-token/",
+    "https://www.canva.dev/docs/connect/api-requests-responses/",
+    "https://www.canva.dev/docs/connect/appendix/scopes/",
+    "https://www.canva.dev/docs/connect/authentication/",
+    "https://www.canva.dev/docs/connect/creating-integrations/",
+    "https://www.canva.dev/docs/connect/mcp-server/",
+    "https://www.postman.com/canva-developers/canva-developers/documentation/oi7dfns/canva-connect-api"
+  ]
+}

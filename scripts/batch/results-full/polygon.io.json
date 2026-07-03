@@ -1,0 +1,622 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "polygon.io",
+    "detect": {
+      "domain": "polygon.io",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T15:09:07.249Z",
+    "summary": "Polygon.io (Massive) exposes one REST API, one WebSocket API, one S3-compatible Flat Files surface, and a remote MCP server; REST/WebSocket use the same API key, Flat Files use S3 access/secret keys, and MCP uses OAuth.",
+    "credentials": {
+      "polygon_api_key": {
+        "type": "api_key",
+        "label": "Polygon API Key",
+        "generateUrl": "https://polygon.io/dashboard/keys",
+        "setup": "Go to the [Dashboard keys page](https://polygon.io/dashboard/keys) after signing in at [login](https://polygon.io/dashboard/login) or [signup](https://polygon.io/dashboard/signup). Copy your API key from the dashboard. Use it as `apiKey=...` in REST query strings or as `Authorization: Bearer ...` for REST; the WebSocket API authenticates by sending it in an `auth` message after connecting.",
+        "acquisition": "manual"
+      },
+      "polygon_s3_keys": {
+        "type": "compound",
+        "label": "Polygon S3 Access Key + Secret Key",
+        "generateUrl": "https://polygon.io/dashboard/keys",
+        "setup": "Open the [Dashboard keys page](https://polygon.io/dashboard/keys) after signing in. Copy your S3 Access Key ID and Secret Access Key from the dashboard; these are used with S3-compatible clients against the `https://files.massive.com` endpoint and `flatfiles` bucket.",
+        "acquisition": "manual"
+      },
+      "polygon_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Massive account OAuth for MCP",
+        "generateUrl": "https://mcp.massive.com/",
+        "setup": "Use the remote MCP server at [https://mcp.massive.com/](https://mcp.massive.com/) and complete the browser sign-in when your MCP client prompts you to authenticate. No API key is copied or stored; a free Basic Massive account is enough to start.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "massive-rest-api",
+        "name": "Massive REST API",
+        "type": "http",
+        "docs": "https://polygon.io/docs/rest/quickstart",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://polygon.io/docs/rest/quickstart"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "polygon_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://polygon.io/docs/rest/quickstart"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "polygon_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "apiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://polygon.io/docs/rest/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.massive.com"
+      },
+      {
+        "slug": "massive-websocket-api",
+        "name": "Massive WebSocket API",
+        "type": "http",
+        "docs": "https://polygon.io/docs/websocket/quickstart",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://polygon.io/docs/websocket/quickstart"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "polygon_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body",
+                    "scheme": "plain"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://polygon.io/docs/websocket/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "wss://socket.massive.com"
+      },
+      {
+        "slug": "massive-flat-files",
+        "name": "Massive Flat Files",
+        "type": "http",
+        "docs": "https://polygon.io/docs/flat-files/quickstart",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://polygon.io/docs/flat-files/quickstart"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "polygon_s3_keys",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "scheme": "aws_sigv4"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://polygon.io/docs/flat-files/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://files.massive.com"
+      },
+      {
+        "slug": "massive-remote-mcp-server",
+        "name": "Massive Remote MCP Server",
+        "type": "mcp",
+        "docs": "https://polygon.io/docs/ai-tools/quickstart",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://polygon.io/docs/ai-tools/quickstart",
+            "https://polygon.io/docs/ai-tools/clients/claude-code",
+            "https://polygon.io/docs/ai-tools/clients/cursor",
+            "https://polygon.io/docs/ai-tools/clients/chatgpt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "polygon_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://polygon.io/docs/ai-tools/quickstart",
+                  "https://polygon.io/docs/ai-tools/clients/claude-code",
+                  "https://polygon.io/docs/ai-tools/clients/cursor",
+                  "https://polygon.io/docs/ai-tools/clients/chatgpt"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.massive.com/",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T15:09:07.250Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 100036,
+    "completion_tokens": 1372,
+    "total_tokens": 101408
+  },
+  "visited": [
+    "https://apitracker.io/a/polygon-io",
+    "https://composio.dev/toolkits/polygon_io/framework/langchain",
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
+    "https://dlthub.com/context/source/polygon-finance",
+    "https://mcpmarket.com/server/polygon-2",
+    "https://mcpservers.org/servers/polygon-io/mcp_polygon",
+    "https://polygon.io/docs",
+    "https://polygon.io/docs/ai-tools/clients/chatgpt",
+    "https://polygon.io/docs/ai-tools/clients/claude-code",
+    "https://polygon.io/docs/ai-tools/clients/cursor",
+    "https://polygon.io/docs/ai-tools/quickstart",
+    "https://polygon.io/docs/flat-files/quickstart",
+    "https://polygon.io/docs/rest",
+    "https://polygon.io/docs/websocket/quickstart",
+    "https://polygon.io/llms.txt"
+  ],
+  "grounding": [
+    "https://api.massive.com/v3/reference/dividends?apiKey=YOUR_API_KEY",
+    "https://apitracker.io/a/polygon-io",
+    "https://aws.amazon.com/cli/",
+    "https://chatgpt.com",
+    "https://claude.ai/code",
+    "https://composio.dev/toolkits/polygon_io/framework/langchain",
+    "https://cursor.com",
+    "https://developers.cloudflare.com/changelog/post/2025-05-23-graphql-api-explorer/",
+    "https://dlthub.com/context/source/polygon-finance",
+    "https://docs.min.io/docs/minio-client-quickstart-guide",
+    "https://files.massive.com",
+    "https://github.com/massive-com/client-go",
+    "https://github.com/massive-com/client-js",
+    "https://github.com/massive-com/client-jvm",
+    "https://github.com/massive-com/client-python",
+    "https://github.com/massive-com/mcp_massive",
+    "https://massive.com",
+    "https://massive.com/about",
+    "https://massive.com/blog",
+    "https://massive.com/blog/tag/tutorial",
+    "https://massive.com/careers",
+    "https://massive.com/changelog",
+    "https://massive.com/contact",
+    "https://massive.com/currencies",
+    "https://massive.com/dashboard/login?redirect=https://massive.com/docs/",
+    "https://massive.com/dashboard/login?redirect=https://massive.com/docs/ai-tools/clients/chatgpt",
+    "https://massive.com/dashboard/login?redirect=https://massive.com/docs/ai-tools/clients/claude-code",
+    "https://massive.com/dashboard/login?redirect=https://massive.com/docs/ai-tools/clients/cursor",
+    "https://massive.com/dashboard/login?redirect=https://massive.com/docs/ai-tools/quickstart",
+    "https://massive.com/dashboard/login?redirect=https://massive.com/docs/flat-files/quickstart",
+    "https://massive.com/dashboard/login?redirect=https://massive.com/docs/rest/quickstart",
+    "https://massive.com/dashboard/login?redirect=https://massive.com/docs/websocket/quickstart",
+    "https://massive.com/dashboard/signup?redirect=https://massive.com/docs/",
+    "https://massive.com/dashboard/signup?redirect=https://massive.com/docs/ai-tools/clients/chatgpt",
+    "https://massive.com/dashboard/signup?redirect=https://massive.com/docs/ai-tools/clients/claude-code",
+    "https://massive.com/dashboard/signup?redirect=https://massive.com/docs/ai-tools/clients/cursor",
+    "https://massive.com/dashboard/signup?redirect=https://massive.com/docs/ai-tools/quickstart",
+    "https://massive.com/dashboard/signup?redirect=https://massive.com/docs/flat-files/quickstart",
+    "https://massive.com/dashboard/signup?redirect=https://massive.com/docs/rest/quickstart",
+    "https://massive.com/dashboard/signup?redirect=https://massive.com/docs/websocket/quickstart",
+    "https://massive.com/docs",
+    "https://massive.com/docs/flat-files/crypto/day-aggregates.md",
+    "https://massive.com/docs/flat-files/crypto/minute-aggregates.md",
+    "https://massive.com/docs/flat-files/crypto/trades.md",
+    "https://massive.com/docs/flat-files/forex/day-aggregates.md",
+    "https://massive.com/docs/flat-files/forex/minute-aggregates.md",
+    "https://massive.com/docs/flat-files/forex/quotes.md",
+    "https://massive.com/docs/flat-files/futures/minute-aggregates/cbot.md",
+    "https://massive.com/docs/flat-files/futures/minute-aggregates/cme.md",
+    "https://massive.com/docs/flat-files/futures/minute-aggregates/comex.md",
+    "https://massive.com/docs/flat-files/futures/minute-aggregates/nymex.md",
+    "https://massive.com/docs/flat-files/futures/quotes/cbot.md",
+    "https://massive.com/docs/flat-files/futures/quotes/cme.md",
+    "https://massive.com/docs/flat-files/futures/quotes/comex.md",
+    "https://massive.com/docs/flat-files/futures/quotes/nymex.md",
+    "https://massive.com/docs/flat-files/futures/session-aggregates/cbot.md",
+    "https://massive.com/docs/flat-files/futures/session-aggregates/cme.md",
+    "https://massive.com/docs/flat-files/futures/session-aggregates/comex.md",
+    "https://massive.com/docs/flat-files/futures/session-aggregates/nymex.md",
+    "https://massive.com/docs/flat-files/futures/trades/cbot.md",
+    "https://massive.com/docs/flat-files/futures/trades/cme.md",
+    "https://massive.com/docs/flat-files/futures/trades/comex.md",
+    "https://massive.com/docs/flat-files/futures/trades/nymex.md",
+    "https://massive.com/docs/flat-files/indices/day-aggregates.md",
+    "https://massive.com/docs/flat-files/indices/minute-aggregates.md",
+    "https://massive.com/docs/flat-files/indices/values.md",
+    "https://massive.com/docs/flat-files/options/day-aggregates.md",
+    "https://massive.com/docs/flat-files/options/minute-aggregates.md",
+    "https://massive.com/docs/flat-files/options/quotes.md",
+    "https://massive.com/docs/flat-files/options/trades.md",
+    "https://massive.com/docs/flat-files/stocks/day-aggregates.md",
+    "https://massive.com/docs/flat-files/stocks/minute-aggregates.md",
+    "https://massive.com/docs/flat-files/stocks/quotes.md",
+    "https://massive.com/docs/flat-files/stocks/trades.md",
+    "https://massive.com/docs/llms-full.txt",
+    "https://massive.com/docs/llms.txt",
+    "https://massive.com/docs/rest/alternative/consumer-spending/merchant-aggregates.md",
+    "https://massive.com/docs/rest/alternative/consumer-spending/merchant-hierarchy.md",
+    "https://massive.com/docs/rest/crypto/aggregates/custom-bars.md",
+    "https://massive.com/docs/rest/crypto/aggregates/daily-market-summary.md",
+    "https://massive.com/docs/rest/crypto/aggregates/daily-ticker-summary.md",
+    "https://massive.com/docs/rest/crypto/aggregates/previous-day-bar.md",
+    "https://massive.com/docs/rest/crypto/market-operations/condition-codes.md",
+    "https://massive.com/docs/rest/crypto/market-operations/exchanges.md",
+    "https://massive.com/docs/rest/crypto/market-operations/market-holidays.md",
+    "https://massive.com/docs/rest/crypto/market-operations/market-status.md",
+    "https://massive.com/docs/rest/crypto/snapshots/full-market-snapshot.md",
+    "https://massive.com/docs/rest/crypto/snapshots/single-ticker-snapshot.md",
+    "https://massive.com/docs/rest/crypto/snapshots/top-market-movers.md",
+    "https://massive.com/docs/rest/crypto/snapshots/unified-snapshot.md",
+    "https://massive.com/docs/rest/crypto/technical-indicators/exponential-moving-average.md",
+    "https://massive.com/docs/rest/crypto/technical-indicators/moving-average-convergence-divergence.md",
+    "https://massive.com/docs/rest/crypto/technical-indicators/relative-strength-index.md",
+    "https://massive.com/docs/rest/crypto/technical-indicators/simple-moving-average.md",
+    "https://massive.com/docs/rest/crypto/tickers/all-tickers.md",
+    "https://massive.com/docs/rest/crypto/tickers/ticker-overview.md",
+    "https://massive.com/docs/rest/crypto/trades/last-trade.md",
+    "https://massive.com/docs/rest/crypto/trades/trades.md",
+    "https://massive.com/docs/rest/economy/inflation-expectations.md",
+    "https://massive.com/docs/rest/economy/inflation.md",
+    "https://massive.com/docs/rest/economy/labor-market.md",
+    "https://massive.com/docs/rest/economy/treasury-yields.md",
+    "https://massive.com/docs/rest/forex/aggregates/custom-bars.md",
+    "https://massive.com/docs/rest/forex/aggregates/daily-market-summary.md",
+    "https://massive.com/docs/rest/forex/aggregates/previous-day-bar.md",
+    "https://massive.com/docs/rest/forex/currency-conversion.md",
+    "https://massive.com/docs/rest/forex/market-operations/exchanges.md",
+    "https://massive.com/docs/rest/forex/market-operations/market-holidays.md",
+    "https://massive.com/docs/rest/forex/market-operations/market-status.md",
+    "https://massive.com/docs/rest/forex/quotes/last-quote.md",
+    "https://massive.com/docs/rest/forex/quotes/quotes.md",
+    "https://massive.com/docs/rest/forex/snapshots/full-market-snapshot.md",
+    "https://massive.com/docs/rest/forex/snapshots/single-ticker-snapshot.md",
+    "https://massive.com/docs/rest/forex/snapshots/top-market-movers.md",
+    "https://massive.com/docs/rest/forex/snapshots/unified-snapshot.md",
+    "https://massive.com/docs/rest/forex/technical-indicators/exponential-moving-average.md",
+    "https://massive.com/docs/rest/forex/technical-indicators/moving-average-convergence-divergence.md",
+    "https://massive.com/docs/rest/forex/technical-indicators/relative-strength-index.md",
+    "https://massive.com/docs/rest/forex/technical-indicators/simple-moving-average.md",
+    "https://massive.com/docs/rest/forex/tickers/all-tickers.md",
+    "https://massive.com/docs/rest/forex/tickers/ticker-overview.md",
+    "https://massive.com/docs/rest/futures/aggregates.md",
+    "https://massive.com/docs/rest/futures/contracts.md",
+    "https://massive.com/docs/rest/futures/market-operations/exchanges.md",
+    "https://massive.com/docs/rest/futures/market-operations/market-status.md",
+    "https://massive.com/docs/rest/futures/products.md",
+    "https://massive.com/docs/rest/futures/schedules.md",
+    "https://massive.com/docs/rest/futures/snapshots/contracts-snapshot.md",
+    "https://massive.com/docs/rest/futures/trades-quotes/quotes.md",
+    "https://massive.com/docs/rest/futures/trades-quotes/trades.md",
+    "https://massive.com/docs/rest/indices/aggregates/custom-bars.md",
+    "https://massive.com/docs/rest/indices/aggregates/daily-ticker-summary.md",
+    "https://massive.com/docs/rest/indices/aggregates/previous-day-bar.md",
+    "https://massive.com/docs/rest/indices/market-operations/market-holidays.md",
+    "https://massive.com/docs/rest/indices/market-operations/market-status.md",
+    "https://massive.com/docs/rest/indices/snapshots/indices-snapshot.md",
+    "https://massive.com/docs/rest/indices/snapshots/unified-snapshot.md",
+    "https://massive.com/docs/rest/indices/technical-indicators/exponential-moving-average.md",
+    "https://massive.com/docs/rest/indices/technical-indicators/moving-average-convergence-divergence.md",
+    "https://massive.com/docs/rest/indices/technical-indicators/relative-strength-index.md",
+    "https://massive.com/docs/rest/indices/technical-indicators/simple-moving-average.md",
+    "https://massive.com/docs/rest/indices/tickers/all-tickers.md",
+    "https://massive.com/docs/rest/indices/tickers/ticker-overview.md",
+    "https://massive.com/docs/rest/llms-full.txt",
+    "https://massive.com/docs/rest/llms.txt",
+    "https://massive.com/docs/rest/options/aggregates/custom-bars.md",
+    "https://massive.com/docs/rest/options/aggregates/daily-ticker-summary.md",
+    "https://massive.com/docs/rest/options/aggregates/previous-day-bar.md",
+    "https://massive.com/docs/rest/options/contracts/all-contracts.md",
+    "https://massive.com/docs/rest/options/contracts/contract-overview.md",
+    "https://massive.com/docs/rest/options/market-operations/condition-codes.md",
+    "https://massive.com/docs/rest/options/market-operations/exchanges.md",
+    "https://massive.com/docs/rest/options/market-operations/market-holidays.md",
+    "https://massive.com/docs/rest/options/market-operations/market-status.md",
+    "https://massive.com/docs/rest/options/snapshots/option-chain-snapshot.md",
+    "https://massive.com/docs/rest/options/snapshots/option-contract-snapshot.md",
+    "https://massive.com/docs/rest/options/snapshots/unified-snapshot.md",
+    "https://massive.com/docs/rest/options/technical-indicators/exponential-moving-average.md",
+    "https://massive.com/docs/rest/options/technical-indicators/moving-average-convergence-divergence.md",
+    "https://massive.com/docs/rest/options/technical-indicators/relative-strength-index.md",
+    "https://massive.com/docs/rest/options/technical-indicators/simple-moving-average.md",
+    "https://massive.com/docs/rest/options/trades-quotes/last-trade.md",
+    "https://massive.com/docs/rest/options/trades-quotes/quotes.md",
+    "https://massive.com/docs/rest/options/trades-quotes/trades.md",
+    "https://massive.com/docs/rest/partners/benzinga/analyst-details.md",
+    "https://massive.com/docs/rest/partners/benzinga/analyst-insights.md",
+    "https://massive.com/docs/rest/partners/benzinga/analyst-ratings.md",
+    "https://massive.com/docs/rest/partners/benzinga/bulls-bears-say.md",
+    "https://massive.com/docs/rest/partners/benzinga/consensus-ratings.md",
+    "https://massive.com/docs/rest/partners/benzinga/corporate-guidance.md",
+    "https://massive.com/docs/rest/partners/benzinga/earnings.md",
+    "https://massive.com/docs/rest/partners/benzinga/firm-details.md",
+    "https://massive.com/docs/rest/partners/benzinga/news.md",
+    "https://massive.com/docs/rest/partners/etf-global/analytics.md",
+    "https://massive.com/docs/rest/partners/etf-global/constituents.md",
+    "https://massive.com/docs/rest/partners/etf-global/fundflows.md",
+    "https://massive.com/docs/rest/partners/etf-global/profiles.md",
+    "https://massive.com/docs/rest/partners/etf-global/taxonomies.md",
+    "https://massive.com/docs/rest/partners/tmx/corporate-events.md",
+    "https://massive.com/docs/rest/stocks/aggregates/custom-bars.md",
+    "https://massive.com/docs/rest/stocks/aggregates/daily-market-summary.md",
+    "https://massive.com/docs/rest/stocks/aggregates/daily-ticker-summary.md",
+    "https://massive.com/docs/rest/stocks/aggregates/previous-day-bar.md",
+    "https://massive.com/docs/rest/stocks/corporate-actions/dividends.md",
+    "https://massive.com/docs/rest/stocks/corporate-actions/ipos.md",
+    "https://massive.com/docs/rest/stocks/corporate-actions/reference-dividends.md",
+    "https://massive.com/docs/rest/stocks/corporate-actions/reference-splits.md",
+    "https://massive.com/docs/rest/stocks/corporate-actions/splits.md",
+    "https://massive.com/docs/rest/stocks/corporate-actions/ticker-events.md",
+    "https://massive.com/docs/rest/stocks/filings/10-k-sections.md",
+    "https://massive.com/docs/rest/stocks/filings/13-f-filings.md",
+    "https://massive.com/docs/rest/stocks/filings/8-k-disclosures.md",
+    "https://massive.com/docs/rest/stocks/filings/8-k-text.md",
+    "https://massive.com/docs/rest/stocks/filings/disclosure-categories.md",
+    "https://massive.com/docs/rest/stocks/filings/form-3.md",
+    "https://massive.com/docs/rest/stocks/filings/form-4.md",
+    "https://massive.com/docs/rest/stocks/filings/index.md",
+    "https://massive.com/docs/rest/stocks/filings/risk-categories.md",
+    "https://massive.com/docs/rest/stocks/filings/risk-factors.md",
+    "https://massive.com/docs/rest/stocks/fundamentals/balance-sheets.md",
+    "https://massive.com/docs/rest/stocks/fundamentals/cash-flow-statements.md",
+    "https://massive.com/docs/rest/stocks/fundamentals/float.md",
+    "https://massive.com/docs/rest/stocks/fundamentals/income-statements.md",
+    "https://massive.com/docs/rest/stocks/fundamentals/ratios.md",
+    "https://massive.com/docs/rest/stocks/fundamentals/short-interest.md",
+    "https://massive.com/docs/rest/stocks/fundamentals/short-volume.md",
+    "https://massive.com/docs/rest/stocks/llms-full.txt",
+    "https://massive.com/docs/rest/stocks/llms.txt",
+    "https://massive.com/docs/rest/stocks/market-operations/condition-codes.md",
+    "https://massive.com/docs/rest/stocks/market-operations/exchanges.md",
+    "https://massive.com/docs/rest/stocks/market-operations/market-holidays.md",
+    "https://massive.com/docs/rest/stocks/market-operations/market-status.md",
+    "https://massive.com/docs/rest/stocks/news.md",
+    "https://massive.com/docs/rest/stocks/snapshots/full-market-snapshot.md",
+    "https://massive.com/docs/rest/stocks/snapshots/single-ticker-snapshot.md",
+    "https://massive.com/docs/rest/stocks/snapshots/top-market-movers.md",
+    "https://massive.com/docs/rest/stocks/snapshots/unified-snapshot.md",
+    "https://massive.com/docs/rest/stocks/technical-indicators/exponential-moving-average.md",
+    "https://massive.com/docs/rest/stocks/technical-indicators/moving-average-convergence-divergence.md",
+    "https://massive.com/docs/rest/stocks/technical-indicators/relative-strength-index.md",
+    "https://massive.com/docs/rest/stocks/technical-indicators/simple-moving-average.md",
+    "https://massive.com/docs/rest/stocks/tickers/all-tickers.md",
+    "https://massive.com/docs/rest/stocks/tickers/llms-full.txt",
+    "https://massive.com/docs/rest/stocks/tickers/llms.txt",
+    "https://massive.com/docs/rest/stocks/tickers/related-tickers.md",
+    "https://massive.com/docs/rest/stocks/tickers/ticker-overview.md",
+    "https://massive.com/docs/rest/stocks/tickers/ticker-types.md",
+    "https://massive.com/docs/rest/stocks/trades-quotes/last-quote.md",
+    "https://massive.com/docs/rest/stocks/trades-quotes/last-trade.md",
+    "https://massive.com/docs/rest/stocks/trades-quotes/quotes.md",
+    "https://massive.com/docs/rest/stocks/trades-quotes/trades.md",
+    "https://massive.com/docs/websocket/crypto/aggregates-per-minute.md",
+    "https://massive.com/docs/websocket/crypto/aggregates-per-second.md",
+    "https://massive.com/docs/websocket/crypto/fair-market-value.md",
+    "https://massive.com/docs/websocket/crypto/quotes.md",
+    "https://massive.com/docs/websocket/crypto/trades.md",
+    "https://massive.com/docs/websocket/forex/aggregates-per-minute.md",
+    "https://massive.com/docs/websocket/forex/aggregates-per-second.md",
+    "https://massive.com/docs/websocket/forex/fair-market-value.md",
+    "https://massive.com/docs/websocket/forex/quotes.md",
+    "https://massive.com/docs/websocket/futures/aggregates-per-minute.md",
+    "https://massive.com/docs/websocket/futures/aggregates-per-second.md",
+    "https://massive.com/docs/websocket/futures/quotes.md",
+    "https://massive.com/docs/websocket/futures/trades.md",
+    "https://massive.com/docs/websocket/indices/aggregates-per-minute.md",
+    "https://massive.com/docs/websocket/indices/aggregates-per-second.md",
+    "https://massive.com/docs/websocket/indices/value.md",
+    "https://massive.com/docs/websocket/options/aggregates-per-minute.md",
+    "https://massive.com/docs/websocket/options/aggregates-per-second.md",
+    "https://massive.com/docs/websocket/options/fair-market-value.md",
+    "https://massive.com/docs/websocket/options/quotes.md",
+    "https://massive.com/docs/websocket/options/trades.md",
+    "https://massive.com/docs/websocket/stocks/aggregates-per-minute.md",
+    "https://massive.com/docs/websocket/stocks/aggregates-per-second.md",
+    "https://massive.com/docs/websocket/stocks/fair-market-value.md",
+    "https://massive.com/docs/websocket/stocks/imbalances.md",
+    "https://massive.com/docs/websocket/stocks/luld.md",
+    "https://massive.com/docs/websocket/stocks/quotes.md",
+    "https://massive.com/docs/websocket/stocks/trades.md",
+    "https://massive.com/futures",
+    "https://massive.com/indices",
+    "https://massive.com/knowledge-base",
+    "https://massive.com/options",
+    "https://massive.com/privacy",
+    "https://massive.com/product-roadmap",
+    "https://massive.com/stocks",
+    "https://massive.com/system",
+    "https://massive.com/terms",
+    "https://mcp.massive.com/",
+    "https://mcpmarket.com/server/polygon-2",
+    "https://mcpservers.org/servers/polygon-io/mcp_polygon",
+    "https://nodejs.org/",
+    "https://polygon.io/#1.-install-claude-code",
+    "https://polygon.io/#1.-install-cursor",
+    "https://polygon.io/#1.-use-a-supported-plan",
+    "https://polygon.io/#2.-add-the-massive-remote-mcp-server",
+    "https://polygon.io/#2.-enable-developer-mode",
+    "https://polygon.io/#3.-add-the-massive-connector",
+    "https://polygon.io/#authenticate-your-request",
+    "https://polygon.io/#authentication",
+    "https://polygon.io/#aws-s3-cli",
+    "https://polygon.io/#browse-our-data",
+    "https://polygon.io/#choosing-the-right-approach",
+    "https://polygon.io/#connecting-to-the-websocket",
+    "https://polygon.io/#direct-rest-api-integration",
+    "https://polygon.io/#explore-client-libraries",
+    "https://polygon.io/#exploring-and-downloading-data",
+    "https://polygon.io/#llm-friendly-documentation",
+    "https://polygon.io/#making-your-first-api-request",
+    "https://polygon.io/#mcp-server",
+    "https://polygon.io/#message-formats-&-multiple-events",
+    "https://polygon.io/#minio",
+    "https://polygon.io/#next-steps",
+    "https://polygon.io/#performance-&-latency-considerations",
+    "https://polygon.io/#python-boto3-sdk",
+    "https://polygon.io/#rclone",
+    "https://polygon.io/#remote-mcp-server-(recommended",
+    "https://polygon.io/#requirements-&-approach",
+    "https://polygon.io/#sample-data",
+    "https://polygon.io/#self-hosted-mcp-server",
+    "https://polygon.io/#setting-up-s3-access",
+    "https://polygon.io/#setup",
+    "https://polygon.io/#skills-&-instructions",
+    "https://polygon.io/#subscribing-to-data-feeds",
+    "https://polygon.io/#test-the-integration",
+    "https://polygon.io/#troubleshooting",
+    "https://polygon.io/#understanding-the-api-response",
+    "https://polygon.io/#using-massive-with-ai",
+    "https://polygon.io/#what-you-can-do",
+    "https://polygon.io/contact",
+    "https://polygon.io/dashboard/keys",
+    "https://polygon.io/dashboard/login",
+    "https://polygon.io/dashboard/signup",
+    "https://polygon.io/dashboard/subscriptions",
+    "https://polygon.io/docs",
+    "https://polygon.io/docs/ai-tools",
+    "https://polygon.io/docs/ai-tools/clients",
+    "https://polygon.io/docs/ai-tools/clients/chatgpt",
+    "https://polygon.io/docs/ai-tools/clients/claude-code",
+    "https://polygon.io/docs/ai-tools/clients/claude-desktop",
+    "https://polygon.io/docs/ai-tools/clients/codex",
+    "https://polygon.io/docs/ai-tools/clients/cursor",
+    "https://polygon.io/docs/ai-tools/clients/gemini-cli",
+    "https://polygon.io/docs/ai-tools/clients/github-copilot",
+    "https://polygon.io/docs/ai-tools/quickstart",
+    "https://polygon.io/docs/flat-files",
+    "https://polygon.io/docs/flat-files/crypto",
+    "https://polygon.io/docs/flat-files/crypto/overview",
+    "https://polygon.io/docs/flat-files/forex",
+    "https://polygon.io/docs/flat-files/forex/overview",
+    "https://polygon.io/docs/flat-files/futures",
+    "https://polygon.io/docs/flat-files/futures/overview",
+    "https://polygon.io/docs/flat-files/indices",
+    "https://polygon.io/docs/flat-files/indices/overview",
+    "https://polygon.io/docs/flat-files/options",
+    "https://polygon.io/docs/flat-files/options/overview",
+    "https://polygon.io/docs/flat-files/quickstart",
+    "https://polygon.io/docs/flat-files/stocks",
+    "https://polygon.io/docs/flat-files/stocks/overview",
+    "https://polygon.io/docs/rest",
+    "https://polygon.io/docs/rest/alternative",
+    "https://polygon.io/docs/rest/alternative/overview",
+    "https://polygon.io/docs/rest/crypto",
+    "https://polygon.io/docs/rest/crypto/overview",
+    "https://polygon.io/docs/rest/economy",
+    "https://polygon.io/docs/rest/economy/overview",
+    "https://polygon.io/docs/rest/forex",
+    "https://polygon.io/docs/rest/forex/overview",
+    "https://polygon.io/docs/rest/futures",
+    "https://polygon.io/docs/rest/futures/overview",
+    "https://polygon.io/docs/rest/indices",
+    "https://polygon.io/docs/rest/indices/overview",
+    "https://polygon.io/docs/rest/options",
+    "https://polygon.io/docs/rest/options/overview",
+    "https://polygon.io/docs/rest/partners",
+    "https://polygon.io/docs/rest/partners/overview",
+    "https://polygon.io/docs/rest/quickstart",
+    "https://polygon.io/docs/rest/stocks",
+    "https://polygon.io/docs/rest/stocks/corporate-actions/dividends",
+    "https://polygon.io/docs/rest/stocks/overview",
+    "https://polygon.io/docs/websocket",
+    "https://polygon.io/docs/websocket/crypto",
+    "https://polygon.io/docs/websocket/crypto/overview",
+    "https://polygon.io/docs/websocket/forex",
+    "https://polygon.io/docs/websocket/forex/overview",
+    "https://polygon.io/docs/websocket/futures",
+    "https://polygon.io/docs/websocket/futures/overview",
+    "https://polygon.io/docs/websocket/indices",
+    "https://polygon.io/docs/websocket/indices/overview",
+    "https://polygon.io/docs/websocket/options",
+    "https://polygon.io/docs/websocket/options/overview",
+    "https://polygon.io/docs/websocket/quickstart",
+    "https://polygon.io/docs/websocket/stocks",
+    "https://polygon.io/docs/websocket/stocks/overview",
+    "https://polygon.io/llms.txt",
+    "https://polygon.io/pricing",
+    "https://rclone.org/downloads/",
+    "https://www.fabledata.com/",
+    "https://www.facebook.com/massivefb",
+    "https://www.github.com/massive-com",
+    "https://www.instagram.com/massive_com",
+    "https://www.x.com/massive_com",
+    "https://www.youtube.com/@massive_com"
+  ]
+}

@@ -1,0 +1,659 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "fly.io",
+    "detect": {
+      "domain": "fly.io",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:23:09.553Z",
+    "summary": "Fly.io exposes a REST Machines API, a GraphQL API, the flyctl CLI, and a flyctl-provided MCP server; all documented developer surfaces require a Fly.io access token.",
+    "description": "Fly.io is a cloud platform for running applications and virtual-machine workloads globally. It provides app deployment, machine management, networking, storage, and related operational tooling.",
+    "credentials": {
+      "fly_api_token": {
+        "type": "bearer",
+        "label": "Fly.io access token",
+        "generateUrl": "https://fly.io/docs/security/tokens/",
+        "setup": "Create a token with `flyctl` after signing in. The easiest path is to [install flyctl](https://fly.io/docs/flyctl/install/), run [`fly auth login`](https://fly.io/docs/flyctl/auth-login/), then mint a scoped token using [`fly tokens create`](https://fly.io/docs/flyctl/integrating/) such as `fly tokens create deploy -a <app>` or `fly tokens create org -o <org>`. The token docs are in [Access Tokens](https://fly.io/docs/security/tokens/).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "flyctl",
+        "name": "flyctl",
+        "type": "cli",
+        "docs": "https://fly.io/docs/flyctl/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://fly.io/docs/flyctl/",
+            "https://fly.io/docs/flyctl/auth-login/",
+            "https://fly.io/docs/flyctl/integrating/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fly_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "fly auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/flyctl/auth-login/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "fly_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "FLY_API_TOKEN",
+                      "FLY_ACCESS_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/flyctl/integrating/",
+                  "https://fly.io/docs/flyctl/auth-login/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "flyctl"
+          }
+        ],
+        "command": "fly"
+      },
+      {
+        "slug": "fly-io-graphql-api",
+        "name": "Fly.io GraphQL API",
+        "type": "graphql",
+        "docs": "https://fly.io/docs/mcp/deploy-with/machines-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://fly.io/docs/mcp/deploy-with/machines-api/",
+            "https://api.fly.io/graphql"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fly_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/mcp/deploy-with/machines-api/"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "introspection",
+        "url": "https://api.fly.io/graphql",
+        "requiredHeaders": [
+          {
+            "name": "Fly-GraphQL-Client",
+            "source": {
+              "kind": "static",
+              "value": "playground"
+            },
+            "description": "Shown as the default header in Fly.io's GraphQL playground UI."
+          }
+        ]
+      },
+      {
+        "slug": "flyctl-mcp-server",
+        "name": "flyctl MCP server",
+        "type": "mcp",
+        "docs": "https://fly.io/docs/mcp/flyctl-server/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://fly.io/docs/mcp/flyctl-server/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "fly_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "fly mcp server --access-token <token>"
+                  }
+                },
+                {
+                  "id": "fly_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "FLY_ACCESS_TOKEN"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/mcp/flyctl-server/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "fly_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authentication",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://fly.io/docs/mcp/flyctl-server/"
+                ]
+              }
+            }
+          ]
+        },
+        "transports": [
+          "sse",
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:23:09.554Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 178807,
+    "completion_tokens": 1660,
+    "total_tokens": 180467
+  },
+  "visited": [
+    "https://api.fly.io/graphql",
+    "https://community.fly.io/t/are-there-api-docs-to-interact-with-fly-io-via-rest/11661",
+    "https://community.fly.io/t/fly-io-secret-create-api/22185",
+    "https://community.fly.io/t/integrating-with-the-graphql-api/14176",
+    "https://docs.machines.dev/",
+    "https://docs.machines.dev/openapi.json",
+    "https://docs.machines.dev/swagger.json",
+    "https://fly.io/docs/flyctl/",
+    "https://fly.io/docs/flyctl/auth-login/",
+    "https://fly.io/docs/flyctl/integrating/",
+    "https://fly.io/docs/machines/api/",
+    "https://fly.io/docs/machines/api/apps-resource/",
+    "https://fly.io/docs/machines/api/working-with-machines-api/",
+    "https://fly.io/docs/mcp/deploy-with/machines-api/",
+    "https://fly.io/docs/mcp/flyctl-server/",
+    "https://fly.io/docs/monitoring/logs-api-options/",
+    "https://fly.io/docs/security/tokens/",
+    "https://fly.io/llms.txt",
+    "https://til.simonwillison.net/fly/undocumented-graphql-api"
+  ],
+  "grounding": [
+    "http://127.0.0.1:6274",
+    "http://_api.internal:4280",
+    "http://www.apache.org/licenses/LICENSE-2.0.html",
+    "https://${APP",
+    "https://api.fly.io/graphql",
+    "https://api.machines.dev",
+    "https://api.machines.dev/v1",
+    "https://api.machines.dev/v1/apps?org_slug=personal",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fflyctl%2Fcmd%2Ffly_auth_login.md",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fmachines%2Fapi%2Fapps-resource.html.markerb",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fmachines%2Fapi%2Findex.html.md",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fmachines%2Fapi%2Fworking-with-machines-api.html.markerb",
+    "https://chatgpt.com/?hints=search&q=Read+https%3A%2F%2Fraw.githubusercontent.com%2Fsuperfly%2Fdocs%2Fmain%2Fmcp%2Fflyctl-server.html.md",
+    "https://community.fly.io/",
+    "https://community.fly.io/t/are-there-api-docs-to-interact-with-fly-io-via-rest/11661",
+    "https://community.fly.io/t/fly-io-secret-create-api/22185",
+    "https://community.fly.io/t/integrating-with-the-graphql-api/14176",
+    "https://curl.se/",
+    "https://docs.machines.dev/",
+    "https://docs.machines.dev/#authentication",
+    "https://docs.machines.dev/#base-url",
+    "https://docs.machines.dev/#description/introduction",
+    "https://docs.machines.dev/#resources",
+    "https://docs.machines.dev/+external",
+    "https://docs.machines.dev/apps/Apps_list",
+    "https://docs.machines.dev/index.md",
+    "https://docs.machines.dev/machines/Machines_list",
+    "https://docs.machines.dev/models",
+    "https://docs.machines.dev/openapi.json",
+    "https://docs.machines.dev/secrets/Secretkeys_list",
+    "https://docs.machines.dev/swagger.json",
+    "https://docs.machines.dev/tls-certificates/App_Certificates_list",
+    "https://docs.machines.dev/tokens/Tokens_authenticate",
+    "https://docs.machines.dev/volumes/Volumes_list",
+    "https://docs.npmjs.com/downloading-and-installing-node-js-and-npm",
+    "https://fly.io/",
+    "https://fly.io/#",
+    "https://fly.io/#allocate-an-ip-address-for-global-request-routing",
+    "https://fly.io/#api-addresses",
+    "https://fly.io/#authentication",
+    "https://fly.io/#configuring-networking-and-certificates",
+    "https://fly.io/#connecting-to-the-api",
+    "https://fly.io/#create-a-fly-app",
+    "https://fly.io/#delete-a-fly-app",
+    "https://fly.io/#environment-setup",
+    "https://fly.io/#get-app-details",
+    "https://fly.io/#global-options",
+    "https://fly.io/#list-apps-in-an-organization",
+    "https://fly.io/#main-content-start",
+    "https://fly.io/#options",
+    "https://fly.io/#rate-limits",
+    "https://fly.io/#related-topics",
+    "https://fly.io/#response-codes",
+    "https://fly.io/#see-also",
+    "https://fly.io/#set-app-secrets",
+    "https://fly.io/#usage",
+    "https://fly.io/#using-your-fly-io-account",
+    "https://fly.io/#viewing-and-monitoring-an-app",
+    "https://fly.io/#working-with-apps",
+    "https://fly.io/app/sign-in/",
+    "https://fly.io/app/sign-up/",
+    "https://fly.io/blog/",
+    "https://fly.io/blog/api-tokens-a-tedious-survey/#macaroons",
+    "https://fly.io/blog/build-better-agents-with-morphllm/",
+    "https://fly.io/blog/everyone-write-an-agent/",
+    "https://fly.io/blog/games-as-model-eval/",
+    "https://fly.io/blog/litestream-v050-is-here/",
+    "https://fly.io/blog/litestream-vfs/",
+    "https://fly.io/blog/litestream-writable-vfs/",
+    "https://fly.io/blog/macaroons-escalated-quickly/",
+    "https://fly.io/blog/mcp-launch/",
+    "https://fly.io/blog/mcp-provisioning/",
+    "https://fly.io/blog/shipping-logs/",
+    "https://fly.io/blog/unfortunately-mcp/",
+    "https://fly.io/customer-stories/",
+    "https://fly.io/customer-stories/amplifed-ai/",
+    "https://fly.io/customer-stories/codecrafters/",
+    "https://fly.io/customer-stories/kiloclaw/",
+    "https://fly.io/customer-stories/reflex/",
+    "https://fly.io/customer-stories/steel-dev/",
+    "https://fly.io/customer-stories/struct/",
+    "https://fly.io/dashboard",
+    "https://fly.io/django-beats/",
+    "https://fly.io/django-beats/asgi-deployment-options-for-django/",
+    "https://fly.io/django-beats/caching-in-django-with-redis/",
+    "https://fly.io/django-beats/celery-async-tasks-on-fly-machines/",
+    "https://fly.io/django-beats/django-views-as-serverless-functions-on-fly-machines/",
+    "https://fly.io/django-beats/serverless-functions-in-django-with-fly-machines/",
+    "https://fly.io/django-beats/smooth-database-changes-in-blue-green-deployments/",
+    "https://fly.io/django-beats/staging-environments-on-the-fly-with-github-actions/",
+    "https://fly.io/docs",
+    "https://fly.io/docs/",
+    "https://fly.io/docs/about/",
+    "https://fly.io/docs/about/billing/",
+    "https://fly.io/docs/about/brand/",
+    "https://fly.io/docs/about/cost-management/",
+    "https://fly.io/docs/about/extensions/",
+    "https://fly.io/docs/about/free-trial/",
+    "https://fly.io/docs/about/healthcare/",
+    "https://fly.io/docs/about/merch/",
+    "https://fly.io/docs/about/open-source/",
+    "https://fly.io/docs/about/pricing/",
+    "https://fly.io/docs/about/support/",
+    "https://fly.io/docs/app-guides/multiple-processes/",
+    "https://fly.io/docs/apps/going-to-production/",
+    "https://fly.io/docs/apps/overview",
+    "https://fly.io/docs/apps/overview/",
+    "https://fly.io/docs/apps/secrets/",
+    "https://fly.io/docs/blueprints/",
+    "https://fly.io/docs/blueprints/autoscale-machines/",
+    "https://fly.io/docs/blueprints/autostart-internal-apps/",
+    "https://fly.io/docs/blueprints/bridge-deployments-wireguard/",
+    "https://fly.io/docs/blueprints/cell-based/",
+    "https://fly.io/docs/blueprints/connecting-to-user-machines/",
+    "https://fly.io/docs/blueprints/custom-deploy-workflows/",
+    "https://fly.io/docs/blueprints/deploy-openclaw/",
+    "https://fly.io/docs/blueprints/going-to-production-with-healthcare-apps/",
+    "https://fly.io/docs/blueprints/hermes-agent-on-fly-io/",
+    "https://fly.io/docs/blueprints/infra-automation-without-terraform/",
+    "https://fly.io/docs/blueprints/multi-region-fly-replay/",
+    "https://fly.io/docs/blueprints/n-tier-architecture/",
+    "https://fly.io/docs/blueprints/observability-for-user-apps/",
+    "https://fly.io/docs/blueprints/opensshd/",
+    "https://fly.io/docs/blueprints/per-user-dev-environments/",
+    "https://fly.io/docs/blueprints/private-applications-flycast/",
+    "https://fly.io/docs/blueprints/remote-mcp-servers/",
+    "https://fly.io/docs/blueprints/resilient-apps-multiple-machines/",
+    "https://fly.io/docs/blueprints/review-apps-guide/",
+    "https://fly.io/docs/blueprints/rollback-guide/",
+    "https://fly.io/docs/blueprints/seamless-deployments/",
+    "https://fly.io/docs/blueprints/setting-concurrency-limits/",
+    "https://fly.io/docs/blueprints/shared-nothing/",
+    "https://fly.io/docs/blueprints/staging-prod-isolation/",
+    "https://fly.io/docs/blueprints/sticky-sessions/",
+    "https://fly.io/docs/blueprints/supercronic/",
+    "https://fly.io/docs/blueprints/task-scheduling/",
+    "https://fly.io/docs/blueprints/using-base-images-for-faster-deployments/",
+    "https://fly.io/docs/blueprints/using-the-fly-docker-registry/",
+    "https://fly.io/docs/blueprints/volume-forking/",
+    "https://fly.io/docs/blueprints/work-queues/",
+    "https://fly.io/docs/blueprints/working-with-docker/",
+    "https://fly.io/docs/database-storage-guides/",
+    "https://fly.io/docs/deep-dive/",
+    "https://fly.io/docs/django/getting-started/",
+    "https://fly.io/docs/elixir/",
+    "https://fly.io/docs/flyctl",
+    "https://fly.io/docs/flyctl/",
+    "https://fly.io/docs/flyctl/apps/",
+    "https://fly.io/docs/flyctl/auth-login/",
+    "https://fly.io/docs/flyctl/auth-signup/",
+    "https://fly.io/docs/flyctl/auth-whoami/",
+    "https://fly.io/docs/flyctl/auth/",
+    "https://fly.io/docs/flyctl/certs-setup/",
+    "https://fly.io/docs/flyctl/certs/",
+    "https://fly.io/docs/flyctl/checks/",
+    "https://fly.io/docs/flyctl/config/",
+    "https://fly.io/docs/flyctl/console/",
+    "https://fly.io/docs/flyctl/consul/",
+    "https://fly.io/docs/flyctl/dashboard/",
+    "https://fly.io/docs/flyctl/deploy/",
+    "https://fly.io/docs/flyctl/docs/",
+    "https://fly.io/docs/flyctl/extensions/",
+    "https://fly.io/docs/flyctl/image/",
+    "https://fly.io/docs/flyctl/incidents/",
+    "https://fly.io/docs/flyctl/install/",
+    "https://fly.io/docs/flyctl/integrating/",
+    "https://fly.io/docs/flyctl/ips/",
+    "https://fly.io/docs/flyctl/launch/",
+    "https://fly.io/docs/flyctl/litefs-cloud/",
+    "https://fly.io/docs/flyctl/logs/",
+    "https://fly.io/docs/flyctl/machine/",
+    "https://fly.io/docs/flyctl/mcp-proxy/",
+    "https://fly.io/docs/flyctl/mcp-wrap/",
+    "https://fly.io/docs/flyctl/mcp/",
+    "https://fly.io/docs/flyctl/mpg/",
+    "https://fly.io/docs/flyctl/orgs/",
+    "https://fly.io/docs/flyctl/ping/",
+    "https://fly.io/docs/flyctl/platform/",
+    "https://fly.io/docs/flyctl/postgres/",
+    "https://fly.io/docs/flyctl/proxy/",
+    "https://fly.io/docs/flyctl/redis/",
+    "https://fly.io/docs/flyctl/releases/",
+    "https://fly.io/docs/flyctl/scale/",
+    "https://fly.io/docs/flyctl/secrets/",
+    "https://fly.io/docs/flyctl/services/",
+    "https://fly.io/docs/flyctl/settings/",
+    "https://fly.io/docs/flyctl/sftp/",
+    "https://fly.io/docs/flyctl/ssh/",
+    "https://fly.io/docs/flyctl/status/",
+    "https://fly.io/docs/flyctl/storage/",
+    "https://fly.io/docs/flyctl/tokens-create/",
+    "https://fly.io/docs/flyctl/tokens/",
+    "https://fly.io/docs/flyctl/version/",
+    "https://fly.io/docs/flyctl/volumes/",
+    "https://fly.io/docs/flyctl/wireguard/",
+    "https://fly.io/docs/getting-started/essentials/",
+    "https://fly.io/docs/getting-started/get-started-by-framework/",
+    "https://fly.io/docs/getting-started/launch",
+    "https://fly.io/docs/getting-started/launch-demo",
+    "https://fly.io/docs/getting-started/launch/",
+    "https://fly.io/docs/getting-started/migrate-from-heroku/",
+    "https://fly.io/docs/getting-started/troubleshooting/",
+    "https://fly.io/docs/gpus/getting-started-gpus/",
+    "https://fly.io/docs/gpus/gpu-quickstart",
+    "https://fly.io/docs/gpus/gpu-quickstart/",
+    "https://fly.io/docs/gpus/python-gpu-example/",
+    "https://fly.io/docs/hiring/",
+    "https://fly.io/docs/js/",
+    "https://fly.io/docs/kubernetes/clusters/",
+    "https://fly.io/docs/kubernetes/connect-clusters/",
+    "https://fly.io/docs/kubernetes/fks-features/",
+    "https://fly.io/docs/kubernetes/fks-quickstart",
+    "https://fly.io/docs/kubernetes/fks-quickstart/",
+    "https://fly.io/docs/kubernetes/services/",
+    "https://fly.io/docs/kubernetes/using-gpus/",
+    "https://fly.io/docs/kubernetes/using-volumes/",
+    "https://fly.io/docs/languages-and-frameworks/",
+    "https://fly.io/docs/laravel/",
+    "https://fly.io/docs/launch/",
+    "https://fly.io/docs/machines",
+    "https://fly.io/docs/machines/",
+    "https://fly.io/docs/machines/api",
+    "https://fly.io/docs/machines/api-machines-resource/#update-a-machine",
+    "https://fly.io/docs/machines/api/",
+    "https://fly.io/docs/machines/api/apps-resource",
+    "https://fly.io/docs/machines/api/apps-resource/",
+    "https://fly.io/docs/machines/api/apps-resource/#create-a-fly-app",
+    "https://fly.io/docs/machines/api/certificates-resource",
+    "https://fly.io/docs/machines/api/certificates-resource/",
+    "https://fly.io/docs/machines/api/machines-resource",
+    "https://fly.io/docs/machines/api/machines-resource/",
+    "https://fly.io/docs/machines/api/machines-resource/#get-a-machine",
+    "https://fly.io/docs/machines/api/machines-resource/#machine-config-object-properties",
+    "https://fly.io/docs/machines/api/tokens-resource",
+    "https://fly.io/docs/machines/api/tokens-resource/",
+    "https://fly.io/docs/machines/api/volumes-resource",
+    "https://fly.io/docs/machines/api/volumes-resource/",
+    "https://fly.io/docs/machines/api/working-with-machines-api",
+    "https://fly.io/docs/machines/api/working-with-machines-api/",
+    "https://fly.io/docs/machines/api/working-with-machines-api/#api-addresses",
+    "https://fly.io/docs/machines/api/working-with-machines-api/#rate-limits",
+    "https://fly.io/docs/machines/cpu-performance/",
+    "https://fly.io/docs/machines/flyctl/fly-machine-run/",
+    "https://fly.io/docs/machines/flyctl/fly-machine-update/",
+    "https://fly.io/docs/machines/guides-examples/functions-with-machines/",
+    "https://fly.io/docs/machines/guides-examples/machine-placement/",
+    "https://fly.io/docs/machines/guides-examples/machine-restart-policy/",
+    "https://fly.io/docs/machines/guides-examples/machine-sizing/",
+    "https://fly.io/docs/machines/guides-examples/managing-machines-with-the-api/",
+    "https://fly.io/docs/machines/guides-examples/multi-container-machines/",
+    "https://fly.io/docs/machines/guides-examples/network-policies/",
+    "https://fly.io/docs/machines/guides-examples/one-app-per-user-why/",
+    "https://fly.io/docs/machines/machine-states/",
+    "https://fly.io/docs/machines/overview",
+    "https://fly.io/docs/machines/overview/",
+    "https://fly.io/docs/machines/runtime-environment/",
+    "https://fly.io/docs/machines/working-with-machines/",
+    "https://fly.io/docs/mcp",
+    "https://fly.io/docs/mcp/access-control/",
+    "https://fly.io/docs/mcp/access-control/flycast/",
+    "https://fly.io/docs/mcp/access-control/http-authorization/",
+    "https://fly.io/docs/mcp/access-control/reverse-proxy/",
+    "https://fly.io/docs/mcp/deploy-on/",
+    "https://fly.io/docs/mcp/deploy-on/container/",
+    "https://fly.io/docs/mcp/deploy-on/fly-machine/",
+    "https://fly.io/docs/mcp/deploy-on/your-app/",
+    "https://fly.io/docs/mcp/deploy-with",
+    "https://fly.io/docs/mcp/deploy-with/",
+    "https://fly.io/docs/mcp/deploy-with/fly-launch/",
+    "https://fly.io/docs/mcp/deploy-with/flyctl-machines/",
+    "https://fly.io/docs/mcp/deploy-with/machines-api/",
+    "https://fly.io/docs/mcp/examples/",
+    "https://fly.io/docs/mcp/flyctl-server/",
+    "https://fly.io/docs/mcp/launch/",
+    "https://fly.io/docs/mcp/transports/",
+    "https://fly.io/docs/mcp/transports/sse/",
+    "https://fly.io/docs/mcp/transports/stdio/",
+    "https://fly.io/docs/mcp/transports/streaming-http/",
+    "https://fly.io/docs/monitoring",
+    "https://fly.io/docs/monitoring/",
+    "https://fly.io/docs/monitoring/error-codes/",
+    "https://fly.io/docs/monitoring/exporting-logs/",
+    "https://fly.io/docs/monitoring/live-tail-logs/",
+    "https://fly.io/docs/monitoring/logging-overview/",
+    "https://fly.io/docs/monitoring/logs-api-options/",
+    "https://fly.io/docs/monitoring/metrics/",
+    "https://fly.io/docs/monitoring/search-logs/",
+    "https://fly.io/docs/monitoring/sentry/",
+    "https://fly.io/docs/mpg",
+    "https://fly.io/docs/mpg/",
+    "https://fly.io/docs/mpg/cluster-configuration/",
+    "https://fly.io/docs/mpg/configuration/",
+    "https://fly.io/docs/mpg/create-and-connect/",
+    "https://fly.io/docs/mpg/extensions/",
+    "https://fly.io/docs/mpg/guides-examples/phoenix-guide/",
+    "https://fly.io/docs/mpg/import/",
+    "https://fly.io/docs/mpg/metrics/",
+    "https://fly.io/docs/networking/",
+    "https://fly.io/docs/networking/app-services/",
+    "https://fly.io/docs/networking/custom-domain/",
+    "https://fly.io/docs/networking/custom-private-networks/",
+    "https://fly.io/docs/networking/dynamic-request-routing/",
+    "https://fly.io/docs/networking/egress-ips/",
+    "https://fly.io/docs/networking/flycast/",
+    "https://fly.io/docs/networking/private-networking/",
+    "https://fly.io/docs/networking/request-headers/",
+    "https://fly.io/docs/networking/services/",
+    "https://fly.io/docs/networking/tls/",
+    "https://fly.io/docs/networking/udp-and-tcp/",
+    "https://fly.io/docs/networking/understanding-cloudflare/",
+    "https://fly.io/docs/python/",
+    "https://fly.io/docs/rails/getting-started/",
+    "https://fly.io/docs/reference/",
+    "https://fly.io/docs/reference/architecture/",
+    "https://fly.io/docs/reference/autoscaling/",
+    "https://fly.io/docs/reference/aws-to-fly-guide/",
+    "https://fly.io/docs/reference/builders/",
+    "https://fly.io/docs/reference/configuration/",
+    "https://fly.io/docs/reference/content-encoding/",
+    "https://fly.io/docs/reference/dynamic-request-routing/",
+    "https://fly.io/docs/reference/extensions_api/",
+    "https://fly.io/docs/reference/fly-launch/",
+    "https://fly.io/docs/reference/fly-proxy-autostop-autostart/",
+    "https://fly.io/docs/reference/fly-proxy/",
+    "https://fly.io/docs/reference/health-checks/",
+    "https://fly.io/docs/reference/load-balancing/",
+    "https://fly.io/docs/reference/machine-migration/",
+    "https://fly.io/docs/reference/openid-connect/",
+    "https://fly.io/docs/reference/regions/",
+    "https://fly.io/docs/reference/regions/#fly-io-regions",
+    "https://fly.io/docs/reference/services/#about-anycast",
+    "https://fly.io/docs/reference/services/#notes-on-networking",
+    "https://fly.io/docs/reference/suspend-resume/",
+    "https://fly.io/docs/rust/",
+    "https://fly.io/docs/security",
+    "https://fly.io/docs/security/",
+    "https://fly.io/docs/security/arcjet/",
+    "https://fly.io/docs/security/org-roles-permissions/",
+    "https://fly.io/docs/security/remove-org-member/",
+    "https://fly.io/docs/security/security-at-fly-io/",
+    "https://fly.io/docs/security/shared-responsibility/",
+    "https://fly.io/docs/security/sso/",
+    "https://fly.io/docs/security/tls-termination/",
+    "https://fly.io/docs/security/tokens/",
+    "https://fly.io/docs/tigris/",
+    "https://fly.io/docs/upstash/redis/",
+    "https://fly.io/docs/volumes/",
+    "https://fly.io/docs/volumes/overview",
+    "https://fly.io/docs/volumes/overview/",
+    "https://fly.io/docs/volumes/snapshots/",
+    "https://fly.io/docs/volumes/volume-manage/",
+    "https://fly.io/docs/volumes/volume-states/",
+    "https://fly.io/infra-log/",
+    "https://fly.io/install.sh",
+    "https://fly.io/javascript-journal/",
+    "https://fly.io/javascript-journal/building-remix-app-locally-with-docker/",
+    "https://fly.io/javascript-journal/ciabatta/",
+    "https://fly.io/javascript-journal/demystify-docker-js/",
+    "https://fly.io/javascript-journal/flame-for-javascript-rethinking-serverless/",
+    "https://fly.io/javascript-journal/remix-with-prisma-postgres/",
+    "https://fly.io/javascript-journal/single-tenant-sqlite-in-tigris/",
+    "https://fly.io/javascript-journal/soar-file-sharing/",
+    "https://fly.io/javascript-journal/websockets-with-nextjs/",
+    "https://fly.io/laravel-bytes/",
+    "https://fly.io/laravel-bytes/ad-hoc-tasks/",
+    "https://fly.io/laravel-bytes/autoscaled-queue-workers/",
+    "https://fly.io/laravel-bytes/custom-laravel-pulse-cards/",
+    "https://fly.io/laravel-bytes/laravel-pulse-machines/",
+    "https://fly.io/laravel-bytes/never-miss-a-webhook/",
+    "https://fly.io/laravel-bytes/streaming-fly-machines/",
+    "https://fly.io/learn/agent-sandbox/",
+    "https://fly.io/learn/cloud-development-environment/",
+    "https://fly.io/learn/development-sandbox/",
+    "https://fly.io/learn/firecracker-vm/",
+    "https://fly.io/learn/golang-hosting/",
+    "https://fly.io/learn/how-does-serverless-hosting-scale/",
+    "https://fly.io/learn/microvm-vs-container/",
+    "https://fly.io/learn/rails-hosting/",
+    "https://fly.io/learn/react-sandbox/",
+    "https://fly.io/learn/rust-hosting/",
+    "https://fly.io/learn/virtual-lab-cloud/",
+    "https://fly.io/learn/virtual-sandbox/",
+    "https://fly.io/learn/what-is-the-best-cloud-for-startups/",
+    "https://fly.io/learn/what-is-the-best-nodejs-hosting/",
+    "https://fly.io/learn/what-is-the-best-postgres-hosting/",
+    "https://fly.io/learn/which-cloud-host-fits-small-teams/",
+    "https://fly.io/legal/privacy-policy/",
+    "https://fly.io/legal/terms-of-service/",
+    "https://fly.io/llms.txt",
+    "https://fly.io/phoenix-files/",
+    "https://fly.io/phoenix-files/clustering-elixir-from-laptop-to-cloud/",
+    "https://fly.io/phoenix-files/easy-at-home-ai-with-bumblebee-and-fly-gpus/",
+    "https://fly.io/phoenix-files/real-world-machine-learning-on-fly-gpu/",
+    "https://fly.io/phoenix-files/what-if-s3-could-be-a-fast-globally-synced-key-value-database-that-s-tigris/",
+    "https://fly.io/phoenix-files/world-page-speed-test-elastic-scale-with-flame/",
+    "https://fly.io/pricing/",
+    "https://fly.io/ruby-dispatch/",
+    "https://fly.io/ruby-dispatch/execute-third-party-code-in-a-rails-app/",
+    "https://fly.io/ruby-dispatch/rails-on-docker-without-docker/",
+    "https://fly.io/ruby-dispatch/sqlite-and-rails-in-production/",
+    "https://formulae.brew.sh/formula/node",
+    "https://github.com/apollographql/apollo-tracing",
+    "https://github.com/superfly/docs/edit/main/flyctl/cmd/fly_auth_login.md",
+    "https://github.com/superfly/docs/edit/main/machines/api/index.html.md",
+    "https://github.com/superfly/docs/edit/main/machines/api/working-with-machines-api.html.markerb",
+    "https://github.com/superfly/docs/edit/main/mcp/deploy-with/machines-api.html.md",
+    "https://github.com/superfly/docs/edit/main/mcp/flyctl-server.html.md",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+Apps%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fmachines%2Fapi%2Fapps-resource%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdo",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+Machines+API%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fmachines%2Fapi%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fmachines%2Fapi%2Findex.html.md%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22Machines+API%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+Working+with+the+Machines+API%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fmachines%2Fapi%2Fworking-with-machines-api%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fmachines%2Fapi%2Fworking-with-machines-api.html.markerb%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22Working+with+the+Machines+API%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+fly+auth+login%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fflyctl%2Fauth-login%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fflyctl%2Fcmd%2Ffly_auth_login.md%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22fly+auth+login%22+doc",
+    "https://github.com/superfly/docs/issues/new?body=I+found+an+issue+with+this+document.%0A%0ATitle%3A+flyctl+mcp+server%0ALocation%3A+https%3A%2F%2Ffly.io%2Fdocs%2Fmcp%2Fflyctl-server%2F%0ASource%3A+https%3A%2F%2Fgithub.com%2Fsuperfly%2Fdocs%2Fblob%2Fmain%2Fmcp%2Fflyctl-server.html.md%0A%0A%23%23%23+Describe+the+issue%0A%0A%3C%21--+Describe+the+issue+and+include+the+section+you%27re+referring+to%2C+if+applicable.+Provide+lots+of+detail+about+the+issue+that+you+found.++--%3E%0A%0A%23%23%23+Additional+info%0A%0A%3C%21--+Add+any+other+context+about+the+issue+here.+If+applicable%2C+add+screenshots+to+help+explain+the+issue.+--%3E%0A&title=Issue+with+the+%22flyctl+mcp+server%22+doc",
+    "https://github.com/superfly/fly-go/blob/main/LICENSE",
+    "https://github.com/superfly/fly-go/blob/main/resource",
+    "https://github.com/superfly/fly-go/blob/main/resource_ip_addresses.go",
+    "https://github.com/superfly/fly-log-shipper",
+    "https://github.com/superfly/flyctl-actions",
+    "https://my-loki-instance.example",
+    "https://sprites.dev/",
+    "https://til.simonwillison.net/fly/undocumented-graphql-api"
+  ]
+}

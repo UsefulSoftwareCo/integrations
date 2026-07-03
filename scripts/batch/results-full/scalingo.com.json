@@ -1,0 +1,592 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "scalingo.com",
+    "detect": {
+      "domain": "scalingo.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:20:42.080Z",
+    "summary": "Scalingo exposes a v1 REST API, a separate authentication API, a database API, an addon-provider API, and a CLI; all programmatic surfaces are authenticated, mostly via Bearer tokens exchanged from a Scalingo API token, while the addon-provider API uses HTTP Basic.",
+    "credentials": {
+      "scalingo_api_token": {
+        "type": "api_key",
+        "label": "Scalingo API token",
+        "generateUrl": "https://dashboard.scalingo.com/account/tokens",
+        "setup": "Go to the [API tokens page](https://dashboard.scalingo.com/account/tokens) in your Scalingo dashboard and create a new token. If you prefer CLI-assisted login, Scalingo’s docs note that CLI login may depend on how your account was created, but the token itself is minted on the dashboard or via the auth API. Keep the raw token secret; it is exchanged for short-lived Bearer tokens before calling the main API.",
+        "acquisition": "manual"
+      },
+      "scalingo_bearer_token": {
+        "type": "bearer",
+        "label": "Scalingo Bearer token",
+        "generateUrl": "https://auth.scalingo.com/v1/tokens/exchange",
+        "setup": "This is a short-lived token obtained by exchanging a Scalingo API token against the authentication API. First mint an API token in the [dashboard](https://dashboard.scalingo.com/account/tokens) or via the auth API, then call `POST https://auth.scalingo.com/v1/tokens/exchange` with HTTP Basic auth using `:<your token>`. The returned `token` value is the Bearer token used on the main API.",
+        "acquisition": "manual"
+      },
+      "scalingo_user_password": {
+        "type": "basic",
+        "label": "Scalingo account username and password",
+        "generateUrl": "https://auth.scalingo.com/users/sign_in",
+        "setup": "Use your Scalingo account credentials on the authentication API when creating or exchanging tokens. If you sign in with GitHub on the web dashboard, the CLI docs say you may need to use the dashboard flow to obtain an API token instead of relying on a password-based login. The auth endpoints accept HTTP Basic auth with your `username:password` pair.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "scalingo-authentication-api",
+        "name": "Scalingo authentication API",
+        "type": "http",
+        "docs": "https://developers.scalingo.com/tokens",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.scalingo.com/tokens"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "scalingo_user_password",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                },
+                {
+                  "id": "scalingo_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.scalingo.com/tokens"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://auth.scalingo.com/v1/"
+      },
+      {
+        "slug": "scalingo-cli",
+        "name": "Scalingo CLI",
+        "type": "cli",
+        "docs": "https://doc.scalingo.com/tools/cli/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://doc.scalingo.com/tools/cli/introduction",
+            "https://doc.scalingo.com/tools/cli/start",
+            "https://github.com/Scalingo/cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "scalingo_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "scalingo login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://doc.scalingo.com/tools/cli/introduction",
+                  "https://doc.scalingo.com/tools/cli/start"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "scalingo_user_password",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "scalingo login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://doc.scalingo.com/tools/cli/introduction",
+                  "https://doc.scalingo.com/tools/cli/start"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "scalingo"
+      },
+      {
+        "slug": "addon-provider-api",
+        "name": "Addon Provider API",
+        "type": "http",
+        "docs": "https://developers.scalingo.com/addon-provider-api/index",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.scalingo.com/addon-provider-api/index"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "scalingo_user_password",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.scalingo.com/addon-provider-api/index"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "database-api",
+        "name": "Database API",
+        "type": "http",
+        "docs": "https://developers.scalingo.com/databases/index",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.scalingo.com/databases/index"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "scalingo_bearer_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.scalingo.com/databases/index"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://$DB_API_URL/api/"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:20:42.081Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 115050,
+    "completion_tokens": 1519,
+    "total_tokens": 116569
+  },
+  "visited": [
+    "https://developers.scalingo.com/",
+    "https://developers.scalingo.com/addon-provider-api/index",
+    "https://developers.scalingo.com/databases/index",
+    "https://developers.scalingo.com/index",
+    "https://developers.scalingo.com/tokens",
+    "https://doc.scalingo.com/tools/cli/introduction",
+    "https://doc.scalingo.com/tools/cli/start",
+    "https://github.com/Scalingo/cli",
+    "https://scalingo.com/blog/announcing-scalingo-api-control-our-platform-as-a",
+    "https://scalingo.com/blog/cli-release-1-10"
+  ],
+  "grounding": [
+    "https://$DB_API_URL/api/databases/my-db-123",
+    "https://$SCALINGO_API_URL/v1/",
+    "https://$SCALINGO_API_URL/v1/apps",
+    "https://$SCALINGO_API_URL/v1/apps/123",
+    "https://$SCALINGO_API_URL/v1/apps/example-app/events?page=4&per_page=20",
+    "https://$SCALINGO_API_URL/v1/apps/name/events?page=2",
+    "https://$SCALINGO_API_URL/v1/projects/pr-82a3cac5-9b25-473e-b33d-6272b87e636f",
+    "https://$SCALINGO_API_URL/v1/users/sign_in",
+    "https://archiveprogram.github.com",
+    "https://auth.scalingo.com/users/sign_in",
+    "https://auth.scalingo.com/users/sign_up",
+    "https://auth.scalingo.com/v1/tokens",
+    "https://auth.scalingo.com/v1/tokens/7212518c-7eb3-47fd-a6da-a627d767d7eb",
+    "https://auth.scalingo.com/v1/tokens/7212518c-7eb3-47fd-a6da-a627d767d7eb/renew",
+    "https://auth.scalingo.com/v1/tokens/[:token_id",
+    "https://auth.scalingo.com/v1/tokens/exchange",
+    "https://cli.scalingo.com",
+    "https://dashboard.scalingo.com",
+    "https://dashboard.scalingo.com/account/tokens",
+    "https://developers.scalingo.com",
+    "https://developers.scalingo.com/",
+    "https://developers.scalingo.com/#changelog",
+    "https://developers.scalingo.com/addon-provider-api",
+    "https://developers.scalingo.com/addon-provider-api/app",
+    "https://developers.scalingo.com/addon-provider-api/index",
+    "https://developers.scalingo.com/addon-provider-api/index#addon-deprovisioning",
+    "https://developers.scalingo.com/addon-provider-api/index#addon-provisioning",
+    "https://developers.scalingo.com/addon-provider-api/index#plan-modification",
+    "https://developers.scalingo.com/addon-provider-api/manifest",
+    "https://developers.scalingo.com/addon-provider-api/manifest.html",
+    "https://developers.scalingo.com/addon_providers",
+    "https://developers.scalingo.com/addons",
+    "https://developers.scalingo.com/addons#get-addon-token",
+    "https://developers.scalingo.com/alerts",
+    "https://developers.scalingo.com/apps",
+    "https://developers.scalingo.com/audit_logs",
+    "https://developers.scalingo.com/autoscalers",
+    "https://developers.scalingo.com/billing",
+    "https://developers.scalingo.com/collaborators",
+    "https://developers.scalingo.com/container_sizes",
+    "https://developers.scalingo.com/cron_tasks",
+    "https://developers.scalingo.com/data_access_consents",
+    "https://developers.scalingo.com/databases/backups",
+    "https://developers.scalingo.com/databases/database_type_versions",
+    "https://developers.scalingo.com/databases/databases",
+    "https://developers.scalingo.com/databases/index",
+    "https://developers.scalingo.com/databases/index#authentication",
+    "https://developers.scalingo.com/databases/index#data-format",
+    "https://developers.scalingo.com/databases/index#database-api",
+    "https://developers.scalingo.com/databases/index#endpoints",
+    "https://developers.scalingo.com/databases/index#get-the-database-id",
+    "https://developers.scalingo.com/databases/logs",
+    "https://developers.scalingo.com/databases/maintenance",
+    "https://developers.scalingo.com/databases/metrics",
+    "https://developers.scalingo.com/databases/status",
+    "https://developers.scalingo.com/databases/users",
+    "https://developers.scalingo.com/databases_dr",
+    "https://developers.scalingo.com/deployments",
+    "https://developers.scalingo.com/domains",
+    "https://developers.scalingo.com/environment",
+    "https://developers.scalingo.com/event_categories",
+    "https://developers.scalingo.com/event_types",
+    "https://developers.scalingo.com/events",
+    "https://developers.scalingo.com/index",
+    "https://developers.scalingo.com/index#authentication",
+    "https://developers.scalingo.com/index#data-format",
+    "https://developers.scalingo.com/index#errors",
+    "https://developers.scalingo.com/index#global-information",
+    "https://developers.scalingo.com/index#pagination",
+    "https://developers.scalingo.com/index#rate-limit",
+    "https://developers.scalingo.com/invoices",
+    "https://developers.scalingo.com/keys",
+    "https://developers.scalingo.com/log_drains",
+    "https://developers.scalingo.com/logs",
+    "https://developers.scalingo.com/manifest",
+    "https://developers.scalingo.com/metrics",
+    "https://developers.scalingo.com/notification_platforms",
+    "https://developers.scalingo.com/notifiers",
+    "https://developers.scalingo.com/one-click/index",
+    "https://developers.scalingo.com/one-off",
+    "https://developers.scalingo.com/operations",
+    "https://developers.scalingo.com/projects",
+    "https://developers.scalingo.com/referral",
+    "https://developers.scalingo.com/regions",
+    "https://developers.scalingo.com/scalingo-json-schema/index",
+    "https://developers.scalingo.com/scm_integrations",
+    "https://developers.scalingo.com/scm_repo_link",
+    "https://developers.scalingo.com/sources",
+    "https://developers.scalingo.com/stacks",
+    "https://developers.scalingo.com/tokens",
+    "https://developers.scalingo.com/tokens#create-a-token",
+    "https://developers.scalingo.com/tokens#delete-a-token",
+    "https://developers.scalingo.com/tokens#exchange-a-token-for-a-bearer-token",
+    "https://developers.scalingo.com/tokens#list-your-tokens",
+    "https://developers.scalingo.com/tokens#regenerate-a-token",
+    "https://developers.scalingo.com/tokens.html",
+    "https://developers.scalingo.com/user",
+    "https://doc.scalingo.com/",
+    "https://doc.scalingo.com/changelog",
+    "https://doc.scalingo.com/dat",
+    "https://doc.scalingo.com/databases",
+    "https://doc.scalingo.com/databases/about/architecture-models",
+    "https://doc.scalingo.com/databases/about/backup-policies",
+    "https://doc.scalingo.com/databases/about/database-dashboard",
+    "https://doc.scalingo.com/databases/about/features",
+    "https://doc.scalingo.com/databases/about/maintenance-windows",
+    "https://doc.scalingo.com/databases/about/network-exposure",
+    "https://doc.scalingo.com/databases/about/overview",
+    "https://doc.scalingo.com/databases/about/service-classes",
+    "https://doc.scalingo.com/databases/mongodb/compass",
+    "https://doc.scalingo.com/databases/mongodb/dump-restore",
+    "https://doc.scalingo.com/databases/mongodb/start",
+    "https://doc.scalingo.com/databases/mongodb/studio3t",
+    "https://doc.scalingo.com/databases/mysql/about/features",
+    "https://doc.scalingo.com/databases/mysql/about/limitations",
+    "https://doc.scalingo.com/databases/mysql/about/overview",
+    "https://doc.scalingo.com/databases/mysql/getting-started/accessing",
+    "https://doc.scalingo.com/databases/mysql/getting-started/connecting",
+    "https://doc.scalingo.com/databases/mysql/getting-started/provisioning",
+    "https://doc.scalingo.com/databases/mysql/guides/backing-up",
+    "https://doc.scalingo.com/databases/mysql/guides/changing-plan",
+    "https://doc.scalingo.com/databases/mysql/guides/managing-users",
+    "https://doc.scalingo.com/databases/mysql/guides/monitoring",
+    "https://doc.scalingo.com/databases/mysql/guides/mysql-8-prerequisites",
+    "https://doc.scalingo.com/databases/mysql/guides/mysql-84-prerequisites",
+    "https://doc.scalingo.com/databases/mysql/guides/restoring",
+    "https://doc.scalingo.com/databases/mysql/guides/upgrading",
+    "https://doc.scalingo.com/databases/mysql/guides/using-multiple-databases",
+    "https://doc.scalingo.com/databases/mysql/guides/working-with-sql-modes",
+    "https://doc.scalingo.com/databases/mysql/troubleshooting",
+    "https://doc.scalingo.com/databases/opensearch/about/features",
+    "https://doc.scalingo.com/databases/opensearch/about/limitations",
+    "https://doc.scalingo.com/databases/opensearch/about/overview",
+    "https://doc.scalingo.com/databases/opensearch/getting-started/accessing",
+    "https://doc.scalingo.com/databases/opensearch/getting-started/connecting",
+    "https://doc.scalingo.com/databases/opensearch/getting-started/provisioning",
+    "https://doc.scalingo.com/databases/opensearch/guides/backing-up",
+    "https://doc.scalingo.com/databases/opensearch/guides/changing-plan",
+    "https://doc.scalingo.com/databases/opensearch/guides/ingesting-logs/logstash",
+    "https://doc.scalingo.com/databases/opensearch/guides/ingesting-logs/opensearch-dashboards",
+    "https://doc.scalingo.com/databases/opensearch/guides/ingesting-logs/overview",
+    "https://doc.scalingo.com/databases/opensearch/guides/managing-indexes",
+    "https://doc.scalingo.com/databases/opensearch/guides/managing-users",
+    "https://doc.scalingo.com/databases/opensearch/guides/monitoring",
+    "https://doc.scalingo.com/databases/opensearch/guides/restoring",
+    "https://doc.scalingo.com/databases/postgresql/about/features",
+    "https://doc.scalingo.com/databases/postgresql/about/ha",
+    "https://doc.scalingo.com/databases/postgresql/about/limitations",
+    "https://doc.scalingo.com/databases/postgresql/about/overview",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/getting-started/accessing",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/getting-started/connecting",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/getting-started/endpoints",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/getting-started/provisioning",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/guides/backing-up",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/guides/changing-plan",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/guides/managing-collaborators",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/guides/managing-users",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/guides/monitoring",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/guides/restoring",
+    "https://doc.scalingo.com/databases/postgresql/dedicated-resources/guides/upgrading",
+    "https://doc.scalingo.com/databases/postgresql/extensions/managing-extensions",
+    "https://doc.scalingo.com/databases/postgresql/extensions/pgvector",
+    "https://doc.scalingo.com/databases/postgresql/extensions/postgis",
+    "https://doc.scalingo.com/databases/postgresql/extensions/postgresql-anonymizer",
+    "https://doc.scalingo.com/databases/postgresql/extensions/timescaledb",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/getting-started/accessing",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/getting-started/connecting",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/getting-started/provisioning",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/guides/backing-up",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/guides/changing-plan",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/guides/managing-users",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/guides/monitoring",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/guides/restoring",
+    "https://doc.scalingo.com/databases/postgresql/shared-resources/guides/upgrading",
+    "https://doc.scalingo.com/databases/postgresql/troubleshooting",
+    "https://doc.scalingo.com/databases/redis/data-import",
+    "https://doc.scalingo.com/databases/redis/dump-restore",
+    "https://doc.scalingo.com/databases/redis/start",
+    "https://doc.scalingo.com/languages/clojure/start",
+    "https://doc.scalingo.com/languages/elixir/start",
+    "https://doc.scalingo.com/languages/go/gomod",
+    "https://doc.scalingo.com/languages/go/start",
+    "https://doc.scalingo.com/languages/java/gradle",
+    "https://doc.scalingo.com/languages/java/spring-boot",
+    "https://doc.scalingo.com/languages/java/start",
+    "https://doc.scalingo.com/languages/java/war",
+    "https://doc.scalingo.com/languages/meteorjs/npm",
+    "https://doc.scalingo.com/languages/meteorjs/sending-emails",
+    "https://doc.scalingo.com/languages/meteorjs/start",
+    "https://doc.scalingo.com/languages/meteorjs/telescope",
+    "https://doc.scalingo.com/languages/meteorjs/tutorial",
+    "https://doc.scalingo.com/languages/nodejs/angular",
+    "https://doc.scalingo.com/languages/nodejs/deployment-errors",
+    "https://doc.scalingo.com/languages/nodejs/nextjs-standalone",
+    "https://doc.scalingo.com/languages/nodejs/puppeteer",
+    "https://doc.scalingo.com/languages/nodejs/start",
+    "https://doc.scalingo.com/languages/nodejs/tutorial",
+    "https://doc.scalingo.com/languages/nodejs/websocket-web-same-port",
+    "https://doc.scalingo.com/languages/nodejs/yarn-2",
+    "https://doc.scalingo.com/languages/php/basic-auth",
+    "https://doc.scalingo.com/languages/php/blackfire",
+    "https://doc.scalingo.com/languages/php/codeigniter",
+    "https://doc.scalingo.com/languages/php/dependencies",
+    "https://doc.scalingo.com/languages/php/environment",
+    "https://doc.scalingo.com/languages/php/extensions",
+    "https://doc.scalingo.com/languages/php/ips-filtering",
+    "https://doc.scalingo.com/languages/php/laravel",
+    "https://doc.scalingo.com/languages/php/php-nodejs",
+    "https://doc.scalingo.com/languages/php/php-session-redis",
+    "https://doc.scalingo.com/languages/php/sending-emails",
+    "https://doc.scalingo.com/languages/php/start",
+    "https://doc.scalingo.com/languages/php/symfony",
+    "https://doc.scalingo.com/languages/php/tutorial",
+    "https://doc.scalingo.com/languages/python/celery-flask",
+    "https://doc.scalingo.com/languages/python/django/start",
+    "https://doc.scalingo.com/languages/python/nltk",
+    "https://doc.scalingo.com/languages/python/sqlalchemy",
+    "https://doc.scalingo.com/languages/python/start",
+    "https://doc.scalingo.com/languages/ruby/bundle-gemfile-on-windows",
+    "https://doc.scalingo.com/languages/ruby/bundler-configuration",
+    "https://doc.scalingo.com/languages/ruby/common-mistakes",
+    "https://doc.scalingo.com/languages/ruby/delayed-job",
+    "https://doc.scalingo.com/languages/ruby/getting-started-with-ruby",
+    "https://doc.scalingo.com/languages/ruby/mongoid",
+    "https://doc.scalingo.com/languages/ruby/private-gem-from-git-on-scalingo",
+    "https://doc.scalingo.com/languages/ruby/private-gem-from-github-on-scalingo",
+    "https://doc.scalingo.com/languages/ruby/rails/redis-cache",
+    "https://doc.scalingo.com/languages/ruby/rails/solid-queue",
+    "https://doc.scalingo.com/languages/ruby/rails/start",
+    "https://doc.scalingo.com/languages/ruby/sidekiq",
+    "https://doc.scalingo.com/languages/ruby/start",
+    "https://doc.scalingo.com/languages/scala/scalatra/start",
+    "https://doc.scalingo.com/languages/scala/start",
+    "https://doc.scalingo.com/samples",
+    "https://doc.scalingo.com/tools/cli/introduction",
+    "https://doc.scalingo.com/tools/cli/start",
+    "https://doc.scalingo.com/tutorials",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/Scalingo",
+    "https://github.com/Scalingo/cli",
+    "https://github.com/Scalingo/cli/actions",
+    "https://github.com/Scalingo/cli/branches",
+    "https://github.com/Scalingo/cli/commit/4624e40ae9fef1c772d4c8dcf3dc882cb1c1646a",
+    "https://github.com/Scalingo/cli/commit/5a00579033a9a8a0663ddc385c081b3f9ac85c42",
+    "https://github.com/Scalingo/cli/commit/5ec0fed804b348954fbb7ce82cab11dc64f3bce7",
+    "https://github.com/Scalingo/cli/commit/76d5e5a26ab8cbb4c7ac08cc591f74f898ed9b29",
+    "https://github.com/Scalingo/cli/commit/8526fbab8c2575c42afd728f4dbdc695b0d64b6b",
+    "https://github.com/Scalingo/cli/commit/8aac9343415ae99df74bf4dc88443ab85de0cc8c",
+    "https://github.com/Scalingo/cli/commit/d3d0153ad0bb09d564b3f5c565fdf8e8c022a111",
+    "https://github.com/Scalingo/cli/commit/db5a72738f223d51f2c6f98aeffab396ecabd07f",
+    "https://github.com/Scalingo/cli/commit/e56bc56efc6ee4cf9a2f02f81480a732c55a135c",
+    "https://github.com/Scalingo/cli/commit/ecfa39d622592676fa1adfb1f9a0167df430d441",
+    "https://github.com/Scalingo/cli/commit/f63f5231d3c4c37fd860d9d1325481012858418a",
+    "https://github.com/Scalingo/cli/commits/master/",
+    "https://github.com/Scalingo/cli/commits?author=github-actions%5Bbot%5D",
+    "https://github.com/Scalingo/cli/issues",
+    "https://github.com/Scalingo/cli/projects",
+    "https://github.com/Scalingo/cli/pull/1184",
+    "https://github.com/Scalingo/cli/pull/1237",
+    "https://github.com/Scalingo/cli/pulls",
+    "https://github.com/Scalingo/cli/pulse",
+    "https://github.com/Scalingo/cli/security",
+    "https://github.com/Scalingo/cli/tags",
+    "https://github.com/Scalingo/cli/tree/master/.github",
+    "https://github.com/Scalingo/cli/tree/master/.sclng",
+    "https://github.com/Scalingo/cli/tree/master/addonproviders",
+    "https://github.com/Scalingo/cli/tree/master/addons",
+    "https://github.com/Scalingo/cli/tree/master/alerts",
+    "https://github.com/Scalingo/cli/tree/master/apps",
+    "https://github.com/Scalingo/cli/tree/master/autoscalers",
+    "https://github.com/Scalingo/cli/tree/master/cmd",
+    "https://github.com/Scalingo/cli/tree/master/collaborators",
+    "https://github.com/Scalingo/cli/tree/master/config",
+    "https://github.com/Scalingo/cli/tree/master/crontasks",
+    "https://github.com/Scalingo/cli/tree/master/crypto/sshkeys",
+    "https://github.com/Scalingo/cli/tree/master/db",
+    "https://github.com/Scalingo/cli/tree/master/dbng",
+    "https://github.com/Scalingo/cli/tree/master/deployments",
+    "https://github.com/Scalingo/cli/tree/master/detect",
+    "https://github.com/Scalingo/cli/tree/master/dists",
+    "https://github.com/Scalingo/cli/tree/master/domains",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/goreleaser/goreleaser-action",
+    "https://github.com/goreleaser/goreleaser-action/compare/v6...v7",
+    "https://github.com/goreleaser/goreleaser-action/releases",
+    "https://github.com/login?return_to=%2FScalingo%2Fcli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FScalingo%2Fcli",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=Scalingo%2Fcli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://maintainers.github.com",
+    "https://my.scalingo.com",
+    "https://my.scalingo.com/apps/billing",
+    "https://scalingo.com",
+    "https://scalingo.com/blog/announcing-scalingo-api-control-our-platform-as-a",
+    "https://scalingo.com/blog/cli-release-1-10",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://user:password@addonhost.com/scalingo/resources",
+    "https://user:password@addonhost.com/scalingo/resources/:id",
+    "https://www.notion.so/scalingooriginal/STORY-3557",
+    "https://youraddon.com/resources",
+    "https://youraddon.com/resources/addon-id-1"
+  ]
+}

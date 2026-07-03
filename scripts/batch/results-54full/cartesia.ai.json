@@ -1,0 +1,600 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "cartesia.ai",
+    "detect": {
+      "domain": "cartesia.ai",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:11:59.105Z",
+    "summary": "Cartesia exposes a versioned HTTPS API at `https://api.cartesia.ai` (including realtime WebSocket endpoints), a public unauthenticated API status endpoint, a hosted MCP server at `https://mcp.cartesia.ai/mcp`, and a local `cartesia-mcp` CLI/server package authenticated with Cartesia credentials.",
+    "description": "Cartesia provides voice AI APIs and tools for text-to-speech, speech-to-text, voice cloning/localization, and conversational agents. Its platform includes developer APIs plus hosted and local MCP access for AI clients.",
+    "credentials": {
+      "cartesia_api_key": {
+        "type": "api_key",
+        "label": "Cartesia API key",
+        "generateUrl": "https://play.cartesia.ai/keys",
+        "setup": "Create an API key in the [Cartesia Playground keys page](https://play.cartesia.ai/keys). Use it from trusted server-side environments; docs show it in either the `Authorization: Bearer <api_key>` header or the `X-Api-Key` header. The key format is `sk_car_...`.",
+        "acquisition": "manual"
+      },
+      "cartesia_admin_api_key": {
+        "type": "api_key",
+        "label": "Cartesia admin API key",
+        "generateUrl": "https://play.cartesia.ai/keys/admin",
+        "setup": "If you are an organization admin, create an admin API key at the [Cartesia Playground admin keys page](https://play.cartesia.ai/keys/admin). These keys are separate from standard API keys, use the format `sk_car_admin_...`, and are required for admin routes such as usage and API-key metadata. Send them as `Authorization: Bearer <admin_api_key>`.",
+        "acquisition": "manual"
+      },
+      "cartesia_access_token": {
+        "type": "bearer",
+        "label": "Cartesia short-lived access token",
+        "generateUrl": "https://docs.cartesia.ai/api-reference/auth/access-token",
+        "setup": "Generate a short-lived access token from your server by calling the [Generate a New Access Token](https://docs.cartesia.ai/api-reference/auth/access-token) endpoint with your Cartesia API key, then return that token to your browser client. Request the grants you need, such as `tts`, `stt`, or `agent`. Use this token in client-side apps instead of exposing an API key.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "cartesia-api",
+        "name": "Cartesia API",
+        "type": "http",
+        "docs": "https://docs.cartesia.ai/use-the-api/api-conventions",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.cartesia.ai/use-the-api/api-conventions",
+            "https://docs.cartesia.ai/api-reference/tts/bytes",
+            "https://docs.cartesia.ai/api-reference/auth/access-token",
+            "https://docs.cartesia.ai/api-reference/agents/agents/list.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cartesia_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.cartesia.ai/use-the-api/api-conventions",
+                  "https://docs.cartesia.ai/api-reference/auth/access-token",
+                  "https://docs.cartesia.ai/api-reference/agents/agents/list.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cartesia_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Api-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.cartesia.ai/get-started/authenticate-your-client-applications"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cartesia_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.cartesia.ai/get-started/authenticate-your-client-applications",
+                  "https://docs.cartesia.ai/api-reference/tts/bytes"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cartesia_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.cartesia.ai/get-started/authenticate-your-client-applications"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "cartesia_admin_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.cartesia.ai/use-the-api/api-conventions",
+                  "https://docs.cartesia.ai/api-reference/api-keys/get",
+                  "https://docs.cartesia.ai/api-reference/usage/credits.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.cartesia.ai",
+        "requiredHeaders": [
+          {
+            "name": "Cartesia-Version",
+            "source": {
+              "kind": "static",
+              "value": "2026-03-01"
+            },
+            "description": "API version header required on requests; for WebSockets, `?cartesia_version` can be used instead."
+          }
+        ]
+      },
+      {
+        "slug": "cartesia-api-status-endpoint",
+        "name": "Cartesia API status endpoint",
+        "type": "http",
+        "docs": "https://docs.cartesia.ai/api-reference/api-status/get",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.cartesia.ai/api-reference/api-status/get"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.cartesia.ai/api-reference/api-status/get"
+            ]
+          }
+        },
+        "url": "https://api.cartesia.ai/"
+      },
+      {
+        "slug": "cartesia-hosted-mcp-server",
+        "name": "Cartesia hosted MCP server",
+        "type": "mcp",
+        "docs": "https://docs.cartesia.ai/tools/ai/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.cartesia.ai/tools/ai/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cartesia_access_token",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.cartesia.ai/tools/ai/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.cartesia.ai/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "cartesia-mcp",
+        "name": "cartesia-mcp",
+        "type": "cli",
+        "docs": "https://docs.cartesia.ai/tools/ai/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.cartesia.ai/tools/ai/mcp"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cartesia_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "uvx cartesia-mcp",
+                    "env": [
+                      "CARTESIA_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.cartesia.ai/tools/ai/mcp"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "add-mcp",
+            "runtimeHint": "npx"
+          },
+          {
+            "registryType": "pypi",
+            "identifier": "cartesia-mcp",
+            "runtimeHint": "uvx"
+          }
+        ],
+        "command": "uvx cartesia-mcp"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:11:59.105Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 150397,
+    "completion_tokens": 2012,
+    "total_tokens": 152409
+  },
+  "visited": [
+    "https://docs.cartesia.ai/api-reference/agents/agents/list.md",
+    "https://docs.cartesia.ai/api-reference/agents/websocket.md",
+    "https://docs.cartesia.ai/api-reference/api-keys/get",
+    "https://docs.cartesia.ai/api-reference/api-status/get",
+    "https://docs.cartesia.ai/api-reference/auth/access-token",
+    "https://docs.cartesia.ai/api-reference/tts/bytes",
+    "https://docs.cartesia.ai/api-reference/tts/websocket",
+    "https://docs.cartesia.ai/api-reference/usage/credits.md",
+    "https://docs.cartesia.ai/get-started/authenticate-your-client-applications",
+    "https://docs.cartesia.ai/get-started/make-an-api-request",
+    "https://docs.cartesia.ai/get-started/overview",
+    "https://docs.cartesia.ai/get-started/realtime-text-to-speech-quickstart",
+    "https://docs.cartesia.ai/llms.txt",
+    "https://docs.cartesia.ai/tools/ai/mcp",
+    "https://docs.cartesia.ai/tools/client-libraries",
+    "https://docs.cartesia.ai/use-the-api/api-conventions",
+    "https://gist.github.com/numman-ali/4e7a654af593fd157c9bdde3e9a5cf38?permalink_comment_id=5951625",
+    "https://github.com/api-evangelist/together-ai",
+    "https://github.com/b0xtch/cartesia",
+    "https://github.com/cartesia-ai/cartesia-python/blob/main/CHANGELOG.md",
+    "https://github.com/cartesia-ai/skills",
+    "https://github.com/tryAGI/Cartesia"
+  ],
+  "grounding": [
+    "https://api.cartesia.ai",
+    "https://api.cartesia.ai/",
+    "https://api.cartesia.ai/access-token",
+    "https://api.cartesia.ai/api-keys/{id}",
+    "https://api.cartesia.ai/stt",
+    "https://api.cartesia.ai/tts/bytes",
+    "https://cartesia.ai/",
+    "https://discord.gg/cartesia",
+    "https://docs.anthropic.com/en/api/versioning",
+    "https://docs.astral.sh/uv/",
+    "https://docs.cartesia.ai/#1-token-generation-server-side",
+    "https://docs.cartesia.ai/#2-token-storage-client-side",
+    "https://docs.cartesia.ai/#3-making-authenticated-requests-using-the-api",
+    "https://docs.cartesia.ai/#4-token-refresh-strategy",
+    "https://docs.cartesia.ai/#additional-resources",
+    "https://docs.cartesia.ai/#admin-api-key",
+    "https://docs.cartesia.ai/#always-send-a-cartesia-version-header",
+    "https://docs.cartesia.ai/#api-version",
+    "https://docs.cartesia.ai/#authorization-authorization",
+    "https://docs.cartesia.ai/#available-grants",
+    "https://docs.cartesia.ai/#body-expires-in-one-of-0",
+    "https://docs.cartesia.ai/#body-generation-config",
+    "https://docs.cartesia.ai/#body-grants-one-of-0",
+    "https://docs.cartesia.ai/#body-language-one-of-0",
+    "https://docs.cartesia.ai/#body-model-id",
+    "https://docs.cartesia.ai/#body-output-format",
+    "https://docs.cartesia.ai/#body-pronunciation-dict-id-one-of-0",
+    "https://docs.cartesia.ai/#body-speed",
+    "https://docs.cartesia.ai/#body-transcript",
+    "https://docs.cartesia.ai/#body-voice",
+    "https://docs.cartesia.ai/#browser-apps-use-access-tokens",
+    "https://docs.cartesia.ai/#check-response-codes",
+    "https://docs.cartesia.ai/#client-side",
+    "https://docs.cartesia.ai/#content-area",
+    "https://docs.cartesia.ai/#how-it-works",
+    "https://docs.cartesia.ai/#implementation-guide",
+    "https://docs.cartesia.ai/#install",
+    "https://docs.cartesia.ai/#local-audio-files",
+    "https://docs.cartesia.ai/#output-directory",
+    "https://docs.cartesia.ai/#parameter-cartesia-version",
+    "https://docs.cartesia.ai/#parameter-id",
+    "https://docs.cartesia.ai/#parse-structured-error-responses",
+    "https://docs.cartesia.ai/#pass-data-according-to-the-method",
+    "https://docs.cartesia.ai/#prerequisites",
+    "https://docs.cartesia.ai/#requirements",
+    "https://docs.cartesia.ai/#response-created-at",
+    "https://docs.cartesia.ai/#response-creator-email-one-of-0",
+    "https://docs.cartesia.ai/#response-creator-image-url-one-of-0",
+    "https://docs.cartesia.ai/#response-creator-still-in-org-one-of-0",
+    "https://docs.cartesia.ai/#response-description",
+    "https://docs.cartesia.ai/#response-id",
+    "https://docs.cartesia.ai/#response-ok",
+    "https://docs.cartesia.ai/#response-token",
+    "https://docs.cartesia.ai/#response-version",
+    "https://docs.cartesia.ai/#security-best-practices",
+    "https://docs.cartesia.ai/#server-side",
+    "https://docs.cartesia.ai/#server-side-apps-use-api-keys",
+    "https://docs.cartesia.ai/#setup",
+    "https://docs.cartesia.ai/#start-here",
+    "https://docs.cartesia.ai/#stream-text-and-play-audio",
+    "https://docs.cartesia.ai/#tools",
+    "https://docs.cartesia.ai/#try-it",
+    "https://docs.cartesia.ai/#use-access-tokens-when-making-requests-from-a-client-app",
+    "https://docs.cartesia.ai/#use-admin-api-keys-for-management-endpoints",
+    "https://docs.cartesia.ai/#use-api-keys-when-making-requests-from-a-server",
+    "https://docs.cartesia.ai/#what%E2%80%99s-next",
+    "https://docs.cartesia.ai/#what’s-next",
+    "https://docs.cartesia.ai/api-reference/agents/agents/delete.md",
+    "https://docs.cartesia.ai/api-reference/agents/agents/get.md",
+    "https://docs.cartesia.ai/api-reference/agents/agents/list.md",
+    "https://docs.cartesia.ai/api-reference/agents/agents/phone-numbers.md",
+    "https://docs.cartesia.ai/api-reference/agents/agents/templates.md",
+    "https://docs.cartesia.ai/api-reference/agents/agents/update.md",
+    "https://docs.cartesia.ai/api-reference/agents/call-batches/cancel-call-batch.md",
+    "https://docs.cartesia.ai/api-reference/agents/call-batches/create-call-batch.md",
+    "https://docs.cartesia.ai/api-reference/agents/call-batches/get-call-batch.md",
+    "https://docs.cartesia.ai/api-reference/agents/call-batches/list-call-batches.md",
+    "https://docs.cartesia.ai/api-reference/agents/call-batches/retry-call-batch.md",
+    "https://docs.cartesia.ai/api-reference/agents/calls/cancel-call.md",
+    "https://docs.cartesia.ai/api-reference/agents/calls/create-outbound-call.md",
+    "https://docs.cartesia.ai/api-reference/agents/calls/delete-call.md",
+    "https://docs.cartesia.ai/api-reference/agents/calls/download-call-audio.md",
+    "https://docs.cartesia.ai/api-reference/agents/calls/get-call-logs.md",
+    "https://docs.cartesia.ai/api-reference/agents/calls/get-call.md",
+    "https://docs.cartesia.ai/api-reference/agents/calls/list-calls.md",
+    "https://docs.cartesia.ai/api-reference/agents/deployments/get-deployment.md",
+    "https://docs.cartesia.ai/api-reference/agents/deployments/list-deployments.md",
+    "https://docs.cartesia.ai/api-reference/agents/documents/create-bulk.md",
+    "https://docs.cartesia.ai/api-reference/agents/documents/create.md",
+    "https://docs.cartesia.ai/api-reference/agents/documents/delete.md",
+    "https://docs.cartesia.ai/api-reference/agents/documents/get.md",
+    "https://docs.cartesia.ai/api-reference/agents/documents/list.md",
+    "https://docs.cartesia.ai/api-reference/agents/documents/update.md",
+    "https://docs.cartesia.ai/api-reference/agents/folders/create.md",
+    "https://docs.cartesia.ai/api-reference/agents/folders/delete.md",
+    "https://docs.cartesia.ai/api-reference/agents/folders/get.md",
+    "https://docs.cartesia.ai/api-reference/agents/folders/list.md",
+    "https://docs.cartesia.ai/api-reference/agents/folders/update.md",
+    "https://docs.cartesia.ai/api-reference/agents/metrics/add-metric-to-agent.md",
+    "https://docs.cartesia.ai/api-reference/agents/metrics/create-metric.md",
+    "https://docs.cartesia.ai/api-reference/agents/metrics/delete-metric.md",
+    "https://docs.cartesia.ai/api-reference/agents/metrics/export-metric-results.md",
+    "https://docs.cartesia.ai/api-reference/agents/metrics/get-metric.md",
+    "https://docs.cartesia.ai/api-reference/agents/metrics/list-metric-results.md",
+    "https://docs.cartesia.ai/api-reference/agents/metrics/list-metrics.md",
+    "https://docs.cartesia.ai/api-reference/agents/metrics/remove-metric-from-agent.md",
+    "https://docs.cartesia.ai/api-reference/agents/phone-numbers/delete.md",
+    "https://docs.cartesia.ai/api-reference/agents/phone-numbers/get.md",
+    "https://docs.cartesia.ai/api-reference/agents/phone-numbers/import.md",
+    "https://docs.cartesia.ai/api-reference/agents/phone-numbers/list.md",
+    "https://docs.cartesia.ai/api-reference/agents/phone-numbers/provision.md",
+    "https://docs.cartesia.ai/api-reference/agents/phone-numbers/update.md",
+    "https://docs.cartesia.ai/api-reference/agents/providers/create.md",
+    "https://docs.cartesia.ai/api-reference/agents/providers/delete.md",
+    "https://docs.cartesia.ai/api-reference/agents/providers/get.md",
+    "https://docs.cartesia.ai/api-reference/agents/providers/list.md",
+    "https://docs.cartesia.ai/api-reference/agents/providers/update.md",
+    "https://docs.cartesia.ai/api-reference/agents/webhooks/create.md",
+    "https://docs.cartesia.ai/api-reference/agents/webhooks/delete",
+    "https://docs.cartesia.ai/api-reference/agents/webhooks/delete.md",
+    "https://docs.cartesia.ai/api-reference/agents/webhooks/get.md",
+    "https://docs.cartesia.ai/api-reference/agents/webhooks/list.md",
+    "https://docs.cartesia.ai/api-reference/agents/webhooks/update.md",
+    "https://docs.cartesia.ai/api-reference/agents/websocket.md",
+    "https://docs.cartesia.ai/api-reference/api-keys/get",
+    "https://docs.cartesia.ai/api-reference/api-keys/get.md",
+    "https://docs.cartesia.ai/api-reference/api-keys/list",
+    "https://docs.cartesia.ai/api-reference/api-keys/list.md",
+    "https://docs.cartesia.ai/api-reference/api-status/get",
+    "https://docs.cartesia.ai/api-reference/api-status/get.md",
+    "https://docs.cartesia.ai/api-reference/auth/access-token",
+    "https://docs.cartesia.ai/api-reference/auth/access-token.md",
+    "https://docs.cartesia.ai/api-reference/datasets/create",
+    "https://docs.cartesia.ai/api-reference/datasets/create.md",
+    "https://docs.cartesia.ai/api-reference/datasets/delete",
+    "https://docs.cartesia.ai/api-reference/datasets/delete-file",
+    "https://docs.cartesia.ai/api-reference/datasets/delete-file.md",
+    "https://docs.cartesia.ai/api-reference/datasets/delete.md",
+    "https://docs.cartesia.ai/api-reference/datasets/get",
+    "https://docs.cartesia.ai/api-reference/datasets/get.md",
+    "https://docs.cartesia.ai/api-reference/datasets/list",
+    "https://docs.cartesia.ai/api-reference/datasets/list-files",
+    "https://docs.cartesia.ai/api-reference/datasets/list-files.md",
+    "https://docs.cartesia.ai/api-reference/datasets/list.md",
+    "https://docs.cartesia.ai/api-reference/datasets/update",
+    "https://docs.cartesia.ai/api-reference/datasets/update.md",
+    "https://docs.cartesia.ai/api-reference/datasets/upload-file",
+    "https://docs.cartesia.ai/api-reference/datasets/upload-file.md",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/create",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/create.md",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/delete",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/delete.md",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/get",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/get.md",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/list",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/list-voices",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/list-voices.md",
+    "https://docs.cartesia.ai/api-reference/fine-tunes/list.md",
+    "https://docs.cartesia.ai/api-reference/infill/bytes",
+    "https://docs.cartesia.ai/api-reference/infill/bytes.md",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/create",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/create.md",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/delete",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/delete.md",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/get",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/get.md",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/list",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/list.md",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/update",
+    "https://docs.cartesia.ai/api-reference/pronunciation-dicts/update.md",
+    "https://docs.cartesia.ai/api-reference/stt/transcribe",
+    "https://docs.cartesia.ai/api-reference/stt/transcribe.md",
+    "https://docs.cartesia.ai/api-reference/stt/turns/websocket",
+    "https://docs.cartesia.ai/api-reference/stt/turns/websocket.md",
+    "https://docs.cartesia.ai/api-reference/stt/websocket",
+    "https://docs.cartesia.ai/api-reference/stt/websocket.md",
+    "https://docs.cartesia.ai/api-reference/tts/bytes",
+    "https://docs.cartesia.ai/api-reference/tts/bytes.md",
+    "https://docs.cartesia.ai/api-reference/tts/sse",
+    "https://docs.cartesia.ai/api-reference/tts/sse.md",
+    "https://docs.cartesia.ai/api-reference/tts/websocket",
+    "https://docs.cartesia.ai/api-reference/tts/websocket.md",
+    "https://docs.cartesia.ai/api-reference/usage/agents",
+    "https://docs.cartesia.ai/api-reference/usage/agents.md",
+    "https://docs.cartesia.ai/api-reference/usage/credits",
+    "https://docs.cartesia.ai/api-reference/usage/credits.md",
+    "https://docs.cartesia.ai/api-reference/voice-changer/bytes",
+    "https://docs.cartesia.ai/api-reference/voice-changer/bytes.md",
+    "https://docs.cartesia.ai/api-reference/voice-changer/sse",
+    "https://docs.cartesia.ai/api-reference/voice-changer/sse.md",
+    "https://docs.cartesia.ai/api-reference/voices/clone",
+    "https://docs.cartesia.ai/api-reference/voices/clone.md",
+    "https://docs.cartesia.ai/api-reference/voices/delete",
+    "https://docs.cartesia.ai/api-reference/voices/delete.md",
+    "https://docs.cartesia.ai/api-reference/voices/get",
+    "https://docs.cartesia.ai/api-reference/voices/get.md",
+    "https://docs.cartesia.ai/api-reference/voices/list",
+    "https://docs.cartesia.ai/api-reference/voices/list.md",
+    "https://docs.cartesia.ai/api-reference/voices/localize",
+    "https://docs.cartesia.ai/api-reference/voices/localize.md",
+    "https://docs.cartesia.ai/api-reference/voices/update",
+    "https://docs.cartesia.ai/api-reference/voices/update.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/choosing-a-voice.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/clone-voices-pro.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/clone-voices.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/custom-pronunciations",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/custom-pronunciations.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/multilingual-voices.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/prompting-tips",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/prompting-tips.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/ssml-tags",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/ssml-tags.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/stream-inputs-using-continuations",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/stream-inputs-using-continuations.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/tts-output-audio-format",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/tts-output-audio-format.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/tts.md",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/volume-speed-emotion",
+    "https://docs.cartesia.ai/build-with-cartesia/capability-guides/volume-speed-emotion.md",
+    "https://docs.cartesia.ai/build-with-cartesia/stt/audio-input",
+    "https://docs.cartesia.ai/build-with-cartesia/stt/audio-input.md",
+    "https://docs.cartesia.ai/build-with-cartesia/stt/guides.md",
+    "https://docs.cartesia.ai/build-with-cartesia/stt/latest",
+    "https://docs.cartesia.ai/build-with-cartesia/stt/latest.md",
+    "https://docs.cartesia.ai/build-with-cartesia/stt/older-models",
+    "https://docs.cartesia.ai/build-with-cartesia/stt/older-models.md",
+    "https://docs.cartesia.ai/build-with-cartesia/tts-models/api-changes.md",
+    "https://docs.cartesia.ai/build-with-cartesia/tts-models/latest",
+    "https://docs.cartesia.ai/build-with-cartesia/tts-models/latest.md",
+    "https://docs.cartesia.ai/build-with-cartesia/tts-models/older-models.md",
+    "https://docs.cartesia.ai/build-with-cartesia/tts-models/sonic-3-to-sonic-3-5",
+    "https://docs.cartesia.ai/build-with-cartesia/tts-models/sonic-3-to-sonic-3-5.md",
+    "https://docs.cartesia.ai/changelog/2024.md",
+    "https://docs.cartesia.ai/changelog/2026",
+    "https://docs.cartesia.ai/cursor://anysphere.cursor-deeplink/mcp/install?name=cartesia-mcp&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJjYXJ0ZXNpYS1tY3AiXX0=",
+    "https://docs.cartesia.ai/enterprise/set-up-an-organization",
+    "https://docs.cartesia.ai/enterprise/set-up-sso",
+    "https://docs.cartesia.ai/enterprise/zero-data-retention",
+    "https://docs.cartesia.ai/examples",
+    "https://docs.cartesia.ai/examples/stt-auto-finalize-websocket",
+    "https://docs.cartesia.ai/get-started/authenticate-your-client-applications",
+    "https://docs.cartesia.ai/get-started/make-an-api-request",
+    "https://docs.cartesia.ai/get-started/overview",
+    "https://docs.cartesia.ai/get-started/realtime-text-to-speech-quickstart",
+    "https://docs.cartesia.ai/integrations/live-kit",
+    "https://docs.cartesia.ai/integrations/overview",
+    "https://docs.cartesia.ai/integrations/pipecat",
+    "https://docs.cartesia.ai/line/introduction",
+    "https://docs.cartesia.ai/llms.txt",
+    "https://docs.cartesia.ai/pricing",
+    "https://docs.cartesia.ai/self-hosted/introduction",
+    "https://docs.cartesia.ai/tools/ai/agent-guide",
+    "https://docs.cartesia.ai/tools/ai/agent-skills",
+    "https://docs.cartesia.ai/tools/ai/llms-txt",
+    "https://docs.cartesia.ai/tools/ai/mcp",
+    "https://docs.cartesia.ai/tools/client-libraries",
+    "https://docs.cartesia.ai/use-the-api/api-conventions",
+    "https://docs.cartesia.ai/use-the-api/api-errors",
+    "https://docs.cartesia.ai/use-the-api/compare-tts-endpoints",
+    "https://docs.cartesia.ai/use-the-api/concurrency-limits-and-timeouts",
+    "https://docs.cartesia.ai/use-the-api/stt/compare-endpoints",
+    "https://docs.cartesia.ai/use-the-api/stt/migrations",
+    "https://docs.cartesia.ai/use-the-api/stt/turns",
+    "https://docs.cartesia.ai/use-the-api/tts-websocket/context-flushing-and-flush-i-ds",
+    "https://ffmpeg.org/download.html",
+    "https://gist.github.com/numman-ali/4e7a654af593fd157c9bdde3e9a5cf38?permalink_comment_id=5951625",
+    "https://github.com/api-evangelist/together-ai",
+    "https://github.com/b0xtch/cartesia",
+    "https://github.com/cartesia-ai/cartesia-js",
+    "https://github.com/cartesia-ai/cartesia-mcp",
+    "https://github.com/cartesia-ai/cartesia-mcp/blob/main/cartesia_mcp/server.py",
+    "https://github.com/cartesia-ai/cartesia-python",
+    "https://github.com/cartesia-ai/cartesia-python/blob/main/CHANGELOG.md",
+    "https://github.com/cartesia-ai/skills",
+    "https://github.com/tryAGI/Cartesia",
+    "https://httpstatuses.io",
+    "https://mcp.cartesia.ai",
+    "https://mcp.cartesia.ai/mcp",
+    "https://nodejs.org/",
+    "https://pip.pypa.io/en/stable/installation/",
+    "https://play.cartesia.ai",
+    "https://play.cartesia.ai/",
+    "https://play.cartesia.ai/keys",
+    "https://play.cartesia.ai/keys/admin",
+    "https://play.cartesia.ai/voices",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=cartesia-2650f86a",
+    "https://www.python.org/downloads/"
+  ]
+}

@@ -10,7 +10,9 @@ to each.
 > match, never model-authored; `openapi`/`rest` collapsed into one **`http`**
 > variant (spec presence already carries the distinction); Mechanics `inline`
 > split into **`http`** and **`cli`**; `Basis.detected` gains optional
-> `verifiedAt`; the KV envelope is typed (`StoredDiscovery`).
+> `verifiedAt`; `Basis.declared` records owner-published facts from
+> `/.well-known/integrations.json`; the KV envelope is typed
+> (`StoredDiscovery`).
 >
 > **v2 changes** (from stress-testing against 18 services + three reference
 > schemas): built around **discriminated unions**; surfaces collapsed into one
@@ -44,7 +46,7 @@ mature catalogs converge on the same shapes. We borrow from three:
    - **Surface** — discriminated by `type` (`http | graphql | mcp | cli`)
    - **AuthStatus** — discriminated by `status` (`none | required | unknown`)
    - **Mechanics** — discriminated by `source` (`spec | well-known | metadata | http | cli | unknown`)
-   - **Basis** — discriminated by `via` (`detected | discovered` — how we learned it)
+   - **Basis** — discriminated by `via` (`detected | discovered | declared` — how we learned it)
 
    (`Credential.type` is a flat `Literals` enum, not a tagged union — the
    Nango-derived auth-mode vocabulary.)
@@ -167,6 +169,7 @@ Basis =
                                                                        //   "oauth-protected-resource",
                                                                        //   "openapi:securitySchemes", "mcp:initialize"
   | { via: "discovered", evidence: ["<doc urls the agent read>"] }     // prose-derived, point-in-time
+  | { via: "declared",   source: "https://.../.well-known/integrations.json" } // owner-published
 ```
 
 - **`detected`** — asserted by a machine-readable signal the service publishes
@@ -174,6 +177,9 @@ Basis =
   `signal` points at the thing, so it's **re-verifiable** by re-fetching. High trust.
 - **`discovered`** — the agent surfaced it by reading human docs / searching.
   `evidence` lists the pages it read. Point-in-time, prose-derived, lower trust.
+- **`declared`** — the site owner published it in `/.well-known/integrations.json`.
+  `source` is the declaration URL. It is respected as the owner's statement of
+  intent and may be enriched or annotated when verified knowledge conflicts.
 
 **Orthogonal to `mechanics.source`** — don't conflate them. Basis is *how we
 learned the thing exists*; `mechanics.source` is *where its binding resolves*. A

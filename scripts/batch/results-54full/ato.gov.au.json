@@ -1,0 +1,423 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "ato.gov.au",
+    "detect": {
+      "domain": "ato.gov.au",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T21:15:15.888Z",
+    "summary": "ATO exposes multiple developer-facing HTTP APIs via its API Portal, including Health Check, SMSF Alias Lookup, OAuth Dynamic Client Registration, plus the catalog-confirmed Business Registries API; ATO portal APIs use a consumer API key together with OAuth/M2M authentication, while Business Registries documents API-key auth.",
+    "description": "The Australian Taxation Office (ATO) is Australia’s national tax authority. It provides digital services and APIs for software providers and businesses to interact with tax, superannuation, and related government systems.",
+    "credentials": {
+      "ato_api_key": {
+        "type": "api_key",
+        "label": "ATO API Portal consumer key (API key)",
+        "generateUrl": "https://apiportal.ato.gov.au/getting-started",
+        "setup": "Create an API Portal account and team app in the [ATO API Portal getting started guide](https://apiportal.ato.gov.au/getting-started). After creating a team app and subscribing it to APIs, open the team app to retrieve its consumer key (API key). Sandbox keys are available after team app creation; production keys are available after requesting and receiving production access as described in [How to use our API portal services](https://apiportal.ato.gov.au/how-to-use-our-api-portal-services)."
+      },
+      "ato_m2m_credential": {
+        "type": "compound",
+        "label": "ATO machine-to-machine (M2M) credential with registered client ID",
+        "generateUrl": "https://apiportal.ato.gov.au/api-products/oauth-dynamic-client-registration-api",
+        "setup": "For production, first register a software instance with the [OAuth Dynamic Client Registration API](https://apiportal.ato.gov.au/api-products/oauth-dynamic-client-registration-api) to obtain a unique `client_id`. Then use an ATO-recognized machine credential as described in [Client Authentication](https://apiportal.ato.gov.au/client-authentication): directly connected software uses the business client's machine credential, while online service providers use their own. The machine credential is created via the ATO/RAM guidance linked from that page; you then extract the certificate/private key, sign a private key JWT, and exchange it for OAuth access tokens from ATO SSO/IdP. Sandbox testing uses the test credentials documented on the client-authentication page."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "business-registries-api",
+        "name": "Business Registries API",
+        "type": "http",
+        "docs": "https://api.apis.guru/v2/specs/ato.gov.au/0.0.6/openapi.json",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.apis.guru/v2/specs/ato.gov.au/0.0.6/openapi.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ato_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.apis.guru/v2/specs/ato.gov.au/0.0.6/openapi.json"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.abr.ato.gov.au",
+        "requiredHeaders": [
+          {
+            "name": "Accept",
+            "source": {
+              "kind": "static",
+              "value": "application/vnd.abr-ato.v1+json"
+            },
+            "description": "The spec text says requests default to v1 but encourages explicitly requesting this version via the Accept header."
+          }
+        ]
+      },
+      {
+        "slug": "health-check-api",
+        "name": "Health Check API",
+        "type": "http",
+        "docs": "https://apiportal.ato.gov.au/api-products/health-check-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://apiportal.ato.gov.au/api-products/health-check-api",
+            "https://apiportal.ato.gov.au/apis/101/specification",
+            "https://apiportal.ato.gov.au/client-authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ato_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-key"
+                  }
+                },
+                {
+                  "id": "ato_m2m_credential",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://apiportal.ato.gov.au/how-to-use-our-api-portal-services",
+                  "https://apiportal.ato.gov.au/client-authentication",
+                  "https://apiportal.ato.gov.au/api-products/health-check-api"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://apiportal.ato.gov.au/sites/default/files/apidoc_specs/dsg-health-check-v1_10_0_0.yaml",
+        "url": "https://{env}/healthcheck/v1",
+        "variables": [
+          {
+            "name": "env",
+            "in": "url",
+            "resolveFrom": "Use `api.ato.gov.au` for production or `sandbox.api.ato.gov.au` for sandbox, as shown in the API product page."
+          }
+        ]
+      },
+      {
+        "slug": "smsf-alias-lookup-api",
+        "name": "SMSF Alias Lookup API",
+        "type": "http",
+        "docs": "https://apiportal.ato.gov.au/api-products/smsf-alias-lookup-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://apiportal.ato.gov.au/api-products/smsf-alias-lookup-api",
+            "https://apiportal.ato.gov.au/client-authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ato_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "x-api-key"
+                  }
+                },
+                {
+                  "id": "ato_m2m_credential",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://apiportal.ato.gov.au/client-authentication",
+                  "https://apiportal.ato.gov.au/api-products/smsf-alias-lookup-api",
+                  "https://apiportal.ato.gov.au/how-to-use-our-api-portal-services"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://apiportal.ato.gov.au/sites/default/files/apidoc_specs/dsg-smsfaliaslookup-v1-prod_0_0.yaml",
+        "url": "https://{env}/dsg-smsfaliaslookup/v1",
+        "variables": [
+          {
+            "name": "env",
+            "in": "url",
+            "resolveFrom": "Use `api.ato.gov.au` for production or `sandbox.api.ato.gov.au` for sandbox, as shown in the API product page."
+          }
+        ]
+      },
+      {
+        "slug": "oauth-dynamic-client-registration-api",
+        "name": "OAuth Dynamic Client Registration API",
+        "type": "http",
+        "docs": "https://apiportal.ato.gov.au/api-products/oauth-dynamic-client-registration-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://apiportal.ato.gov.au/api-products/oauth-dynamic-client-registration-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "ato_api_key",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                },
+                {
+                  "id": "ato_m2m_credential",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://apiportal.ato.gov.au/api-products/oauth-dynamic-client-registration-api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://auth.ato.gov.au"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T21:15:15.888Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 198017,
+    "completion_tokens": 2278,
+    "total_tokens": 200295
+  },
+  "visited": [
+    "https://api.apis.guru/v2/specs/ato.gov.au/0.0.6/openapi.json",
+    "https://apiportal.ato.gov.au/",
+    "https://apiportal.ato.gov.au/api-products/global-and-domestic-minimum-tax",
+    "https://apiportal.ato.gov.au/api-products/health-check-api",
+    "https://apiportal.ato.gov.au/api-products/oauth-dynamic-client-registration-api",
+    "https://apiportal.ato.gov.au/api-products/smsf-alias-lookup-api",
+    "https://apiportal.ato.gov.au/apis/101/specification",
+    "https://apiportal.ato.gov.au/client-authentication",
+    "https://apiportal.ato.gov.au/getting-started",
+    "https://apiportal.ato.gov.au/how-to-use-our-api-portal-services",
+    "https://apiportal.ato.gov.au/sites/default/files/apidoc_specs/dsg-health-check-v1_10_0_0.yaml",
+    "https://apiportal.ato.gov.au/sites/default/files/apidoc_specs/dsg-smsfaliaslookup-v1-prod_0_0.yaml",
+    "https://ato-team.github.io/business-registries-rest-api-specification/swagger.yaml",
+    "https://businessapi.com.au/developers/references/ato-table-references",
+    "https://community.ato.gov.au/s/question/a0JRF0000005PFV2A2/p00253996"
+  ],
+  "grounding": [
+    "https://api.abr.ato.gov.au",
+    "https://api.abr.ato.gov.au/individuals?page=2",
+    "https://api.abr.ato.gov.au/individuals?page=34",
+    "https://api.apis.guru/v2/cache/logo/https_www.ato.gov.au_uploadedImages_Content__DEM_Images_logo-ato.png",
+    "https://api.apis.guru/v2/specs/ato.gov.au/0.0.6/openapi.json",
+    "https://api.ato.gov.au/dsg-smsfaliaslookup/v1",
+    "https://api.ato.gov.au/healthcheck/v1",
+    "https://api.ato.gov.au/idp/v1/relyingparties",
+    "https://apiportal.ato.gov.au/",
+    "https://apiportal.ato.gov.au/#/ApiInfo",
+    "https://apiportal.ato.gov.au/#/ApiInfo/GetStatus",
+    "https://apiportal.ato.gov.au/#/Heartbeat",
+    "https://apiportal.ato.gov.au/#/Heartbeat/GetHeartbeat",
+    "https://apiportal.ato.gov.au/#/Heartbeat/GetHeartbeatABN",
+    "https://apiportal.ato.gov.au/#/Heartbeat/GetHeartbeatWPN",
+    "https://apiportal.ato.gov.au/#/Providers",
+    "https://apiportal.ato.gov.au/#/Providers/GetProviders",
+    "https://apiportal.ato.gov.au/#/Register%20a%20new%20software%20application%20instance",
+    "https://apiportal.ato.gov.au/#/Register%20a%20new%20software%20application%20instance/postClientRegistration",
+    "https://apiportal.ato.gov.au/#/Spec",
+    "https://apiportal.ato.gov.au/#/Spec/DownloadSpecYaml",
+    "https://apiportal.ato.gov.au/#/Spec/GetSpecYaml",
+    "https://apiportal.ato.gov.au/#SMSF-Alias-Lookup-API",
+    "https://apiportal.ato.gov.au/#authorisation-in-am",
+    "https://apiportal.ato.gov.au/#call-health-check",
+    "https://apiportal.ato.gov.au/#client-id",
+    "https://apiportal.ato.gov.au/#consumer-key",
+    "https://apiportal.ato.gov.au/#create-account",
+    "https://apiportal.ato.gov.au/#create-grant-JWT",
+    "https://apiportal.ato.gov.au/#create-private-key-JWT",
+    "https://apiportal.ato.gov.au/#create-private-key-jwt",
+    "https://apiportal.ato.gov.au/#create-team",
+    "https://apiportal.ato.gov.au/#create-team-app",
+    "https://apiportal.ato.gov.au/#description",
+    "https://apiportal.ato.gov.au/#develop-test-with-API-Products",
+    "https://apiportal.ato.gov.au/#extract-private-key",
+    "https://apiportal.ato.gov.au/#extract-public-certificate",
+    "https://apiportal.ato.gov.au/#m2m-credential",
+    "https://apiportal.ato.gov.au/#main-content",
+    "https://apiportal.ato.gov.au/#make-calls-to-gateway",
+    "https://apiportal.ato.gov.au/#pre-requisites",
+    "https://apiportal.ato.gov.au/#register-software-instance",
+    "https://apiportal.ato.gov.au/#request-access-token",
+    "https://apiportal.ato.gov.au/#request-initial-registration-access-token",
+    "https://apiportal.ato.gov.au/#request-production-access",
+    "https://apiportal.ato.gov.au/#scopes",
+    "https://apiportal.ato.gov.au/#team-app-description",
+    "https://apiportal.ato.gov.au/#team-description",
+    "https://apiportal.ato.gov.au/#test-credentials",
+    "https://apiportal.ato.gov.au/#toc-api-portal-structure",
+    "https://apiportal.ato.gov.au/#toc-api-risk-rating",
+    "https://apiportal.ato.gov.au/#toc-api-specification",
+    "https://apiportal.ato.gov.au/#toc-authentication",
+    "https://apiportal.ato.gov.au/#toc-authentication-using-oauth-2-0",
+    "https://apiportal.ato.gov.au/#toc-authorisation",
+    "https://apiportal.ato.gov.au/#toc-business-usage-and-process-flow",
+    "https://apiportal.ato.gov.au/#toc-contact-us",
+    "https://apiportal.ato.gov.au/#toc-definitions",
+    "https://apiportal.ato.gov.au/#toc-getting-started",
+    "https://apiportal.ato.gov.au/#toc-health-check-api",
+    "https://apiportal.ato.gov.au/#toc-health-check-api-2",
+    "https://apiportal.ato.gov.au/#toc-high-level-end-to-end-processes",
+    "https://apiportal.ato.gov.au/#toc-how-to-start-using-our-api-portal-services",
+    "https://apiportal.ato.gov.au/#toc-oauth-dynamic-client-registration-api",
+    "https://apiportal.ato.gov.au/#toc-oauth-dynamic-client-registration-api-",
+    "https://apiportal.ato.gov.au/#toc-oauth-dynamic-client-registration-api-2",
+    "https://apiportal.ato.gov.au/#toc-production-requirements",
+    "https://apiportal.ato.gov.au/#toc-rate-limit",
+    "https://apiportal.ato.gov.au/#toc-response-messages",
+    "https://apiportal.ato.gov.au/#toc-scopes",
+    "https://apiportal.ato.gov.au/#toc-smsf-alias-lookup-api",
+    "https://apiportal.ato.gov.au/#toc-smsf-alias-lookup-api-2",
+    "https://apiportal.ato.gov.au/#toc-step-1-register-to-the-ato-api-portal",
+    "https://apiportal.ato.gov.au/#toc-step-2-complete-the-security-questionnaire",
+    "https://apiportal.ato.gov.au/#toc-test-scenarios",
+    "https://apiportal.ato.gov.au/#toc-using-our-digital-services",
+    "https://apiportal.ato.gov.au/#toc-what-an-api-is",
+    "https://apiportal.ato.gov.au/#toc-what-the-ato-api-portal-does",
+    "https://apiportal.ato.gov.au/accessibility",
+    "https://apiportal.ato.gov.au/api-products",
+    "https://apiportal.ato.gov.au/api-products/global-and-domestic-minimum-tax",
+    "https://apiportal.ato.gov.au/api-products/health-check-api",
+    "https://apiportal.ato.gov.au/api-products/oauth-dynamic-client-registration-api",
+    "https://apiportal.ato.gov.au/api-products/oauth-dynamic-client-registration-api#register-software-instance",
+    "https://apiportal.ato.gov.au/api-products/property-settlement-service",
+    "https://apiportal.ato.gov.au/api-products/smsf-alias-lookup-api",
+    "https://apiportal.ato.gov.au/api-products/stapled-super-fund",
+    "https://apiportal.ato.gov.au/api-risk-rating",
+    "https://apiportal.ato.gov.au/apis",
+    "https://apiportal.ato.gov.au/apis/101",
+    "https://apiportal.ato.gov.au/apis/101/specification",
+    "https://apiportal.ato.gov.au/authorisation-test-scenarios",
+    "https://apiportal.ato.gov.au/client-authentication",
+    "https://apiportal.ato.gov.au/common-response-messages",
+    "https://apiportal.ato.gov.au/conditions-use",
+    "https://apiportal.ato.gov.au/contact-us",
+    "https://apiportal.ato.gov.au/contact-us-about-portal",
+    "https://apiportal.ato.gov.au/end-user-agreement",
+    "https://apiportal.ato.gov.au/getting-started",
+    "https://apiportal.ato.gov.au/how-to-use-our-api-portal-services",
+    "https://apiportal.ato.gov.au/how-use-our-api-portal-services",
+    "https://apiportal.ato.gov.au/how-use-our-api-portal-services#create-team-app",
+    "https://apiportal.ato.gov.au/how-use-our-api-portal-services#request-production-access",
+    "https://apiportal.ato.gov.au/login",
+    "https://apiportal.ato.gov.au/m2m-client-authentication",
+    "https://apiportal.ato.gov.au/m2m-client-authentication#extract-private-key",
+    "https://apiportal.ato.gov.au/m2m-client-authentication#extract-public-certificate",
+    "https://apiportal.ato.gov.au/oauth-dynamic-client-registration-api-response-messages",
+    "https://apiportal.ato.gov.au/oauth-dynamic-client-registration-api-test-scenarios",
+    "https://apiportal.ato.gov.au/privacy",
+    "https://apiportal.ato.gov.au/saml/login",
+    "https://apiportal.ato.gov.au/sitemap",
+    "https://apiportal.ato.gov.au/sites/default/files/apidoc",
+    "https://apiportal.ato.gov.au/sites/default/files/apidoc_specs/client-oauth-registration-v1_6_0.yaml",
+    "https://apiportal.ato.gov.au/sites/default/files/apidoc_specs/dsg-health-check-v1_10_0.yaml",
+    "https://apiportal.ato.gov.au/sites/default/files/apidoc_specs/dsg-health-check-v1_10_0_0.yaml",
+    "https://apiportal.ato.gov.au/sites/default/files/apidoc_specs/dsg-smsfaliaslookup-v1-prod_0_0.yaml",
+    "https://apiportal.ato.gov.au/taxonomy/term/46",
+    "https://ato-team.github.io/business-registries-rest-api-specification/swagger.yaml",
+    "https://ato.gov.au/terms-of-service/",
+    "https://auth.ato.gov.au/core2/connect/token",
+    "https://auth.evte.ato.gov.au/core2/connect/token",
+    "https://businessapi.com.au/developers/references/ato-table-references",
+    "https://community.ato.gov.au/s/question/a0JRF0000005PFV2A2/p00253996",
+    "https://creativecommons.org/licenses/by/3.0/au/",
+    "https://datatracker.ietf.org/doc/html/rfc6749",
+    "https://en.wikipedia.org/wiki/ISO_8601",
+    "https://github.com/OAI/OpenAPI-Specification",
+    "https://github.com/Rebilly/ReDoc/blob/master/docs/redoc-vendor-extensions.md",
+    "https://info.authorisationmanager.gov.au/guide-how-to-install-a-machine-credential",
+    "https://info.authorisationmanager.gov.au/set-up-authorisations",
+    "https://intermediaries.news.ato.gov.au/link/id/zzzz68b7c3c55f2cf668Pzzzz5f17793ac8fb0884/page.html",
+    "https://jwt.io/libraries",
+    "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication",
+    "https://slproweb.com/products/Win32OpenSSL.html",
+    "https://softwaredevelopers.ato.gov.au/RequirementsforDSPs",
+    "https://softwaredevelopers.ato.gov.au/Usingourservices",
+    "https://softwaredevelopers.ato.gov.au/Usingourservices#Start",
+    "https://softwaredevelopers.ato.gov.au/usingmygovidramandmachinecredentials#Machine_credential",
+    "https://testclientapp.ato.gov.au",
+    "https://testclientapp.ato.gov.au/jwtbearer",
+    "https://tools.ietf.org/html/rfc5988#page-6",
+    "https://www.ato.gov.au/",
+    "https://www.ato.gov.au/About-ATO/Careers/",
+    "https://www.ato.gov.au/General/Gen/Copyright-notice/",
+    "https://www.ato.gov.au/General/Online-services/In-detail/Using-Access-Manager/Using-Access-Manager/",
+    "https://www.ato.gov.au/online-services/access-manager/access-manager-for-business-software-users?=Redirected_URL#ato-NotifyusofyourhostedSBRsoftware",
+    "https://www.ato.gov.au/super/superstream/self-managed-super-funds/electronic-service-address/",
+    "https://www.digitalidsystem.gov.au/set-up-your-digital-id",
+    "https://www.rfc-editor.org/rfc/rfc7515.html#section-4.1.6",
+    "https://www.rfc-editor.org/rfc/rfc7523.html",
+    "https://www.rfc-editor.org/rfc/rfc7591",
+    "https://www.rfc-editor.org/rfc/rfc7592",
+    "https://{env}/dsg-smsfaliaslookup/v1",
+    "https://{env}/healthcheck/v1",
+    "https://{env}/idp/v1/relyingparties"
+  ]
+}

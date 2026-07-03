@@ -1,0 +1,606 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "razorpay.com",
+    "detect": {
+      "domain": "razorpay.com",
+      "found": [
+        "api-catalog",
+        "openapi-schema",
+        "agent-card",
+        "agent-skills",
+        "llms.txt",
+        "oauth-protected-resource",
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "apiCatalog": {
+        "rest": [
+          "https://razorpay.com",
+          "https://razorpay.com/openapi.json"
+        ],
+        "openapi": [
+          "https://razorpay.com/openapi.json"
+        ],
+        "docs": [
+          "https://razorpay.com/docs/api/"
+        ],
+        "status": [
+          "https://status.razorpay.com/"
+        ],
+        "mcp": []
+      },
+      "apiSchema": {
+        "url": "https://razorpay.com/openapi.json",
+        "format": "openapi",
+        "version": "3.0.0"
+      },
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://mcp.razorpay.com"
+          ],
+          "authorizationEndpoint": "https://mcp.razorpay.com/authorize",
+          "tokenEndpoint": "https://mcp.razorpay.com/token",
+          "protectedResourceUrl": "https://razorpay.com/.well-known/oauth-protected-resource",
+          "scopes": [
+            "read_only"
+          ],
+          "registrationEndpoint": "https://mcp.razorpay.com/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code",
+            "client_credentials",
+            "refresh_token"
+          ]
+        }
+      },
+      "mcp": [],
+      "agentCard": {
+        "name": "Razorpay",
+        "url": "https://razorpay.com"
+      },
+      "agentSkills": {
+        "count": 5,
+        "names": [
+          "create-payment",
+          "process-refund",
+          "manage-payouts",
+          "create-subscription",
+          "fetch-transaction-data"
+        ]
+      },
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:47:02.826Z",
+    "summary": "Razorpay exposes a REST API at https://api.razorpay.com/v1, an OAuth-protected MCP server at https://mcp.razorpay.com/mcp, and a `razorpay` CLI; the API accepts either Basic auth with Razorpay API keys or OAuth 2.0 tokens from the MCP auth server, while the MCP server uses OAuth and the CLI is configured with API keys.",
+    "description": "Razorpay provides payment acceptance, financial operations, and related business payment infrastructure, including orders, payments, refunds, subscriptions, settlements, and payouts. It also offers developer tooling for terminal and AI-agent access to those capabilities.",
+    "credentials": {
+      "rzp_api_keys": {
+        "type": "basic",
+        "label": "Razorpay API key ID and key secret",
+        "generateUrl": "https://dashboard.razorpay.com/app/keys",
+        "setup": "In the [Razorpay Dashboard](https://dashboard.razorpay.com/app/keys), switch to **Test** or **Live** mode, then go to **Account & Settings → API Keys → Generate Key**. Save both the `key_id` and `key_secret` when shown; the secret is only visible at creation time. Use Test keys (prefix `rzp_test_`) for sandbox work and Live keys (prefix `rzp_live_`) for production.",
+        "acquisition": "manual"
+      },
+      "rzp_mcp_oauth_client": {
+        "type": "oauth2",
+        "label": "Razorpay MCP OAuth client credentials",
+        "generateUrl": "https://mcp.razorpay.com/register",
+        "setup": "Register an OAuth client for the Razorpay MCP server using Dynamic Client Registration at [`/register`](https://mcp.razorpay.com/register), or request manual registration from the [Razorpay Support Team](mailto:n8n-node-support@razorpay.com). The MCP OAuth server advertises `authorization_code`, `client_credentials`, and `refresh_token` grants with scope `read_only` at the [well-known authorization server metadata](https://mcp.razorpay.com/.well-known/oauth-authorization-server).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "razorpay-mcp-server",
+        "name": "Razorpay MCP Server",
+        "type": "mcp",
+        "docs": "https://razorpay.com/docs/build/llm-docs/mcp-server/oauth.md",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://mcp.razorpay.com/mcp",
+            "https://razorpay.com/docs/build/llm-docs/mcp-server/oauth.md",
+            "https://mcp.razorpay.com/.well-known/oauth-authorization-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "rzp_mcp_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://razorpay.com/docs/build/llm-docs/mcp-server/oauth.md",
+                  "https://mcp.razorpay.com/.well-known/oauth-authorization-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.razorpay.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "razorpay-cli",
+        "name": "Razorpay CLI",
+        "type": "cli",
+        "docs": "https://razorpay.com/docs/cli/install-cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://razorpay.com/cli/",
+            "https://razorpay.com/docs/cli/install-cli/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "rzp_api_keys",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "razorpay configure --key-id <key_id> --key-secret <key_secret>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://razorpay.com/cli/",
+                  "https://razorpay.com/docs/cli/install-cli/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "razorpay/razorpay-cli/razorpay",
+            "runtimeHint": "macOS"
+          },
+          {
+            "registryType": "scoop",
+            "identifier": "razorpay",
+            "runtimeHint": "Windows"
+          }
+        ],
+        "command": "razorpay"
+      },
+      {
+        "slug": "razorpay-api",
+        "name": "Razorpay API",
+        "type": "http",
+        "docs": "https://razorpay.com/docs/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://razorpay.com/docs/api/",
+            "https://razorpay.com/docs/api/authentication/",
+            "https://razorpay.com/openapi.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "rzp_api_keys",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "basicAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://razorpay.com/docs/api/authentication/",
+                  "https://razorpay.com/openapi.json"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "rzp_mcp_oauth_client",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "oauth2"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://razorpay.com/openapi.json",
+                  "https://razorpay.com/docs/build/llm-docs/mcp-server/oauth.md",
+                  "https://mcp.razorpay.com/.well-known/oauth-authorization-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.razorpay.com/v1"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:47:02.827Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 96276,
+    "completion_tokens": 1924,
+    "total_tokens": 98200
+  },
+  "visited": [
+    "https://github.com/razorpay/razorpay-cli",
+    "https://mcp.razorpay.com/.well-known/oauth-authorization-server",
+    "https://mcp.razorpay.com/.well-known/openid-configuration",
+    "https://mcp.razorpay.com/mcp",
+    "https://razorpay.com/cli/",
+    "https://razorpay.com/docs/api/?preferred-country=US",
+    "https://razorpay.com/docs/api/authentication/?preferred-country=US",
+    "https://razorpay.com/docs/build/llm-docs/mcp-server/oauth.md",
+    "https://razorpay.com/docs/cli/install-cli/",
+    "https://razorpay.com/llms.txt",
+    "https://razorpay.com/openapi.json",
+    "https://www.linkedin.com/posts/razorpay_razorpay-cli-aiagentera-activity-7467135543445721090-yo3s",
+    "https://www.linkedin.com/posts/tejas-gowda-3645bab_cli-mcp-aicontext-activity-7467742449818509312--sg4",
+    "https://www.postman.com/razorpaydev/razorpay-public-workspace/collection/mfu7vaw/razorpay-apis"
+  ],
+  "grounding": [
+    "http://localhost:6274/oauth/callback/debug",
+    "https://api.razorpay.com/v1",
+    "https://api.razorpay.com/v1/payments",
+    "https://archiveprogram.github.com",
+    "https://cli.tool/callback",
+    "https://cli.tool/callback?code={AUTHORIZATION_CODE}&state={STATE_VALUE}",
+    "https://curlec.com/",
+    "https://dashboard.razorpay.com/?next=%2Fapi%2F#/access/signin",
+    "https://dashboard.razorpay.com/?next=%2Fapi%2Fauthentication%2F#/access/signin",
+    "https://dashboard.razorpay.com/?next=%2Fcli%2Finstall-cli%2F#/access/signin",
+    "https://dashboard.razorpay.com/app/keys",
+    "https://dashboard.razorpay.com/signup",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://easy.razorpay.com/product-recommender",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/login?return_to=%2Frazorpay%2Frazorpay-cli",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Frazorpay%2Frazorpay-cli",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/modelcontextprotocol/inspector",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/razorpay",
+    "https://github.com/razorpay/razorpay-cli",
+    "https://github.com/razorpay/razorpay-cli/actions",
+    "https://github.com/razorpay/razorpay-cli/branches",
+    "https://github.com/razorpay/razorpay-cli/commit/10eefec7329466713b5f3cb2a43628ac67b03800",
+    "https://github.com/razorpay/razorpay-cli/commit/28dc4b946c3b500936f62dd8bf20da4db940febe",
+    "https://github.com/razorpay/razorpay-cli/commit/321ced52b6bd2d939ed059fe1e84afb9236c9d6b",
+    "https://github.com/razorpay/razorpay-cli/commit/3d8404d9f2760834ac360a171b738b5f2d5ef878",
+    "https://github.com/razorpay/razorpay-cli/commit/5be4ee7087e5fa9c496c310b9050308a6b284e0d",
+    "https://github.com/razorpay/razorpay-cli/commit/637de42c2c80de873407b70222df3d0e88496b59",
+    "https://github.com/razorpay/razorpay-cli/commits/master/",
+    "https://github.com/razorpay/razorpay-cli/commits?author=manikrazorpay13",
+    "https://github.com/razorpay/razorpay-cli/issues",
+    "https://github.com/razorpay/razorpay-cli/projects",
+    "https://github.com/razorpay/razorpay-cli/pull/22",
+    "https://github.com/razorpay/razorpay-cli/pulls",
+    "https://github.com/razorpay/razorpay-cli/pulse",
+    "https://github.com/razorpay/razorpay-cli/security",
+    "https://github.com/razorpay/razorpay-cli/tags",
+    "https://github.com/razorpay/razorpay-cli/tree/master/.github",
+    "https://github.com/razorpay/razorpay-cli/tree/master/.goreleaser",
+    "https://github.com/razorpay/razorpay-cli/tree/master/api",
+    "https://github.com/razorpay/razorpay-cli/tree/master/cmd",
+    "https://github.com/razorpay/razorpay-cli/tree/master/config",
+    "https://github.com/razorpay/razorpay-cli/tree/master/docs",
+    "https://github.com/razorpay/razorpay-cli/tree/master/output",
+    "https://github.com/razorpay/razorpay-cli/tree/master/scripts",
+    "https://github.com/razorpay/razorpay-cli/tree/master/tests",
+    "https://github.com/razorpay/razorpay-cli/wiki",
+    "https://github.com/razorpay/scoop-razorpay-cli.git",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=razorpay%2Frazorpay-cli",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://maintainers.github.com",
+    "https://mcp.razorpay.com",
+    "https://mcp.razorpay.com/.well-known/oauth-authorization-server",
+    "https://mcp.razorpay.com/.well-known/openid-configuration",
+    "https://mcp.razorpay.com/api/payments/pay_123456",
+    "https://mcp.razorpay.com/api/tool-endpoint",
+    "https://mcp.razorpay.com/authorize",
+    "https://mcp.razorpay.com/authorize?response_type=code&client_id=xyz123&redirect_uri=https://cli.tool/callback&scope=read_only&state=random_state_string&code_challenge=hashed_code_verifier&code_challenge_method=S256",
+    "https://mcp.razorpay.com/authorize?response_type=code&client_id={YOUR_CLIENT_ID}&redirect_uri={YOUR_REDIRECT_URI}&scope=read_only&state={RANDOM_STATE_VALUE}&code_challenge={CODE_CHALLENGE}&code_challenge_method=S256",
+    "https://mcp.razorpay.com/mcp",
+    "https://mcp.razorpay.com/register",
+    "https://mcp.razorpay.com/token",
+    "https://razorpay.com/",
+    "https://razorpay.com/about/",
+    "https://razorpay.com/accept-international-payments/",
+    "https://razorpay.com/accept-international-payments/bank-transfers/",
+    "https://razorpay.com/android-payment-gateway-india/",
+    "https://razorpay.com/app-store/",
+    "https://razorpay.com/blog/",
+    "https://razorpay.com/blog/all-you-need-to-know-about-upi-third-party-apps-tpaps/",
+    "https://razorpay.com/blog/chargebacks/",
+    "https://razorpay.com/blog/how-do-credit-card-payments-work/",
+    "https://razorpay.com/blog/payment-gateway-101/",
+    "https://razorpay.com/blog/razorpay-payment-gateway-pricing-explained/",
+    "https://razorpay.com/blog/razorpay-payment-gateway-pricing-vs-other-payment-gateways/",
+    "https://razorpay.com/blog/upi-charges-explained-mdr-vs-platform-fees/",
+    "https://razorpay.com/blog/what-is-a-merchant-reference-number/",
+    "https://razorpay.com/blog/what-is-bharat-qr-code/",
+    "https://razorpay.com/blog/what-is-billing-cycle/",
+    "https://razorpay.com/blog/what-is-payment-processing/",
+    "https://razorpay.com/blog/what-is-pci-dss-compliance/",
+    "https://razorpay.com/blog/what-is-pos-point-of-sale/",
+    "https://razorpay.com/blog/what-is-upi-and-how-it-works/",
+    "https://razorpay.com/cagr-calculator/",
+    "https://razorpay.com/capital/",
+    "https://razorpay.com/capital/instant-settlements/",
+    "https://razorpay.com/card-tokenisation/",
+    "https://razorpay.com/chargeback/",
+    "https://razorpay.com/cli/",
+    "https://razorpay.com/cli/latest/install.sh",
+    "https://razorpay.com/cli/latest/razorpay",
+    "https://razorpay.com/cli/latest/razorpay_mac-os_arm64.tar.gz",
+    "https://razorpay.com/cli/latest/razorpay_mac-os_x86_64.tar.gz",
+    "https://razorpay.com/corporate-information/",
+    "https://razorpay.com/customer-stories/",
+    "https://razorpay.com/demo",
+    "https://razorpay.com/demo/",
+    "https://razorpay.com/dispute-guide/",
+    "https://razorpay.com/docs/",
+    "https://razorpay.com/docs/#home-payments",
+    "https://razorpay.com/docs/#home-payments/",
+    "https://razorpay.com/docs/api",
+    "https://razorpay.com/docs/api/",
+    "https://razorpay.com/docs/api/#api-gateway-url",
+    "https://razorpay.com/docs/api/#related-information",
+    "https://razorpay.com/docs/api/?preferred-country=US",
+    "https://razorpay.com/docs/api/authentication",
+    "https://razorpay.com/docs/api/authentication/",
+    "https://razorpay.com/docs/api/authentication/#Live",
+    "https://razorpay.com/docs/api/authentication/#Test",
+    "https://razorpay.com/docs/api/authentication/#api-authentication",
+    "https://razorpay.com/docs/api/authentication/#generate-api-keys",
+    "https://razorpay.com/docs/api/authentication/#related-information",
+    "https://razorpay.com/docs/api/authentication/#roll-api-keys",
+    "https://razorpay.com/docs/api/authentication/?preferred-country=US",
+    "https://razorpay.com/docs/api/best-practices",
+    "https://razorpay.com/docs/api/best-practices/",
+    "https://razorpay.com/docs/api/changelog",
+    "https://razorpay.com/docs/api/glossary",
+    "https://razorpay.com/docs/api/glossary/",
+    "https://razorpay.com/docs/api/install-cli",
+    "https://razorpay.com/docs/api/orders",
+    "https://razorpay.com/docs/api/payments",
+    "https://razorpay.com/docs/api/payments/downtime",
+    "https://razorpay.com/docs/api/payments/payment-links",
+    "https://razorpay.com/docs/api/payments/subscriptions",
+    "https://razorpay.com/docs/api/refunds",
+    "https://razorpay.com/docs/api/sandbox-setup",
+    "https://razorpay.com/docs/api/sandbox-setup/",
+    "https://razorpay.com/docs/api/settlements",
+    "https://razorpay.com/docs/api/understand",
+    "https://razorpay.com/docs/api/understand/",
+    "https://razorpay.com/docs/build/llm-docs/mcp-server/oauth.md",
+    "https://razorpay.com/docs/cli",
+    "https://razorpay.com/docs/cli/",
+    "https://razorpay.com/docs/cli/install-cli/",
+    "https://razorpay.com/docs/cli/install-cli/#homebrew-macos",
+    "https://razorpay.com/docs/cli/install-cli/#quick-install-macos-and-linux",
+    "https://razorpay.com/docs/cli/install-cli/#related-information",
+    "https://razorpay.com/docs/cli/install-cli/#scoop-windows",
+    "https://razorpay.com/docs/cli/install-cli/#step-1-download-and-install-the-binary",
+    "https://razorpay.com/docs/cli/install-cli/#step-2-configure-your-api-credentials",
+    "https://razorpay.com/docs/developer-tools/",
+    "https://razorpay.com/docs/errors/",
+    "https://razorpay.com/docs/llms.txt",
+    "https://razorpay.com/docs/payments/",
+    "https://razorpay.com/docs/payments/#accept-payments",
+    "https://razorpay.com/docs/payments/customers/customer-refunds/",
+    "https://razorpay.com/docs/payments/dashboard/account-settings/api-keys/#regenerate-api-keys",
+    "https://razorpay.com/docs/payments/payment-gateway/#integration-types",
+    "https://razorpay.com/docs/payments/payments/test-card-details/",
+    "https://razorpay.com/docs/security/",
+    "https://razorpay.com/e-mandate/",
+    "https://razorpay.com/ecommerce-payment-gateway-india/",
+    "https://razorpay.com/engage/",
+    "https://razorpay.com/epos/",
+    "https://razorpay.com/events/",
+    "https://razorpay.com/favicon.png",
+    "https://razorpay.com/flashcheckout/",
+    "https://razorpay.com/freelancer-individual-business/",
+    "https://razorpay.com/freelancer-unregistered-business/",
+    "https://razorpay.com/grievance-redressal/",
+    "https://razorpay.com/gst-calculator/",
+    "https://razorpay.com/gst-number-search/",
+    "https://razorpay.com/gst-number-search/pan/",
+    "https://razorpay.com/ifsc-code/",
+    "https://razorpay.com/integrations/",
+    "https://razorpay.com/international-payment-gateway-india/",
+    "https://razorpay.com/invoices/",
+    "https://razorpay.com/ios-payment-gateway-india/",
+    "https://razorpay.com/jobs/",
+    "https://razorpay.com/learn/",
+    "https://razorpay.com/llms.txt",
+    "https://razorpay.com/magic/",
+    "https://razorpay.com/newsroom/",
+    "https://razorpay.com/notice/",
+    "https://razorpay.com/openapi.json",
+    "https://razorpay.com/optimizer-intelligent-payments-routing/",
+    "https://razorpay.com/partners/",
+    "https://razorpay.com/partners/?intent=company",
+    "https://razorpay.com/partners/?intent=refer_n_earn",
+    "https://razorpay.com/partners/onboarding-apis/",
+    "https://razorpay.com/payment-aggregator/",
+    "https://razorpay.com/payment-buttons/",
+    "https://razorpay.com/payment-gateway/",
+    "https://razorpay.com/payment-links/",
+    "https://razorpay.com/payment-pages/",
+    "https://razorpay.com/payments-app/",
+    "https://razorpay.com/payroll/",
+    "https://razorpay.com/payroll/attendance-management-system/",
+    "https://razorpay.com/payroll/pricing/",
+    "https://razorpay.com/pos/",
+    "https://razorpay.com/pos/selfhealing/",
+    "https://razorpay.com/pricing/",
+    "https://razorpay.com/privacy/",
+    "https://razorpay.com/qr-code/",
+    "https://razorpay.com/responsible-disclosure/",
+    "https://razorpay.com/rize",
+    "https://razorpay.com/rize/blogs",
+    "https://razorpay.com/rize/company-registration",
+    "https://razorpay.com/rize/company-registration/",
+    "https://razorpay.com/rize/company-registration/documents-required",
+    "https://razorpay.com/rize/company-registration/llp",
+    "https://razorpay.com/rize/company-registration/one-person",
+    "https://razorpay.com/rize/company-registration/private-limited",
+    "https://razorpay.com/roi-calculator/",
+    "https://razorpay.com/route/",
+    "https://razorpay.com/s/business-emi-calculator/",
+    "https://razorpay.com/s/business-margin-calculator/",
+    "https://razorpay.com/s/business-name-generator/",
+    "https://razorpay.com/s/compound-interest-calculator/",
+    "https://razorpay.com/s/currency-converter/",
+    "https://razorpay.com/s/ebitda-calculator/",
+    "https://razorpay.com/s/emi-calculator/",
+    "https://razorpay.com/s/interest-rate-calculator/",
+    "https://razorpay.com/s/invoice-generator/",
+    "https://razorpay.com/s/quotation-maker/",
+    "https://razorpay.com/s/receipt-generator/",
+    "https://razorpay.com/settlement/",
+    "https://razorpay.com/shopify-payment-gateway/",
+    "https://razorpay.com/smart-collect/",
+    "https://razorpay.com/solutions/bfsi/",
+    "https://razorpay.com/solutions/e-commerce/",
+    "https://razorpay.com/solutions/education/",
+    "https://razorpay.com/solutions/saas/",
+    "https://razorpay.com/subscriptions/",
+    "https://razorpay.com/support/",
+    "https://razorpay.com/support/#request",
+    "https://razorpay.com/terms/",
+    "https://razorpay.com/terms/rsl",
+    "https://razorpay.com/tnc/",
+    "https://razorpay.com/trusted-badge/",
+    "https://razorpay.com/upi-autopay/",
+    "https://razorpay.com/upi-payment-gateway-india/",
+    "https://razorpay.com/upi/",
+    "https://razorpay.com/us/pricing/",
+    "https://razorpay.com/us/support",
+    "https://razorpay.com/us/support/",
+    "https://razorpay.com/us/undefined",
+    "https://razorpay.com/white-papers/",
+    "https://razorpay.com/wix-payment-gateway/",
+    "https://razorpay.com/woocommerce-payment-gateway/",
+    "https://razorpay.com/wordpress-payment-gateway-india/",
+    "https://razorpay.com/x",
+    "https://razorpay.com/x/",
+    "https://razorpay.com/x/accounting-payouts/",
+    "https://razorpay.com/x/bank-account-verification",
+    "https://razorpay.com/x/bonus-calculator",
+    "https://razorpay.com/x/corporate-cards/",
+    "https://razorpay.com/x/current-accounts/",
+    "https://razorpay.com/x/digital-lending/",
+    "https://razorpay.com/x/escrow-accounts/",
+    "https://razorpay.com/x/forex/",
+    "https://razorpay.com/x/income-tax-calculator",
+    "https://razorpay.com/x/line-of-credit/",
+    "https://razorpay.com/x/partners/",
+    "https://razorpay.com/x/payout-links/",
+    "https://razorpay.com/x/payouts/",
+    "https://razorpay.com/x/payroll-enterprise/",
+    "https://razorpay.com/x/payslip-generator",
+    "https://razorpay.com/x/sales-tax-calculator",
+    "https://razorpay.com/x/source-to-pay/",
+    "https://razorpay.com/x/take-home-salary-calculator",
+    "https://razorpay.com/x/tax-payments/",
+    "https://razorpay.com/x/tds-online-payment/",
+    "https://razorpay.com/x/vendor-payments/",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://www.linkedin.com/posts/razorpay_razorpay-cli-aiagentera-activity-7467135543445721090-yo3s",
+    "https://www.linkedin.com/posts/tejas-gowda-3645bab_cli-mcp-aicontext-activity-7467742449818509312--sg4",
+    "https://www.postman.com/razorpaydev/razorpay-public-workspace/collection/mfu7vaw/razorpay-apis",
+    "https://x.razorpay.com/demo/"
+  ]
+}

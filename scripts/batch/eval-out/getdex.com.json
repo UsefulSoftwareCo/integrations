@@ -1,0 +1,178 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "getdex.com",
+    "summary": "Dex exposes a public HTTP API via OpenAPI and an MCP server for AI agents; both support user-minted bearer credentials, and the MCP server also supports OAuth 2.0 authorization-code with refresh tokens.",
+    "credentials": {
+      "dex_api_key": {
+        "type": "api_key",
+        "label": "Dex API key",
+        "setup": "Create a Dex API key in Dex Settings → Integrations as described by the MCP agent card and authentication docs: start from the [Dex docs](https://getdex.com/docs) or [API authentication docs](https://getdex.com/docs/api-reference/authentication), then generate a key in **Dex Settings > Integrations**. The key is described as `dex_…` and is sent as `Authorization: Bearer dex_…`. The docs note this requires the Professional plan.",
+        "acquisition": "manual"
+      },
+      "dex_oauth2": {
+        "type": "oauth2",
+        "label": "Dex OAuth 2.0 client authorization",
+        "generateUrl": "https://mcp.getdex.com/register",
+        "setup": "Register an OAuth client at [`https://mcp.getdex.com/register`](https://mcp.getdex.com/register), then send the user through Dex authorization at [`https://mcp.getdex.com/authorize`](https://mcp.getdex.com/authorize) to obtain tokens from [`https://mcp.getdex.com/token`](https://mcp.getdex.com/token). Supported scopes are `read` and `write`, and the detected metadata indicates `authorization_code` plus `refresh_token`. OAuth server metadata is published at [`https://getdex.com/.well-known/oauth-authorization-server`](https://getdex.com/.well-known/oauth-authorization-server).",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "type": "http",
+        "spec": "https://getdex.com/openapi.json",
+        "slug": "dex-public-api",
+        "name": "Dex Public API",
+        "docs": "https://getdex.com/docs/api-reference/reference",
+        "basis": {
+          "via": "detected",
+          "signal": "openapi-schema"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dex_api_key",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://getdex.com/openapi.json",
+                  "https://getdex.com/docs/api-reference/authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "dex_oauth2",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "detected",
+                "signal": "auth"
+              }
+            }
+          ]
+        },
+        "notes": "The corpus describes this as the Dex Public API and states the OpenAPI spec includes rate-limit headers and a JSON error envelope."
+      },
+      {
+        "type": "mcp",
+        "url": "https://mcp.getdex.com/mcp",
+        "slug": "dex-mcp-server",
+        "name": "Dex MCP Server",
+        "docs": "https://getdex.com/docs/ai/mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://getdex.com/.well-known/agent-card.json",
+            "https://getdex.com/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "dex_oauth2",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://getdex.com/.well-known/agent-card.json",
+                  "https://getdex.com/.well-known/oauth-protected-resource"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "dex_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://getdex.com/.well-known/agent-card.json"
+                ]
+              }
+            }
+          ]
+        },
+        "notes": "Agent card says the MCP server exposes the Dex API as agent tools and supports OAuth 2.0 plus bearer auth."
+      }
+    ]
+  },
+  "checklist": {
+    "passed": true,
+    "checks": {
+      "noDefaultCredentialSetup": {
+        "passed": true,
+        "offenders": []
+      },
+      "outputUrlsInCorpus": {
+        "passed": true,
+        "offenders": []
+      },
+      "authUseIdsResolve": {
+        "passed": true,
+        "offenders": []
+      },
+      "cliMechanicsSetupHasNoOauthPath": {
+        "passed": true,
+        "offenders": []
+      },
+      "specUrlsLookMachineReadable": {
+        "passed": true,
+        "offenders": []
+      },
+      "noDuplicateSurfaceKeys": {
+        "passed": true,
+        "offenders": []
+      },
+      "noRequiredAuthWithEmptyEntries": {
+        "passed": true,
+        "offenders": []
+      }
+    }
+  },
+  "usage": {
+    "prompt_tokens": 15163,
+    "completion_tokens": 810,
+    "total_tokens": 15973,
+    "prompt_tokens_details": {
+      "cached_tokens": 8448,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "model": "gpt-5.4"
+}

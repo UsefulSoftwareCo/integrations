@@ -1,0 +1,591 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "xata.io",
+    "detect": {
+      "domain": "xata.io",
+      "found": [
+        "api-catalog",
+        "llms.txt"
+      ],
+      "apiCatalog": {
+        "rest": [
+          "https://api.xata.tech"
+        ],
+        "openapi": [
+          "https://api.xata.tech/openapi.json"
+        ],
+        "docs": [
+          "https://xata.io/docs/index.md",
+          "https://xata.io/docs"
+        ],
+        "status": [
+          "https://www.xatastatus.com"
+        ],
+        "mcp": []
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:31:10.709Z",
+    "summary": "Xata exposes a control-plane HTTP API, branch SQL HTTP gateway, branch PostgreSQL WebSocket gateway, and the `xata` CLI; auth is via Xata account access token for control-plane and branch connection string for gateways.",
+    "credentials": {
+      "xata_oauth_access_token": {
+        "type": "oauth2",
+        "label": "Xata account access token",
+        "generateUrl": "https://console.xata.io/",
+        "setup": "Sign in to [Xata Console](https://console.xata.io/) and use `xata auth login` to authenticate the CLI. The resulting account access token is what the control-plane API expects as `Authorization: Bearer <token>`.",
+        "acquisition": "manual"
+      },
+      "xata_branch_connection_string": {
+        "type": "basic",
+        "label": "Xata branch PostgreSQL connection string",
+        "generateUrl": "https://console.xata.io/",
+        "setup": "Open the branch details or credentials in [Xata Console](https://console.xata.io/) or fetch them with the control-plane API, then copy the branch PostgreSQL connection string in the form `postgres://user:pass@{branch}.{region}.xata.tech/db`. This credential includes the embedded database username/password and is what the branch gateway expects.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "xata-branch-gateway-sql-api",
+        "name": "Xata Branch Gateway SQL API",
+        "type": "http",
+        "docs": "https://xata.io/docs/api-reference/gateway/execute-sql-query",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://xata.io/docs/api-reference/gateway/execute-sql-query.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "xata_branch_connection_string",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Connection-String",
+                    "scheme": "Connection-String"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://xata.io/docs/api-reference/gateway/execute-sql-query.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{branch}.{region}.xata.tech"
+      },
+      {
+        "slug": "xata-branch-gateway-postgresql-websocket",
+        "name": "Xata Branch Gateway PostgreSQL WebSocket",
+        "type": "http",
+        "docs": "https://xata.io/docs/api-reference/gateway/websocket-wire-protocol-proxy",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://xata.io/docs/api-reference/gateway/websocket-wire-protocol-proxy.md"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "xata_branch_connection_string",
+                  "mechanics": {
+                    "source": "http",
+                    "scheme": "postgres startup message"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://xata.io/docs/api-reference/gateway/websocket-wire-protocol-proxy.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{branch}.{region}.xata.tech/v2"
+      },
+      {
+        "slug": "xata-control-plane-api",
+        "name": "Xata Control Plane API",
+        "type": "http",
+        "docs": "https://xata.io/docs/llms.txt",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://xata.io/docs/api-reference/api-keys/create-a-user-api-key.md",
+            "https://xata.io/docs/api-reference/branches/list-all-branches.md",
+            "https://xata.io/docs/api-reference/branches/retrieve-branch-credentials"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "xata_oauth_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://xata.io/docs/api-reference/api-keys/create-a-user-api-key.md",
+                  "https://xata.io/docs/api-reference/branches/list-all-branches.md",
+                  "https://xata.io/docs/api-reference/branches/retrieve-branch-credentials"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.xata.tech",
+        "spec": "https://api.xata.tech/openapi.yaml"
+      },
+      {
+        "slug": "xata-cli",
+        "name": "Xata CLI",
+        "type": "cli",
+        "docs": "https://xata.io/docs/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://xata.io/docs/cli",
+            "https://xata.io/docs/cli/auth",
+            "https://xata.io/docs/quickstart",
+            "https://xata.io/docs/platform/api-key"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "xata_oauth_access_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "xata auth login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://xata.io/docs/cli/auth",
+                  "https://xata.io/docs/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "xata",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "xata"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:31:10.710Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 237202,
+    "completion_tokens": 1952,
+    "total_tokens": 239154
+  },
+  "visited": [
+    "https://github.com/xataio/mdx-docs/blob/main/020-Connect/099-REST/001-rest-api.mdx",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://xata.io/blog/xata-agent-v031",
+    "https://xata.io/docs/api-reference/api-keys/create-a-user-api-key.md",
+    "https://xata.io/docs/api-reference/branches/list-all-branches.md",
+    "https://xata.io/docs/api-reference/branches/retrieve-branch-credentials",
+    "https://xata.io/docs/api-reference/gateway/execute-sql-query.md",
+    "https://xata.io/docs/api-reference/gateway/websocket-wire-protocol-proxy.md",
+    "https://xata.io/docs/cli",
+    "https://xata.io/docs/cli/auth",
+    "https://xata.io/docs/index.md",
+    "https://xata.io/docs/llms.txt",
+    "https://xata.io/docs/overview",
+    "https://xata.io/docs/platform/api-key",
+    "https://xata.io/docs/quickstart"
+  ],
+  "grounding": [
+    "https://api.xata.tech/api-keys",
+    "https://api.xata.tech/organizations/{organizationID}/projects/{projectID}/branches",
+    "https://api.xata.tech/organizations/{organizationID}/projects/{projectID}/branches/{branchID}/credentials",
+    "https://console.xata.io",
+    "https://console.xata.io/",
+    "https://github.com/xataio",
+    "https://github.com/xataio/mdx-docs/blob/main/020-Connect/099-REST/001-rest-api.mdx",
+    "https://github.com/xataio/pgstream/issues/409",
+    "https://twitter.com/xata",
+    "https://www.apollographql.com/docs/apollo-mcp-server",
+    "https://www.linkedin.com/company/xataio",
+    "https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=xata",
+    "https://www.xatastatus.com/",
+    "https://www.youtube.com/@xataio",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://xata.io/#1-sign-up",
+    "https://xata.io/#2-create-a-project",
+    "https://xata.io/#3-create-a-branch",
+    "https://xata.io/#4-install-and-configure-the-xata-cli",
+    "https://xata.io/#5-insert-sample-data",
+    "https://xata.io/#6-create-a-development-branch-with-the-cli",
+    "https://xata.io/#7-next-steps-choose-your-workflow",
+    "https://xata.io/#access-control",
+    "https://xata.io/#access-token",
+    "https://xata.io/#api-key-management",
+    "https://xata.io/#authentication",
+    "https://xata.io/#authentication-%26-configuration",
+    "https://xata.io/#authentication-&-configuration",
+    "https://xata.io/#authorization-authorization",
+    "https://xata.io/#automation-%26-ci%2Fcd",
+    "https://xata.io/#automation-&-ci/cd",
+    "https://xata.io/#available-commands",
+    "https://xata.io/#basic-usage",
+    "https://xata.io/#binary-version-overrides",
+    "https://xata.io/#branch-management",
+    "https://xata.io/#clone-%26-stream",
+    "https://xata.io/#clone-&-stream",
+    "https://xata.io/#container-image",
+    "https://xata.io/#content-area",
+    "https://xata.io/#custom-environment-flags",
+    "https://xata.io/#database-synchronization",
+    "https://xata.io/#environment-variables",
+    "https://xata.io/#examples",
+    "https://xata.io/#from-the-cli",
+    "https://xata.io/#functionality-access",
+    "https://xata.io/#global-flags",
+    "https://xata.io/#installation",
+    "https://xata.io/#installation-docker",
+    "https://xata.io/#installation-windows",
+    "https://xata.io/#list",
+    "https://xata.io/#login",
+    "https://xata.io/#logout",
+    "https://xata.io/#migration-guides",
+    "https://xata.io/#networking",
+    "https://xata.io/#organization-management",
+    "https://xata.io/#overview",
+    "https://xata.io/#param-api-url",
+    "https://xata.io/#param-client-id",
+    "https://xata.io/#param-client-secret",
+    "https://xata.io/#param-f-force",
+    "https://xata.io/#param-h-help",
+    "https://xata.io/#param-h-help-1",
+    "https://xata.io/#param-h-help-2",
+    "https://xata.io/#param-h-help-3",
+    "https://xata.io/#param-h-help-4",
+    "https://xata.io/#param-h-help-5",
+    "https://xata.io/#param-h-help-6",
+    "https://xata.io/#param-h-help-7",
+    "https://xata.io/#param-issuer",
+    "https://xata.io/#param-json",
+    "https://xata.io/#param-profile",
+    "https://xata.io/#param-profile-1",
+    "https://xata.io/#param-profile-2",
+    "https://xata.io/#param-profile-3",
+    "https://xata.io/#param-profile-4",
+    "https://xata.io/#param-v-version",
+    "https://xata.io/#param-xata-api-environment",
+    "https://xata.io/#param-xata-api-key",
+    "https://xata.io/#param-xata-branchid",
+    "https://xata.io/#param-xata-branchname",
+    "https://xata.io/#param-xata-cli-source-postgres-url",
+    "https://xata.io/#param-xata-config-dir",
+    "https://xata.io/#param-xata-databasename",
+    "https://xata.io/#param-xata-organizationid",
+    "https://xata.io/#param-xata-pgroll-binary-version",
+    "https://xata.io/#param-xata-pgstream-binary-version",
+    "https://xata.io/#param-xata-private-branch-timeout",
+    "https://xata.io/#param-xata-projectid",
+    "https://xata.io/#param-yes",
+    "https://xata.io/#parameter-branch-id",
+    "https://xata.io/#parameter-organization-id",
+    "https://xata.io/#parameter-project-id",
+    "https://xata.io/#parameter-username",
+    "https://xata.io/#project-%26-branch-configuration",
+    "https://xata.io/#project-&-branch-configuration",
+    "https://xata.io/#project-and-branch-access",
+    "https://xata.io/#project-management",
+    "https://xata.io/#refresh-token",
+    "https://xata.io/#response-password",
+    "https://xata.io/#response-username",
+    "https://xata.io/#schema-migrations",
+    "https://xata.io/#scoping",
+    "https://xata.io/#status",
+    "https://xata.io/#subcommands",
+    "https://xata.io/#support",
+    "https://xata.io/#switch",
+    "https://xata.io/#tutorials",
+    "https://xata.io/#utility-commands",
+    "https://xata.io/#why-xata",
+    "https://xata.io/blog/neon-vs-supabase-vs-xata-postgres-branching-part-1",
+    "https://xata.io/blog/xata-agent-v031",
+    "https://xata.io/contact-support",
+    "https://xata.io/discord",
+    "https://xata.io/docs",
+    "https://xata.io/docs/api-reference/api-keys/bulk-delete-api-keys-for-an-organization.md",
+    "https://xata.io/docs/api-reference/api-keys/bulk-delete-api-keys-for-the-authenticated-user.md",
+    "https://xata.io/docs/api-reference/api-keys/create-a-user-api-key",
+    "https://xata.io/docs/api-reference/api-keys/create-a-user-api-key.md",
+    "https://xata.io/docs/api-reference/api-keys/create-an-organization-api-key.md",
+    "https://xata.io/docs/api-reference/api-keys/list-api-keys-for-an-organization.md",
+    "https://xata.io/docs/api-reference/api-keys/list-api-keys-for-the-authenticated-user.md",
+    "https://xata.io/docs/api-reference/branches/create-a-new-branch",
+    "https://xata.io/docs/api-reference/branches/create-a-new-branch.md",
+    "https://xata.io/docs/api-reference/branches/delete-a-branch",
+    "https://xata.io/docs/api-reference/branches/delete-a-branch.md",
+    "https://xata.io/docs/api-reference/branches/get-branch-details",
+    "https://xata.io/docs/api-reference/branches/get-branch-details.md",
+    "https://xata.io/docs/api-reference/branches/get-postgresql-configuration-details",
+    "https://xata.io/docs/api-reference/branches/get-postgresql-configuration-details.md",
+    "https://xata.io/docs/api-reference/branches/list-all-branches",
+    "https://xata.io/docs/api-reference/branches/list-all-branches.md",
+    "https://xata.io/docs/api-reference/branches/retrieve-branch-credentials",
+    "https://xata.io/docs/api-reference/branches/retrieve-branch-credentials.md",
+    "https://xata.io/docs/api-reference/branches/retrieve-branch-logs",
+    "https://xata.io/docs/api-reference/branches/retrieve-branch-logs.md",
+    "https://xata.io/docs/api-reference/branches/retrieve-branch-metrics",
+    "https://xata.io/docs/api-reference/branches/retrieve-branch-metrics.md",
+    "https://xata.io/docs/api-reference/branches/rotate-branch-credentials",
+    "https://xata.io/docs/api-reference/branches/rotate-branch-credentials.md",
+    "https://xata.io/docs/api-reference/branches/update-branch-details",
+    "https://xata.io/docs/api-reference/branches/update-branch-details.md",
+    "https://xata.io/docs/api-reference/gateway/execute-sql-query",
+    "https://xata.io/docs/api-reference/gateway/execute-sql-query.md",
+    "https://xata.io/docs/api-reference/gateway/websocket-wire-protocol-proxy",
+    "https://xata.io/docs/api-reference/gateway/websocket-wire-protocol-proxy.md",
+    "https://xata.io/docs/api-reference/organizations/create-a-new-organization.md",
+    "https://xata.io/docs/api-reference/organizations/delete-an-invitation.md",
+    "https://xata.io/docs/api-reference/organizations/delete-an-organization.md",
+    "https://xata.io/docs/api-reference/organizations/get-details-of-a-specific-invitation.md",
+    "https://xata.io/docs/api-reference/organizations/get-list-of-organizations.md",
+    "https://xata.io/docs/api-reference/organizations/get-organization-details.md",
+    "https://xata.io/docs/api-reference/organizations/get-organization-membership-limits.md",
+    "https://xata.io/docs/api-reference/organizations/list-invitations-for-an-organization.md",
+    "https://xata.io/docs/api-reference/organizations/list-members-of-an-organization.md",
+    "https://xata.io/docs/api-reference/organizations/remove-a-member-from-an-organization.md",
+    "https://xata.io/docs/api-reference/organizations/request-organization-deletion.md",
+    "https://xata.io/docs/api-reference/organizations/resend-an-invitation.md",
+    "https://xata.io/docs/api-reference/organizations/send-an-invitation-to-join-an-organization.md",
+    "https://xata.io/docs/api-reference/organizations/update-organization-details.md",
+    "https://xata.io/docs/api-reference/projects/create-a-new-project.md",
+    "https://xata.io/docs/api-reference/projects/delete-a-project.md",
+    "https://xata.io/docs/api-reference/projects/get-available-images.md",
+    "https://xata.io/docs/api-reference/projects/get-available-instance-types.md",
+    "https://xata.io/docs/api-reference/projects/get-available-regions.md",
+    "https://xata.io/docs/api-reference/projects/get-organization-resource-limits.md",
+    "https://xata.io/docs/api-reference/projects/get-project-details.md",
+    "https://xata.io/docs/api-reference/projects/get-project-resource-limits-1.md",
+    "https://xata.io/docs/api-reference/projects/get-project-resource-limits.md",
+    "https://xata.io/docs/api-reference/projects/list-all-projects.md",
+    "https://xata.io/docs/api-reference/projects/update-project-details.md",
+    "https://xata.io/docs/automations/ga-check",
+    "https://xata.io/docs/automations/ga-check.md",
+    "https://xata.io/docs/automations/ga-cleanup.md",
+    "https://xata.io/docs/automations/ga-clone",
+    "https://xata.io/docs/automations/ga-clone.md",
+    "https://xata.io/docs/automations/ga-pr",
+    "https://xata.io/docs/automations/ga-pr.md",
+    "https://xata.io/docs/automations/kubernetes-clone",
+    "https://xata.io/docs/automations/kubernetes-clone.md",
+    "https://xata.io/docs/changelog",
+    "https://xata.io/docs/changelog.md",
+    "https://xata.io/docs/cli",
+    "https://xata.io/docs/cli/auth",
+    "https://xata.io/docs/cli/auth#access-token",
+    "https://xata.io/docs/cli/auth#login",
+    "https://xata.io/docs/cli/auth#logout",
+    "https://xata.io/docs/cli/auth#refresh-token",
+    "https://xata.io/docs/cli/auth#status",
+    "https://xata.io/docs/cli/auth#switch",
+    "https://xata.io/docs/cli/auth.md",
+    "https://xata.io/docs/cli/branch",
+    "https://xata.io/docs/cli/branch#checkout",
+    "https://xata.io/docs/cli/branch#create",
+    "https://xata.io/docs/cli/branch#delete",
+    "https://xata.io/docs/cli/branch#describe",
+    "https://xata.io/docs/cli/branch#get",
+    "https://xata.io/docs/cli/branch#list",
+    "https://xata.io/docs/cli/branch#set",
+    "https://xata.io/docs/cli/branch#tree",
+    "https://xata.io/docs/cli/branch#url",
+    "https://xata.io/docs/cli/branch#wait-ready",
+    "https://xata.io/docs/cli/branch.md",
+    "https://xata.io/docs/cli/checkout",
+    "https://xata.io/docs/cli/checkout#checkout",
+    "https://xata.io/docs/cli/checkout.md",
+    "https://xata.io/docs/cli/clone",
+    "https://xata.io/docs/cli/clone#config",
+    "https://xata.io/docs/cli/clone#start",
+    "https://xata.io/docs/cli/clone#stream",
+    "https://xata.io/docs/cli/clone.md",
+    "https://xata.io/docs/cli/completions",
+    "https://xata.io/docs/cli/completions#install",
+    "https://xata.io/docs/cli/completions#uninstall",
+    "https://xata.io/docs/cli/completions.md",
+    "https://xata.io/docs/cli/init",
+    "https://xata.io/docs/cli/init#init",
+    "https://xata.io/docs/cli/init.md",
+    "https://xata.io/docs/cli/keys",
+    "https://xata.io/docs/cli/keys#create",
+    "https://xata.io/docs/cli/keys#delete",
+    "https://xata.io/docs/cli/keys#list",
+    "https://xata.io/docs/cli/keys.md",
+    "https://xata.io/docs/cli/organization",
+    "https://xata.io/docs/cli/organization#create",
+    "https://xata.io/docs/cli/organization#delete",
+    "https://xata.io/docs/cli/organization#describe",
+    "https://xata.io/docs/cli/organization#get",
+    "https://xata.io/docs/cli/organization#list",
+    "https://xata.io/docs/cli/organization.md",
+    "https://xata.io/docs/cli/project",
+    "https://xata.io/docs/cli/project#create",
+    "https://xata.io/docs/cli/project#delete",
+    "https://xata.io/docs/cli/project#describe",
+    "https://xata.io/docs/cli/project#get",
+    "https://xata.io/docs/cli/project#init",
+    "https://xata.io/docs/cli/project#list",
+    "https://xata.io/docs/cli/project#set",
+    "https://xata.io/docs/cli/project.md",
+    "https://xata.io/docs/cli/roll",
+    "https://xata.io/docs/cli/roll#baseline",
+    "https://xata.io/docs/cli/roll#complete",
+    "https://xata.io/docs/cli/roll#convert",
+    "https://xata.io/docs/cli/roll#init",
+    "https://xata.io/docs/cli/roll#latest",
+    "https://xata.io/docs/cli/roll#migrate",
+    "https://xata.io/docs/cli/roll#pull",
+    "https://xata.io/docs/cli/roll#rollback",
+    "https://xata.io/docs/cli/roll#start",
+    "https://xata.io/docs/cli/roll#status",
+    "https://xata.io/docs/cli/roll#update",
+    "https://xata.io/docs/cli/roll.md",
+    "https://xata.io/docs/cli/status",
+    "https://xata.io/docs/cli/status#status",
+    "https://xata.io/docs/cli/status.md",
+    "https://xata.io/docs/cli/stream",
+    "https://xata.io/docs/cli/stream.md",
+    "https://xata.io/docs/cli/upgrade",
+    "https://xata.io/docs/cli/upgrade#upgrade",
+    "https://xata.io/docs/cli/upgrade.md",
+    "https://xata.io/docs/cli/version",
+    "https://xata.io/docs/cli/version#version",
+    "https://xata.io/docs/cli/version.md",
+    "https://xata.io/docs/core-concepts/anonymization",
+    "https://xata.io/docs/core-concepts/anonymization.md",
+    "https://xata.io/docs/core-concepts/branching",
+    "https://xata.io/docs/core-concepts/branching.md",
+    "https://xata.io/docs/core-concepts/deployment",
+    "https://xata.io/docs/core-concepts/deployment.md",
+    "https://xata.io/docs/core-concepts/scale-to-zero",
+    "https://xata.io/docs/core-concepts/scale-to-zero.md",
+    "https://xata.io/docs/core-concepts/schema-changes",
+    "https://xata.io/docs/core-concepts/schema-changes.md",
+    "https://xata.io/docs/core-concepts/serverless-proxy",
+    "https://xata.io/docs/core-concepts/serverless-proxy.md",
+    "https://xata.io/docs/index",
+    "https://xata.io/docs/index.md",
+    "https://xata.io/docs/llms.txt",
+    "https://xata.io/docs/migrations",
+    "https://xata.io/docs/migrations/aws-aurora",
+    "https://xata.io/docs/migrations/aws-aurora.md",
+    "https://xata.io/docs/migrations/aws-rds",
+    "https://xata.io/docs/migrations/aws-rds.md",
+    "https://xata.io/docs/migrations/azure",
+    "https://xata.io/docs/migrations/azure.md",
+    "https://xata.io/docs/migrations/gcp-cloudsql",
+    "https://xata.io/docs/migrations/gcp-cloudsql.md",
+    "https://xata.io/docs/migrations/greenmask",
+    "https://xata.io/docs/migrations/greenmask.md",
+    "https://xata.io/docs/migrations/neon",
+    "https://xata.io/docs/migrations/neon.md",
+    "https://xata.io/docs/migrations/parquet",
+    "https://xata.io/docs/migrations/parquet.md",
+    "https://xata.io/docs/migrations/self-hosted",
+    "https://xata.io/docs/migrations/self-hosted.md",
+    "https://xata.io/docs/migrations/supabase",
+    "https://xata.io/docs/migrations/supabase.md",
+    "https://xata.io/docs/opensource/pgstream/docs/Observability.md",
+    "https://xata.io/docs/opensource/pgstream/docs/architecture.md",
+    "https://xata.io/docs/opensource/pgstream/docs/aws.md",
+    "https://xata.io/docs/opensource/pgstream/docs/cli.md",
+    "https://xata.io/docs/opensource/pgstream/docs/configuration.md",
+    "https://xata.io/docs/opensource/pgstream/docs/gcp_cloudsql.md",
+    "https://xata.io/docs/opensource/pgstream/docs/neon.md",
+    "https://xata.io/docs/opensource/pgstream/docs/privileges.md",
+    "https://xata.io/docs/opensource/pgstream/docs/releases/v1.0.0.md",
+    "https://xata.io/docs/opensource/pgstream/docs/releases/v1.0.1.md",
+    "https://xata.io/docs/opensource/pgstream/docs/releases/v1.0.2.md",
+    "https://xata.io/docs/opensource/pgstream/docs/releases/v1.0.3.md",
+    "https://xata.io/docs/opensource/pgstream/docs/snapshots.md",
+    "https://xata.io/docs/opensource/pgstream/docs/transformers.md",
+    "https://xata.io/docs/opensource/pgstream/docs/tutorials/postgres_kafka.md",
+    "https://xata.io/docs/opensource/pgstream/docs/tutorials/postgres_snapshot.md",
+    "https://xata.io/docs/opensource/pgstream/docs/tutorials/postgres_to_opensearch.md",
+    "https://xata.io/docs/opensource/pgstream/docs/tutorials/postgres_to_postgres.md",
+    "https://xata.io/docs/opensource/pgstream/docs/tutorials/postgres_to_webhooks.md",
+    "https://xata.io/docs/opensource/pgstream/docs/tutorials/postgres_transformer.md",
+    "https://xata.io/docs/opensource/pgstream/docs/xata.md",
+    "https://xata.io/docs/opensource/pgstream/overview.md",
+    "https://xata.io/docs/overview",
+    "https://xata.io/docs/overview.md",
+    "https://xata.io/docs/pl",
+    "https://xata.io/docs/platform/account",
+    "https://xata.io/docs/platform/account.md",
+    "https://xata.io/docs/platform/api-key",
+    "https://xata.io/docs/platform/api-key.md",
+    "https://xata.io/docs/platform/branch",
+    "https://xata.io/docs/platform/branch.md",
+    "https://xata.io/docs/platform/compute",
+    "https://xata.io/docs/platform/compute.md",
+    "https://xata.io/docs/platform/extensions",
+    "https://xata.io/docs/platform/extensions.md",
+    "https://xata.io/docs/platform/logs",
+    "https://xata.io/docs/platform/logs.md",
+    "https://xata.io/docs/platform/metrics",
+    "https://xata.io/docs/platform/migrations",
+    "https://xata.io/docs/platform/organization",
+    "https://xata.io/docs/platform/project",
+    "https://xata.io/docs/platform/queries",
+    "https://xata.io/docs/platform/query-insights",
+    "https://xata.io/docs/platform/schemas",
+    "https://xata.io/docs/quickstart",
+    "https://xata.io/docs/quickstarts/drizzle",
+    "https://xata.io/docs/quickstarts/n8n",
+    "https://xata.io/docs/quickstarts/railway",
+    "https://xata.io/docs/tutorials/create-production-clone",
+    "https://xata.io/docs/tutorials/schema-change",
+    "https://xata.io/docs/tutorials/streaming-replication",
+    "https://xata.io/install.ps1",
+    "https://xata.io/install.sh",
+    "https://{branch}.{region}.xata.tech/sql",
+    "https://{branch}.{region}.xata.tech/v2"
+  ]
+}

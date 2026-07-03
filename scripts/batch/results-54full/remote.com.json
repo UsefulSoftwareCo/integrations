@@ -1,0 +1,629 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "remote.com",
+    "detect": {
+      "domain": "remote.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:49:06.384Z",
+    "summary": "Remote exposes one authenticated REST API at `https://gateway.remote.com` plus a hosted MCP server at `https://mcp.remote.com/mcp`; the API supports customer bearer tokens and several partner OAuth-based modes, and the MCP server uses OAuth login with a Remote account.",
+    "description": "Remote provides employer-of-record, payroll, HR, and workforce-management services for globally distributed teams. Its platform lets companies and employees manage employment, payroll, benefits, time off, expenses, and related HR data.",
+    "credentials": {
+      "customer_api_token": {
+        "type": "bearer",
+        "label": "Customer API token",
+        "generateUrl": "https://developer.remote.com/docs/authorization-for-customers",
+        "setup": "In the Remote dashboard, go to **Company → Company Settings → Integrations & APIs → Integrations**, open the **Remote API** card, and click **Generate API token**. Only company admins or company owners can create or revoke the token. See [Obtaining access token](https://developer.remote.com/docs/authorization-for-customers) and [Quick Start Guide for Customers](https://developer.remote.com/docs/quick-start-guide)."
+      },
+      "partner_client_credentials": {
+        "type": "basic",
+        "label": "Partner client ID and client secret",
+        "generateUrl": "https://developer.remote.com/docs/getting-started-for-partners",
+        "setup": "Become a Remote API partner, sign the NDA, and Remote sends your `CLIENT_ID` and `CLIENT_SECRET` in a 1Password share. Save them securely; the 1Password access is valid for 7 days. See [Quick Start Guide for Partners](https://developer.remote.com/docs/getting-started-for-partners)."
+      },
+      "partner_access_token": {
+        "type": "oauth2_cc",
+        "label": "Partner OAuth access token",
+        "generateUrl": "https://developer.remote.com/docs/client-credentials-flow-for-partners",
+        "setup": "Use your partner `CLIENT_ID` and `CLIENT_SECRET` to call `POST https://gateway.remote.com/auth/oauth2/token` (or sandbox `https://gateway.remote-sandbox.com/auth/oauth2/token`) with HTTP Basic auth and `grant_type=client_credentials`. Remote returns a bearer `access_token` valid for 3600 seconds. See [Client Credentials Flow for Partners](https://developer.remote.com/docs/client-credentials-flow-for-partners)."
+      },
+      "partner_refresh_token": {
+        "type": "oauth2",
+        "label": "Partner refresh token for company-authorized access",
+        "generateUrl": "https://developer.remote.com/docs/authorization-code-flow",
+        "setup": "Register as a Remote API partner and obtain `CLIENT_ID`/`CLIENT_SECRET`, then send a company admin through Remote's OAuth authorization-code consent flow. After approval, exchange the returned `code` at `POST https://gateway.remote.com/auth/oauth2/token` (or sandbox) using HTTP Basic auth to receive a `refresh_token`, which you can later exchange for bearer access tokens. See [Data sync for existing companies](https://developer.remote.com/docs/authorization-code-flow) and [Refresh Token Flow](https://developer.remote.com/docs/refresh-token-flow)."
+      },
+      "partner_oauth_assertion": {
+        "type": "jwt",
+        "label": "Partner-signed JWT assertion",
+        "generateUrl": "https://developer.remote.com/docs/authorization-method-oauth-assertion",
+        "setup": "Vetted partners create a JWT with `iss` set to their `CLIENT_ID`, `sub` bound to the Remote user or employment being acted for, `aud` matching Remote's auth server, and sign it with their partner `CLIENT_SECRET`. Exchange it at `POST /auth/oauth2/token` with `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer` to receive a bearer access token. See [Authorization Method — OAuth Assertion](https://developer.remote.com/docs/authorization-method-oauth-assertion)."
+      },
+      "remote_account_oauth": {
+        "type": "oauth2",
+        "label": "Remote account OAuth login for MCP",
+        "generateUrl": "https://developer.remote.com/docs/introduction-to-remote-mcp",
+        "setup": "Add the MCP server URL `https://mcp.remote.com/mcp` in an MCP-compatible client and sign in with your existing Remote account when the browser opens. The client dynamically registers and completes OAuth 2.0 Authorization Code with PKCE; no API key or client secret is created manually. See [Introduction to Remote.com MCP](https://developer.remote.com/docs/introduction-to-remote-mcp) and [Quick Start Guide](https://developer.remote.com/docs/quick-start-guide-2)."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "remote-api",
+        "name": "Remote API",
+        "type": "http",
+        "docs": "https://developer.remote.com/reference/welcome-to-remote-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.remote.com/docs/quick-start-guide",
+            "https://developer.remote.com/docs/authentication.md",
+            "https://developer.remote.com/docs/authorization-for-customers",
+            "https://developer.remote.com/docs/client-credentials-flow-for-partners",
+            "https://developer.remote.com/docs/authorization-code-flow",
+            "https://developer.remote.com/docs/refresh-token-flow",
+            "https://developer.remote.com/docs/authorization-method-oauth-assertion",
+            "https://developer.remote.com/reference/welcome-to-remote-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "customer_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.remote.com/docs/authorization-for-customers",
+                  "https://developer.remote.com/docs/authentication.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "partner_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.remote.com/docs/client-credentials-flow-for-partners",
+                  "https://developer.remote.com/docs/authentication.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "partner_refresh_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.remote.com/docs/authorization-code-flow",
+                  "https://developer.remote.com/docs/refresh-token-flow",
+                  "https://developer.remote.com/docs/authentication.md"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "partner_oauth_assertion",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.remote.com/docs/authorization-method-oauth-assertion",
+                  "https://developer.remote.com/docs/authentication.md"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://gateway.remote.com"
+      },
+      {
+        "slug": "remote-com-mcp",
+        "name": "Remote.com MCP",
+        "type": "mcp",
+        "docs": "https://developer.remote.com/docs/introduction-to-remote-mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.remote.com/docs/introduction-to-remote-mcp",
+            "https://developer.remote.com/docs/quick-start-guide-2"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "remote_account_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.remote.com/docs/introduction-to-remote-mcp",
+                  "https://developer.remote.com/docs/quick-start-guide-2"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.remote.com/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "claude-code-mcp-connector-setup-for-remote-com-mcp",
+        "name": "Claude Code MCP connector setup for Remote.com MCP",
+        "type": "cli",
+        "docs": "https://developer.remote.com/docs/quick-start-guide-2",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.remote.com/docs/quick-start-guide-2"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "remote_account_oauth",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "claude mcp add --scope user --transport http remote-com-mcp https://mcp.remote.com/mcp"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.remote.com/docs/quick-start-guide-2"
+                ]
+              }
+            }
+          ]
+        },
+        "command": "claude"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:49:06.385Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 180334,
+    "completion_tokens": 2284,
+    "total_tokens": 182618
+  },
+  "visited": [
+    "https://developer.remote.com/docs/authentication-for-partners",
+    "https://developer.remote.com/docs/authentication.md",
+    "https://developer.remote.com/docs/authorization-code-flow.md",
+    "https://developer.remote.com/docs/authorization-for-customers",
+    "https://developer.remote.com/docs/authorization-method-oauth-assertion.md",
+    "https://developer.remote.com/docs/changelogs.md",
+    "https://developer.remote.com/docs/client-credentials-flow-for-partners.md",
+    "https://developer.remote.com/docs/creating-a-company",
+    "https://developer.remote.com/docs/getting-started-for-partners.md",
+    "https://developer.remote.com/docs/introduction-to-remote-mcp",
+    "https://developer.remote.com/docs/introduction-to-remote-sdks",
+    "https://developer.remote.com/docs/quick-start-guide",
+    "https://developer.remote.com/docs/quick-start-guide-2",
+    "https://developer.remote.com/docs/refresh-token-flow.md",
+    "https://developer.remote.com/llms.txt",
+    "https://developer.remote.com/reference/post_auth_oauth2_token",
+    "https://developer.remote.com/reference/welcome-to-remote-api",
+    "https://github.com/api-evangelist/remote-com"
+  ],
+  "grounding": [
+    "http://www.json.org/",
+    "https://cdn.api-assets.remote.com/api-docs/authorization_code_alternative_flow.png",
+    "https://cdn.api-assets.remote.com/api-docs/authorization_page.png",
+    "https://cdn.api-assets.remote.com/api-docs/credentials_box1.png",
+    "https://cdn.api-assets.remote.com/api-docs/remote_login_page.png",
+    "https://datatracker.ietf.org/doc/html/rfc6749",
+    "https://developer.remote.com/#-why-use-the-remote-flows-sdk",
+    "https://developer.remote.com/#1---define-your-objectives",
+    "https://developer.remote.com/#2---access-the-sandbox-environment",
+    "https://developer.remote.com/#3---create-a-test-company-in-sandbox",
+    "https://developer.remote.com/#4---get-an-api-access-token-in-sandbox",
+    "https://developer.remote.com/#5---send-your-first-request-to-the-api",
+    "https://developer.remote.com/#6---deploy-to-production",
+    "https://developer.remote.com/#authentication",
+    "https://developer.remote.com/#before-you-start",
+    "https://developer.remote.com/#client-credentials-flow",
+    "https://developer.remote.com/#compatible-clients",
+    "https://developer.remote.com/#connect-via-claude-code",
+    "https://developer.remote.com/#connect-via-claudeai-or-claude-desktop",
+    "https://developer.remote.com/#connect-via-cursor-codex-or-other-mcp-clients",
+    "https://developer.remote.com/#content",
+    "https://developer.remote.com/#create-your-access-token",
+    "https://developer.remote.com/#getting-started",
+    "https://developer.remote.com/#how-its-secured",
+    "https://developer.remote.com/#introduction",
+    "https://developer.remote.com/#multiple-remote-accounts",
+    "https://developer.remote.com/#option-1-plug-and-play-with-component",
+    "https://developer.remote.com/#option-2-go-custom-with-hooks",
+    "https://developer.remote.com/#performing-an-authenticated-request",
+    "https://developer.remote.com/#prerequisites",
+    "https://developer.remote.com/#quick-glossary",
+    "https://developer.remote.com/#refresh-token-flow",
+    "https://developer.remote.com/#requesting-an-access-token",
+    "https://developer.remote.com/#required-oauth-scopes",
+    "https://developer.remote.com/#revoke-access-token",
+    "https://developer.remote.com/#two-flexible-options-when-to-use-which",
+    "https://developer.remote.com/#verify-it-works",
+    "https://developer.remote.com/#webhook-dependency",
+    "https://developer.remote.com/#what-it-isnt",
+    "https://developer.remote.com/#what-will-you-need",
+    "https://developer.remote.com/#what-you-can-reach-through-it",
+    "https://developer.remote.com/#who-its-for",
+    "https://developer.remote.com/#️-two-flexible-options",
+    "https://developer.remote.com/docs",
+    "https://developer.remote.com/docs/authentication",
+    "https://developer.remote.com/docs/authentication-for-partners",
+    "https://developer.remote.com/docs/authentication-for-partners.md",
+    "https://developer.remote.com/docs/authentication.md",
+    "https://developer.remote.com/docs/authorization-code-flow",
+    "https://developer.remote.com/docs/authorization-code-flow.md",
+    "https://developer.remote.com/docs/authorization-for-customers",
+    "https://developer.remote.com/docs/authorization-for-customers.md",
+    "https://developer.remote.com/docs/authorization-method-oauth-assertion",
+    "https://developer.remote.com/docs/authorization-method-oauth-assertion.md",
+    "https://developer.remote.com/docs/available-webhooks",
+    "https://developer.remote.com/docs/available-webhooks.md",
+    "https://developer.remote.com/docs/benefits-renewal",
+    "https://developer.remote.com/docs/benefits-renewal.md",
+    "https://developer.remote.com/docs/build-with-merge",
+    "https://developer.remote.com/docs/build-with-merge.md",
+    "https://developer.remote.com/docs/cancel-onboarding",
+    "https://developer.remote.com/docs/cancel-onboarding.md",
+    "https://developer.remote.com/docs/changelogs",
+    "https://developer.remote.com/docs/changelogs.md",
+    "https://developer.remote.com/docs/client-credentials-flow-for-partners",
+    "https://developer.remote.com/docs/client-credentials-flow-for-partners.md",
+    "https://developer.remote.com/docs/company-statuses",
+    "https://developer.remote.com/docs/company-statuses.md",
+    "https://developer.remote.com/docs/contract-status",
+    "https://developer.remote.com/docs/contract-status.md",
+    "https://developer.remote.com/docs/create-new-employment",
+    "https://developer.remote.com/docs/create-new-employment.md",
+    "https://developer.remote.com/docs/creating-a-company",
+    "https://developer.remote.com/docs/creating-a-company.md",
+    "https://developer.remote.com/docs/creating-employees-with-remote-api",
+    "https://developer.remote.com/docs/creating-employees-with-remote-api.md",
+    "https://developer.remote.com/docs/custom-fields",
+    "https://developer.remote.com/docs/custom-fields.md",
+    "https://developer.remote.com/docs/date-and-time-format",
+    "https://developer.remote.com/docs/date-and-time-format.md",
+    "https://developer.remote.com/docs/employment-cost-estimation",
+    "https://developer.remote.com/docs/employment-cost-estimation.md",
+    "https://developer.remote.com/docs/employment-lifecycle-stages",
+    "https://developer.remote.com/docs/employment-lifecycle-stages.md",
+    "https://developer.remote.com/docs/employment-statuses",
+    "https://developer.remote.com/docs/employment-statuses.md",
+    "https://developer.remote.com/docs/empowering-our-partners-with-robust-json-schemas",
+    "https://developer.remote.com/docs/empowering-our-partners-with-robust-json-schemas.md",
+    "https://developer.remote.com/docs/environment-setup",
+    "https://developer.remote.com/docs/environment-setup.md",
+    "https://developer.remote.com/docs/eor-hiring-eligibility",
+    "https://developer.remote.com/docs/eor-hiring-eligibility.md",
+    "https://developer.remote.com/docs/getting-company-consent",
+    "https://developer.remote.com/docs/getting-company-consent.md",
+    "https://developer.remote.com/docs/getting-started",
+    "https://developer.remote.com/docs/getting-started-for-partners",
+    "https://developer.remote.com/docs/getting-started-for-partners.md",
+    "https://developer.remote.com/docs/getting-started-with-remote",
+    "https://developer.remote.com/docs/getting-started-with-remote.md",
+    "https://developer.remote.com/docs/how-json-schemas-work",
+    "https://developer.remote.com/docs/how-json-schemas-work.md",
+    "https://developer.remote.com/docs/identity-verification",
+    "https://developer.remote.com/docs/identity-verification.md",
+    "https://developer.remote.com/docs/introduction-to-remote-mcp",
+    "https://developer.remote.com/docs/introduction-to-remote-mcp.md",
+    "https://developer.remote.com/docs/introduction-to-remote-sdks",
+    "https://developer.remote.com/docs/introduction-to-remote-sdks.md",
+    "https://developer.remote.com/docs/leave-policies-summary",
+    "https://developer.remote.com/docs/leave-policies-summary.md",
+    "https://developer.remote.com/docs/list-company-payroll-calendar",
+    "https://developer.remote.com/docs/list-company-payroll-calendar.md",
+    "https://developer.remote.com/docs/list-eor-payroll-calendar",
+    "https://developer.remote.com/docs/list-eor-payroll-calendar.md",
+    "https://developer.remote.com/docs/list-payroll-calendar",
+    "https://developer.remote.com/docs/list-payroll-calendar.md",
+    "https://developer.remote.com/docs/magic-links-for-passwordless-login",
+    "https://developer.remote.com/docs/magic-links-for-passwordless-login.md",
+    "https://developer.remote.com/docs/money-format",
+    "https://developer.remote.com/docs/money-format.md",
+    "https://developer.remote.com/docs/offboarding-an-employee",
+    "https://developer.remote.com/docs/offboarding-an-employee.md",
+    "https://developer.remote.com/docs/prerequisites",
+    "https://developer.remote.com/docs/prerequisites.md",
+    "https://developer.remote.com/docs/pull-contractor-invoices-for-ap",
+    "https://developer.remote.com/docs/pull-contractor-invoices-for-ap.md",
+    "https://developer.remote.com/docs/pull-eor-cost-breakdown",
+    "https://developer.remote.com/docs/pull-eor-cost-breakdown.md",
+    "https://developer.remote.com/docs/pull-gl-and-payroll-reports",
+    "https://developer.remote.com/docs/pull-gl-and-payroll-reports.md",
+    "https://developer.remote.com/docs/pull-peo-cost-breakdown",
+    "https://developer.remote.com/docs/pull-peo-cost-breakdown.md",
+    "https://developer.remote.com/docs/quick-start-guide",
+    "https://developer.remote.com/docs/quick-start-guide#4---get-an-api-access-token-in-sandbox",
+    "https://developer.remote.com/docs/quick-start-guide-2",
+    "https://developer.remote.com/docs/quick-start-guide-2.md",
+    "https://developer.remote.com/docs/quick-start-guide.md",
+    "https://developer.remote.com/docs/rate-limit",
+    "https://developer.remote.com/docs/rate-limit-for-partner",
+    "https://developer.remote.com/docs/rate-limit-for-partner.md",
+    "https://developer.remote.com/docs/rate-limit.md",
+    "https://developer.remote.com/docs/refresh-token-flow",
+    "https://developer.remote.com/docs/refresh-token-flow.md",
+    "https://developer.remote.com/docs/remote-flows-sdk",
+    "https://developer.remote.com/docs/remote-flows-sdk.md",
+    "https://developer.remote.com/docs/sso-configuration",
+    "https://developer.remote.com/docs/sso-configuration.md",
+    "https://developer.remote.com/docs/temporary-company-creation",
+    "https://developer.remote.com/docs/temporary-company-creation.md",
+    "https://developer.remote.com/docs/update-and-invite-employment",
+    "https://developer.remote.com/docs/update-and-invite-employment.md",
+    "https://developer.remote.com/docs/use-case-and-examples",
+    "https://developer.remote.com/docs/use-case-and-examples.md",
+    "https://developer.remote.com/docs/user-status",
+    "https://developer.remote.com/docs/user-status.md",
+    "https://developer.remote.com/docs/verifying-webhooks",
+    "https://developer.remote.com/docs/verifying-webhooks.md",
+    "https://developer.remote.com/docs/welcome-to-remote-api",
+    "https://developer.remote.com/docs/working-with-countries",
+    "https://developer.remote.com/docs/working-with-countries.md",
+    "https://developer.remote.com/docs/working-with-expenses",
+    "https://developer.remote.com/docs/working-with-expenses.md",
+    "https://developer.remote.com/docs/working-with-files",
+    "https://developer.remote.com/docs/working-with-files.md",
+    "https://developer.remote.com/docs/working-with-incentives",
+    "https://developer.remote.com/docs/working-with-incentives.md",
+    "https://developer.remote.com/docs/working-with-time-off",
+    "https://developer.remote.com/docs/working-with-time-off.md",
+    "https://developer.remote.com/docs/working-with-timesheets",
+    "https://developer.remote.com/docs/working-with-timesheets.md",
+    "https://developer.remote.com/docs/working-with-webhooks",
+    "https://developer.remote.com/docs/working-with-webhooks.md",
+    "https://developer.remote.com/getting-started",
+    "https://developer.remote.com/llms.txt",
+    "https://developer.remote.com/login?redirect_uri=/docs/authentication-for-partners",
+    "https://developer.remote.com/login?redirect_uri=/docs/authorization-for-customers",
+    "https://developer.remote.com/login?redirect_uri=/docs/introduction-to-remote-mcp",
+    "https://developer.remote.com/login?redirect_uri=/docs/introduction-to-remote-sdks",
+    "https://developer.remote.com/login?redirect_uri=/docs/quick-start-guide",
+    "https://developer.remote.com/login?redirect_uri=/docs/quick-start-guide-2",
+    "https://developer.remote.com/login?redirect_uri=/reference/post_auth_oauth2_token",
+    "https://developer.remote.com/login?redirect_uri=/reference/welcome-to-remote-api",
+    "https://developer.remote.com/reference",
+    "https://developer.remote.com/reference/benefit_renewal_requestcreated",
+    "https://developer.remote.com/reference/benefit_renewal_requestcreated.md",
+    "https://developer.remote.com/reference/billing_documentissued-1",
+    "https://developer.remote.com/reference/billing_documentissued-1.md",
+    "https://developer.remote.com/reference/companyactivated-1",
+    "https://developer.remote.com/reference/companyactivated-1.md",
+    "https://developer.remote.com/reference/companyarchived-1",
+    "https://developer.remote.com/reference/companyarchived-1.md",
+    "https://developer.remote.com/reference/companyeor_hiringadditional_information_required-1",
+    "https://developer.remote.com/reference/companyeor_hiringadditional_information_required-1.md",
+    "https://developer.remote.com/reference/companyeor_hiringno_reserve_payment_requested-1",
+    "https://developer.remote.com/reference/companyeor_hiringno_reserve_payment_requested-1.md",
+    "https://developer.remote.com/reference/companyeor_hiringreferred-1",
+    "https://developer.remote.com/reference/companyeor_hiringreferred-1.md",
+    "https://developer.remote.com/reference/companyeor_hiringreserve_payment_requested-1",
+    "https://developer.remote.com/reference/companyeor_hiringreserve_payment_requested-1.md",
+    "https://developer.remote.com/reference/companyeor_hiringverification_completed-1",
+    "https://developer.remote.com/reference/companyeor_hiringverification_completed-1.md",
+    "https://developer.remote.com/reference/companymanager_created-1",
+    "https://developer.remote.com/reference/companymanager_created-1.md",
+    "https://developer.remote.com/reference/companymanager_deleted-1",
+    "https://developer.remote.com/reference/companymanager_deleted-1.md",
+    "https://developer.remote.com/reference/companymanager_updated-1",
+    "https://developer.remote.com/reference/companymanager_updated-1.md",
+    "https://developer.remote.com/reference/companyowner_changed",
+    "https://developer.remote.com/reference/companyowner_changed.md",
+    "https://developer.remote.com/reference/companypartner_offboarded-1",
+    "https://developer.remote.com/reference/companypartner_offboarded-1.md",
+    "https://developer.remote.com/reference/contractor_invoiceemployer_paid",
+    "https://developer.remote.com/reference/contractor_invoiceissued",
+    "https://developer.remote.com/reference/contractor_invoicepaid_out",
+    "https://developer.remote.com/reference/contractor_invoicepayment_initiated",
+    "https://developer.remote.com/reference/custom_fieldvalue_updated-1",
+    "https://developer.remote.com/reference/delete_v1_company-managers_user_id",
+    "https://developer.remote.com/reference/delete_v1_contractors_employments_employment_id_contractor-cor-subscription",
+    "https://developer.remote.com/reference/delete_v1_webhook-callbacks_id",
+    "https://developer.remote.com/reference/employment_company_structure_nodeupdated-1",
+    "https://developer.remote.com/reference/employmentcontractor_management_planupdated-1",
+    "https://developer.remote.com/reference/employmentcontractor_of_record_terminationcancelled-1",
+    "https://developer.remote.com/reference/get_v1_benefit-offers",
+    "https://developer.remote.com/reference/get_v1_benefit-offers.md",
+    "https://developer.remote.com/reference/get_v1_benefit-offers_country-summaries",
+    "https://developer.remote.com/reference/get_v1_benefit-offers_country-summaries.md",
+    "https://developer.remote.com/reference/get_v1_benefit-renewal-requests",
+    "https://developer.remote.com/reference/get_v1_benefit-renewal-requests.md",
+    "https://developer.remote.com/reference/get_v1_benefit-renewal-requests_benefit_renewal_request_id",
+    "https://developer.remote.com/reference/get_v1_benefit-renewal-requests_benefit_renewal_request_id.md",
+    "https://developer.remote.com/reference/get_v1_benefit-renewal-requests_benefit_renewal_request_id_schema",
+    "https://developer.remote.com/reference/get_v1_benefit-renewal-requests_benefit_renewal_request_id_schema.md",
+    "https://developer.remote.com/reference/get_v1_billing-documents",
+    "https://developer.remote.com/reference/get_v1_billing-documents.md",
+    "https://developer.remote.com/reference/get_v1_billing-documents_billing_document_id",
+    "https://developer.remote.com/reference/get_v1_billing-documents_billing_document_id.md",
+    "https://developer.remote.com/reference/get_v1_billing-documents_billing_document_id_breakdown",
+    "https://developer.remote.com/reference/get_v1_billing-documents_billing_document_id_breakdown.md",
+    "https://developer.remote.com/reference/get_v1_billing-documents_billing_document_id_pdf",
+    "https://developer.remote.com/reference/get_v1_billing-documents_billing_document_id_pdf.md",
+    "https://developer.remote.com/reference/get_v1_companies",
+    "https://developer.remote.com/reference/get_v1_companies_company_id",
+    "https://developer.remote.com/reference/get_v1_companies_company_id.md",
+    "https://developer.remote.com/reference/get_v1_companies_company_id_actions",
+    "https://developer.remote.com/reference/get_v1_companies_company_id_actions.md",
+    "https://developer.remote.com/reference/get_v1_companies_company_id_compliance-profile",
+    "https://developer.remote.com/reference/get_v1_companies_company_id_employments_employment_id_onboarding-reserves-status",
+    "https://developer.remote.com/reference/get_v1_companies_company_id_legal-entities",
+    "https://developer.remote.com/reference/get_v1_companies_company_id_legal-entities_legal_entity_id_administrative-details",
+    "https://developer.remote.com/reference/get_v1_companies_company_id_legal-entities_legal_entity_id_contractor-eligibility",
+    "https://developer.remote.com/reference/get_v1_companies_company_id_webhook-callbacks",
+    "https://developer.remote.com/reference/get_v1_companies_schema",
+    "https://developer.remote.com/reference/get_v1_company-currencies",
+    "https://developer.remote.com/reference/get_v1_company-departments",
+    "https://developer.remote.com/reference/get_v1_company-managers",
+    "https://developer.remote.com/reference/get_v1_company-managers_user_id",
+    "https://developer.remote.com/reference/get_v1_contractor-invoice-schedules",
+    "https://developer.remote.com/reference/get_v1_contractor-invoice-schedules_id",
+    "https://developer.remote.com/reference/get_v1_contractor-invoices",
+    "https://developer.remote.com/reference/get_v1_contractor-invoices_id",
+    "https://developer.remote.com/reference/get_v1_contractors_employments_employment_id_contractor-subscriptions",
+    "https://developer.remote.com/reference/get_v1_contractors_employments_employment_id_cor-termination-requests_termina",
+    "https://developer.remote.com/reference/get_v1_countries",
+    "https://developer.remote.com/reference/get_v1_countries_country_code_contractor-contract-details",
+    "https://developer.remote.com/reference/get_v1_countries_country_code_engagement-agreement-details",
+    "https://developer.remote.com/reference/get_v1_countries_country_code_form",
+    "https://developer.remote.com/reference/get_v1_countries_country_code_holidays_year",
+    "https://developer.remote.com/reference/get_v1_countries_country_code_legal_entity_forms_form",
+    "https://developer.remote.com/reference/get_v1_custom-fields",
+    "https://developer.remote.com/reference/get_v1_custom-fields_custom_field_id_values_employment_id",
+    "https://developer.remote.com/reference/get_v1_employee_current",
+    "https://developer.remote.com/reference/get_v1_employee_expense-categories",
+    "https://developer.remote.com/reference/get_v1_employee_expenses",
+    "https://developer.remote.com/reference/get_v1_employee_incentives",
+    "https://developer.remote.com/reference/get_v1_employee_payslip-files",
+    "https://developer.remote.com/reference/get_v1_employee_payslips",
+    "https://developer.remote.com/reference/get_v1_employee_personal-information",
+    "https://developer.remote.com/reference/get_v1_employee_timesheets",
+    "https://developer.remote.com/reference/get_v1_employments_employment_id_benefit-offers",
+    "https://developer.remote.com/reference/get_v1_employments_employment_id_benefit-offers.md",
+    "https://developer.remote.com/reference/get_v1_employments_employment_id_benefit-offers_schema",
+    "https://developer.remote.com/reference/get_v1_employments_employment_id_benefit-offers_schema.md",
+    "https://developer.remote.com/reference/get_v1_employments_employment_id_company-structure-nodes",
+    "https://developer.remote.com/reference/get_v1_employments_employment_id_custom-fields",
+    "https://developer.remote.com/reference/get_v1_help-center-articles_id",
+    "https://developer.remote.com/reference/get_v1_identity_current",
+    "https://developer.remote.com/reference/get_v1_scim_v2_groups",
+    "https://developer.remote.com/reference/get_v1_scim_v2_groups_id",
+    "https://developer.remote.com/reference/get_v1_scim_v2_users",
+    "https://developer.remote.com/reference/get_v1_scim_v2_users_id",
+    "https://developer.remote.com/reference/get_v1_webhook-events",
+    "https://developer.remote.com/reference/patch_v1_companies_company_id",
+    "https://developer.remote.com/reference/patch_v1_companies_company_id-2",
+    "https://developer.remote.com/reference/patch_v1_contractor-invoice-schedules_id",
+    "https://developer.remote.com/reference/patch_v1_contractor-invoice-schedules_id-2",
+    "https://developer.remote.com/reference/patch_v1_custom-fields_custom_field_id_values_employment_id",
+    "https://developer.remote.com/reference/patch_v1_custom-fields_custom_field_id_values_employment_id-2",
+    "https://developer.remote.com/reference/patch_v1_webhook-callbacks_id",
+    "https://developer.remote.com/reference/post_auth_oauth2_token",
+    "https://developer.remote.com/reference/post_token_o_auth2_token",
+    "https://developer.remote.com/reference/post_v1_benefit-renewal-requests_benefit_renewal_request_id",
+    "https://developer.remote.com/reference/post_v1_benefit-renewal-requests_benefit_renewal_request_id.md",
+    "https://developer.remote.com/reference/post_v1_companies",
+    "https://developer.remote.com/reference/post_v1_company-departments",
+    "https://developer.remote.com/reference/post_v1_company-managers",
+    "https://developer.remote.com/reference/post_v1_contractor-invoice-schedules",
+    "https://developer.remote.com/reference/post_v1_contractors_employments_employment_id_contractor-cor-subscription",
+    "https://developer.remote.com/reference/post_v1_contractors_employments_employment_id_contractor-plus-subscription",
+    "https://developer.remote.com/reference/post_v1_contractors_employments_employment_id_cor-t",
+    "https://developer.remote.com/reference/post_v1_contractors_employments_employment_id_cor-termination-requests",
+    "https://developer.remote.com/reference/post_v1_custom-fields",
+    "https://developer.remote.com/reference/post_v1_employee_expenses",
+    "https://developer.remote.com/reference/post_v1_webhook-callbacks",
+    "https://developer.remote.com/reference/post_v1_webhook-events_replay",
+    "https://developer.remote.com/reference/put_v1_companies_company_id_legal-entities_legal_entity_id_administrative-details",
+    "https://developer.remote.com/reference/put_v1_employments_employment_id_benefit-offers",
+    "https://developer.remote.com/reference/put_v1_employments_employment_id_benefit-offers.md",
+    "https://developer.remote.com/reference/welcome-to-remote-api",
+    "https://developer.remote.com/update/changelog",
+    "https://employ.remote.com/dashboard",
+    "https://en.wikipedia.org/wiki/Representational_state_transfer",
+    "https://example.com/callback?state=c97b8fa15f7f8ba064b338779b8eecab&code=dc518e245b9157d6e658a45d7b3c1188e67bc37c",
+    "https://example.com/callback?state=c97b8fa15f7f8ba064b338779b8eecab&error=denied&error_message=*The%20authorization%20was%20denied*",
+    "https://files.readme.io/1c8f75c2baf2e498c551b7f44e795995a8380d571039116ce36448ec530afb8f-authorization_code_flow.png",
+    "https://files.readme.io/61c7356ec06c172b1686bdefb6679201702ab57dbfb72c211516d0f9f0f4f475-image.png",
+    "https://files.readme.io/7642ad26119630dbe437ff6a5f3911857ca4b03375e6772565cfe7c93a130b08-image.png",
+    "https://gateway.partners.remote-sandbox.com/auth",
+    "https://gateway.remote-sandbox.com",
+    "https://gateway.remote-sandbox.com/",
+    "https://gateway.remote-sandbox.com/auth",
+    "https://gateway.remote-sandbox.com/auth/oauth2/authorize?",
+    "https://gateway.remote-sandbox.com/auth/oauth2/authorize?client_id=9c62f10ef475f55c982328eaa8f64fa8&redirect_uri=https://example.com/callback&state=c97b8fa15f7f8ba064b338779b8eecab",
+    "https://gateway.remote-sandbox.com/auth/oauth2/token",
+    "https://gateway.remote-sandbox.com/v1/employments",
+    "https://gateway.remote.com",
+    "https://gateway.remote.com/",
+    "https://gateway.remote.com/auth",
+    "https://gateway.remote.com/auth/oauth2/token",
+    "https://gateway.remote.com/company.manage",
+    "https://gateway.remote.com/eor/v1/companies",
+    "https://gateway.remote.com/v1/employments",
+    "https://github.com/api-evangelist/remote-com",
+    "https://github.com/remoteoss/json-schema-form/releases",
+    "https://github.com/remoteoss/remote-flows/releases",
+    "https://github.com/remoteoss/remote-flows/tree/main?tab=readme-ov-file#remoteossremote-flows",
+    "https://mcp.remote.com/mcp",
+    "https://modelcontextprotocol.io/",
+    "https://remote.com/api-terms-of-use",
+    "https://www.rfc-editor.org/rfc/rfc6749#section-1.1",
+    "https://www.rfc-editor.org/rfc/rfc6749#section-1.3.1",
+    "https://www.rfc-editor.org/rfc/rfc6749#section-1.3.4",
+    "https://www.rfc-editor.org/rfc/rfc6749#section-1.4",
+    "https://www.rfc-editor.org/rfc/rfc6749#section-1.5"
+  ]
+}

@@ -1,0 +1,536 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "moodys.com",
+    "detect": {
+      "domain": "moodys.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T22:07:32.141Z",
+    "summary": "Moody's exposes a remote MCP server, an Economy.com HTTP API estate, a CRE HTTP API, and Insurance Solutions REST APIs; documented auth includes MCP OAuth, Economy.com API key/encryption-key-based auth, and CRE API keys, while Insurance Solutions auth details were not publicly confirmed.",
+    "description": "Moody's provides financial data, analytics, credit research, economic forecasting, and risk/insurance technology products. Its offerings span economic datasets, commercial real estate information, catastrophe and climate risk tools, and GenAI-ready data access.",
+    "credentials": {
+      "moodys_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Moody's MCP OAuth account access",
+        "generateUrl": "https://www.moodys.com/web/en/us/genai/model-context-protocol.html",
+        "setup": "Request access from Moody's as described in the [Using Moody’s MCP Server](https://www.moodys.com/web/en/us/genai/model-context-protocol.html) page. When your MCP client connects, Moody's redirects you to its login page; sign in there with your authorized Moody's username/password and complete the OAuth consent/login flow.",
+        "acquisition": "manual"
+      },
+      "economy_api_keys": {
+        "type": "compound",
+        "label": "Economy.com API access key + encryption key",
+        "generateUrl": "https://www.economy.com/myeconomy/api-key-info",
+        "setup": "Sign in to your [Economy.com account](https://www.economy.com/account/login), then open [My Economy API key info](https://www.economy.com/myeconomy/api-key-info) to obtain your `access key` and `encryption key`. The docs say these keys are issued to a single user and are required for Data Buffet authentication; the broader Economy.com API summary says valid license keys are required to authenticate requests.",
+        "acquisition": "manual"
+      },
+      "moodyscre_api_key": {
+        "type": "api_key",
+        "label": "Moody's CRE API key",
+        "generateUrl": "https://members.moodyscre.com/register",
+        "setup": "Create or sign in to your [Moody's CRE member account](https://members.moodyscre.com/login) via the [registration page](https://members.moodyscre.com/register), then obtain your CRE API key for the marketplace API. The API reference documents that each request must include an API key, but the public page does not state the self-service minting screen explicitly.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "moody-s-mcp-server",
+        "name": "Moody's MCP Server",
+        "type": "mcp",
+        "docs": "https://www.moodys.com/web/en/us/genai/model-context-protocol.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.moodys.com/web/en/us/genai/model-context-protocol.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "moodys_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.moodys.com/web/en/us/genai/model-context-protocol.html"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.moodys.com/genai-ready-data/m1/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "moody-s-analytics-economy-api",
+        "name": "Moody's Analytics Economy API",
+        "type": "http",
+        "docs": "https://www.economy.com/products/tools/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.economy.com/products/tools/api",
+            "https://docs.moodysanalytics.com/databuffet/docs/intro-to-authentication",
+            "https://api.economy.com/data/v1/swagger",
+            "https://api.economy.com/muni/v1/swagger",
+            "https://api.economy.com/autocycle/v1/swagger",
+            "https://api.economy.com/scenario-studio/v2/swagger"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "economy_api_keys",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "AccessKeyId"
+                  }
+                },
+                {
+                  "id": "economy_api_keys",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Signature"
+                  }
+                },
+                {
+                  "id": "economy_api_keys",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "TimeStamp"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.moodysanalytics.com/databuffet/docs/intro-to-authentication"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "economy_api_keys",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.moodysanalytics.com/databuffet/docs/intro-to-authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.economy.com"
+      },
+      {
+        "slug": "moody-s-cre-api",
+        "name": "Moody's CRE API",
+        "type": "http",
+        "docs": "https://www.moodyscre.com/marketplace/developers/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.moodyscre.com/marketplace/developers/api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "moodyscre_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "apiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.moodyscre.com/marketplace/developers/api"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "moodyscre_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-Api-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.moodyscre.com/marketplace/developers/api"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.moodyscre.com/api/cfra"
+      },
+      {
+        "slug": "moody-s-insurance-solutions-apis",
+        "name": "Moody's Insurance Solutions APIs",
+        "type": "http",
+        "docs": "https://developer.rms.com/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.rms.com/",
+            "https://developer.rms.com/climate-on-demand",
+            "https://developer.rms.com/platform",
+            "https://developer.rms.com/location-intelligence",
+            "https://developer.rms.com/risk-modeler",
+            "https://developer.rms.com/databridge"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        }
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T22:07:32.142Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 259703,
+    "completion_tokens": 1901,
+    "total_tokens": 261604
+  },
+  "visited": [
+    "https://api.economy.com/autocycle/v1/swagger",
+    "https://api.economy.com/data/v1/swagger",
+    "https://api.economy.com/eccl/v1/swagger",
+    "https://api.economy.com/muni/v1/swagger",
+    "https://api.economy.com/scenario-studio/v2/swagger",
+    "https://careers.moodys.com/en/job/charlotte/senior-software-engineer/49841/97142841440",
+    "https://developer.rms.com/",
+    "https://developer.rms.com/climate-on-demand",
+    "https://developer.rms.com/databridge",
+    "https://developer.rms.com/location-intelligence",
+    "https://developer.rms.com/platform",
+    "https://developer.rms.com/risk-modeler",
+    "https://docs.moodysanalytics.com/databuffet",
+    "https://docs.moodysanalytics.com/databuffet/docs/intro-to-authentication",
+    "https://github.com/api-evangelist/moodys-corporation",
+    "https://hub.moodysanalytics.com/",
+    "https://hub.moodysanalytics.com/products",
+    "https://ma.moodys.com/rs/961-KCJ-308/images/API%20Portal%20Webinar_0930_final.pdf",
+    "https://www.economy.com/products/tools/api",
+    "https://www.moodys.com/web/en/us/capabilities/gen-ai.html",
+    "https://www.moodys.com/web/en/us/capabilities/gen-ai/ai-ready-data.html",
+    "https://www.moodys.com/web/en/us/creditview/blog/ai-partnerships.html",
+    "https://www.moodys.com/web/en/us/creditview/blog/demystifying-mcp.html",
+    "https://www.moodys.com/web/en/us/creditview/blog/gen-ai-ready-data-powered-for-adoption.html",
+    "https://www.moodys.com/web/en/us/genai/model-context-protocol.html",
+    "https://www.moodys.com/web/en/us/insights/insurance/tokio-marine-hcc-modernizes-catastrophe-modeling-with-moodys-risk-modeler.html",
+    "https://www.moodys.com/web/en/us/kyc/products/kompany.html",
+    "https://www.moodys.com/web/en/us/kyc/solutions/entity-ownership.html",
+    "https://www.moodys.com/web/en/us/who-we-serve/insurance/it-data-professionals.html",
+    "https://www.moodyscre.com/marketplace/developers/api"
+  ],
+  "grounding": [
+    "http://www.moodys.com",
+    "http://www.moodysanalytics.com",
+    "https://Moodys.ethicspoint.com",
+    "https://api.economy.com/#",
+    "https://api.economy.com/#!/Audit",
+    "https://api.economy.com/#!/Audit/Audit_AuditProjectAsync",
+    "https://api.economy.com/#!/Audit/Audit_AuditSizeAsync",
+    "https://api.economy.com/#!/Baskets",
+    "https://api.economy.com/#!/Baskets/Baskets_Create",
+    "https://api.economy.com/#!/Baskets/Baskets_Delete",
+    "https://api.economy.com/#!/Baskets/Baskets_Edit",
+    "https://api.economy.com/#!/Baskets/Baskets_Get",
+    "https://api.economy.com/#!/Baskets/Baskets_GetContents",
+    "https://api.economy.com/#!/Baskets/Baskets_Get_0",
+    "https://api.economy.com/#!/Forecast",
+    "https://api.economy.com/#!/Forecast/Forecast_ForecastBatch",
+    "https://api.economy.com/#!/Forecast/Forecast_LookUpForecast",
+    "https://api.economy.com/#!/Health",
+    "https://api.economy.com/#!/Health/Health_Get",
+    "https://api.economy.com/#!/HealthCheck",
+    "https://api.economy.com/#!/HealthCheck/HealthCheck_HealthCheck",
+    "https://api.economy.com/#!/Project",
+    "https://api.economy.com/#!/Project/Project_DeleteAsync",
+    "https://api.economy.com/#!/Project/Project_GetListAsync",
+    "https://api.economy.com/#!/Project/Project_GetProjectAsync",
+    "https://api.economy.com/#!/Universe",
+    "https://api.economy.com/#!/Universe/Universe_ClientsListAsync",
+    "https://api.economy.com/#!/Universe/Universe_GetScenarioAsync",
+    "https://api.economy.com/#!/Universe/Universe_ScenarioDetailsAsync",
+    "https://api.economy.com/#!/Universe/Universe_ScenariosListAsync",
+    "https://api.economy.com/#!/Universe/Universe_SearchBaseScenariosListAsync",
+    "https://api.economy.com/#!/Universe/Universe_SearchBaseScenariosListCountAsync",
+    "https://api.economy.com/#!/Universe/Universe_SearchProjectScenariosListAsync",
+    "https://api.economy.com/#!/Universe/Universe_SearchProjectScenariosListCountAsync",
+    "https://api.economy.com/#!/Vin",
+    "https://api.economy.com/#!/Vin/Vin_VinLookup",
+    "https://api.economy.com/autocycle/v1/swagger",
+    "https://api.economy.com/data/v1/",
+    "https://api.economy.com/data/v1/oauth2/token",
+    "https://api.economy.com/data/v1/series?m=ET.IUSA",
+    "https://api.economy.com/data/v1/swagger",
+    "https://api.economy.com/data/v1/swagger/ui/index#/Search",
+    "https://api.economy.com/eccl/v1/swagger",
+    "https://api.economy.com/muni/v1/swagger",
+    "https://api.economy.com/scenario-studio/v2/swagger",
+    "https://api.moodys.com/genai-ready-data/m1/mcp",
+    "https://careers.moodys.com/",
+    "https://careers.moodys.com/en/job/charlotte/senior-software-engineer/49841/97142841440",
+    "https://claude.ai/settings/connectors",
+    "https://climate.moodys.com/platform",
+    "https://developer.rms.com/",
+    "https://developer.rms.com/#content",
+    "https://developer.rms.com/climate-on-demand",
+    "https://developer.rms.com/climate-on-demand/",
+    "https://developer.rms.com/climate-on-demand/changelog",
+    "https://developer.rms.com/climate-on-demand/docs",
+    "https://developer.rms.com/climate-on-demand/docs/cod-quick-start",
+    "https://developer.rms.com/climate-on-demand/docs/methodologies#corporates",
+    "https://developer.rms.com/climate-on-demand/docs/methodologies#pro",
+    "https://developer.rms.com/climate-on-demand/docs/methodologies#spatialareas",
+    "https://developer.rms.com/climate-on-demand/docs/methodologies#standard",
+    "https://developer.rms.com/climate-on-demand/reference",
+    "https://developer.rms.com/databridge",
+    "https://developer.rms.com/help?redirect_uri=https%3A%2F%2Foauth.readme.io%2Fp%2Frms-group%2Foauth%2Fcallback&scope=openid+email+profile+groups+tenants&state=&response_type=code&client_id=26427840-ab1f-4ced-bf24-c4fcbfca5ad5",
+    "https://developer.rms.com/location-intelligence",
+    "https://developer.rms.com/platform",
+    "https://developer.rms.com/register?redirect_uri=https%3A%2F%2Foauth.readme.io%2Fp%2Frms-group%2Foauth%2Fcallback&scope=openid+email+profile+groups+tenants&state=&response_type=code&client_id=26427840-ab1f-4ced-bf24-c4fcbfca5ad5",
+    "https://developer.rms.com/risk-modeler",
+    "https://developer.rms.com/rms-developers",
+    "https://docs.moodysanalytics.com/#",
+    "https://docs.moodysanalytics.com/#authenticating-each-request",
+    "https://docs.moodysanalytics.com/#content",
+    "https://docs.moodysanalytics.com/#getting-api-keys",
+    "https://docs.moodysanalytics.com/#obtaining-oauth-token",
+    "https://docs.moodysanalytics.com/#using-hmac-authentication",
+    "https://docs.moodysanalytics.com/#using-oauth-authentication",
+    "https://docs.moodysanalytics.com/cls",
+    "https://docs.moodysanalytics.com/databuffet",
+    "https://docs.moodysanalytics.com/databuffet/docs",
+    "https://docs.moodysanalytics.com/databuffet/docs/appendix-1-api-endpoints",
+    "https://docs.moodysanalytics.com/databuffet/docs/appendix-2-error-messages",
+    "https://docs.moodysanalytics.com/databuffet/docs/appendix-3-enumerations",
+    "https://docs.moodysanalytics.com/databuffet/docs/appendix-4-examples-in-c",
+    "https://docs.moodysanalytics.com/databuffet/docs/appendix-5-examples-in-java",
+    "https://docs.moodysanalytics.com/databuffet/docs/appendix-6-examples-in-python",
+    "https://docs.moodysanalytics.com/databuffet/docs/appendix-7-examples-in-r",
+    "https://docs.moodysanalytics.com/databuffet/docs/executing-a-basket-and-downloading-its-output-overview",
+    "https://docs.moodysanalytics.com/databuffet/docs/faq",
+    "https://docs.moodysanalytics.com/databuffet/docs/getting-started",
+    "https://docs.moodysanalytics.com/databuffet/docs/glossary",
+    "https://docs.moodysanalytics.com/databuffet/docs/intro-to-authentication",
+    "https://docs.moodysanalytics.com/databuffet/docs/misc",
+    "https://docs.moodysanalytics.com/databuffet/docs/retrieve-a-single-series",
+    "https://docs.moodysanalytics.com/databuffet/docs/retrieve-multi-series",
+    "https://docs.moodysanalytics.com/databuffet/docs/retrieve-vintages-for-a-series",
+    "https://docs.moodysanalytics.com/databuffet/docs/step-by-step-examples",
+    "https://docs.moodysanalytics.com/databuffet/reference",
+    "https://docs.moodysanalytics.com/llms.txt",
+    "https://docs.moodysanalytics.com/login?redirect_uri=/databuffet/docs/intro-to-authentication",
+    "https://docs.moodysanalytics.com/login?redirect_uri=/docs/intro-to-authentication",
+    "https://docs.moodysanalytics.com/moodys-edfx",
+    "https://docs.moodysanalytics.com/moodys-edfx-climate",
+    "https://docs.moodysanalytics.com/moodys-news-data-volume",
+    "https://docs.moodysanalytics.com/moodys-newsedge",
+    "https://github.com/about",
+    "https://github.com/api-evangelist/moodys-corporation",
+    "https://github.com/moodysanalytics/databuffet-api-codesamples",
+    "https://github.com/moodysanalytics/scenario-studio-api-codesamples",
+    "https://hub.moodysanalytics.com/",
+    "https://hub.moodysanalytics.com/api/auth/signIn",
+    "https://hub.moodysanalytics.com/contact",
+    "https://hub.moodysanalytics.com/gettingstarted",
+    "https://hub.moodysanalytics.com/products",
+    "https://ir.moodys.com/corporate-governance/translated-code-of-business-conduct/default.aspx",
+    "https://ma.moodys.com/Do-Not-Sell-My-Information.html",
+    "https://ma.moodys.com/rs/961-KCJ-308/images/API%20Portal%20Webinar_0930_final.pdf",
+    "https://members.moodyscre.com/login",
+    "https://members.moodyscre.com/register",
+    "https://moodys.ethicspoint.com/",
+    "https://ratings.moodys.com/complaint",
+    "https://ratings.moodys.com/ratings-news",
+    "https://support.rms.com/",
+    "https://support.rms.com/web/guest/home?p_p_state=maximized&p_p_mode=view&refererPlid=12011&saveLastPath=false&_com_liferay_login_web_portlet_LoginPortlet_mvcRenderCommandName=%2Flogin%2Flogin&p_p_id=com_liferay_login_web_portlet_LoginPortlet&p_p_lifecycle=0&_com_liferay_login_web_portlet_LoginPortlet_redirect=%2F",
+    "https://survey.alchemer.com/s3/8249180/Do-Not-Sell-Request",
+    "https://swagger.io",
+    "https://swagger.io/docs/specification/2-0/what-is-swagger/",
+    "https://www.economy.com/",
+    "https://www.economy.com/#ac",
+    "https://www.economy.com/#db",
+    "https://www.economy.com/#eccl",
+    "https://www.economy.com/#mlf",
+    "https://www.economy.com/#requestInfo",
+    "https://www.economy.com/#s2",
+    "https://www.economy.com/#viewNumbers",
+    "https://www.economy.com/about",
+    "https://www.economy.com/about/awards-and-recognition",
+    "https://www.economy.com/about/careers",
+    "https://www.economy.com/about/contact-us",
+    "https://www.economy.com/about/forecasting-approach",
+    "https://www.economy.com/about/frequently-asked-questions",
+    "https://www.economy.com/about/how-we-are-different",
+    "https://www.economy.com/about/in-the-news",
+    "https://www.economy.com/about/proprietary-rights",
+    "https://www.economy.com/about/site-map",
+    "https://www.economy.com/about/terms-of-use",
+    "https://www.economy.com/about/third-party-software-notices",
+    "https://www.economy.com/account/login",
+    "https://www.economy.com/account/register",
+    "https://www.economy.com/business-confidence/about",
+    "https://www.economy.com/business-confidence/participate",
+    "https://www.economy.com/economicview/indicator/usa_dsbc",
+    "https://www.economy.com/events",
+    "https://www.economy.com/getlocal?q=9CA6B547-693E-4671-8FBA-6246CAAD322C&app=download",
+    "https://www.economy.com/getlocal?q=C44F3FB6-7675-4B50-94D4-A09548204190&app=download",
+    "https://www.economy.com/getlocal?q=E32861B6-9D9D-4EBE-BF8B-91A189EC02BB&app=download",
+    "https://www.economy.com/javascript:goChat2(",
+    "https://www.economy.com/javascript:void(0",
+    "https://www.economy.com/markzandi",
+    "https://www.economy.com/myeconomy",
+    "https://www.economy.com/myeconomy/addresses",
+    "https://www.economy.com/myeconomy/api-key-info",
+    "https://www.economy.com/myeconomy/client-message-center",
+    "https://www.economy.com/myeconomy/credit-cards",
+    "https://www.economy.com/myeconomy/edit-profile",
+    "https://www.economy.com/myeconomy/email-preferences",
+    "https://www.economy.com/myeconomy/password-change",
+    "https://www.economy.com/myeconomy/production-schedule",
+    "https://www.economy.com/myeconomy/purchase-receipts",
+    "https://www.economy.com/myeconomy/subscription-preferences",
+    "https://www.economy.com/products",
+    "https://www.economy.com/products/advisory-services",
+    "https://www.economy.com/products/alternative-scenarios",
+    "https://www.economy.com/products/cecl",
+    "https://www.economy.com/products/consumer-credit-analytics",
+    "https://www.economy.com/products/data",
+    "https://www.economy.com/products/research",
+    "https://www.economy.com/products/speaking-engagements",
+    "https://www.economy.com/products/tools",
+    "https://www.economy.com/products/tools/api",
+    "https://www.economy.com/regions",
+    "https://www.economy.com/store",
+    "https://www.moodys.com/#",
+    "https://www.moodys.com/Pages/GenderPayGapReports.aspx",
+    "https://www.moodys.com/Pages/ModernSlavery.aspx",
+    "https://www.moodys.com/contact-us",
+    "https://www.moodys.com/cookiesnotice.aspx",
+    "https://www.moodys.com/privatepolicy.aspx?lang=en&cy=global",
+    "https://www.moodys.com/tel:1-866-330-6397",
+    "https://www.moodys.com/tel:866-330-6397",
+    "https://www.moodys.com/termsofuseinfo.aspx?lang=en&cy=global",
+    "https://www.moodys.com/web/en/us/about-us.html",
+    "https://www.moodys.com/web/en/us/about-us/trust-center.html",
+    "https://www.moodys.com/web/en/us/capabilities/catastrophe-modeling.html",
+    "https://www.moodys.com/web/en/us/capabilities/commercial-properties.html",
+    "https://www.moodys.com/web/en/us/capabilities/company-reference-data.html",
+    "https://www.moodys.com/web/en/us/capabilities/credit-risk.html",
+    "https://www.moodys.com/web/en/us/capabilities/cyber-risk.html",
+    "https://www.moodys.com/web/en/us/capabilities/economic-data.html",
+    "https://www.moodys.com/web/en/us/capabilities/gen-ai.html",
+    "https://www.moodys.com/web/en/us/capabilities/gen-ai/ai-ready-data.html",
+    "https://www.moodys.com/web/en/us/capabilities/physical-transition-risk.html",
+    "https://www.moodys.com/web/en/us/capabilities/structured-finance.html",
+    "https://www.moodys.com/web/en/us/creditview/blog/ai-partnerships.html",
+    "https://www.moodys.com/web/en/us/creditview/blog/demystifying-mcp.html",
+    "https://www.moodys.com/web/en/us/creditview/blog/gen-ai-ready-data-powered-for-adoption.html",
+    "https://www.moodys.com/web/en/us/genai/model-context-protocol.html",
+    "https://www.moodys.com/web/en/us/help-support.html",
+    "https://www.moodys.com/web/en/us/help-support/faq.html",
+    "https://www.moodys.com/web/en/us/insights/insurance/tokio-marine-hcc-modernizes-catastrophe-modeling-with-moodys-risk-modeler.html",
+    "https://www.moodys.com/web/en/us/kyc/products/kompany.html",
+    "https://www.moodys.com/web/en/us/kyc/solutions/entity-ownership.html",
+    "https://www.moodys.com/web/en/us/legal.html",
+    "https://www.moodys.com/web/en/us/legal/gender-pay-gap-reports.html",
+    "https://www.moodys.com/web/en/us/legal/global-disclaimer.html",
+    "https://www.moodys.com/web/en/us/legal/modern-slavery.html",
+    "https://www.moodys.com/web/en/us/legal/privacy-policy.html",
+    "https://www.moodys.com/web/en/us/legal/terms-of-use.html",
+    "https://www.moodys.com/web/en/us/solutions/balance-sheet-management.html",
+    "https://www.moodys.com/web/en/us/solutions/casualty-insurance.html",
+    "https://www.moodys.com/web/en/us/solutions/compliance-third-party-risk.html",
+    "https://www.moodys.com/web/en/us/solutions/investment-research.html",
+    "https://www.moodys.com/web/en/us/solutions/lending.html",
+    "https://www.moodys.com/web/en/us/solutions/model-risk-governance.html",
+    "https://www.moodys.com/web/en/us/solutions/portfolio-management.html",
+    "https://www.moodys.com/web/en/us/solutions/ratings.html",
+    "https://www.moodys.com/web/en/us/solutions/regulatory-calculation-reporting.html",
+    "https://www.moodys.com/web/en/us/solutions/underwriting.html",
+    "https://www.moodys.com/web/en/us/who-we-serve/asset-management/buy-side.html",
+    "https://www.moodys.com/web/en/us/who-we-serve/banking.html",
+    "https://www.moodys.com/web/en/us/who-we-serve/corporations.html",
+    "https://www.moodys.com/web/en/us/who-we-serve/insurance.html",
+    "https://www.moodys.com/web/en/us/who-we-serve/insurance/it-data-professionals.html",
+    "https://www.moodys.com/web/en/us/who-we-serve/public-sector.html",
+    "https://www.moodyscre.com/api/cfra/search/properties",
+    "https://www.moodyscre.com/api/cfra/search/properties/propertyId",
+    "https://www.moodyscre.com/api/cfra/search/properties?apiKey=your-key-here",
+    "https://www.moodyscre.com/api/cfra/search/properties?lat=34.0614831378817&lng=-117.438670992851",
+    "https://www.moodyscre.com/api/cfra/search/properties?modifiedSince=1677965237",
+    "https://www.moodyscre.com/api/cfra/search/properties?offset=10&maxResults=10",
+    "https://www.moodyscre.com/marketplace/developers/api",
+    "https://www.moodyscre.com/marketplace/developers/terms",
+    "https://www.moodyscre.com/marketplace/email/want",
+    "https://www.moodyscre.com/marketplace/faq",
+    "https://www.moodyscre.com/marketplace/help",
+    "https://www.moodyscre.com/marketplace/listings",
+    "https://www.moodyscre.com/marketplace/search/map@38.06709037357077",
+    "https://www.moodyscre.com/marketplace/search?listedStatus=AVAILABLE_LEASE%2CAVAILABLE_SALE",
+    "https://www.moodyscre.com/marketplace/terms",
+    "https://www.postman.com/rms-developers/workspace/cod/collection/21620294-578a748b-78a6-4a3a-b4b3-5c5380b7848e",
+    "https://www.rms.com/about/contact-us",
+    "https://www.rms.com/customer-support",
+    "https://www.rms.com/legal/privacy-policy",
+    "https://www.rms.com/legal/terms-of-use",
+    "https://www.rms.com/risk-intelligence",
+    "https://www.rms.com/risk-intelligence/exposureiq",
+    "https://www.rms.com/risk-intelligence/risk-modeler",
+    "https://www.rms.com/risk-intelligence/treatyiq",
+    "https://www.rms.com/trust"
+  ]
+}

@@ -1,0 +1,336 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "filestack.com",
+    "detect": {
+      "domain": "filestack.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T13:14:02.395Z",
+    "summary": "Filestack exposes two documented HTTP APIs (Management API and File API) plus a Claude Code MCP plugin; auth uses an app API key and secret for file/security flows, and a short-lived JWT for Management API.",
+    "credentials": {
+      "filestack_api_key": {
+        "type": "api_key",
+        "label": "Filestack API key",
+        "generateUrl": "https://dev.filestack.com/",
+        "setup": "Go to the [Filestack Developer Portal](https://dev.filestack.com/), open your app, and copy the `API key`. The docs and plugin configuration refer to it as `FILESTACK_API_KEY` for SDK/MCP usage.",
+        "acquisition": "manual"
+      },
+      "filestack_app_secret": {
+        "type": "basic",
+        "label": "Filestack app secret",
+        "generateUrl": "https://dev.filestack.com/",
+        "setup": "Go to the [Filestack Developer Portal](https://dev.filestack.com/) and copy the app `secret_key` / app secret for your app. Keep it server-side only; it signs security policies and is also used as the HTTP basic password for some File API calls (user `app`).",
+        "acquisition": "manual"
+      },
+      "filestack_mgmt_jwt": {
+        "type": "bearer",
+        "label": "Filestack Management API JWT",
+        "generateUrl": "https://www.filestack.com/docs/api/management/",
+        "setup": "Use your app's `client_id` and `secret_key` to mint a short-lived JWT by calling `POST https://management.filestackapi.com/auth` with HTTP basic auth (`<client_id>:<secret_key>`). The token lasts 60 minutes and must be sent as `Authorization: Bearer <token>` for the Management API.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "filestack-management-api",
+        "name": "Filestack Management API",
+        "type": "http",
+        "docs": "https://www.filestack.com/docs/api/management/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.filestack.com/docs/api/management/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "filestack_mgmt_jwt",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.filestack.com/docs/api/management/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://management.filestackapi.com"
+      },
+      {
+        "slug": "filestack-file-api",
+        "name": "Filestack File API",
+        "type": "http",
+        "docs": "https://www.filestack.com/docs/api/file/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.filestack.com/docs/api/file/",
+            "https://www.filestack.com/docs/security/policies/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "filestack_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "query",
+                    "paramName": "key"
+                  }
+                },
+                {
+                  "id": "filestack_app_secret",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.filestack.com/docs/api/file/",
+                  "https://www.filestack.com/docs/security/policies/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.filestackapi.com/api/file"
+      },
+      {
+        "slug": "filestack-claude-code-plugin-mcp",
+        "name": "Filestack Claude Code Plugin MCP",
+        "type": "mcp",
+        "docs": "https://www.filestack.com/docs/plugins/filestack-claude-plugin/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.filestack.com/docs/plugins/filestack-claude-plugin/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "filestack_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "export FILESTACK_API_KEY=your_api_key",
+                    "env": [
+                      "FILESTACK_API_KEY"
+                    ]
+                  }
+                },
+                {
+                  "id": "filestack_app_secret",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "export FILESTACK_APP_SECRET=your_app_secret",
+                    "env": [
+                      "FILESTACK_APP_SECRET"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.filestack.com/docs/plugins/filestack-claude-plugin/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://github.com/filestack/filestack-claude-plugin.git",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T13:14:02.395Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 117268,
+    "completion_tokens": 1259,
+    "total_tokens": 118527
+  },
+  "visited": [
+    "https://github.com/blurrah/mcp-graphql",
+    "https://tyk.io/docs/ai-management/mcps/api-to-mcp",
+    "https://www.filestack.com/docs/api/file/",
+    "https://www.filestack.com/docs/api/management/",
+    "https://www.filestack.com/docs/plugins/filestack-claude-plugin/",
+    "https://www.filestack.com/docs/security/policies/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "http://myapp1.com",
+    "http://myapp2.com",
+    "https://assets.filestackapi.com/watermark.png",
+    "https://blog.filestack.com/understanding-filestacks-new-security-policies/",
+    "https://cdn.filestackcontent.com/",
+    "https://cdn.filestackcontent.com/Bc2FQwXReueTsaeXB6rO",
+    "https://cdn.filestackcontent.com/bfTNCigRLq0QMOrsFKzb?policy=ewogICJleHBpcnkiOiAxNTIzNTk1NjAwLAogICJjYWxsIjogWyJyZWFkIiwgImNvbnZlcnQiXSwKICAiaGFuZGxlIjogImJmVE5DaWdSTHEwUU1PcnNGS3piIgp9&signature=5191e4c6c304c08296eab217ee05236a5bacaab9b581b535d5922a41079b77e0",
+    "https://cdn.filestackcontent.com/s7tdGfE5RRKFUxwsZoYv",
+    "https://dev.filestack.com/",
+    "https://dev.filestack.com/login/",
+    "https://example.com/document.pdf",
+    "https://example.com/image.png",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://github.com/filestack/filestack-claude-plugin",
+    "https://github.com/filestack/filestack-claude-plugin.git",
+    "https://management.filestackapi.com/apps",
+    "https://management.filestackapi.com/apps/",
+    "https://management.filestackapi.com/apps?limit=2&offset=20",
+    "https://management.filestackapi.com/auth",
+    "https://new.url",
+    "https://sample-domain.com/default/file_sample(1",
+    "https://snap.filestack.com/",
+    "https://tyk.io/docs/ai-management/mcps/api-to-mcp",
+    "https://www.filestack.com/",
+    "https://www.filestack.com/#api-endpoint",
+    "https://www.filestack.com/#basic-authentication",
+    "https://www.filestack.com/#delete",
+    "https://www.filestack.com/#download",
+    "https://www.filestack.com/#hashing",
+    "https://www.filestack.com/#metadata",
+    "https://www.filestack.com/#overview",
+    "https://www.filestack.com/#overwrite",
+    "https://www.filestack.com/#po",
+    "https://www.filestack.com/#policies-and-signatures",
+    "https://www.filestack.com/#policy-structure",
+    "https://www.filestack.com/#provider",
+    "https://www.filestack.com/#query-parameters",
+    "https://www.filestack.com/#query-params",
+    "https://www.filestack.com/#query-params1",
+    "https://www.filestack.com/#query-params2",
+    "https://www.filestack.com/#query-params3",
+    "https://www.filestack.com/#query-params4",
+    "https://www.filestack.com/#request",
+    "https://www.filestack.com/#request1",
+    "https://www.filestack.com/#request2",
+    "https://www.filestack.com/#request3",
+    "https://www.filestack.com/#response",
+    "https://www.filestack.com/#response1",
+    "https://www.filestack.com/#response2",
+    "https://www.filestack.com/#security",
+    "https://www.filestack.com/#storage",
+    "https://www.filestack.com/#store",
+    "https://www.filestack.com/about/",
+    "https://www.filestack.com/careers/",
+    "https://www.filestack.com/contact-us/",
+    "https://www.filestack.com/doc/",
+    "https://www.filestack.com/docs/",
+    "https://www.filestack.com/docs/api/file/",
+    "https://www.filestack.com/docs/api/file/#delete",
+    "https://www.filestack.com/docs/api/file/#overwrite",
+    "https://www.filestack.com/docs/api/file/#security",
+    "https://www.filestack.com/docs/api/management/",
+    "https://www.filestack.com/docs/api/processing/",
+    "https://www.filestack.com/docs/api/processing/#image-size",
+    "https://www.filestack.com/docs/api/sdk/android/",
+    "https://www.filestack.com/docs/api/sdk/angular/",
+    "https://www.filestack.com/docs/api/sdk/go/",
+    "https://www.filestack.com/docs/api/sdk/java/",
+    "https://www.filestack.com/docs/api/sdk/javascript/",
+    "https://www.filestack.com/docs/api/sdk/php/",
+    "https://www.filestack.com/docs/api/sdk/python/",
+    "https://www.filestack.com/docs/api/sdk/react/",
+    "https://www.filestack.com/docs/api/sdk/ruby/",
+    "https://www.filestack.com/docs/api/sdks/",
+    "https://www.filestack.com/docs/api/video_processing/",
+    "https://www.filestack.com/docs/api/webhooks/",
+    "https://www.filestack.com/docs/api/workflows_api/",
+    "https://www.filestack.com/docs/asset-management/digital-asset-management/",
+    "https://www.filestack.com/docs/delivery/cdn/",
+    "https://www.filestack.com/docs/delivery/cdn/#cache",
+    "https://www.filestack.com/docs/delivery/cname/",
+    "https://www.filestack.com/docs/delivery/document_viewer/",
+    "https://www.filestack.com/docs/delivery/storage_aliases/",
+    "https://www.filestack.com/docs/getting-started/changelog/",
+    "https://www.filestack.com/docs/getting-started/how-filestack-works/",
+    "https://www.filestack.com/docs/getting-started/quick-start/",
+    "https://www.filestack.com/docs/getting-started/what-is-filestack/",
+    "https://www.filestack.com/docs/plugins/filestack-claude-plugin/",
+    "https://www.filestack.com/docs/security/domain_whitelists/",
+    "https://www.filestack.com/docs/security/policies/",
+    "https://www.filestack.com/docs/styling/css-reference/",
+    "https://www.filestack.com/docs/transformations/intelligence/caption/",
+    "https://www.filestack.com/docs/transformations/intelligence/document-detection/",
+    "https://www.filestack.com/docs/transformations/intelligence/image-sentiment/",
+    "https://www.filestack.com/docs/transformations/intelligence/ocr/",
+    "https://www.filestack.com/docs/transformations/intelligence/phishing-detection/",
+    "https://www.filestack.com/docs/transformations/intelligence/sfw/",
+    "https://www.filestack.com/docs/transformations/intelligence/tagging/",
+    "https://www.filestack.com/docs/transformations/intelligence/text-sentiment/",
+    "https://www.filestack.com/docs/transformations/intelligence/video-sfw/",
+    "https://www.filestack.com/docs/transformations/intelligence/video-tagging/",
+    "https://www.filestack.com/docs/transformations/intelligence/virus-detection/",
+    "https://www.filestack.com/docs/transformations/overview/",
+    "https://www.filestack.com/docs/transformations/ui/",
+    "https://www.filestack.com/docs/tutorials/",
+    "https://www.filestack.com/docs/uploads/customsource/",
+    "https://www.filestack.com/docs/uploads/dnd/",
+    "https://www.filestack.com/docs/uploads/pickers/",
+    "https://www.filestack.com/docs/uploads/storage/",
+    "https://www.filestack.com/docs/uploads/uploading/",
+    "https://www.filestack.com/docs/workflows/overview/",
+    "https://www.filestack.com/features/cloud-storage/",
+    "https://www.filestack.com/integration-with-wysiwyg-editor/",
+    "https://www.filestack.com/low-code-content-api-platform/",
+    "https://www.filestack.com/performance/",
+    "https://www.filestack.com/pricing",
+    "https://www.filestack.com/pricing/",
+    "https://www.filestack.com/privacy/",
+    "https://www.filestack.com/products/artificial-intelligence/",
+    "https://www.filestack.com/products/audio-video-transformations/",
+    "https://www.filestack.com/products/deliver-overview/",
+    "https://www.filestack.com/products/file-transformations/",
+    "https://www.filestack.com/products/file-upload/",
+    "https://www.filestack.com/products/image-transformations/",
+    "https://www.filestack.com/products/transformations/",
+    "https://www.filestack.com/products/workflows/",
+    "https://www.filestack.com/signup-start/",
+    "https://www.filestack.com/use-cases/drone/",
+    "https://www.filestack.com/use-cases/ed-tech/",
+    "https://www.filestack.com/use-cases/print/",
+    "https://www.filestack.com/use-cases/startup/",
+    "https://www.filestackapi.com/api/file",
+    "https://www.filestackapi.com/api/file/Bc2FQwXReueTsaeXB6rO?policy={POLICY}&signature={SIGNATURE}",
+    "https://www.filestackapi.com/api/file/DCL5K46FS3OIxb5iuKby/metadata",
+    "https://www.filestackapi.com/api/file/{HANDLE}?key={APIKEY}&policy={POLICY}&signature={SIGNATURE}",
+    "https://www.filestackapi.com/api/store/S3?key=MY_API_KEY",
+    "https://www.filestackapi/api/file/hGdfDXDSSNyVhVa0UeiB",
+    "https://www.ideracorp.com/legal/filestack#tabs-1",
+    "https://www.ietf.org/rfc/rfc3339.txt",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

@@ -1,0 +1,515 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "courier.com",
+    "detect": {
+      "domain": "courier.com",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:15:11.279Z",
+    "summary": "Courier exposes a REST API at https://api.courier.com, an MCP server at https://mcp.courier.com, and a `courier` CLI; all use a Courier API key, and Courier can also issue scoped JWTs for client-side Inbox/auth flows.",
+    "description": "Courier is a notification infrastructure service for sending product-to-user messages across email, SMS, push, chat, and in-app channels. It also provides tools for managing user profiles, preferences, templates, automations, and multi-tenant messaging.",
+    "credentials": {
+      "courier_api_key": {
+        "type": "api_key",
+        "label": "Courier API key",
+        "generateUrl": "https://app.courier.com/settings/api-keys",
+        "setup": "Sign up or log in to [Courier](https://app.courier.com), then open [Settings > API Keys](https://app.courier.com/settings/api-keys) and create or copy an API key. Courier documents that Test and Production use separate keys. Use the key as `Authorization: Bearer <API_KEY>` for the REST API, set `COURIER_API_KEY` for the CLI, or pass it to MCP clients in the `api_key` header.",
+        "acquisition": "manual"
+      },
+      "courier_jwt": {
+        "type": "jwt",
+        "label": "Courier-issued JWT for client-side Inbox/auth flows",
+        "generateUrl": "https://www.courier.com/docs/api-reference/authentication/create-a-jwt",
+        "setup": "Create this token from your backend by calling Courier’s [Create a JWT](https://www.courier.com/docs/api-reference/authentication/create-a-jwt) endpoint, which the docs and quickstart also reference as `POST /auth/issue-token`. You first need your own [Courier API key](https://app.courier.com/settings/api-keys); then issue a scoped JWT such as `user_id:user-123 inbox:read:messages inbox:write:events` for client-side Inbox access.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "courier-rest-api",
+        "name": "Courier REST API",
+        "type": "http",
+        "docs": "https://www.courier.com/docs/reference/get-started",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.courier.com/docs/reference/get-started",
+            "https://www.courier.com/docs/getting-started/quickstart",
+            "https://www.courier.com/docs/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "courier_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.courier.com/docs/getting-started/quickstart",
+                  "https://www.courier.com/docs/llms.txt"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.courier.com"
+      },
+      {
+        "slug": "courier-mcp-server",
+        "name": "Courier MCP server",
+        "type": "mcp",
+        "docs": "https://www.courier.com/docs/tools/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.courier.com/docs/tools/mcp",
+            "https://www.courier.com/docs/getting-started/quickstart"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "courier_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "api_key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.courier.com/docs/tools/mcp",
+                  "https://www.courier.com/docs/getting-started/quickstart"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.courier.com",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "courier-cli",
+        "name": "Courier CLI",
+        "type": "cli",
+        "docs": "https://www.courier.com/docs/tools/cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.courier.com/docs/tools/cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "courier_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "env": [
+                      "COURIER_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.courier.com/docs/tools/cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "courier_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "courier --api-key <API_KEY> ..."
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.courier.com/docs/tools/cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@trycourier/cli",
+            "runtimeHint": "node"
+          },
+          {
+            "registryType": "github",
+            "identifier": "trycourier/courier-cli"
+          }
+        ],
+        "command": "courier"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:15:11.279Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 162602,
+    "completion_tokens": 1290,
+    "total_tokens": 163892
+  },
+  "visited": [
+    "https://www.courier.com/docs/api-reference/authentication/create-a-jwt",
+    "https://www.courier.com/docs/api-reference/send/send-a-message",
+    "https://www.courier.com/docs/getting-started/quickstart",
+    "https://www.courier.com/docs/llms.txt",
+    "https://www.courier.com/docs/reference/get-started",
+    "https://www.courier.com/docs/sdk-libraries/sdks-overview",
+    "https://www.courier.com/docs/tools/cli",
+    "https://www.courier.com/docs/tools/mcp",
+    "https://www.courier.com/docs/welcome",
+    "https://www.courier.com/guides/ai-notifications/chapter-3-design-and-send-cli-api-prompts"
+  ],
+  "grounding": [
+    "https://api.courier.com",
+    "https://api.courier.com/profiles/user-123",
+    "https://api.courier.com/send",
+    "https://app.courier.com",
+    "https://app.courier.com/integrations",
+    "https://app.courier.com/login?_gl=1*29rs2q*_gcl_au*MTYxMjIwODg4NS4xNzI5NjU5MDE4",
+    "https://app.courier.com/logs",
+    "https://app.courier.com/settings/api-keys",
+    "https://app.courier.com/signup?_gl=1*1130zcw*_gcl_au*MTYxMjIwODg4NS4xNzI5NjU5MDE4",
+    "https://app.example.com/billing",
+    "https://app.example.com/reset?token=abc",
+    "https://github.com/tidwall/gjson/blob/master/SYNTAX.md",
+    "https://github.com/trycourier",
+    "https://github.com/trycourier/courier-cli/releases",
+    "https://github.com/trycourier/courier-web",
+    "https://mcp.courier.com",
+    "https://platform.openai.com/docs/guides/tools-remote-mcp",
+    "https://www.cour",
+    "https://www.courier.com/#ai-agent-usage",
+    "https://www.courier.com/#audiences",
+    "https://www.courier.com/#audit-events",
+    "https://www.courier.com/#auth",
+    "https://www.courier.com/#automations",
+    "https://www.courier.com/#available-tools",
+    "https://www.courier.com/#brands",
+    "https://www.courier.com/#bulk",
+    "https://www.courier.com/#check-on-a-notification",
+    "https://www.courier.com/#client-side-sdks",
+    "https://www.courier.com/#command-structure",
+    "https://www.courier.com/#content-area",
+    "https://www.courier.com/#copy-for-cursor-%2F-claude",
+    "https://www.courier.com/#copy-for-cursor-/-claude",
+    "https://www.courier.com/#debug-a-delivery-issue",
+    "https://www.courier.com/#developer-tools",
+    "https://www.courier.com/#device-tokens",
+    "https://www.courier.com/#diagnostic-local-installs-only",
+    "https://www.courier.com/#error-handling",
+    "https://www.courier.com/#faq",
+    "https://www.courier.com/#for-ai-agents",
+    "https://www.courier.com/#for-developers",
+    "https://www.courier.com/#get-started",
+    "https://www.courier.com/#global-flags",
+    "https://www.courier.com/#how-courier-works",
+    "https://www.courier.com/#inbound",
+    "https://www.courier.com/#installation",
+    "https://www.courier.com/#journeys",
+    "https://www.courier.com/#lists",
+    "https://www.courier.com/#manage-preferences",
+    "https://www.courier.com/#manage-templates",
+    "https://www.courier.com/#manage-user-profiles",
+    "https://www.courier.com/#manual-install",
+    "https://www.courier.com/#messages",
+    "https://www.courier.com/#mobile",
+    "https://www.courier.com/#notifications",
+    "https://www.courier.com/#output-formats",
+    "https://www.courier.com/#prerequisite-create-an-api-key",
+    "https://www.courier.com/#profiles",
+    "https://www.courier.com/#providers",
+    "https://www.courier.com/#quick-install",
+    "https://www.courier.com/#requests",
+    "https://www.courier.com/#routing-strategies",
+    "https://www.courier.com/#scripting-and-ci%2Fcd",
+    "https://www.courier.com/#send",
+    "https://www.courier.com/#send-in-bulk",
+    "https://www.courier.com/#send-to-groups",
+    "https://www.courier.com/#send-your-first-notification",
+    "https://www.courier.com/#server-side-sdks",
+    "https://www.courier.com/#tenants",
+    "https://www.courier.com/#translations",
+    "https://www.courier.com/#trigger-automations",
+    "https://www.courier.com/#users",
+    "https://www.courier.com/#utility",
+    "https://www.courier.com/#web",
+    "https://www.courier.com/#what%E2%80%99s-next",
+    "https://www.courier.com/#what-you-can-build",
+    "https://www.courier.com/#what’s-next",
+    "https://www.courier.com/#work-with-tenants",
+    "https://www.courier.com/docs/api-reference/audiences/delete-an-audience",
+    "https://www.courier.com/docs/api-reference/audiences/delete-an-audience.md",
+    "https://www.courier.com/docs/api-reference/audiences/get-an-audience",
+    "https://www.courier.com/docs/api-reference/audiences/get-an-audience.md",
+    "https://www.courier.com/docs/api-reference/audiences/list-all-audiences",
+    "https://www.courier.com/docs/api-reference/audiences/list-all-audiences.md",
+    "https://www.courier.com/docs/api-reference/audiences/list-audience-members",
+    "https://www.courier.com/docs/api-reference/audiences/list-audience-members.md",
+    "https://www.courier.com/docs/api-reference/audiences/update-an-audience",
+    "https://www.courier.com/docs/api-reference/audit-events/get-all-audit-events",
+    "https://www.courier.com/docs/api-reference/audit-events/get-an-audit-event",
+    "https://www.courier.com/docs/api-reference/authentication/create-a-jwt",
+    "https://www.courier.com/docs/api-reference/automations/invoke-an-ad-hoc-automation",
+    "https://www.courier.com/docs/api-reference/automations/invoke-an-automation",
+    "https://www.courier.com/docs/api-reference/automations/list-automations",
+    "https://www.courier.com/docs/api-reference/brands/create-a-new-brand",
+    "https://www.courier.com/docs/api-reference/brands/delete-a-brand",
+    "https://www.courier.com/docs/api-reference/brands/get-a-brand",
+    "https://www.courier.com/docs/api-reference/brands/list-brands",
+    "https://www.courier.com/docs/api-reference/brands/replace-a-brand",
+    "https://www.courier.com/docs/api-reference/bulk/add-users",
+    "https://www.courier.com/docs/api-reference/bulk/add-users.md",
+    "https://www.courier.com/docs/api-reference/bulk/create-a-bulk-job",
+    "https://www.courier.com/docs/api-reference/bulk/create-a-bulk-job.md",
+    "https://www.courier.com/docs/api-reference/bulk/get-a-job",
+    "https://www.courier.com/docs/api-reference/bulk/get-a-job.md",
+    "https://www.courier.com/docs/api-reference/bulk/get-users",
+    "https://www.courier.com/docs/api-reference/bulk/get-users.md",
+    "https://www.courier.com/docs/api-reference/bulk/run-a-job",
+    "https://www.courier.com/docs/api-reference/bulk/run-a-job.md",
+    "https://www.courier.com/docs/api-reference/courier-create/create-or-update-a-tenant-template",
+    "https://www.courier.com/docs/api-reference/courier-create/delete-a-tenant-template",
+    "https://www.courier.com/docs/api-reference/courier-create/get-a-specific-template-version",
+    "https://www.courier.com/docs/api-reference/courier-create/get-a-template-in-tenant",
+    "https://www.courier.com/docs/api-reference/courier-create/list-templates-in-tenant",
+    "https://www.courier.com/docs/api-reference/courier-create/publish-a-tenant-template",
+    "https://www.courier.com/docs/api-reference/device-tokens/add-multiple-tokens-to-user",
+    "https://www.courier.com/docs/api-reference/device-tokens/add-multiple-tokens-to-user.md",
+    "https://www.courier.com/docs/api-reference/device-tokens/add-single-token-to-user",
+    "https://www.courier.com/docs/api-reference/device-tokens/add-single-token-to-user.md",
+    "https://www.courier.com/docs/api-reference/device-tokens/delete-user-token",
+    "https://www.courier.com/docs/api-reference/device-tokens/delete-user-token.md",
+    "https://www.courier.com/docs/api-reference/device-tokens/get-all-tokens",
+    "https://www.courier.com/docs/api-reference/device-tokens/get-all-tokens.md",
+    "https://www.courier.com/docs/api-reference/device-tokens/get-single-token",
+    "https://www.courier.com/docs/api-reference/device-tokens/get-single-token.md",
+    "https://www.courier.com/docs/api-reference/device-tokens/update-a-token",
+    "https://www.courier.com/docs/api-reference/device-tokens/update-a-token.md",
+    "https://www.courier.com/docs/api-reference/digests/list-digest-instances",
+    "https://www.courier.com/docs/api-reference/digests/release-a-digest-early",
+    "https://www.courier.com/docs/api-reference/inbound/courier-track-event",
+    "https://www.courier.com/docs/api-reference/journeys/archive-a-journey",
+    "https://www.courier.com/docs/api-reference/journeys/archive-a-journey-scoped-notification-template",
+    "https://www.courier.com/docs/api-reference/journeys/create-a-journey",
+    "https://www.courier.com/docs/api-reference/journeys/create-a-notification-template-scoped-to-a-journey",
+    "https://www.courier.com/docs/api-reference/journeys/fetch-a-journey-by-id",
+    "https://www.courier.com/docs/api-reference/journeys/fetch-a-journey-scoped-notification-template-by-id",
+    "https://www.courier.com/docs/api-reference/journeys/fetch-the-content-of-a-journey-scoped-notification-template",
+    "https://www.courier.com/docs/api-reference/journeys/invoke-a-journey",
+    "https://www.courier.com/docs/api-reference/journeys/list-journeys",
+    "https://www.courier.com/docs/api-reference/journeys/list-notification-templates-scoped-to-a-journey",
+    "https://www.courier.com/docs/api-reference/journeys/list-versions-of-a-journey",
+    "https://www.courier.com/docs/api-reference/journeys/list-versions-of-a-journey-scoped-notification-template",
+    "https://www.courier.com/docs/api-reference/journeys/publish-a-journey",
+    "https://www.courier.com/docs/api-reference/journeys/publish-a-journey-scoped-notification-template",
+    "https://www.courier.com/docs/api-reference/journeys/replace-a-journey",
+    "https://www.courier.com/docs/api-reference/journeys/replace-a-journey-scoped-notification-template",
+    "https://www.courier.com/docs/api-reference/journeys/replace-a-single-locale-of-a-journey-scoped-notification-template",
+    "https://www.courier.com/docs/api-reference/journeys/replace-the-content-of-a-journey-scoped-notification-template",
+    "https://www.courier.com/docs/api-reference/lists/add-subscribers-to-a-list",
+    "https://www.courier.com/docs/api-reference/lists/add-subscribers-to-a-list.md",
+    "https://www.courier.com/docs/api-reference/lists/delete-a-list",
+    "https://www.courier.com/docs/api-reference/lists/delete-a-list.md",
+    "https://www.courier.com/docs/api-reference/lists/get-a-list",
+    "https://www.courier.com/docs/api-reference/lists/get-a-list.md",
+    "https://www.courier.com/docs/api-reference/lists/get-all-lists",
+    "https://www.courier.com/docs/api-reference/lists/get-all-lists.md",
+    "https://www.courier.com/docs/api-reference/lists/get-the-subscriptions-for-a-list",
+    "https://www.courier.com/docs/api-reference/lists/get-the-subscriptions-for-a-list.md",
+    "https://www.courier.com/docs/api-reference/lists/restore-a-list",
+    "https://www.courier.com/docs/api-reference/lists/restore-a-list.md",
+    "https://www.courier.com/docs/api-reference/lists/subscribe-a-single-user-profile-to-a-list",
+    "https://www.courier.com/docs/api-reference/lists/subscribe-a-single-user-profile-to-a-list.md",
+    "https://www.courier.com/docs/api-reference/lists/subscribe-users-to-a-list",
+    "https://www.courier.com/docs/api-reference/lists/subscribe-users-to-a-list.md",
+    "https://www.courier.com/docs/api-reference/lists/unsubscribe-a-user-profile-from-a-list",
+    "https://www.courier.com/docs/api-reference/lists/unsubscribe-a-user-profile-from-a-list.md",
+    "https://www.courier.com/docs/api-reference/lists/update-a-list",
+    "https://www.courier.com/docs/api-reference/lists/update-a-list.md",
+    "https://www.courier.com/docs/api-reference/notification-templates/archive-notification-template",
+    "https://www.courier.com/docs/api-reference/notification-templates/cancel-submission",
+    "https://www.courier.com/docs/api-reference/notification-templates/create-notification-template",
+    "https://www.courier.com/docs/api-reference/notification-templates/get-notification-content",
+    "https://www.courier.com/docs/api-reference/notification-templates/get-notification-template",
+    "https://www.courier.com/docs/api-reference/notification-templates/get-submission-checks",
+    "https://www.courier.com/docs/api-reference/notification-templates/list-notification-template-versions",
+    "https://www.courier.com/docs/api-reference/notification-templates/list-notification-templates",
+    "https://www.courier.com/docs/api-reference/notification-templates/publish-notification-template",
+    "https://www.courier.com/docs/api-reference/notification-templates/put-notification-content",
+    "https://www.courier.com/docs/api-reference/notification-templates/put-notification-element",
+    "https://www.courier.com/docs/api-reference/notification-templates/put-notification-locale",
+    "https://www.courier.com/docs/api-reference/notification-templates/replace-notification-template",
+    "https://www.courier.com/docs/api-reference/notification-templates/replace-submission-checks",
+    "https://www.courier.com/docs/api-reference/routing-strategies/archive-routing-strategy",
+    "https://www.courier.com/docs/api-reference/routing-strategies/create-routing-strategy",
+    "https://www.courier.com/docs/api-reference/routing-strategies/get-routing-strategy",
+    "https://www.courier.com/docs/api-reference/routing-strategies/list-associated-notifications",
+    "https://www.courier.com/docs/api-reference/routing-strategies/list-routing-strategies",
+    "https://www.courier.com/docs/api-reference/routing-strategies/replace-routing-strategy",
+    "https://www.courier.com/docs/api-reference/send/send-a-message",
+    "https://www.courier.com/docs/api-reference/send/send-a-message.md",
+    "https://www.courier.com/docs/api-reference/sent-messages/archive-message",
+    "https://www.courier.com/docs/api-reference/sent-messages/cancel-message",
+    "https://www.courier.com/docs/api-reference/sent-messages/get-message",
+    "https://www.courier.com/docs/api-reference/sent-messages/get-message-content",
+    "https://www.courier.com/docs/api-reference/sent-messages/get-message-history",
+    "https://www.courier.com/docs/api-reference/sent-messages/list-messages",
+    "https://www.courier.com/docs/api-reference/tenants/create-or-replace-a-tenant",
+    "https://www.courier.com/docs/api-reference/tenants/create-or-replace-default-preferences-for-topic",
+    "https://www.courier.com/docs/api-reference/tenants/delete-a-tenant",
+    "https://www.courier.com/docs/api-reference/tenants/get-a-list-of-tenants",
+    "https://www.courier.com/docs/api-reference/tenants/get-a-tenant",
+    "https://www.courier.com/docs/api-reference/tenants/get-users-in-tenant",
+    "https://www.courier.com/docs/api-reference/tenants/remove-default-preferences-for-topic",
+    "https://www.courier.com/docs/api-reference/translations/get-a-translation",
+    "https://www.courier.com/docs/api-reference/translations/update-translations-by-locale",
+    "https://www.courier.com/docs/api-reference/user-preferences/delete-user-subscription-topic",
+    "https://www.courier.com/docs/api-reference/user-preferences/get-user-subscription-topic",
+    "https://www.courier.com/docs/api-reference/user-preferences/get-users-preferences",
+    "https://www.courier.com/docs/api-reference/user-preferences/update-or-create-user-preferences-for-a-specific-subscription-topic",
+    "https://www.courier.com/docs/api-reference/user-profiles/create-a-profile",
+    "https://www.courier.com/docs/api-reference/user-profiles/create-a-profile.md",
+    "https://www.courier.com/docs/api-reference/user-profiles/delete-a-profile",
+    "https://www.courier.com/docs/api-reference/user-profiles/delete-a-profile.md",
+    "https://www.courier.com/docs/api-reference/user-profiles/delete-list-subscriptions",
+    "https://www.courier.com/docs/api-reference/user-profiles/delete-list-subscriptions.md",
+    "https://www.courier.com/docs/api-reference/user-profiles/get-a-profile",
+    "https://www.courier.com/docs/api-reference/user-profiles/get-a-profile.md",
+    "https://www.courier.com/docs/api-reference/user-profiles/get-list-subscriptions",
+    "https://www.courier.com/docs/api-reference/user-profiles/get-list-subscriptions.md",
+    "https://www.courier.com/docs/api-reference/user-profiles/replace-a-profile",
+    "https://www.courier.com/docs/api-reference/user-profiles/replace-a-profile.md",
+    "https://www.courier.com/docs/api-reference/user-profiles/subscribe-to-one-or-more-lists",
+    "https://www.courier.com/docs/api-reference/user-profiles/subscribe-to-one-or-more-lists.md",
+    "https://www.courier.com/docs/api-reference/user-profiles/update-a-profile",
+    "https://www.courier.com/docs/api-reference/user-profiles/update-a-profile.md",
+    "https://www.courier.com/docs/api-reference/user-tenants/add-a-user-to-a-single-tenant",
+    "https://www.courier.com/docs/api-reference/user-tenants/add-a-user-to-multiple-tenants",
+    "https://www.courier.com/docs/api-reference/user-tenants/get-tenants-associated-with-a-given-user",
+    "https://www.courier.com/docs/api-reference/user-tenants/remove-user-from-a-tenant",
+    "https://www.courier.com/docs/api-reference/user-tenants/remove-user-from-all-associated-tenants",
+    "https://www.courier.com/docs/api-reference/w",
+    "https://www.courier.com/docs/api-reference/workspace",
+    "https://www.courier.com/docs/api-reference/workspace-prefer",
+    "https://www.courier.com/docs/api-reference/workspace-preferences/list-workspace-preferences",
+    "https://www.courier.com/docs/api-reference/workspace-preferences/publish-preferences-page",
+    "https://www.courier.com/docs/external-integrations/integrations-overview",
+    "https://www.courier.com/docs/getting-started/introduction",
+    "https://www.courier.com/docs/getting-started/quickstart",
+    "https://www.courier.com/docs/getting-started/quickstart.md",
+    "https://www.courier.com/docs/help",
+    "https://www.courier.com/docs/help/glossary",
+    "https://www.courier.com/docs/help/glossary.md",
+    "https://www.courier.com/docs/llms-full.txt",
+    "https://www.courier.com/docs/llms.txt",
+    "https://www.courier.com/docs/platform/automations/automations-overview",
+    "https://www.courier.com/docs/platform/content/content-overview",
+    "https://www.courier.com/docs/platform/content/design-studio/design-studio-overview",
+    "https://www.courier.com/docs/platform/content/design-studio/manage-templates-api",
+    "https://www.courier.com/docs/platform/content/template-designer/routing-configuration",
+    "https://www.courier.com/docs/platform/create/create-overview",
+    "https://www.courier.com/docs/platform/inbox/inbox-overview",
+    "https://www.courier.com/docs/platform/journeys/journeys-overview",
+    "https://www.courier.com/docs/platform/preferences/hosted-page",
+    "https://www.courier.com/docs/platform/preferences/preferences-overview",
+    "https://www.courier.com/docs/platform/sending/channel-priority",
+    "https://www.courier.com/docs/platform/sending/channel-priority.md",
+    "https://www.courier.com/docs/platform/sending/channel-settings.md",
+    "https://www.courier.com/docs/platform/sending/choosing-your-sending-strategy.md",
+    "https://www.courier.com/docs/platform/sending/delay.md",
+    "https://www.courier.com/docs/platform/sending/delivery-pipeline-resilience.md",
+    "https://www.courier.com/docs/platform/sending/failover.md",
+    "https://www.courier.com/docs/platform/sending/handling-responses-and-errors.md",
+    "https://www.courier.com/docs/platform/sending/send-limits.md",
+    "https://www.courier.com/docs/platform/sending/send-message",
+    "https://www.courier.com/docs/platform/sending/send-message.md",
+    "https://www.courier.com/docs/platform/sending/sending-overview",
+    "https://www.courier.com/docs/platform/sending/sending-overview.md",
+    "https://www.courier.com/docs/platform/tenants/tenants-overview",
+    "https://www.courier.com/docs/platform/users/audiences.md",
+    "https://www.courier.com/docs/platform/users/users",
+    "https://www.courier.com/docs/platform/users/users-overview",
+    "https://www.courier.com/docs/platform/users/users-overview.md",
+    "https://www.courier.com/docs/platform/users/users.md",
+    "https://www.courier.com/docs/reference/get-started",
+    "https://www.courier.com/docs/sdk-libraries/android",
+    "https://www.courier.com/docs/sdk-libraries/courier-angular-web",
+    "https://www.courier.com/docs/sdk-libraries/courier-js-web",
+    "https://www.courier.com/docs/sdk-libraries/courier-react-web",
+    "https://www.courier.com/docs/sdk-libraries/courier-ui-inbox-web",
+    "https://www.courier.com/docs/sdk-libraries/courier-vue-web",
+    "https://www.courier.com/docs/sdk-libraries/csharp",
+    "https://www.courier.com/docs/sdk-libraries/flutter",
+    "https://www.courier.com/docs/sdk-libraries/go",
+    "https://www.courier.com/docs/sdk-libraries/ios",
+    "https://www.courier.com/docs/sdk-libraries/java",
+    "https://www.courier.com/docs/sdk-libraries/node",
+    "https://www.courier.com/docs/sdk-libraries/php",
+    "https://www.courier.com/docs/sdk-libraries/python",
+    "https://www.courier.com/docs/sdk-libraries/react-native",
+    "https://www.courier.com/docs/sdk-libraries/ruby",
+    "https://www.courier.com/docs/sdk-libraries/sdks-overview",
+    "https://www.courier.com/docs/tools/agent-quickstart",
+    "https://www.courier.com/docs/tools/agent-quickstart.md",
+    "https://www.courier.com/docs/tools/ai-onboarding",
+    "https://www.courier.com/docs/tools/cli",
+    "https://www.courier.com/docs/tools/cli.md",
+    "https://www.courier.com/docs/tools/courier-postman",
+    "https://www.courier.com/docs/tools/courier-skills",
+    "https://www.courier.com/docs/tools/courier-skills.md",
+    "https://www.courier.com/docs/tools/mcp",
+    "https://www.courier.com/docs/tools/mcp.md",
+    "https://www.courier.com/docs/tutorials/content/how-to-manage-templates-cli-mcp",
+    "https://www.courier.com/docs/tutorials/inbox/how-to-implement-inbox",
+    "https://www.courier.com/docs/tutorials/sending/how-to-configure-multi-channel-routing.md",
+    "https://www.courier.com/docs/tutorials/sending/how-to-manage-user-profiles.md",
+    "https://www.courier.com/docs/tutorials/sending/how-to-send-bulk-notifications.md",
+    "https://www.courier.com/docs/tutorials/sending/how-to-send-to-a-list-or-list-pattern-using-wildcarding",
+    "https://www.courier.com/docs/tutorials/sending/how-to-send-your-first-message.md",
+    "https://www.courier.com/docs/tutorials/tutorials-overview",
+    "https://www.courier.com/docs/welcome",
+    "https://www.courier.com/guides/ai-notifications/chapter-3-design-and-send-cli-api-prompts",
+    "https://www.courier.com/request-demo",
+    "https://www.linkedin.com/company/trycourier",
+    "https://www.npmjs.com/package/@trycourier/courier",
+    "https://x.com/trycourier"
+  ]
+}

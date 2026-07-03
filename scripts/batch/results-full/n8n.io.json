@@ -1,0 +1,331 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "n8n.io",
+    "detect": {
+      "domain": "n8n.io",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:14:18.097Z",
+    "summary": "n8n exposes a public REST API, a CLI wrapper over that API, and an instance-level MCP server; all are authenticated primarily with an n8n API key, with MCP also supporting a personal access token.",
+    "credentials": {
+      "n8n_api_key": {
+        "type": "api_key",
+        "label": "n8n API key",
+        "generateUrl": "https://docs.n8n.io/connect/n8n-api/authentication",
+        "setup": "Go to [Settings > n8n API](https://docs.n8n.io/connect/n8n-api/authentication) in your n8n instance, choose **Create an API key**, set a label and expiration, then copy **My API Key**. On Enterprise, optionally choose scopes; non-enterprise keys have full access.",
+        "acquisition": "manual"
+      },
+      "n8n_mcp_access_token": {
+        "type": "bearer",
+        "label": "n8n MCP access token",
+        "generateUrl": "https://docs.n8n.io/connect/connect-to-n8n-mcp-server",
+        "setup": "Open **Settings > Instance-level MCP** in n8n, enable MCP access, then use **Connection details** > **Access Token**. n8n generates a personal MCP access token tied to your user account; copy it immediately because later visits show only a redacted value. If needed, rotate it from the same menu.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "n8n-public-rest-api",
+        "name": "n8n Public REST API",
+        "type": "http",
+        "docs": "https://docs.n8n.io/connect/n8n-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.n8n.io/connect/n8n-api",
+            "https://docs.n8n.io/connect/n8n-api/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "n8n_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-N8N-API-KEY",
+                    "scheme": "X-N8N-API-KEY"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.n8n.io/connect/n8n-api/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://internal.users.n8n.cloud/api/v1/openapi.yml",
+        "url": "https://<your-instance>/api/v1"
+      },
+      {
+        "slug": "n8n-cli",
+        "name": "n8n CLI",
+        "type": "cli",
+        "docs": "https://docs.n8n.io/connect/n8n-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.n8n.io/connect/n8n-cli",
+            "https://docs.n8n.io/connect/n8n-api/authentication"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "n8n_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "n8n-cli config set-api-key YOUR_API_KEY",
+                    "env": [
+                      "N8N_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.n8n.io/connect/n8n-cli",
+                  "https://docs.n8n.io/connect/n8n-api/authentication"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@n8n/cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "n8n-cli"
+      },
+      {
+        "slug": "n8n-instance-level-mcp-server",
+        "name": "n8n instance-level MCP server",
+        "type": "mcp",
+        "docs": "https://docs.n8n.io/connect/connect-to-n8n-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.n8n.io/connect/connect-to-n8n-mcp-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "n8n_mcp_access_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                },
+                {
+                  "id": "n8n_mcp_access_token",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.n8n.io/connect/connect-to-n8n-mcp-server"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "n8n_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-N8N-API-KEY",
+                    "scheme": "X-N8N-API-KEY"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.n8n.io/connect/connect-to-n8n-mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<your-instance>/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:14:18.097Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 79274,
+    "completion_tokens": 1095,
+    "total_tokens": 80369
+  },
+  "visited": [
+    "https://community.n8n.io/t/help-connecting-claude-desktop-n8n-mcp-to-n8n-cloud-api-key-issue/155339",
+    "https://community.n8n.io/t/n8n-connector-fur-claude-code/296356",
+    "https://docs.n8n.io/connect/connect-to-n8n-mcp-server",
+    "https://docs.n8n.io/connect/n8n-api",
+    "https://docs.n8n.io/connect/n8n-api/authentication",
+    "https://docs.n8n.io/connect/n8n-cli"
+  ],
+  "grounding": [
+    "http://localhost:5678/mcp-server/http",
+    "https://blog.n8n.io/",
+    "https://community.n8n.io/",
+    "https://community.n8n.io/t/help-connecting-claude-desktop-n8n-mcp-to-n8n-cloud-api-key-issue/155339",
+    "https://community.n8n.io/t/n8n-connector-fur-claude-code/296356",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview",
+    "https://docs.n8n.io/",
+    "https://docs.n8n.io/#api-scopes",
+    "https://docs.n8n.io/#call-the-api-using-your-key",
+    "https://docs.n8n.io/#check-recent-executions",
+    "https://docs.n8n.io/#choose-your-interaction-method",
+    "https://docs.n8n.io/#commands",
+    "https://docs.n8n.io/#community-package-scopes",
+    "https://docs.n8n.io/#connect-to-your-instance",
+    "https://docs.n8n.io/#connecting-codex-cli-to-n8n-mcp-server",
+    "https://docs.n8n.io/#connecting-google-adk-agent-to-n8n-mcp-server",
+    "https://docs.n8n.io/#create-a-credential",
+    "https://docs.n8n.io/#create-a-workflow-from-json",
+    "https://docs.n8n.io/#create-an-api-key",
+    "https://docs.n8n.io/#credential-scopes",
+    "https://docs.n8n.io/#data-table-column-scopes",
+    "https://docs.n8n.io/#data-table-row-scopes",
+    "https://docs.n8n.io/#data-table-scopes",
+    "https://docs.n8n.io/#delete-an-api-key",
+    "https://docs.n8n.io/#difference-between-instance-level-mcp-access-and-mcp-server-trigger-node",
+    "https://docs.n8n.io/#enabling-access-for-individual-workflows",
+    "https://docs.n8n.io/#enabling-access-for-projectsfolders",
+    "https://docs.n8n.io/#enabling-mcp-access",
+    "https://docs.n8n.io/#examples",
+    "https://docs.n8n.io/#examples-1",
+    "https://docs.n8n.io/#execution-scopes",
+    "https://docs.n8n.io/#execution-tags-scopes",
+    "https://docs.n8n.io/#export-and-import-packages",
+    "https://docs.n8n.io/#exposing-workflows-to-mcp-clients",
+    "https://docs.n8n.io/#folder-scopes",
+    "https://docs.n8n.io/#for-cloud-and-self-hosted-instances",
+    "https://docs.n8n.io/#for-self-hosted-complete-disablement",
+    "https://docs.n8n.io/#inline-flags",
+    "https://docs.n8n.io/#insights-scopes",
+    "https://docs.n8n.io/#install-n8n-cli",
+    "https://docs.n8n.io/#key-considerations-when-using-instance-level-mcp-access",
+    "https://docs.n8n.io/#learn-about-rest-apis",
+    "https://docs.n8n.io/#list-and-inspect-workflows",
+    "https://docs.n8n.io/#manage-projects",
+    "https://docs.n8n.io/#managing-access",
+    "https://docs.n8n.io/#n8n-cli-recommended-for-developers",
+    "https://docs.n8n.io/#n8n-cli-versus-server-cli",
+    "https://docs.n8n.io/#node-configuration",
+    "https://docs.n8n.io/#output-formats",
+    "https://docs.n8n.io/#project-scopes",
+    "https://docs.n8n.io/#resolution-order",
+    "https://docs.n8n.io/#rest-api-this-section",
+    "https://docs.n8n.io/#security-audit-scopes",
+    "https://docs.n8n.io/#setting-up-mcp-authentication",
+    "https://docs.n8n.io/#source-control-scopes",
+    "https://docs.n8n.io/#tag-scopes",
+    "https://docs.n8n.io/#tools-and-resources",
+    "https://docs.n8n.io/#troubleshooting",
+    "https://docs.n8n.io/#use-as-skill-with-claude-code",
+    "https://docs.n8n.io/#user-scopes",
+    "https://docs.n8n.io/#using-access-token",
+    "https://docs.n8n.io/#using-oauth2",
+    "https://docs.n8n.io/#variable-scopes",
+    "https://docs.n8n.io/#workflow-descriptions",
+    "https://docs.n8n.io/#workflow-scopes",
+    "https://docs.n8n.io/#workflow-tags-scopes",
+    "https://docs.n8n.io/administer",
+    "https://docs.n8n.io/administer/manage-users-and-access/set-permissions-and-roles-rbac/create-custom-roles",
+    "https://docs.n8n.io/build",
+    "https://docs.n8n.io/build/manage-workflows/n8n-packages",
+    "https://docs.n8n.io/changelog",
+    "https://docs.n8n.io/connect",
+    "https://docs.n8n.io/connect/connect-to-n8n-docs-mcp-server",
+    "https://docs.n8n.io/connect/connect-to-n8n-mcp-server",
+    "https://docs.n8n.io/connect/connect-to-n8n-mcp-server.md",
+    "https://docs.n8n.io/connect/connect-to-n8n-mcp-server/mcp-server-tools-reference",
+    "https://docs.n8n.io/connect/create-nodes",
+    "https://docs.n8n.io/connect/n8n-api",
+    "https://docs.n8n.io/connect/n8n-api.md",
+    "https://docs.n8n.io/connect/n8n-api/api-reference",
+    "https://docs.n8n.io/connect/n8n-api/audit",
+    "https://docs.n8n.io/connect/n8n-api/authentication",
+    "https://docs.n8n.io/connect/n8n-api/authentication#api-scopes",
+    "https://docs.n8n.io/connect/n8n-api/authentication#create-an-api-key",
+    "https://docs.n8n.io/connect/n8n-api/authentication.md",
+    "https://docs.n8n.io/connect/n8n-api/community-package",
+    "https://docs.n8n.io/connect/n8n-api/credential",
+    "https://docs.n8n.io/connect/n8n-api/data-table",
+    "https://docs.n8n.io/connect/n8n-api/discover",
+    "https://docs.n8n.io/connect/n8n-api/execution",
+    "https://docs.n8n.io/connect/n8n-api/folders",
+    "https://docs.n8n.io/connect/n8n-api/insights",
+    "https://docs.n8n.io/connect/n8n-api/models",
+    "https://docs.n8n.io/connect/n8n-api/n8n-package",
+    "https://docs.n8n.io/connect/n8n-api/pagination",
+    "https://docs.n8n.io/connect/n8n-api/projects",
+    "https://docs.n8n.io/connect/n8n-api/source-control",
+    "https://docs.n8n.io/connect/n8n-api/tags",
+    "https://docs.n8n.io/connect/n8n-api/use-an-api-playground",
+    "https://docs.n8n.io/connect/n8n-api/user",
+    "https://docs.n8n.io/connect/n8n-api/variables",
+    "https://docs.n8n.io/connect/n8n-api/workflow",
+    "https://docs.n8n.io/connect/n8n-cli",
+    "https://docs.n8n.io/connect/n8n-cli.md",
+    "https://docs.n8n.io/contribute",
+    "https://docs.n8n.io/deploy",
+    "https://docs.n8n.io/deploy/host-n8n/configure-n8n/manage-settings-using-environment-variables#mcp",
+    "https://docs.n8n.io/deploy/host-n8n/configure-n8n/use-the-command-line",
+    "https://docs.n8n.io/integrations",
+    "https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.n8n",
+    "https://docs.n8n.io/llms.txt",
+    "https://docs.n8n.io/privacy-and-security",
+    "https://docs.n8n.io/privacy-and-security/sustainable-use-license",
+    "https://google.github.io/adk-docs/tools/third-party/n8n/",
+    "https://internal.users.n8n.cloud/api/v1/openapi.yml",
+    "https://learn.n8n.io/",
+    "https://localhost:5678",
+    "https://my-n8n.app.n8n.cloud",
+    "https://n8n.io/",
+    "https://n8n.io/careers",
+    "https://n8n.io/enterprise/",
+    "https://n8n.io/legal/security/",
+    "https://n8n.io/workflows/",
+    "https://support.knowledgeowl.com/help/working-with-apis",
+    "https://www.ibm.com/cloud/learn/api",
+    "https://www.ibm.com/cloud/learn/rest-apis",
+    "https://your-instance.n8n.cloud"
+  ]
+}

@@ -1,0 +1,507 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "files.com",
+    "detect": {
+      "domain": "files.com",
+      "found": [
+        "llms.txt"
+      ],
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T14:48:11.945Z",
+    "summary": "Files.com exposes a REST API, a hosted and local MCP server, and a CLI app; all require authentication via API key or session/browser sign-in, with API keys also usable for the REST API and MCP header-based auth.",
+    "credentials": {
+      "files_api_key": {
+        "type": "api_key",
+        "label": "Files.com API key",
+        "generateUrl": "https://app.files.com/login",
+        "setup": "Go to the Files.com web app, sign in, and create an API key from the API keys settings. The docs note there are site-wide and user API keys, and the key value is shown only once when created. Prefer a user API key when possible; site admins can also create site-wide keys. See the API key docs: [API Keys](https://www.files.com/docs/clients-and-protocols/sdk-and-apis/api-keys).",
+        "acquisition": "manual"
+      },
+      "files_session": {
+        "type": "bearer",
+        "label": "Files.com session ID",
+        "generateUrl": "https://app.files.com/login",
+        "setup": "Sign in with an active Files.com user account to create a session. The CLI docs say you can log in with username/password, then reuse the resulting session ID; the REST API docs say sessions are created by POSTing to `/sessions` and the returned `id` is used as `X-FilesAPI-Auth`.",
+        "acquisition": "manual"
+      },
+      "files_cli_login": {
+        "type": "oauth2",
+        "label": "Files.com browser sign-in for MCP/CLI",
+        "generateUrl": "https://app.files.com/login",
+        "setup": "For the hosted MCP server, choose `Sign In with Files.com` and complete the browser-based OAuth flow against your Files.com site. This is the easiest path for remote MCP clients and requires no API key. The Files.com docs also mention session-based CLI login with username/password, but that produces a session credential rather than a separate developer-issued credential.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "files-com-rest-api",
+        "name": "Files.com REST API",
+        "type": "http",
+        "docs": "https://developers.files.com/rest/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.files.com/rest/",
+            "https://developers.files.com/rest/overview/authentication/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "files_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-FilesAPI-Key",
+                    "scheme": "X-FilesAPI-Key"
+                  }
+                },
+                {
+                  "id": "files_session",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-FilesAPI-Auth",
+                    "scheme": "X-FilesAPI-Auth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.files.com/rest/overview/authentication/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "files_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Basic"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.files.com/rest/overview/authentication/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://SUBDOMAIN.files.com/api/rest/v1"
+      },
+      {
+        "slug": "files-com-remote-mcp-server",
+        "name": "Files.com Remote MCP Server",
+        "type": "mcp",
+        "docs": "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server",
+            "https://developers.files.com/python-mcp/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "files_cli_login",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "files_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "X-FilesAPI-Key",
+                    "scheme": "X-FilesAPI-Key"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<mysite>.files.com/api/ai/mcp/v1/",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "files-com-local-mcp-server",
+        "name": "Files.com Local MCP Server",
+        "type": "mcp",
+        "docs": "https://developers.files.com/python-mcp/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.files.com/python-mcp/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "files_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "uvx files-com-mcp",
+                    "env": [
+                      "FILES_COM_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.files.com/python-mcp/"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "files-com-cli-app",
+        "name": "Files.com CLI App",
+        "type": "cli",
+        "docs": "https://developers.files.com/cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developers.files.com/cli/",
+            "https://developers.files.com/cli/overview/authentication/"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "files_api_key",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "files-cli --api-key=YOUR_API_KEY",
+                    "env": [
+                      "FILES_API_KEY"
+                    ]
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.files.com/cli/overview/authentication/"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "files_session",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "files-cli config set --subdomain SUBDOMAIN --username USERNAME"
+                  }
+                },
+                {
+                  "id": "files_session",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "files-cli --session-id=YOUR_SESSION_ID"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developers.files.com/cli/overview/authentication/"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "Files-com/files-cli"
+          }
+        ],
+        "command": "files-cli"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T14:48:11.945Z",
+  "model": "loop-gpt-5.4-mini",
+  "usage": {
+    "prompt_tokens": 195279,
+    "completion_tokens": 1731,
+    "total_tokens": 197010
+  },
+  "visited": [
+    "https://developers.files.com/",
+    "https://developers.files.com/cli/",
+    "https://developers.files.com/cli/overview/authentication/",
+    "https://developers.files.com/python-mcp/",
+    "https://developers.files.com/rest/",
+    "https://developers.files.com/rest/overview/authentication/",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://www.files.com/docs/clients-and-protocols/sdk-and-apis",
+    "https://www.files.com/docs/clients-and-protocols/sdk-and-apis/api-keys",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "https://SUBDOMAIN.files.com/api/rest/v1",
+    "https://SUBDOMAIN.files.com/api/rest/v1/sessions.json",
+    "https://SUBDOMAIN.files.com/api/rest/v1/users.json",
+    "https://SUBDOMAIN.files.com/api/rest/v1/users/123.json",
+    "https://app.files.com",
+    "https://app.files.com/api/rest/v1/swagger_doc.json",
+    "https://app.files.com/login",
+    "https://curl.se",
+    "https://developers.files.com/",
+    "https://developers.files.com/#authenticate-with-a-session",
+    "https://developers.files.com/#authenticate-with-an-api-key",
+    "https://developers.files.com/#available-tools",
+    "https://developers.files.com/#command-help",
+    "https://developers.files.com/#common-use-cases",
+    "https://developers.files.com/#getting-support",
+    "https://developers.files.com/#history-exports",
+    "https://developers.files.com/#hosted-mcp-server",
+    "https://developers.files.com/#important-information",
+    "https://developers.files.com/#installation",
+    "https://developers.files.com/#installation-into-your-llm",
+    "https://developers.files.com/#openapi",
+    "https://developers.files.com/#please-first-consider-one-of-our-sdks",
+    "https://developers.files.com/#rest-api-details",
+    "https://developers.files.com/#support-for-all-operations-not-just-file-operations",
+    "https://developers.files.com/#usage-snapshots",
+    "https://developers.files.com/#using-with-claude",
+    "https://developers.files.com/#what-is-filescom",
+    "https://developers.files.com/#what-is-mcp",
+    "https://developers.files.com/This",
+    "https://developers.files.com/boomi/",
+    "https://developers.files.com/cli/",
+    "https://developers.files.com/cli/files/files/",
+    "https://developers.files.com/cli/overview/authentication/",
+    "https://developers.files.com/cli/overview/configuration/",
+    "https://developers.files.com/cli/overview/errors/",
+    "https://developers.files.com/cli/overview/for-agents/",
+    "https://developers.files.com/cli/overview/foreign-language-support/",
+    "https://developers.files.com/cli/overview/introduction/",
+    "https://developers.files.com/cli/overview/logs/",
+    "https://developers.files.com/cli/overview/mock-server/",
+    "https://developers.files.com/cli/overview/output/",
+    "https://developers.files.com/cli/overview/paths/",
+    "https://developers.files.com/cli/overview/sort-and-filter/",
+    "https://developers.files.com/cli/overview/workspaces/",
+    "https://developers.files.com/cli/resources/automations/",
+    "https://developers.files.com/cli/resources/billing/",
+    "https://developers.files.com/cli/resources/developers/",
+    "https://developers.files.com/cli/resources/developers/api-keys/",
+    "https://developers.files.com/cli/resources/encryption/",
+    "https://developers.files.com/cli/resources/file-system/",
+    "https://developers.files.com/cli/resources/integrations/",
+    "https://developers.files.com/cli/resources/logging/",
+    "https://developers.files.com/cli/resources/notifications/",
+    "https://developers.files.com/cli/resources/security/",
+    "https://developers.files.com/cli/resources/services/",
+    "https://developers.files.com/cli/resources/settings/",
+    "https://developers.files.com/cli/resources/sharing/",
+    "https://developers.files.com/cli/resources/usage/",
+    "https://developers.files.com/cli/resources/user-accounts/",
+    "https://developers.files.com/go/",
+    "https://developers.files.com/java/",
+    "https://developers.files.com/javascript/",
+    "https://developers.files.com/mulesoft/",
+    "https://developers.files.com/net/",
+    "https://developers.files.com/php/",
+    "https://developers.files.com/power_automate/",
+    "https://developers.files.com/python-mcp/",
+    "https://developers.files.com/python-mcp/overview/introduction/",
+    "https://developers.files.com/python/",
+    "https://developers.files.com/rest/",
+    "https://developers.files.com/rest/files/files/",
+    "https://developers.files.com/rest/overview/authentication/",
+    "https://developers.files.com/rest/overview/errors/",
+    "https://developers.files.com/rest/overview/file-attachments/",
+    "https://developers.files.com/rest/overview/foreign-language-support/",
+    "https://developers.files.com/rest/overview/introduction/",
+    "https://developers.files.com/rest/overview/mock-server/",
+    "https://developers.files.com/rest/overview/pagination/",
+    "https://developers.files.com/rest/overview/paths/",
+    "https://developers.files.com/rest/overview/sort-and-filter/",
+    "https://developers.files.com/rest/overview/workspaces/",
+    "https://developers.files.com/rest/resources/automations/",
+    "https://developers.files.com/rest/resources/billing/",
+    "https://developers.files.com/rest/resources/developers/",
+    "https://developers.files.com/rest/resources/developers/api-keys/",
+    "https://developers.files.com/rest/resources/encryption/",
+    "https://developers.files.com/rest/resources/file-system/",
+    "https://developers.files.com/rest/resources/integrations/",
+    "https://developers.files.com/rest/resources/logging/",
+    "https://developers.files.com/rest/resources/notifications/",
+    "https://developers.files.com/rest/resources/security/",
+    "https://developers.files.com/rest/resources/services/",
+    "https://developers.files.com/rest/resources/settings/",
+    "https://developers.files.com/rest/resources/sharing/",
+    "https://developers.files.com/rest/resources/usage/",
+    "https://developers.files.com/rest/resources/user-accounts/",
+    "https://developers.files.com/ruby/",
+    "https://developers.files.com/terraform/",
+    "https://developers.files.com/zapier/",
+    "https://docs.cursor.com/context/model-context-protocol#configuring-mcp-servers",
+    "https://github.com/Files-com/files-cli",
+    "https://github.com/Files-com/files-cli/releases",
+    "https://github.com/Files-com/files-cli/releases/latest/download/files-cli_linux_{ARCH}.deb",
+    "https://github.com/Files-com/files-cli/releases/latest/download/files-cli_linux_{ARCH}.rpm",
+    "https://github.com/Files-com/files-cli/releases/latest/download/files-cli_macOS_64bit.tar.gz",
+    "https://github.com/Files-com/files-cli/releases/latest/download/files-cli_windows_64bit.zip",
+    "https://github.com/Files-com/files-cli/releases/latest/download/files-cli_windows_arm64.zip",
+    "https://github.com/Files-com/files-mcp",
+    "https://github.com/blurrah/mcp-graphql",
+    "https://mcpservers.org/servers/ctkadvisors/graphql-mcp",
+    "https://modelcontextprotocol.io/clients",
+    "https://modelcontextprotocol.io/docs/concepts/tools",
+    "https://modelcontextprotocol.io/introduction",
+    "https://modelcontextprotocol.io/quickstart/user",
+    "https://modelcontextprotocol.io/quickstart/user#2-add-the-filesystem-mcp-server",
+    "https://pypi.org/project/files-com-mcp/",
+    "https://signup.files.com/signup",
+    "https://status.files.com/",
+    "https://www.files.com",
+    "https://www.files.com/",
+    "https://www.files.com/#api-key",
+    "https://www.files.com/#authentication",
+    "https://www.files.com/#available-mcp-tools",
+    "https://www.files.com/#creating-site-api-keys",
+    "https://www.files.com/#creating-user-api-keys",
+    "https://www.files.com/#disabling-and-revoking-api-keys",
+    "https://www.files.com/#dynamic-client-registrationdcr-and-client-id-metadata-documents-cimd",
+    "https://www.files.com/#getting-started-with-the-local-mcp-server",
+    "https://www.files.com/#getting-started-with-the-remote-mcp-server",
+    "https://www.files.com/#interstitial-oauth-warning-page",
+    "https://www.files.com/#main-content",
+    "https://www.files.com/#model-context-protocol",
+    "https://www.files.com/#remote-vs-local-mcp-server",
+    "https://www.files.com/#removing-the-local-mcp-server",
+    "https://www.files.com/#s3-compatible-api-keys",
+    "https://www.files.com/#sign-in-with-filescom",
+    "https://www.files.com/#types-of-api-keys",
+    "https://www.files.com/#updating-the-local-mcp-server",
+    "https://www.files.com/#using-api-keys-with-child-sites",
+    "https://www.files.com/#viewing-existing-api-keys",
+    "https://www.files.com/#what-you-can-build-with-filescom-apis",
+    "https://www.files.com/#where-to-start",
+    "https://www.files.com/about",
+    "https://www.files.com/blog",
+    "https://www.files.com/blog/can-you-use-google-drive-for-hosting-files",
+    "https://www.files.com/blog/data-explosion-enterprise-file-transfer-management",
+    "https://www.files.com/blog/extending-google-drive-for-external-file-exchange",
+    "https://www.files.com/blog/file-orchestration-for-enterprises",
+    "https://www.files.com/blog/hidden-risks-in-b2b-file-exchange",
+    "https://www.files.com/blog/how-files.com-integrates-with-your-siem",
+    "https://www.files.com/blog/maximizing-sftp-performance",
+    "https://www.files.com/blog/secure-file-transfer-protocol-sftp-guide",
+    "https://www.files.com/blog/understanding-b2b-file-transfer-solutions",
+    "https://www.files.com/blog/understanding-electronic-data-transfer",
+    "https://www.files.com/blog/understanding-ftp-servers",
+    "https://www.files.com/blog/updated-filescom-partner-connector-on-boomi",
+    "https://www.files.com/blog/what-is-ftp-and-how-it-works",
+    "https://www.files.com/blog/what-is-sftp",
+    "https://www.files.com/compare",
+    "https://www.files.com/compliance",
+    "https://www.files.com/contact",
+    "https://www.files.com/contact-sales",
+    "https://www.files.com/customer-stories",
+    "https://www.files.com/docs",
+    "https://www.files.com/docs/client-apps/command-line-interface-cli-app",
+    "https://www.files.com/docs/clients-and-protocols",
+    "https://www.files.com/docs/clients-and-protocols/command-line-interface-cli-app/using-the-cli-to-perform-administrator-actions/retrieve-ip-lists",
+    "https://www.files.com/docs/clients-and-protocols/s3-compatible-endpoint",
+    "https://www.files.com/docs/clients-and-protocols/sdk-and-apis",
+    "https://www.files.com/docs/clients-and-protocols/sdk-and-apis/api-keys",
+    "https://www.files.com/docs/clients-and-protocols/sdk-and-apis/api-keys#creating-site-api-keys",
+    "https://www.files.com/docs/clients-and-protocols/sdk-and-apis/api-keys/allowing-users-to-create-api-keys",
+    "https://www.files.com/docs/clients-and-protocols/sdk-and-apis/best-practices-for-integrating-with-filescom",
+    "https://www.files.com/docs/clients-and-protocols/sdk-and-apis/official-sdks",
+    "https://www.files.com/docs/integrations",
+    "https://www.files.com/docs/integrations/ai",
+    "https://www.files.com/docs/integrations/ai/ai-assistant/limitations",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server#getting-started-with-the-local-mcp-server",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server#getting-started-with-the-remote-mcp-server",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server#sign-in-with-files-com",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server/available-mcp-tools",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server/mcp-access-permissions",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server/mcp-prompts",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server/quickstart-for-claude-desktop",
+    "https://www.files.com/docs/integrations/ai/model-context-protocol-mcp-server/troubleshooting-mcp",
+    "https://www.files.com/docs/integrations/ipaas",
+    "https://www.files.com/docs/integrations/sso-single-sign-on",
+    "https://www.files.com/docs/overview/requesting-support",
+    "https://www.files.com/docs/sdk-and-apis/api-keys",
+    "https://www.files.com/docs/send-and-receive/share-links",
+    "https://www.files.com/docs/settings-and-usage/child-sites",
+    "https://www.files.com/enterprise",
+    "https://www.files.com/events",
+    "https://www.files.com/five-days-to-onboarding",
+    "https://www.files.com/integrations",
+    "https://www.files.com/jobs",
+    "https://www.files.com/legal/ccpa",
+    "https://www.files.com/legal/dmca",
+    "https://www.files.com/legal/gdpr",
+    "https://www.files.com/legal/privacy",
+    "https://www.files.com/legal/terms",
+    "https://www.files.com/managed-file-transfer",
+    "https://www.files.com/pricing",
+    "https://www.files.com/signup",
+    "https://www.files.com/support",
+    "https://www.files.com/switch",
+    "https://www.files.com/team",
+    "https://www.files.com/tel:+18002868372",
+    "https://www.files.com/whats-new",
+    "https://www.getpostman.com",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ]
+}

@@ -1,0 +1,333 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "calendly.com",
+    "detect": {
+      "domain": "calendly.com",
+      "found": [
+        "llms.txt",
+        "auth"
+      ],
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://calendly.com"
+          ],
+          "authorizationEndpoint": "https://calendly.com/oauth/authorize",
+          "tokenEndpoint": "https://calendly.com/oauth/token",
+          "registrationEndpoint": "https://calendly.com/oauth/register",
+          "dcr": true,
+          "cimd": false
+        }
+      },
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:11:11.084Z",
+    "summary": "Calendly exposes a REST API at https://api.calendly.com authenticated by OAuth 2.1 bearer tokens or personal access tokens, plus a hosted MCP server at https://mcp.calendly.com using OAuth discovery and dynamic client registration.",
+    "description": "Calendly is an online scheduling platform for booking meetings and appointments. It lets individuals and organizations manage availability, event types, invitees, and scheduling workflows.",
+    "credentials": {
+      "calendly_pat": {
+        "type": "bearer",
+        "label": "Personal access token",
+        "generateUrl": "https://calendly.com/integrations/api_webhooks",
+        "setup": "Log in to your Calendly account at [Calendly login](https://calendly.com/login), open the [Integrations page](https://calendly.com/integrations), select the [API & Webhooks tile](https://calendly.com/integrations/api_webhooks), then create a personal access token under Personal Access Tokens. Choose the scopes your private/internal app needs, create the token, and copy it immediately because Calendly does not display or store it after generation.",
+        "acquisition": "manual"
+      },
+      "calendly_oauth_app": {
+        "type": "oauth2",
+        "label": "OAuth app client for Calendly API",
+        "generateUrl": "https://developer.calendly.com/console/apps",
+        "setup": "Sign up or log in at the [Calendly Developer portal](https://developer.calendly.com/) and create a new OAuth application in the developer console. Choose app type (`web` or `native`), environment (`Sandbox` or `Production`), set your redirect URI, and select the scopes your public app needs. Copy the `client_id` and `client_secret` when the app is created; the secret is only shown once. OAuth uses Calendly's authorize endpoint `https://calendly.com/oauth/authorize` and token endpoint `https://calendly.com/oauth/token`; Calendly recommends PKCE with `S256`, and production redirect URIs must be HTTPS.",
+        "acquisition": "manual"
+      },
+      "calendly_mcp_dcr": {
+        "type": "oauth2",
+        "label": "Dynamic client registration for Calendly MCP",
+        "generateUrl": "https://calendly.com/oauth/register",
+        "setup": "For the hosted Calendly MCP server, use an MCP client that supports OAuth discovery and Dynamic Client Registration (DCR). Point the client at `https://mcp.calendly.com`; the client discovers protected-resource metadata at `https://mcp.calendly.com/.well-known/oauth-protected-resource`, authorization-server metadata at `https://calendly.com/.well-known/oauth-authorization-server`, self-registers at `https://calendly.com/oauth/register`, then runs Authorization Code + PKCE (`S256`) against Calendly. No pre-provisioned developer-console `client_id` or secret is required for this MCP flow.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "calendly-api-v2",
+        "name": "Calendly API v2",
+        "type": "http",
+        "docs": "https://developer.calendly.com/api-docs",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.calendly.com/api-docs",
+            "https://developer.calendly.com/authentication",
+            "https://developer.calendly.com/personal-access-tokens",
+            "https://developer.calendly.com/creating-an-oauth-app",
+            "https://developer.calendly.com/schedule-events-with-ai-agents",
+            "https://developer.calendly.com/scopes"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "calendly_pat",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.calendly.com/personal-access-tokens",
+                  "https://developer.calendly.com/authentication",
+                  "https://developer.calendly.com/schedule-events-with-ai-agents"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "calendly_oauth_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.calendly.com/authentication",
+                  "https://developer.calendly.com/creating-an-oauth-app",
+                  "https://developer.calendly.com/schedule-events-with-ai-agents"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.calendly.com"
+      },
+      {
+        "slug": "calendly-mcp-server",
+        "name": "Calendly MCP server",
+        "type": "mcp",
+        "docs": "https://developer.calendly.com/calendly-mcp-server",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://developer.calendly.com/calendly-mcp-server",
+            "https://mcp.calendly.com/.well-known/oauth-protected-resource",
+            "https://calendly.com/.well-known/oauth-authorization-server"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "calendly_mcp_dcr",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://developer.calendly.com/calendly-mcp-server",
+                  "https://mcp.calendly.com/.well-known/oauth-protected-resource",
+                  "https://calendly.com/.well-known/oauth-authorization-server"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://mcp.calendly.com",
+        "transports": [
+          "streamable-http"
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:11:11.084Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 190726,
+    "completion_tokens": 1723,
+    "total_tokens": 192449
+  },
+  "visited": [
+    "https://calendly.com/.well-known/oauth-authorization-server",
+    "https://calendly.com/llms.txt",
+    "https://calendly.stoplight.io/docs/api-docs",
+    "https://calendly.stoplight.io/docs/api-docs/gh3zqsr8n4iqy-introduction",
+    "https://community.calendly.com/developer-community-60",
+    "https://developer.calendly.com/",
+    "https://developer.calendly.com/api-docs",
+    "https://developer.calendly.com/api-docs/2",
+    "https://developer.calendly.com/api-docs/YXBpOjM5NQ-calendly-api",
+    "https://developer.calendly.com/api-docs/ZG9jOjE1MDE3NzI-api-conventions",
+    "https://developer.calendly.com/authentication",
+    "https://developer.calendly.com/calendly-mcp-server",
+    "https://developer.calendly.com/create-a-developer-account",
+    "https://developer.calendly.com/creating-an-oauth-app",
+    "https://developer.calendly.com/how-to-auth-with-personal-access-tokens",
+    "https://developer.calendly.com/personal-access-tokens",
+    "https://developer.calendly.com/schedule-events-with-ai-agents",
+    "https://developer.calendly.com/scopes",
+    "https://docs.arcade.dev/en/references/auth-providers/calendly",
+    "https://github.com/bcharleson/calendly-cli",
+    "https://mcp.calendly.com",
+    "https://mcp.calendly.com/.well-known/oauth-protected-resource",
+    "https://www.scalekit.com/blog/calendly-mcp-vs-api"
+  ],
+  "grounding": [
+    "http://127.0.0.1/",
+    "http://localhost/",
+    "http://localhost:1234",
+    "http://localhost:1234/",
+    "https://*.example.com/",
+    "https://api.calendly.com/event",
+    "https://api.calendly.com/invitees",
+    "https://api.calendly.com/{ENDPOINT}",
+    "https://auth.calendly.com",
+    "https://auth.calendly.com/oauth/authorize",
+    "https://auth.calendly.com/oauth/authorize?client",
+    "https://calendly.com",
+    "https://calendly.com/",
+    "https://calendly.com/.well-known/oauth-authorization-server",
+    "https://calendly.com/about",
+    "https://calendly.com/blog",
+    "https://calendly.com/blog/8-best-scheduling-apps-for-small-businesses",
+    "https://calendly.com/blog/calendly-versus-google-calendar",
+    "https://calendly.com/blog/calendly-vs-acuity",
+    "https://calendly.com/blog/calendly-vs-chili-piper",
+    "https://calendly.com/blog/calendly-vs-clockwise",
+    "https://calendly.com/blog/calendly-vs-doodle",
+    "https://calendly.com/blog/calendly-vs-hubspot-meetings",
+    "https://calendly.com/blog/calendly-vs-microsoft-bookings",
+    "https://calendly.com/blog/calendly-vs-outreach-meetings",
+    "https://calendly.com/blog/calendly-vs-salesforce-scheduler",
+    "https://calendly.com/blog/calendly-vs-tidycal",
+    "https://calendly.com/blog/calendly-vs-youcanbookme",
+    "https://calendly.com/blog/calendly-vs-zoom-scheduler",
+    "https://calendly.com/blog/how-does-calendly-work-everything-you-need-to-know-to-start-scheduling",
+    "https://calendly.com/blog/how-to-get-the-most-from-your-free-calendly-plan",
+    "https://calendly.com/careers",
+    "https://calendly.com/contact-us",
+    "https://calendly.com/customers",
+    "https://calendly.com/features",
+    "https://calendly.com/features/admin-management",
+    "https://calendly.com/features/analytics",
+    "https://calendly.com/features/browser-extensions",
+    "https://calendly.com/features/mobile-apps",
+    "https://calendly.com/help",
+    "https://calendly.com/integration",
+    "https://calendly.com/integrations",
+    "https://calendly.com/integrations/api_webhooks",
+    "https://calendly.com/leadership",
+    "https://calendly.com/legal",
+    "https://calendly.com/legal/privacy-notice",
+    "https://calendly.com/llms.txt",
+    "https://calendly.com/login",
+    "https://calendly.com/newsroom",
+    "https://calendly.com/oauth/authorize",
+    "https://calendly.com/oauth/register",
+    "https://calendly.com/oauth/token",
+    "https://calendly.com/partners",
+    "https://calendly.com/partners/contact",
+    "https://calendly.com/privacy",
+    "https://calendly.com/release-notes",
+    "https://calendly.com/resources",
+    "https://calendly.com/resources/the-state-of-meetings-2024",
+    "https://calendly.com/scheduling",
+    "https://calendly.com/security",
+    "https://calendly.com/signup",
+    "https://calendly.com/solutions/customer-success",
+    "https://calendly.com/solutions/education",
+    "https://calendly.com/solutions/enterprise",
+    "https://calendly.com/solutions/financial-services",
+    "https://calendly.com/solutions/individuals",
+    "https://calendly.com/solutions/marketing",
+    "https://calendly.com/solutions/professional-services",
+    "https://calendly.com/solutions/recruiting",
+    "https://calendly.com/solutions/sales",
+    "https://calendly.com/solutions/small-business",
+    "https://calendly.com/solutions/technology",
+    "https://calendly.stoplight.io/docs/api-docs",
+    "https://calendly.stoplight.io/docs/api-docs/gh3zqsr8n4iqy-introduction",
+    "https://careers.calendly.com/",
+    "https://community.calendly.com",
+    "https://community.calendly.com/developer-community-60",
+    "https://developer.calendly.com",
+    "https://developer.calendly.com/",
+    "https://developer.calendly.com/api-docs",
+    "https://developer.calendly.com/api-docs/2",
+    "https://developer.calendly.com/api-docs/25a4ece03c1bc-list-user-s-event-types",
+    "https://developer.calendly.com/api-docs/6a1be82aef359-list-event-type-available-times",
+    "https://developer.calendly.com/api-docs/YXBpOjM5NQ-calendly-api",
+    "https://developer.calendly.com/api-docs/ZG9jOjE1MDE3NzI-api-conventions",
+    "https://developer.calendly.com/api-docs/b3A6MTEzMDIyOQ-get-current-user",
+    "https://developer.calendly.com/api-docs/b3A6NTkxNDA4-get-access-token",
+    "https://developer.calendly.com/api-docs/b3A6NTkxNDA5-get-authorization-code",
+    "https://developer.calendly.com/api-docs/be9b32ef4b44c-get-access-token#request-body",
+    "https://developer.calendly.com/api-docs/c1f9db4a585da-get-event-type",
+    "https://developer.calendly.com/api-docs/p3ghrxrwbl8kqe-create-event-invitee",
+    "https://developer.calendly.com/api-recipes",
+    "https://developer.calendly.com/api-use-cases",
+    "https://developer.calendly.com/authentication",
+    "https://developer.calendly.com/calendly-mcp-server",
+    "https://developer.calendly.com/create-a-developer-account",
+    "https://developer.calendly.com/creating-an-oauth-app",
+    "https://developer.calendly.com/developer-policy",
+    "https://developer.calendly.com/displaying-availability-of-users",
+    "https://developer.calendly.com/frequently-asked-questions",
+    "https://developer.calendly.com/get-help",
+    "https://developer.calendly.com/getting-started",
+    "https://developer.calendly.com/how-to-auth-with-personal-access-tokens",
+    "https://developer.calendly.com/how-to-display-the-scheduling-page-for-users-of-your-app",
+    "https://developer.calendly.com/how-to-get-scheduling-page-links-for-team-members-across-the-organization",
+    "https://developer.calendly.com/how-to-migrate-from-api-v1-to-api-v2",
+    "https://developer.calendly.com/login?origin=https://developer.calendly.com/console/apps",
+    "https://developer.calendly.com/personal-access-tokens",
+    "https://developer.calendly.com/receive-data-from-scheduled-events-in-real-time-with-webhook-subscriptions",
+    "https://developer.calendly.com/refresh-token-rotation-guide",
+    "https://developer.calendly.com/release-notes",
+    "https://developer.calendly.com/schedule-events-with-ai-agents",
+    "https://developer.calendly.com/scopes",
+    "https://developer.calendly.com/see-how-webhook-payloads-change-when-invitees-reschedule-events",
+    "https://developer.calendly.com/supported-tools",
+    "https://developer.calendly.com/track-and-report-on-all-scheduled-events-across-your-organization",
+    "https://developer.calendly.com/trigger-automations-with-other-apps-when-invitees-schedule-or-cancel-events",
+    "https://developer.calendly.com/view-event-type-and-user-calendar-availability-data",
+    "https://docs.arcade.dev/en/references/auth-providers/calendly",
+    "https://github.com/aaronpk/pkce-vanilla-js",
+    "https://github.com/bcharleson/calendly-cli",
+    "https://github.com/calendly/buzzwordcrm",
+    "https://help.calendly.com/hc/en-us",
+    "https://help.calendly.com/hc/en-us/p/video-tutorials",
+    "https://http://",
+    "https://mcp.calendly.com",
+    "https://mcp.calendly.com/",
+    "https://mcp.calendly.com/.well-known/oauth-protected-resource",
+    "https://modelcontextprotocol.io/docs/develop/build-client",
+    "https://modelcontextprotocol.io/docs/develop/connect-remote-servers",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://modelcontextprotocol.io/legacy/concepts/tools#available-tool-annotations",
+    "https://myapp.example.com/mcp/callback",
+    "https://oauth.net/2/pkce/",
+    "https://user@evil.example/",
+    "https://www.scalekit.com/blog/calendly-mcp-vs-api"
+  ]
+}

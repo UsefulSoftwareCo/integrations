@@ -1,0 +1,409 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "coolify.io",
+    "detect": {
+      "domain": "coolify.io",
+      "found": [],
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T20:16:10.547Z",
+    "summary": "Coolify exposes a self-hosted HTTP API with an OpenAPI spec, a built-in Streamable HTTP MCP server, and an official CLI; all use the same Coolify API token.",
+    "description": "Coolify is an open-source self-hosted PaaS for deploying and managing applications, databases, and services on your own servers. It supports both Coolify Cloud and self-hosted instances.",
+    "credentials": {
+      "coolify_api_token": {
+        "type": "bearer",
+        "label": "Coolify API token",
+        "generateUrl": "https://coolify.io/docs/api-reference/authorization",
+        "setup": "In your Coolify dashboard, first enable API access under [API Authorization](https://coolify.io/docs/api-reference/authorization) if needed: **Settings → Advanced → API Access**. Then go to **Security → API Tokens**, create a token, choose its expiration and permissions (`read`, `read:sensitive`, `write`, `deploy`, or `root`), and copy it immediately; it is shown only once. For self-hosted instances, the dashboard path is `/security/api-tokens`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "coolify-mcp-server",
+        "name": "Coolify MCP Server",
+        "type": "mcp",
+        "docs": "https://coolify.io/docs/integrations/mcp",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://coolify.io/docs/integrations/mcp",
+            "https://coolify.io/docs/api-reference/authorization"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "coolify_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://coolify.io/docs/integrations/mcp",
+                  "https://coolify.io/docs/api-reference/authorization"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<your-coolify-instance>/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "coolify-cli",
+        "name": "coolify CLI",
+        "type": "cli",
+        "docs": "https://github.com/coollabsio/coolify-cli",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/README.md",
+            "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/llms.txt"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "coolify_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "coolify context set-token cloud <token>"
+                  }
+                },
+                {
+                  "id": "coolify_api_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "coolify context add -d <context_name> <url> <token>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/README.md",
+                  "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/llms.txt"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "homebrew",
+            "identifier": "coollabsio/coolify-cli/coolify-cli"
+          },
+          {
+            "registryType": "golang",
+            "identifier": "github.com/coollabsio/coolify-cli/coolify",
+            "runtimeHint": "go install"
+          },
+          {
+            "registryType": "script",
+            "identifier": "https://raw.githubusercontent.com/coollabsio/coolify-cli/main/scripts/install.sh",
+            "runtimeHint": "bash install script"
+          },
+          {
+            "registryType": "script",
+            "identifier": "https://raw.githubusercontent.com/coollabsio/coolify-cli/main/scripts/install.ps1",
+            "runtimeHint": "powershell install script"
+          }
+        ],
+        "command": "coolify"
+      },
+      {
+        "slug": "coolify-api",
+        "name": "Coolify API",
+        "type": "http",
+        "docs": "https://coolify.io/docs/api-reference/authorization",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://coolify.io/docs/api-reference/authorization",
+            "https://raw.githubusercontent.com/coollabsio/coolify/v4.x/openapi.yaml"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "coolify_api_token",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "bearerAuth"
+                  }
+                },
+                {
+                  "id": "coolify_api_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://coolify.io/docs/api-reference/authorization",
+                  "https://raw.githubusercontent.com/coollabsio/coolify/v4.x/openapi.yaml"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://raw.githubusercontent.com/coollabsio/coolify/v4.x/openapi.yaml",
+        "url": "https://<your-coolify-instance>/api/v1"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T20:16:10.547Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 99567,
+    "completion_tokens": 1495,
+    "total_tokens": 101062
+  },
+  "visited": [
+    "https://coolify.io/",
+    "https://coolify.io/docs",
+    "https://coolify.io/docs/api-reference/api",
+    "https://coolify.io/docs/api-reference/authorization",
+    "https://coolify.io/docs/applications",
+    "https://coolify.io/docs/databases/redis",
+    "https://coolify.io/docs/get-started/installation",
+    "https://coolify.io/docs/integrations/mcp",
+    "https://coolify.io/docs/knowledge-base/commands",
+    "https://coolify.io/docs/knowledge-base/dns-configuration",
+    "https://coolify.io/docs/knowledge-base/domains",
+    "https://coolify.io/docs/knowledge-base/internal/terminal",
+    "https://coolify.io/docs/knowledge-base/proxy/traefik/basic-auth",
+    "https://coolify.io/docs/llms-full.txt",
+    "https://coolify.io/docs/services/directus",
+    "https://coolify.io/docs/services/overview",
+    "https://github.com/StuMason/coolify-mcp",
+    "https://github.com/coollabsio/coolify-cli",
+    "https://github.com/coollabsio/coolify-cli/blob/v4.x/ARCHITECTURE.md",
+    "https://github.com/coollabsio/coolify-cli/blob/v4.x/CLAUDE.md",
+    "https://github.com/coollabsio/coolify-cli/blob/v4.x/HOW-TO-RELEASE.md",
+    "https://github.com/coollabsio/coolify-cli/blob/v4.x/llms.txt",
+    "https://github.com/coollabsio/coolify-cli/issues",
+    "https://github.com/coollabsio/coolify/blob/v4.x/openapi.yaml",
+    "https://github.com/coollabsio/sentinel",
+    "https://github.com/harishagawane/DeployFlow.io/blob/main/.ai/core/technology-stack.md",
+    "https://github.com/jdecool/stars-feed",
+    "https://github.com/paulosuzart/awesome/blob/main/README.md",
+    "https://github.com/xvnpw/sec-docs",
+    "https://lobehub.com/mcp/ignitabull18-coolify-mcp-server",
+    "https://mcpmarket.com/server/coolify-4",
+    "https://mcpservers.org/servers/frndchagas/coolify-mcp",
+    "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/README.md",
+    "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/llms.txt",
+    "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/package.json",
+    "https://raw.githubusercontent.com/coollabsio/coolify/v4.x/openapi.yaml"
+  ],
+  "grounding": [
+    "https://api.github.com",
+    "https://app.coolify.io",
+    "https://app.coolify.io/api/v1",
+    "https://app2.coolify.io",
+    "https://archiveprogram.github.com",
+    "https://claude.com/product/claude-code",
+    "https://coolify.io",
+    "https://coolify.io/",
+    "https://coolify.io/#1-enable-the-api",
+    "https://coolify.io/#1-enable-the-mcp-server",
+    "https://coolify.io/#2-create-an-api-token",
+    "https://coolify.io/#3-configure-your-ai-client",
+    "https://coolify.io/#3-make-api-requests",
+    "https://coolify.io/#api-authorization",
+    "https://coolify.io/#applications",
+    "https://coolify.io/#available-tools",
+    "https://coolify.io/#base-url",
+    "https://coolify.io/#before-we-start",
+    "https://coolify.io/#behavior",
+    "https://coolify.io/#configure-allowed-ips",
+    "https://coolify.io/#databases",
+    "https://coolify.io/#example-data",
+    "https://coolify.io/#how-it-works",
+    "https://coolify.io/#how-permissions-are-checked",
+    "https://coolify.io/#ip-allowlisting",
+    "https://coolify.io/#mcp-server",
+    "https://coolify.io/#overview",
+    "https://coolify.io/#pagination",
+    "https://coolify.io/#permissions",
+    "https://coolify.io/#projects",
+    "https://coolify.io/#rate-limiting",
+    "https://coolify.io/#security-considerations",
+    "https://coolify.io/#servers",
+    "https://coolify.io/#services",
+    "https://coolify.io/#team-scoping",
+    "https://coolify.io/#troubleshooting",
+    "https://coolify.io/#who-this-is-for",
+    "https://coolify.io/docs",
+    "https://coolify.io/docs/",
+    "https://coolify.io/docs/api-reference/api",
+    "https://coolify.io/docs/api-reference/api/applications/create-dockercompose-application",
+    "https://coolify.io/docs/api-reference/authorization",
+    "https://coolify.io/docs/applications",
+    "https://coolify.io/docs/databases",
+    "https://coolify.io/docs/databases/redis",
+    "https://coolify.io/docs/get-started/installation",
+    "https://coolify.io/docs/get-started/introduction",
+    "https://coolify.io/docs/hetzner",
+    "https://coolify.io/docs/integrations/cloudflare/ddos-protection",
+    "https://coolify.io/docs/integrations/mcp",
+    "https://coolify.io/docs/knowledge-base",
+    "https://coolify.io/docs/knowledge-base/commands",
+    "https://coolify.io/docs/knowledge-base/dns-configuration",
+    "https://coolify.io/docs/knowledge-base/domains",
+    "https://coolify.io/docs/knowledge-base/faq",
+    "https://coolify.io/docs/knowledge-base/internal/terminal",
+    "https://coolify.io/docs/knowledge-base/proxy/traefik/basic-auth",
+    "https://coolify.io/docs/llms-full.txt",
+    "https://coolify.io/docs/services/directus",
+    "https://coolify.io/docs/services/introduction",
+    "https://coolify.io/docs/services/overview",
+    "https://coolify.io/docs/troubleshoot",
+    "https://coolify.io/hetzner",
+    "https://coolify.io/pricing/",
+    "https://coolify.shadowarcanist.com",
+    "https://coolify.shadowarcanist.com/api/v1",
+    "https://coolify.shadowarcanist.com/api/v1/disable",
+    "https://coolify.shadowarcanist.com/api/v1/enable",
+    "https://coolify.shadowarcanist.com/api/v1/mcp/disable",
+    "https://coolify.shadowarcanist.com/api/v1/mcp/enable",
+    "https://coolify.shadowarcanist.com/api/v1/teams",
+    "https://coolify.shadowarcanist.com/mcp",
+    "https://cursor.com",
+    "https://cursor.com/docs/mcp",
+    "https://docs.anthropic.com/en/docs/claude-code/mcp",
+    "https://docs.github.com",
+    "https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com",
+    "https://github.com/#start-of-content",
+    "https://github.com/StuMason/coolify-mcp",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/contact/report-abuse?report=coollabsio%2Fcoolify+%28Repository+Funding+Links%29",
+    "https://github.com/coollabsio",
+    "https://github.com/coollabsio/coolify",
+    "https://github.com/coollabsio/coolify-cli",
+    "https://github.com/coollabsio/coolify-cli/blob/v4.x/ARCHITECTURE.md",
+    "https://github.com/coollabsio/coolify-cli/blob/v4.x/CLAUDE.md",
+    "https://github.com/coollabsio/coolify-cli/blob/v4.x/HOW-TO-RELEASE.md",
+    "https://github.com/coollabsio/coolify-cli/blob/v4.x/llms.txt",
+    "https://github.com/coollabsio/coolify-cli/issues",
+    "https://github.com/coollabsio/coolify/actions",
+    "https://github.com/coollabsio/coolify/blob/v4.x/openapi.json",
+    "https://github.com/coollabsio/coolify/blob/v4.x/openapi.yaml",
+    "https://github.com/coollabsio/coolify/commit/07f381b88c0b15044d9d98faac90455dfc63cdcd",
+    "https://github.com/coollabsio/coolify/commits/v4.x/openapi.yaml",
+    "https://github.com/coollabsio/coolify/commits?author=andrasbacsai",
+    "https://github.com/coollabsio/coolify/discussions",
+    "https://github.com/coollabsio/coolify/issues",
+    "https://github.com/coollabsio/coolify/pulls",
+    "https://github.com/coollabsio/coolify/pulse",
+    "https://github.com/coollabsio/coolify/raw/refs/heads/v4.x/openapi.yaml",
+    "https://github.com/coollabsio/coolify/security",
+    "https://github.com/coollabsio/coolify/tree/v4.x",
+    "https://github.com/coollabsio/sentinel",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/harishagawane/DeployFlow.io/blob/main/.ai/core/technology-stack.md",
+    "https://github.com/jdecool/stars-feed",
+    "https://github.com/login?return_to=%2Fcoollabsio%2Fcoolify",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fcoollabsio%2Fcoolify%2Fblob%2Fv4.x%2Fopenapi.yaml",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/paulosuzart/awesome/blob/main/README.md",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fblob%2Fshow&source=header-repo&source_repo=coollabsio%2Fcoolify",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/sponsors/coollabsio",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/why-github",
+    "https://github.com/xvnpw/sec-docs",
+    "https://lobehub.com/mcp/ignitabull18-coolify-mcp-server",
+    "https://maintainers.github.com",
+    "https://mcpmarket.com/server/coolify-4",
+    "https://mcpservers.org/servers/frndchagas/coolify-mcp",
+    "https://openai.com/codex/",
+    "https://opencollective.com/coollabsio",
+    "https://raw.githubusercontent.com/coollabsio/coolify-cli/main/scripts/install.ps1",
+    "https://raw.githubusercontent.com/coollabsio/coolify-cli/main/scripts/install.sh",
+    "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/README.md",
+    "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/llms.txt",
+    "https://raw.githubusercontent.com/coollabsio/coolify-cli/v4.x/package.json",
+    "https://raw.githubusercontent.com/coollabsio/coolify/v4.x/openapi.yaml",
+    "https://securitylab.github.com",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://support.github.com",
+    "https://www.crowdsec.net/blog/securing-automated-app-deployment-crowdsec-and-coolify"
+  ]
+}

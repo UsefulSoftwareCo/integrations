@@ -1,0 +1,195 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "mintlify.com",
+    "summary": "Mintlify exposes a hosted MCP server for documentation access over OAuth 2.0, plus a `mint` CLI and a REST admin API that uses a Bearer admin key.",
+    "credentials": {
+      "mint_mcp_oauth": {
+        "type": "oauth2",
+        "label": "Mintlify MCP OAuth app/session",
+        "setup": "Connect to the hosted MCP server at [Mintlify MCP](https://mintlify.com/mcp) using an MCP client that supports OAuth 2.0. The server self-onboards against [https://mcp.mintlify.com](https://mcp.mintlify.com), including dynamic client registration, then sends access tokens as Bearer tokens over HTTP. Available scopes include `docs:read`, `docs:write`, `nav:write`, `config:write`, `session:write`, `deployment:read`, `deployment:write`, `members:read`, `members:write`, `billing:read`, `integrations:write`, `analytics:read`, and `offline_access`.",
+        "acquisition": "manual"
+      },
+      "mint_admin_key": {
+        "type": "api_key",
+        "label": "Mintlify admin API key",
+        "generateUrl": "https://app.mintlify.com/settings/organization/api-keys",
+        "setup": "In the dashboard, open [Settings → Organization → API Keys](https://app.mintlify.com/settings/organization/api-keys) and create an admin key. It begins with `mint_` and is a server-side secret. Send it as `Authorization: Bearer mint_…`.",
+        "acquisition": "manual"
+      },
+      "mint_cli_session": {
+        "type": "oauth2",
+        "label": "Mintlify CLI session",
+        "setup": "Run [`mint login`](https://www.mintlify.com/docs/cli/commands) to authenticate in your browser and store the CLI session locally. Use `mint logout` to remove the session.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "type": "mcp",
+        "url": "https://mintlify.com/mcp",
+        "slug": "mintlify-hosted-mcp-server",
+        "name": "Mintlify hosted MCP server",
+        "docs": "https://mintlify.com/mcp",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mint_mcp_oauth",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "detected",
+                "signal": "mcp-self-onboard"
+              }
+            }
+          ]
+        },
+        "notes": "Detected MCP endpoint protected by OAuth 2.0 with authorization server `https://mcp.mintlify.com`; dynamic client registration is supported."
+      },
+      {
+        "type": "http",
+        "url": "https://api.mintlify.com/v1",
+        "slug": "mintlify-api",
+        "name": "Mintlify API",
+        "docs": "https://mintlify.com/docs/api-reference/introduction",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://mintlify.com/docs/api-reference/introduction"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mint_admin_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://mintlify.com/docs/api-reference/introduction"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "cli",
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "mint"
+          }
+        ],
+        "command": "mint",
+        "slug": "mintlify-cli",
+        "name": "Mintlify CLI",
+        "docs": "https://www.mintlify.com/docs/cli/commands",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.mintlify.com/docs/installation",
+            "https://www.mintlify.com/docs/cli/commands"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "mint_cli_session",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "mint login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.mintlify.com/docs/cli/commands"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "checklist": {
+    "passed": false,
+    "checks": {
+      "noDefaultCredentialSetup": {
+        "passed": true,
+        "offenders": []
+      },
+      "outputUrlsInCorpus": {
+        "passed": false,
+        "offenders": [
+          "https://app.mintlify.com/settings/organization/api-keys",
+          "https://www.mintlify.com/docs/cli/commands",
+          "https://api.mintlify.com/v1",
+          "https://mintlify.com/docs/api-reference/introduction",
+          "https://www.mintlify.com/docs/installation"
+        ]
+      },
+      "authUseIdsResolve": {
+        "passed": true,
+        "offenders": []
+      },
+      "cliMechanicsSetupHasNoOauthPath": {
+        "passed": true,
+        "offenders": []
+      },
+      "specUrlsLookMachineReadable": {
+        "passed": true,
+        "offenders": []
+      },
+      "noDuplicateSurfaceKeys": {
+        "passed": true,
+        "offenders": []
+      },
+      "noRequiredAuthWithEmptyEntries": {
+        "passed": true,
+        "offenders": []
+      }
+    }
+  },
+  "usage": {
+    "prompt_tokens": 25722,
+    "completion_tokens": 869,
+    "total_tokens": 26591,
+    "prompt_tokens_details": {
+      "cached_tokens": 25344,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "model": "gpt-5.4"
+}

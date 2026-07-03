@@ -94,21 +94,15 @@ function parseBulkJson(value: unknown): KvRow[] {
 }
 
 function parseBulkOutput(stdout: string): KvRow[] {
+  // wrangler prints the JSON document followed by a bare "Success!" line, so
+  // parse the outermost {...}/[...] slice rather than the whole stream.
   const trimmed = stdout.trim();
   if (!trimmed) return [];
-  try {
-    return parseBulkJson(JSON.parse(trimmed));
-  } catch {
-    return trimmed
-      .split(/\r?\n/)
-      .flatMap((line) => {
-        try {
-          return parseBulkJson(JSON.parse(line));
-        } catch {
-          return [];
-        }
-      });
-  }
+  const start = trimmed.search(/[[{]/);
+  if (start === -1) return [];
+  const end = Math.max(trimmed.lastIndexOf("}"), trimmed.lastIndexOf("]"));
+  if (end <= start) return [];
+  return parseBulkJson(JSON.parse(trimmed.slice(start, end + 1)));
 }
 
 function listKeys(local: boolean): string[] {

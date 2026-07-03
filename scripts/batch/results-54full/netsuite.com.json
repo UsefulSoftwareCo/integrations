@@ -1,0 +1,549 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "netsuite.com",
+    "detect": {
+      "domain": "netsuite.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T23:48:04.655Z",
+    "summary": "NetSuite exposes an account-scoped SuiteTalk REST API, an account-scoped MCP server for the NetSuite AI Connector Service, and the SuiteCloud CLI for Node.js; REST supports OAuth 2.0 and token-based auth, while MCP and the CLI use OAuth-based account connections.",
+    "description": "NetSuite is Oracle’s cloud ERP and business management platform for finance, operations, commerce, and related business workflows. It lets customers manage NetSuite account data and customizations through web services, development tooling, and AI connector capabilities.",
+    "credentials": {
+      "netsuite_oauth2_app": {
+        "type": "oauth2",
+        "label": "NetSuite OAuth 2.0 integration record (client credentials/client secret or public client)",
+        "generateUrl": "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157771733782.html",
+        "setup": "Create an integration record in NetSuite at [Create Integration Records for Applications to Use OAuth 2.0](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157771733782.html): go to `Setup > Integration > Manage Integrations > New`, enable `Authorization Code Grant` and/or `Client Credentials (Machine to Machine) Grant`, and check the product scopes you need such as `REST Web Services` or `NetSuite AI Connector Service`. Save the record to obtain the OAuth client details; for public-client flows, configure the allowed redirect URI as described in the same guide."
+      },
+      "netsuite_tba": {
+        "type": "compound",
+        "label": "NetSuite Token-Based Authentication (consumer key/secret + token ID/secret)",
+        "generateUrl": "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4247329078.html",
+        "setup": "Set up Token-Based Authentication using the NetSuite tutorial at [Token-Based Authentication (TBA)](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4247329078.html). In NetSuite, create an integration record to get the consumer key and secret, then issue an access token for a user/role to get the token ID and token secret. Use these values to sign OAuth 1.0 `Authorization` headers for supported SuiteTalk and RESTlet calls."
+      },
+      "suitecloud_cli_account": {
+        "type": "oauth2",
+        "label": "SuiteCloud CLI account connection",
+        "generateUrl": "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155930842837.html",
+        "setup": "Install the CLI from [Installing SuiteCloud CLI for Node.js](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155929845760.html), then in a project folder run `suitecloud account:setup` as described in [Setting Up SuiteCloud CLI for Node.js](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155930842837.html). The CLI walks you through linking your NetSuite account and stores the account connection for later commands."
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "netsuite-ai-connector-service",
+        "name": "NetSuite AI Connector Service",
+        "type": "mcp",
+        "docs": "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_0714082142.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_0714082142.html",
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_3200541651.html",
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_143403258.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "netsuite_oauth2_app",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_0714082142.html",
+                  "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157771733782.html"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<accountid>.suitetalk.api.netsuite.com/services/mcp/v1/all",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "accountid",
+            "in": "url",
+            "resolveFrom": "your NetSuite account ID",
+            "description": "Account-specific subdomain used for MCP URLs."
+          }
+        ]
+      },
+      {
+        "slug": "suitecloud-cli-for-node-js",
+        "name": "SuiteCloud CLI for Node.js",
+        "type": "cli",
+        "docs": "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_1558708800.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_1558708800.html",
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155929845760.html",
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155930842837.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "suitecloud_cli_account",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "suitecloud account:setup"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155930842837.html"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@oracle/suitecloud-cli",
+            "runtimeHint": "node"
+          }
+        ],
+        "command": "suitecloud"
+      },
+      {
+        "slug": "netsuite-suitetalk-rest-web-services",
+        "name": "NetSuite SuiteTalk REST Web Services",
+        "type": "http",
+        "docs": "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1544786256.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1540810174.html",
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1545126526.html",
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1544786256.html",
+            "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157780312610.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "netsuite_oauth2_app",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157780312610.html",
+                  "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1544786256.html"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "netsuite_tba",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "OAuth"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1544786256.html",
+                  "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4247329078.html"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://<accountID>.suitetalk.api.netsuite.com/services/rest/record/v1",
+        "variables": [
+          {
+            "name": "accountID",
+            "in": "url",
+            "resolveFrom": "your NetSuite account ID",
+            "description": "Account-specific subdomain used for SuiteTalk REST URLs."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T23:48:04.657Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 188949,
+    "completion_tokens": 2954,
+    "total_tokens": 191903
+  },
+  "visited": [
+    "https://docs.oracle.com/cd/E97085_01/English/daas/guide/10330220.htm",
+    "https://docs.oracle.com/en-us/iaas/autonomous-database-serverless/doc/troubleshoot-mcp-server.html",
+    "https://docs.oracle.com/en/cloud/paas/application-integration/graphql-adapter/graphql-adapter-capabilities.html",
+    "https://docs.oracle.com/en/cloud/paas/application-integration/shopify-graphql-adapter/shopify-graphql-adapter-capabilities.html",
+    "https://docs.oracle.com/en/cloud/paas/visual-builder-addin/3.5/excel-developer/rest-service-support.html",
+    "https://docs.oracle.com/en/cloud/paas/visual-builder-addin/3.7/excel-developer/rest-service-support.html",
+    "https://docs.oracle.com/en/cloud/paas/visual-builder/visualbuilder-building-applications/create-service-connection-from-service-specification.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite-openair/nsoa-online-help/article_158624650963.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite-openair/nsoa-online-help/article_160035305752.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite-openair/nsoa-online-help/article_82125322933.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_0605103340.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_143403258.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_2104046421.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_3200541651.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_4160616848.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_7200233106.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_9132912150.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/bridgehead_N240435.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_1540810168.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_1558708800.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4247329078.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4702622163.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4779302061.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_N3477815.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_0714082142.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1540810174.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1544786256.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1545126526.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1556765316.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1558730192.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155929845760.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155930842837.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_156026261619.html?source=%3Aso%3Atw%3Aor%3Aawr%3Aocl%3A",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157373386674.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157771482304.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157771733782.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157780312610.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157797198485.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_162686838198.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_3892701016.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_4381113277.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3413913.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3494684.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3950559.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/subsect_157167127021.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/subsect_160147727190.html",
+    "https://docs.oracle.com/en/database/other-databases/essbase/21/essrt/op-urls-get.html",
+    "https://docs.oracle.com/en/industries/hospitality/integration-platform/ohipu/t_connecting_to_the_streaming_api_via_graphi_ql.htm",
+    "https://docs.oracle.com/en/industries/utilities/integration-hub/graphql-user-guide/home.html",
+    "https://docs.oracle.com/en/industries/utilities/integration-hub/graphql-user-guide/oracle-utilities-opower-graphql-api-user-guide.pdf",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://www.reddit.com/r/mcp/comments/1ogb1ye/api_graphql_openapi_swagger_docs_mcp_server/",
+    "https://www.truefoundry.com/docs/ai-gateway/mcp/netsuite-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ],
+  "grounding": [
+    "http://demo123.suitetalk.api.netsuite.com/services/rest/record/v1/metadata-catalog",
+    "http://demo123.suitetalk.api.netsuite.com/services/rest/record/v1/metadata-catalog/?select=assemblybuild",
+    "http://proxyurl:proxyport",
+    "http://purl.org/dc/terms/",
+    "http://www.oracle.com/goto/opensourcecode",
+    "https://_",
+    "https://console.us-phoenix-1.oraclecloud.com/",
+    "https://demo123.suitetalk.api.netsuite.com/services/rest/record/v1/metadata-catalog/account",
+    "https://demo123.suitetalk.api.netsuite.com/services/rest/record/v1/metadata-catalog?select=customer",
+    "https://docs.npmjs.com/downloading-and-installing-packages-globally",
+    "https://docs.oracle.com/",
+    "https://docs.oracle.com/#",
+    "https://docs.oracle.com/#back",
+    "https://docs.oracle.com/#bridgehead_0804033316",
+    "https://docs.oracle.com/#bridgehead_0804033331",
+    "https://docs.oracle.com/#maincontent",
+    "https://docs.oracle.com/#open",
+    "https://docs.oracle.com/#skip_to_search_form",
+    "https://docs.oracle.com/#subsect_158280443557",
+    "https://docs.oracle.com/article_0415010513.html",
+    "https://docs.oracle.com/article_0627022005.html#subsect_158202025145",
+    "https://docs.oracle.com/article_0902023450.html",
+    "https://docs.oracle.com/article_0902023508.html",
+    "https://docs.oracle.com/article_1017113407.html",
+    "https://docs.oracle.com/article_143403258.html",
+    "https://docs.oracle.com/article_161460204879.html",
+    "https://docs.oracle.com/article_162020236.html",
+    "https://docs.oracle.com/article_3200541651.html",
+    "https://docs.oracle.com/article_7200233106.html",
+    "https://docs.oracle.com/article_9002708453.html",
+    "https://docs.oracle.com/article_92130837826.html",
+    "https://docs.oracle.com/book_1556559731.html",
+    "https://docs.oracle.com/book_4299752196.html",
+    "https://docs.oracle.com/book_4607642783.html",
+    "https://docs.oracle.com/book_7170030575.html",
+    "https://docs.oracle.com/book_N125907.html",
+    "https://docs.oracle.com/cd/E18476_01/index.htm",
+    "https://docs.oracle.com/cd/E41177_01/index.html",
+    "https://docs.oracle.com/cd/E69469_01/index.html",
+    "https://docs.oracle.com/cd/E97085_01/English/daas/guide/10330220.htm",
+    "https://docs.oracle.com/cd/F15085_01/index.html",
+    "https://docs.oracle.com/chapter_1540391670.html",
+    "https://docs.oracle.com/chapter_1540810168.html",
+    "https://docs.oracle.com/chapter_1540810947.html",
+    "https://docs.oracle.com/chapter_1540811107.html",
+    "https://docs.oracle.com/chapter_1558708800.html",
+    "https://docs.oracle.com/chapter_155931263126.html",
+    "https://docs.oracle.com/chapter_156026236161.html",
+    "https://docs.oracle.com/chapter_157769826287.html",
+    "https://docs.oracle.com/chapter_4369651411.html",
+    "https://docs.oracle.com/chapter_4399047360.html",
+    "https://docs.oracle.com/chapter_4702622163.html",
+    "https://docs.oracle.com/chapter_4713604654.html",
+    "https://docs.oracle.com/chapter_N000004.html",
+    "https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier.htm",
+    "https://docs.oracle.com/en-us/iaas/Content/GSG/Concepts/baremetalintro.htm",
+    "https://docs.oracle.com/en-us/iaas/Content/General/Concepts/govlanding.htm",
+    "https://docs.oracle.com/en-us/iaas/Content/General/Reference/more.htm",
+    "https://docs.oracle.com/en-us/iaas/Content/Security/Concepts/security.htm",
+    "https://docs.oracle.com/en-us/iaas/Content/devtoolshome.htm",
+    "https://docs.oracle.com/en-us/iaas/Content/services.htm",
+    "https://docs.oracle.com/en-us/iaas/autonomous-database-serverless/doc/troubleshoot-mcp-server.html",
+    "https://docs.oracle.com/en/applications/e-business-suite/index.html",
+    "https://docs.oracle.com/en/applications/enterprise-performance-management/index.html",
+    "https://docs.oracle.com/en/applications/fusion-apps/index.html",
+    "https://docs.oracle.com/en/applications/jd-edwards/index.html",
+    "https://docs.oracle.com/en/applications/peoplesoft/index.html",
+    "https://docs.oracle.com/en/applications/siebel/index.html",
+    "https://docs.oracle.com/en/bigdata/big-data-appliance/",
+    "https://docs.oracle.com/en/bigdata/index.html",
+    "https://docs.oracle.com/en/cloud/index.html",
+    "https://docs.oracle.com/en/cloud/paas/application-integration/graphql-adapter/graphql-adapter-capabilities.html",
+    "https://docs.oracle.com/en/cloud/paas/application-integration/shopify-graphql-adapter/shopify-graphql-adapter-capabilities.html",
+    "https://docs.oracle.com/en/cloud/paas/autonomous-database/index.html",
+    "https://docs.oracle.com/en/cloud/paas/visual-builder-addin/3.5/excel-developer/rest-service-support.html",
+    "https://docs.oracle.com/en/cloud/paas/visual-builder-addin/3.7/excel-developer/rest-service-support.html",
+    "https://docs.oracle.com/en/cloud/paas/visual-builder/visualbuilder-building-applications/create-service-connection-from-service-specification.html",
+    "https://docs.oracle.com/en/cloud/saas/index.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite-openair/nsoa-online-help/article_158624650963.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite-openair/nsoa-online-help/article_160035305752.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite-openair/nsoa-online-help/article_82125322933.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/index.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_0605103340.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_143403258.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_2104046421.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_3200541651.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_4160616848.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_7200233106.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/article_9132912150.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/bridgehead_N240435.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_1540810168.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_1558708800.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4247329078.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4702622163.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4779302061.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_N3477815.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_0714082142.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1540810174.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1544786256.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1545126526.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1556765316.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_1558730192.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155929845760.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_155930842837.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_156026261619.html?source=%3Aso%3Atw%3Aor%3Aawr%3Aocl%3A",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157373386674.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157771482304.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157771733782.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157780312610.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_157797198485.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_162686838198.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_3892701016.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_4381113277.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3413913.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3494684.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3950559.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/subsect_157167127021.html",
+    "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/subsect_160147727190.html",
+    "https://docs.oracle.com/en/database/index.html",
+    "https://docs.oracle.com/en/database/oracle/apex/index.html",
+    "https://docs.oracle.com/en/database/oracle/oracle-database/index.html",
+    "https://docs.oracle.com/en/database/other-databases/essbase/21/essrt/op-urls-get.html",
+    "https://docs.oracle.com/en/database/other-databases/essbase/index.html",
+    "https://docs.oracle.com/en/database/other-databases/nosql-database/index.html",
+    "https://docs.oracle.com/en/engineered-systems/health-diagnostics/",
+    "https://docs.oracle.com/en/engineered-systems/index.html",
+    "https://docs.oracle.com/en/engineered-systems/index.html#OracleExalyticsIn-MemoryMachine",
+    "https://docs.oracle.com/en/engineered-systems/index.html#OracleSuperCluster",
+    "https://docs.oracle.com/en/engineered-systems/oracle-database-appliance/",
+    "https://docs.oracle.com/en/engineered-systems/private-cloud-appliance/",
+    "https://docs.oracle.com/en/engineered-systems/zero-data-loss-recovery-appliance/",
+    "https://docs.oracle.com/en/enterprise-manager/index.html",
+    "https://docs.oracle.com/en/industries/construction-engineering/index.html",
+    "https://docs.oracle.com/en/industries/digital-government/",
+    "https://docs.oracle.com/en/industries/food-beverage/index.html",
+    "https://docs.oracle.com/en/industries/health-sciences/index.html",
+    "https://docs.oracle.com/en/industries/hospitality/index.html",
+    "https://docs.oracle.com/en/industries/hospitality/integration-platform/ohipu/t_connecting_to_the_streaming_api_via_graphi_ql.htm",
+    "https://docs.oracle.com/en/industries/insurance/index.html",
+    "https://docs.oracle.com/en/industries/retail/index.html",
+    "https://docs.oracle.com/en/industries/state-and-local/index.html",
+    "https://docs.oracle.com/en/industries/utilities/index.html",
+    "https://docs.oracle.com/en/industries/utilities/integration-hub/graphql-user-guide/home.html",
+    "https://docs.oracle.com/en/industries/utilities/integration-hub/graphql-user-guide/oracle-utilities-opower-graphql-api-user-guide.pdf",
+    "https://docs.oracle.com/en/middleware/goldengate/index.html",
+    "https://docs.oracle.com/en/networking/index.html",
+    "https://docs.oracle.com/en/servers/index.html",
+    "https://docs.oracle.com/en/virtualization/",
+    "https://docs.oracle.com/en/virtualization/index.html",
+    "https://docs.oracle.com/en/virtualization/index.html#OracleVM",
+    "https://docs.oracle.com/javaee/7/index.html",
+    "https://docs.oracle.com/javame/8.3/index.html",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en&id=a-z",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/applications&id=onprem-apps-docs",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/iaas&id=oci-home",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/iaas&id=sign-into-cloud",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/iaas&id=try-free-tier",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/saas&id=cloud-apps-readiness",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/saas&id=fa-home",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/saas/netsuite&id=netsuite",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/engineered-systems/exadata-database-machine&id=homepage",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/industries&id=industries-comm-getstarted",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/industries&id=industries-docs",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/industries&id=industries-financial-services-getstarted",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/industries&id=industries-health-getstarted",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/java&id=java-docs",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/learn&id=learn-home",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/legal&id=cpyr",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/operating-environments&id=operating-environments",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/operating-systems&id=os-docs",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/solutions&id=solutions-home",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/storage&id=storage-docs",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/systems&id=systems",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=en/virtualization&id=virtualbox-getstarted",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menuall",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menubi",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menudi",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menuem",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menugg",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menuidm",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menuopss",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menusoa",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menuwc",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=fmwlatest&id=menuwls",
+    "https://docs.oracle.com/pls/topic/lookup?ctx=jetlatest&id=homepage",
+    "https://docs.oracle.com/preface_1540397395.html",
+    "https://docs.oracle.com/section_0525020842.html",
+    "https://docs.oracle.com/section_0714080625.html",
+    "https://docs.oracle.com/section_0714082142.html",
+    "https://docs.oracle.com/section_0827103226.html",
+    "https://docs.oracle.com/section_1498251763.html",
+    "https://docs.oracle.com/section_1500275531.html",
+    "https://docs.oracle.com/section_1540810174.html",
+    "https://docs.oracle.com/section_1545126526.html",
+    "https://docs.oracle.com/section_1545129726.html",
+    "https://docs.oracle.com/section_1546936508.html",
+    "https://docs.oracle.com/section_1546938065.html",
+    "https://docs.oracle.com/section_1558708810.html",
+    "https://docs.oracle.com/section_155929845760.html",
+    "https://docs.oracle.com/section_155930842837.html",
+    "https://docs.oracle.com/section_155931221634.html",
+    "https://docs.oracle.com/section_156337184796.html",
+    "https://docs.oracle.com/section_156337186044.html",
+    "https://docs.oracle.com/section_156347873375.html",
+    "https://docs.oracle.com/section_156347874292.html",
+    "https://docs.oracle.com/section_156562278249.html",
+    "https://docs.oracle.com/section_157771171166.html",
+    "https://docs.oracle.com/section_157771281570.html",
+    "https://docs.oracle.com/section_157771733782.html",
+    "https://docs.oracle.com/section_157771979135.html",
+    "https://docs.oracle.com/section_157780218434.html",
+    "https://docs.oracle.com/section_157780265265.html",
+    "https://docs.oracle.com/section_157780293862.html",
+    "https://docs.oracle.com/section_157780312610.html",
+    "https://docs.oracle.com/section_158074210415.html",
+    "https://docs.oracle.com/section_158081944642.html",
+    "https://docs.oracle.com/section_158409687381.html",
+    "https://docs.oracle.com/section_158928050193.html",
+    "https://docs.oracle.com/section_162626471013.html",
+    "https://docs.oracle.com/section_164155878349.html",
+    "https://docs.oracle.com/section_164882052792.html",
+    "https://docs.oracle.com/section_4183926623.html",
+    "https://docs.oracle.com/section_4247337262.html",
+    "https://docs.oracle.com/section_4254972257.html",
+    "https://docs.oracle.com/section_4254975694.html",
+    "https://docs.oracle.com/section_4395597766.html",
+    "https://docs.oracle.com/section_4429293934.html",
+    "https://docs.oracle.com/section_4623992425.html",
+    "https://docs.oracle.com/section_4724921075.html",
+    "https://docs.oracle.com/set_N125873.html",
+    "https://docs.oracle.com/set_N20140200.html",
+    "https://docs.oracle.com/set_N2807372.html",
+    "https://docs.oracle.com/solutions/?q=&cType=built-deployed&sort=date-desc&lang=en",
+    "https://docs.oracle.com/solutions/?q=&cType=reference-architectures&sort=date-desc&lang=en",
+    "https://docs.oracle.com/solutions/?q=&cType=solution-playbook&sort=date-desc&lang=en",
+    "https://docs.oracle.com/sp_common/book-template/ohc-book-template/js/resources/nls/root/translations.js",
+    "https://docs.oracle.com/sp_common/book-template/ohc-book-template/js/resources/nls/translations.js",
+    "https://docs.oracle.com/subsect_1544786455.html",
+    "https://docs.oracle.com/subsect_1559222360.html",
+    "https://docs.oracle.com/subsect_156509465078.html",
+    "https://editor.swagger.io/",
+    "https://learn.microsoft.com/en-us/fabric/data-engineering/api-graphql-local-model-context-protocol",
+    "https://oss.oracle.com/sources/",
+    "https://profile.oracle.com/myprofile/account/create-account.jspx",
+    "https://profile.oracle.com/myprofile/account/secure/update-account.jspx?nexturl=",
+    "https://profile.oracle.com/myprofile/account/secure/update-account.jspx?nexturl=https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4247329078.html",
+    "https://profile.oracle.com/myprofile/account/secure/update-account.jspx?nexturl=https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_162686838198.html",
+    "https://schema.org",
+    "https://static.oracle.com/cdn/fnd/gallery/2104.4.0/OracleFont/OracleFont.min.css",
+    "https://suiteanswers.custhelp.com/app/answers/detail/a_id/1022684/loc/en_US",
+    "https://suiteanswers.custhelp.com/app/answers/detail/a_id/1025062/kw/1025062",
+    "https://www.npmjs.com/package/@oracle/suitecloud-cli",
+    "https://www.oracle.com/corporate/",
+    "https://www.oracle.com/corporate/contact/",
+    "https://www.oracle.com/corporate/contact/help.html",
+    "https://www.oracle.com/documentation",
+    "https://www.oracle.com/goto/opensourcecode",
+    "https://www.oracle.com/index.html",
+    "https://www.oracle.com/legal/privacy/",
+    "https://www.oracle.com/legal/privacy/advertising-privacy-policy.html",
+    "https://www.oracle.com/pls/topic/lookup?ctx=en/java/javase&id=javaselatest",
+    "https://www.oracle.com/privacy",
+    "https://www.oracle.com/technetwork/documentation/oracle-unified-ss-193371.html#nas",
+    "https://www.oracle.com/technetwork/documentation/pubsectrevmgmt-154608.html",
+    "https://www.oracle.com/technetwork/documentation/sgd-193668.html",
+    "https://www.oracle.com/webapps/redirect/signon?nexturl=",
+    "https://www.oracle.com/webapps/redirect/signon?nexturl=https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_4247329078.html",
+    "https://www.oracle.com/webapps/redirect/signon?nexturl=https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_162686838198.html",
+    "https://www.reddit.com/r/mcp/comments/1ogb1ye/api_graphql_openapi_swagger_docs_mcp_server/",
+    "https://www.truefoundry.com/docs/ai-gateway/mcp/netsuite-mcp-server",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://zuplo.com/docs/mcp-server/graphql"
+  ]
+}

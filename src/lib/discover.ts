@@ -27,7 +27,8 @@
  * end as basis:"detected". Model (`ChatFn`) and web tools (`WebBackend`)
  * are injected, so it runs identically in the Worker, Bun, and tests.
  */
-import type { DetectionResult } from "./detect.ts";
+import type { DetectionResult, McpDetection } from "./detect.ts";
+import { probeMcpOnboarding } from "./detect.ts";
 import { catalogSeeds } from "./catalog-seed.ts";
 import { validateSpecUrl, type SpecValidationResult } from "./spec-validate.ts";
 
@@ -255,6 +256,8 @@ const SYSTEM =
   "- Web dashboards/consoles and CI integrations (GitHub Actions, marketplace apps) are NOT surfaces — only programmatic interfaces a developer or agent calls: HTTP/GraphQL APIs, MCP connect endpoints, CLIs. When in doubt ask: could a script call this? If not, omit it.\n" +
   "- An mcp surface's `url` is the CONNECT ENDPOINT an MCP client would use (e.g. https://mcp.example.com/mcp), never a docs page about the server. If only a docs page exists, put it in `docs` and leave `url` unset.\n" +
   "- Write each credential's `setup` around the EASIEST acquisition path. When a CLI login acquires it (`mint login`, `wrangler login`), setup says 'run `x login`' and the binding is mechanics 'cli' with that command — do NOT walk through raw OAuth authorize/token/register endpoints anywhere in setup.\n" +
+  "- When a CLI has an interactive `login` command AND the same credential can also be supplied via env var or a `--token`/`--key` flag, the `login` command is the PRIMARY path: write `setup` around 'run `x login`' and mention the env/flag token only as a non-interactive/CI fallback. NEVER lead with 'create a token in dashboard settings' when an interactive login exists — record both bindings (login as an acquisition command, env/flag as consumption) on the one credential.\n" +
+  "- MCP servers almost always authenticate via OAuth with Dynamic Client Registration (DCR) or CIMD — the MCP client REGISTERS ITSELF and the user only completes an OAuth consent in the browser. Treat an OAuth-protected MCP server as SELF-ONBOARDING by default: its credential `setup` says the client registers automatically and the user just approves access, binding mechanics 'well-known'. Do NOT tell the user to create a developer-portal application, configure a redirect_uri, or copy a client_id/client_secret — UNLESS the server's docs EXPLICITLY require pre-registering an app (no DCR). Manual app creation is at most a trailing fallback note, never the primary setup.\n" +
   "- Exotic auth (AWS SigV4, GitHub-App JWT exchange) — name the credential `type` (signature/aws_sigv4/app/two_step) and write the flow in `setup`; you don't need to model its execution. Use mechanics.source 'http', 'cli', or 'unknown'.\n" +
   "- Credentials are for DEVELOPER surfaces. An end-user app login (a consumer account for booking/shopping/streaming) is not an integration credential — omit it and the flows that need it.\n" +
   "- Record only credentials THIS service issues. A third-party platform's token that the service consumes (a BigCommerce API token you paste into an integration) belongs to that platform's own entry — mention it in the surface notes at most.\n" +
@@ -363,8 +366,20 @@ export async function discover(
     }
   };
 
-  const finalize = (summary: string, description?: string): DiscoveryResult =>
-    merge({ summary, description, credentials, surfaces }, detect, emit);
+  const finalize = async (summary: string, description?: string): Promise<DiscoveryResult> => {
+    // Deterministically probe MCP servers the model discovered at hosts detect's
+    // domain-scoped probes never reached (e.g. mcp.api.gusto.com/anthropic), so
+    // merge() gets a real DCR/CIMD signal instead of trusting the model's prose.
+    const known = new Set((detect.mcp ?? []).map((m) => m.url));
+    const extra = surfaces.filter((s) => s.type === "mcp" && s.url && !known.has(s.url));
+    if (extra.length) {
+      const probed = await Promise.all(
+        extra.map(async (s): Promise<McpDetection> => ({ url: s.url!, source: "discovered", ...(await probeMcpOnboarding(s.url!)) })),
+      );
+      detect = { ...detect, mcp: [...(detect.mcp ?? []), ...probed] };
+    }
+    return merge({ summary, description, credentials, surfaces }, detect, emit);
+  };
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const turn = await chat(messages, TOOLS);
@@ -760,11 +775,37 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
 
   const has = (pred: (s: Surface) => boolean) => r.surfaces.some(pred);
 
+  // A DCR/CIMD-capable MCP server is self-onboarding: the client registers
+  // itself and the user only approves an OAuth consent. Rewrite the bound
+  // credential to say exactly that — overriding any manual "create an app in the
+  // developer portal, copy client_id/client_secret" story the model wrote from
+  // docs — and bind the surface to it as a detected signal.
+  const bindMcpSelfOnboard = (surface: Surface, mcp: McpDetection): void => {
+    const id = ensureOauthCred();
+    const c = r.credentials[id];
+    c.type = "oauth2";
+    c.label = "OAuth 2.0";
+    c.generateUrl = undefined;
+    c.acquisition = undefined;
+    c.setup =
+      "## OAuth 2.0 — self-onboarding\n" +
+      "Point your MCP client at the server URL and approve access in the browser. " +
+      (mcp.cimd
+        ? "The server accepts a Client ID Metadata Document (CIMD), so the client authenticates with its own hosted URL as the `client_id` — nothing to register."
+        : "The server supports OAuth Dynamic Client Registration (RFC 7591), so the client registers itself automatically — no developer-portal app, `client_id`, or `client_secret` to create.");
+    emit?.({ kind: "credential", id, credential: c });
+    surface.auth = {
+      status: "required",
+      entries: [{ use: [{ id, mechanics: { source: "well-known" } }], basis: { via: "detected", signal: mcp.cimd ? "client-id-metadata-document" : "oauth-dynamic-client-registration", verifiedAt } }],
+    };
+  };
+
   // Detected MCP servers — authoritative.
   for (const mcp of detect.mcp ?? []) {
     const existing = r.surfaces.find((s) => s.type === "mcp" && s.url === mcp.url);
     if (existing) {
       existing.basis = { via: "detected", signal: "mcp:initialize", verifiedAt };
+      if (mcp.dcr || mcp.cimd) bindMcpSelfOnboard(existing, mcp);
       emit?.({ kind: "surface", surface: existing });
       continue;
     }
@@ -774,6 +815,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
         : { status: "unknown" };
     const s: Surface = { slug: assignSlug("MCP server", r.surfaces), name: "MCP server", type: "mcp", url: mcp.url, basis: { via: "detected", signal: "mcp:initialize", verifiedAt }, auth, notes: mcp.dcr || mcp.cimd ? "Self-onboarding (DCR/CIMD)" : undefined };
     r.surfaces.unshift(s);
+    if (mcp.dcr || mcp.cimd) bindMcpSelfOnboard(s, mcp);
     emit?.({ kind: "surface", surface: s });
   }
 

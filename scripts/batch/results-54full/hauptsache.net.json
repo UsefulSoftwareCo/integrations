@@ -1,0 +1,257 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "hauptsache.net",
+    "detect": {
+      "domain": "hauptsache.net",
+      "found": [
+        "mcp",
+        "mcp-self-onboard",
+        "oauth-protected-resource",
+        "auth"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "auth": {
+        "oauth": {
+          "authorizationServers": [
+            "https://www.hauptsache.net"
+          ],
+          "authorizationEndpoint": "https://www.hauptsache.net/mcp_oauth/authorize",
+          "tokenEndpoint": "https://www.hauptsache.net/mcp_oauth/token",
+          "protectedResourceUrl": "https://hauptsache.net/.well-known/oauth-protected-resource",
+          "registrationEndpoint": "https://www.hauptsache.net/mcp_oauth/register",
+          "dcr": true,
+          "cimd": false,
+          "grantTypes": [
+            "authorization_code"
+          ]
+        },
+        "mcp": [
+          {
+            "url": "https://hauptsache.net/mcp",
+            "type": "oauth2",
+            "authorizationServer": "https://www.hauptsache.net",
+            "dcr": true,
+            "cimd": false
+          }
+        ]
+      },
+      "mcp": [
+        {
+          "url": "https://hauptsache.net/mcp",
+          "source": "probe",
+          "auth": "oauth2",
+          "authorizationServer": "https://www.hauptsache.net",
+          "dcr": true,
+          "cimd": false
+        }
+      ],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T23:27:56.419Z",
+    "summary": "hauptsache.net exposes an OAuth-protected MCP server at `https://hauptsache.net/mcp` and a separate JWT-authenticated HTTP API at `https://api.komitee-akten.hauptsache.net/` with an OpenAPI spec at `https://api.komitee-akten.hauptsache.net/docs.json`.",
+    "description": "hauptsache.net is a web and software agency site. Its public-facing domain also hosts an MCP endpoint and a separate subdomain API for a document service called Komitee Akten.",
+    "credentials": {
+      "hauptsache_oauth_client": {
+        "type": "oauth2",
+        "label": "OAuth client for hauptsache.net MCP",
+        "generateUrl": "https://www.hauptsache.net/mcp_oauth/register",
+        "setup": "Register an OAuth client against the hauptsache.net MCP authorization server via the dynamic client registration endpoint at [`https://www.hauptsache.net/mcp_oauth/register`](https://www.hauptsache.net/mcp_oauth/register). Then run a standard OAuth authorization flow using the authorize endpoint at [`https://www.hauptsache.net/mcp_oauth/authorize`](https://www.hauptsache.net/mcp_oauth/authorize) and token endpoint at [`https://www.hauptsache.net/mcp_oauth/token`](https://www.hauptsache.net/mcp_oauth/token) to obtain access tokens for the MCP server.",
+        "acquisition": "manual"
+      },
+      "komitee_akten_jwt": {
+        "type": "bearer",
+        "label": "JWT bearer token for api.komitee-akten.hauptsache.net",
+        "generateUrl": "https://api.komitee-akten.hauptsache.net/authentication_token",
+        "setup": "POST credentials to [`https://api.komitee-akten.hauptsache.net/authentication_token`](https://api.komitee-akten.hauptsache.net/authentication_token) to mint a JWT, as documented in the OpenAPI description for the API. The request body uses `application/json` with `username` and `password`, and the response returns a `token` value to send in the `Authorization` header.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "hauptsache-net-mcp-server",
+        "name": "hauptsache.net MCP server",
+        "type": "mcp",
+        "basis": {
+          "via": "detected",
+          "signal": "mcp:initialize",
+          "verifiedAt": "2026-07-02T23:27:56.419Z"
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "hauptsache_oauth_client",
+                  "mechanics": {
+                    "source": "well-known"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://hauptsache.net/mcp",
+                  "https://www.hauptsache.net/mcp_oauth/authorize",
+                  "https://www.hauptsache.net/mcp_oauth/token",
+                  "https://www.hauptsache.net/mcp_oauth/register"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://hauptsache.net/mcp",
+        "transports": [
+          "streamable-http"
+        ]
+      },
+      {
+        "slug": "komitee-akten-api",
+        "name": "Komitee Akten API",
+        "type": "http",
+        "docs": "https://api.komitee-akten.hauptsache.net/docs?ui=re_doc",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://api.komitee-akten.hauptsache.net/",
+            "https://api.komitee-akten.hauptsache.net/docs?ui=re_doc",
+            "https://api.komitee-akten.hauptsache.net/docs.json"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "komitee_akten_jwt",
+                  "mechanics": {
+                    "source": "spec",
+                    "scheme": "apiKey"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://api.komitee-akten.hauptsache.net/docs.json",
+                  "https://api.komitee-akten.hauptsache.net/docs?ui=re_doc"
+                ]
+              }
+            }
+          ]
+        },
+        "spec": "https://api.komitee-akten.hauptsache.net/docs.json",
+        "url": "https://api.komitee-akten.hauptsache.net/"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T23:27:56.419Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 74877,
+    "completion_tokens": 1493,
+    "total_tokens": 76370
+  },
+  "visited": [
+    "https://api.komitee-akten.hauptsache.net/",
+    "https://api.komitee-akten.hauptsache.net/docs.json",
+    "https://api.komitee-akten.hauptsache.net/docs?ui=re_doc",
+    "https://api.komitee-akten.hauptsache.net/index.json",
+    "https://community.openai.com/t/mcp-connector-still-failed-to-resolve-oauth-client-after-full-proxy-setup/1361779",
+    "https://github.com/hauptsacheNet/clickup-mcp",
+    "https://hauptsache.net/mcp",
+    "https://stytch.com/blog/oauth-for-mcp-explained-with-a-real-world-example/",
+    "https://www.hauptsache.net/",
+    "https://www.hauptsache.net/case-studies",
+    "https://www.hauptsache.net/case-studies/ad-alliance",
+    "https://www.hauptsache.net/leistungen",
+    "https://www.hauptsache.net/mcp_oauth/authorize",
+    "https://www.hauptsache.net/mcp_oauth/register",
+    "https://www.hauptsache.net/mcp_oauth/token",
+    "https://www.reddit.com/r/mcp/comments/1sasg85/mcp_auth_oauth_vs_api_keys_what_i_went_with_and/",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ],
+  "grounding": [
+    "https://api-platform.com/docs/core/graphql/",
+    "https://api.komitee-akten.hauptsache.net/",
+    "https://api.komitee-akten.hauptsache.net/authentication",
+    "https://api.komitee-akten.hauptsache.net/blob:https://api.komitee-akten.hauptsache.net/99fa642e-bae6-4abc-81f2-a2b5b25bcfbf",
+    "https://api.komitee-akten.hauptsache.net/docs",
+    "https://api.komitee-akten.hauptsache.net/docs.html",
+    "https://api.komitee-akten.hauptsache.net/docs.json",
+    "https://api.komitee-akten.hauptsache.net/docs.jsonld",
+    "https://api.komitee-akten.hauptsache.net/docs?ui=re_doc",
+    "https://api.komitee-akten.hauptsache.net/documents",
+    "https://api.komitee-akten.hauptsache.net/documents/{id}",
+    "https://api.komitee-akten.hauptsache.net/index.html",
+    "https://api.komitee-akten.hauptsache.net/index.json",
+    "https://api.komitee-akten.hauptsache.net/index.jsonld",
+    "https://api.komitee-akten.hauptsache.net/javascript:alert(",
+    "https://community.openai.com/t/mcp-connector-still-failed-to-resolve-oauth-client-after-full-proxy-setup/1361779",
+    "https://cortecs.ai/detailedServerlessView/glm-5.2",
+    "https://github.com/hauptsacheNet/clickup-mcp",
+    "https://hauptsache.net/mcp",
+    "https://hauptsachenet.github.io/typo3-mcp-server/",
+    "https://nerdculture.de/@geregelt/116827457585255030",
+    "https://nerdculture.de/@nemo64/116289369831652433",
+    "https://nerdculture.de/@nemo64/116329682317006234",
+    "https://nerdculture.de/@nemo64/116403292306435475",
+    "https://nerdculture.de/@nemo64/116448590887918784",
+    "https://nerdculture.de/@nemo64/116521288559371994",
+    "https://nerdculture.de/@nemo64/116611885550008512",
+    "https://nerdculture.de/@nemo64/116697732555365553",
+    "https://nerdculture.de/@nemo64/116810978623884958",
+    "https://nerdculture.de/@nemo64/116849702559249668",
+    "https://nerdculture.de/tags/Claude",
+    "https://nerdculture.de/tags/Codex",
+    "https://nerdculture.de/tags/EUrouter",
+    "https://nerdculture.de/tags/GLM",
+    "https://nerdculture.de/tags/JetStream",
+    "https://nerdculture.de/tags/Safari",
+    "https://nerdculture.de/tags/TYPO3",
+    "https://nerdculture.de/tags/macOS",
+    "https://nerdculture.de/tags/mcp",
+    "https://nerdculture.de/tags/n8n",
+    "https://nerdculture.de/tags/opus",
+    "https://nerdculture.de/tags/typo3",
+    "https://redocly.com/redoc/",
+    "https://ringer.it/extensions/image-editor/",
+    "https://stytch.com/blog/oauth-for-mcp-explained-with-a-real-world-example/",
+    "https://typo3.org",
+    "https://typo3.org/",
+    "https://typo3.org/donate/online-donation/",
+    "https://typo3.org/project/licenses/",
+    "https://typo3.org/trademark",
+    "https://www.hauptsache.net/",
+    "https://www.hauptsache.net/agb",
+    "https://www.hauptsache.net/case-studies",
+    "https://www.hauptsache.net/case-studies/ad-alliance",
+    "https://www.hauptsache.net/datenschutzerklaerung",
+    "https://www.hauptsache.net/impressum",
+    "https://www.hauptsache.net/kontakt",
+    "https://www.hauptsache.net/leistungen",
+    "https://www.hauptsache.net/mcp_oauth/authorize",
+    "https://www.hauptsache.net/mcp_oauth/register",
+    "https://www.hauptsache.net/mcp_oauth/token",
+    "https://www.hauptsache.net/team",
+    "https://www.hauptsache.net/wissen",
+    "https://www.reddit.com/r/mcp/comments/1sasg85/mcp_auth_oauth_vs_api_keys_what_i_went_with_and/",
+    "https://www.speakeasy.com/docs/mcp/secure/adding-oauth-servers",
+    "https://www.youtube.com/watch?v=gl6U8s3zStI&vl=en"
+  ]
+}

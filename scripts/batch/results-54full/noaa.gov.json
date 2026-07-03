@@ -1,0 +1,759 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "noaa.gov",
+    "detect": {
+      "domain": "noaa.gov",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-02T23:49:37.425Z",
+    "summary": "NOAA exposes multiple public HTTP APIs for weather, climate, water, tides/currents, and space-weather data, plus a couple of authenticated/internal-style NOAA metadata services; no GraphQL, MCP server, or general CLI surface was found on noaa.gov.",
+    "description": "NOAA is the U.S. National Oceanic and Atmospheric Administration, which publishes weather, climate, ocean, and environmental data and services through multiple line-of-business sites. Its public web properties include datasets and operational information from the National Weather Service, NCEI, CO-OPS, and related programs.",
+    "credentials": {
+      "cdo_token": {
+        "type": "api_key",
+        "label": "NOAA Climate Data Online API token",
+        "generateUrl": "https://www.ncdc.noaa.gov/cdo-web/token",
+        "setup": "Request a token from the [Climate Data Online token page](https://www.ncdc.noaa.gov/cdo-web/token). The CDO web services docs state this token is required and is sent in the `token` header.",
+        "acquisition": "manual"
+      },
+      "comet_session": {
+        "type": "compound",
+        "label": "NOAA CoMET session cookie",
+        "generateUrl": "https://data.noaa.gov/cedit/login/wsLogin",
+        "setup": "Use a NOAA account with a `@noaa.gov` email address. Per the [CoMET API docs](https://data.noaa.gov/cedit/openApiDoc.html), first log into the UI at least once so your account and default record group are created, then POST username/password to [`https://data.noaa.gov/cedit/login/wsLogin`](https://data.noaa.gov/cedit/login/wsLogin). The server returns a `JSESSIONID` cookie that must be sent on subsequent API requests.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "noaa-climate-data-online-api",
+        "name": "NOAA Climate Data Online API",
+        "type": "http",
+        "docs": "https://www.ncdc.noaa.gov/cdo-web/webservices/getstarted",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.ncdc.noaa.gov/cdo-web/webservices/getstarted"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "cdo_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "token"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://www.ncdc.noaa.gov/cdo-web/webservices/getstarted"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://www.ncei.noaa.gov/cdo-web/api/v2"
+      },
+      {
+        "slug": "ncei-access-data-service-api",
+        "name": "NCEI Access Data Service API",
+        "type": "http",
+        "docs": "https://www.ncei.noaa.gov/support/access-data-service-api-user-documentation",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.ncei.noaa.gov/support/access-data-service-api-user-documentation"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://www.ncei.noaa.gov/support/access-data-service-api-user-documentation"
+            ]
+          }
+        },
+        "url": "https://www.ncei.noaa.gov/access/services/data/v1"
+      },
+      {
+        "slug": "co-ops-data-api",
+        "name": "CO-OPS Data API",
+        "type": "http",
+        "docs": "https://tidesandcurrents.noaa.gov/api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tidesandcurrents.noaa.gov/api/"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://tidesandcurrents.noaa.gov/api/"
+            ]
+          }
+        }
+      },
+      {
+        "slug": "comet-api",
+        "name": "CoMET API",
+        "type": "http",
+        "docs": "https://data.noaa.gov/cedit/openApiDoc.html",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://data.noaa.gov/cedit/openApiDoc.html"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "comet_session",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Cookie"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://data.noaa.gov/cedit/openApiDoc.html"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://data.noaa.gov/cedit"
+      },
+      {
+        "slug": "national-weather-service-api",
+        "name": "National Weather Service API",
+        "type": "http",
+        "docs": "https://www.weather.gov/documentation/services-web-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.weather.gov/documentation/services-web-api",
+            "https://api.weather.gov/openapi.json"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://www.weather.gov/documentation/services-web-api"
+            ]
+          }
+        },
+        "url": "https://api.weather.gov"
+      },
+      {
+        "slug": "co-ops-metadata-api",
+        "name": "CO-OPS Metadata API",
+        "type": "http",
+        "docs": "https://tidesandcurrents.noaa.gov/mdapi/latest/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tidesandcurrents.noaa.gov/mdapi/latest/"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://tidesandcurrents.noaa.gov/mdapi/latest/"
+            ]
+          }
+        },
+        "url": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi"
+      },
+      {
+        "slug": "co-ops-derived-product-api",
+        "name": "CO-OPS Derived Product API",
+        "type": "http",
+        "docs": "https://tidesandcurrents.noaa.gov/dpapi/latest/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://tidesandcurrents.noaa.gov/dpapi/latest/"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://tidesandcurrents.noaa.gov/dpapi/latest/"
+            ]
+          }
+        }
+      },
+      {
+        "slug": "nwps-application-api",
+        "name": "NWPS Application API",
+        "type": "http",
+        "docs": "https://water.noaa.gov/about/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://water.noaa.gov/about/api"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://api.water.noaa.gov/nwps/v1"
+      },
+      {
+        "slug": "nwps-hefs-api",
+        "name": "NWPS HEFS API",
+        "type": "http",
+        "docs": "https://water.noaa.gov/about/api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://water.noaa.gov/about/api"
+          ]
+        },
+        "auth": {
+          "status": "unknown"
+        },
+        "url": "https://api.water.noaa.gov/hefs/v1"
+      },
+      {
+        "slug": "ncei-space-weather-portal-api",
+        "name": "NCEI Space Weather Portal API",
+        "type": "http",
+        "docs": "https://www.ncei.noaa.gov/cloud-access/space-weather-portal/api/v1/openapi/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://www.ncei.noaa.gov/cloud-access/space-weather-portal/api/v1/openapi/"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://www.ncei.noaa.gov/cloud-access/space-weather-portal/api/v1/openapi/"
+            ]
+          }
+        },
+        "url": "https://www.ncei.noaa.gov/cloud-access/space-weather-portal/api/v1"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-02T23:49:37.425Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 270987,
+    "completion_tokens": 2232,
+    "total_tokens": 273219
+  },
+  "visited": [
+    "https://api.weather.gov/openapi.json",
+    "https://coast.noaa.gov/htdata/lidar1_z/",
+    "https://data.noaa.gov/cedit/openApiDoc.html",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/122.github.checkout/.github",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/ccd8f9e3d120eb559601ddad9a251141d47c9423/.github",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/documentation",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/mask-atmos-plevel/.github/workflows?ref_type=heads",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/pytest-cov",
+    "https://ioos.noaa.gov/communications/eyes-on-the-ocean-ioos-bi-weekly/eyes-on-the-ocean-ioos-bi-weekly-july-2025/",
+    "https://ioos.noaa.gov/data/dmac-webinar-erddap2mcp-making-erddap-accessible-to-ai-assistants/",
+    "https://medium.com/@markwkiehl/noaa-climate-api-c2e36e7a49c5",
+    "https://repository.library.noaa.gov/view/noaa/54574/noaa_54574_DS1.pdf",
+    "https://repository.library.noaa.gov/view/noaa/71918/noaa_71918_DS1.pdf",
+    "https://repository.library.noaa.gov/view/noaa/72255/noaa_72255_DS1.pdf",
+    "https://tidesandcurrents.noaa.gov/api-helper/url-generator.html",
+    "https://tidesandcurrents.noaa.gov/api/",
+    "https://tidesandcurrents.noaa.gov/cora/data/Accessing_and_Downloading_Coastal_Ocean_Reanalysis_Data_User_Guide.pdf",
+    "https://tidesandcurrents.noaa.gov/dpapi/latest/",
+    "https://tidesandcurrents.noaa.gov/mdapi/latest/",
+    "https://water.noaa.gov/about/api",
+    "https://weather-gov.github.io/api/general-faqs",
+    "https://wis2node.globaldata.nws.noaa.gov/",
+    "https://www.ncdc.noaa.gov/cdo-web/webservices/getstarted",
+    "https://www.ncei.noaa.gov/cloud-access/space-weather-portal/api/v1/openapi/",
+    "https://www.ncei.noaa.gov/products/weather-climate-toolkit",
+    "https://www.ncei.noaa.gov/support/access-data-service-api-user-documentation",
+    "https://www.ngdc.noaa.gov/hazel/view/swagger",
+    "https://www.star.nesdis.noaa.gov/goesr/acronyms.php",
+    "https://www.weather.gov/documentation/services-web-api"
+  ],
+  "grounding": [
+    "http://Drought.gov",
+    "http://json-ld.org/",
+    "http://mag.ncep.noaa.gov",
+    "http://tidesandcurrents.noaa.gov//cdata/StationList?type=Current+Data&amp;filter=active",
+    "http://tidesandcurrents.noaa.gov/1mindata.html",
+    "http://tidesandcurrents.noaa.gov/cdata/StationList?type=Current+Data&amp;filter=historic",
+    "http://tidesandcurrents.noaa.gov/datum_options.html",
+    "http://tidesandcurrents.noaa.gov/glossary.html#benchmark(BM",
+    "http://tidesandcurrents.noaa.gov/map/",
+    "http://tidesandcurrents.noaa.gov/noaacurrents/Regions",
+    "http://tidesandcurrents.noaa.gov/ports.html",
+    "http://tidesandcurrents.noaa.gov/products.html",
+    "http://tidesandcurrents.noaa.gov/stations.html?type=Harmonic+Constituents",
+    "http://tidesandcurrents.noaa.gov/stations.html?type=Historic+Water+Levels",
+    "http://tidesandcurrents.noaa.gov/stations.html?type=Meteorological%20Observations",
+    "http://tidesandcurrents.noaa.gov/stations.html?type=Physical%20Oceanography",
+    "http://tidesandcurrents.noaa.gov/stations.html?type=Water+Levels",
+    "http://tidesandcurrents.noaa.gov/tcoon.html",
+    "http://tidesandcurrents.noaa.gov/tide_predictions.html",
+    "http://www.isotc211.org/2005/gco",
+    "http://www.isotc211.org/2005/gmd",
+    "http://www.isotc211.org/2005/gmi",
+    "http://www.isotc211.org/2005/gmx",
+    "http://www.isotc211.org/2005/gsr",
+    "http://www.isotc211.org/2005/gss",
+    "http://www.isotc211.org/2005/gts",
+    "http://www.isotc211.org/2005/srv",
+    "http://www.ncei.noaa.gov/",
+    "http://www.nesdis.noaa.gov/",
+    "http://www.opengis.net/gml/3.2",
+    "http://www.w3.org/1999/xlink",
+    "http://www.w3.org/2001/XMLSchema-instance",
+    "http://www.weather.gov/",
+    "http://www.wpc.ncep.noaa.gov/discussions/hpcdiscussions.php?disc=pmdspd",
+    "https://**",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/#Datums",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/mode.extension",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/mode.json_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/ports.extension",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/ports.json_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/portsplots.extension",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/portsplots.json_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/portsplots/8594900.json_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/portsplots/id.extension",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/portsstation.extension",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/portsstation.extension?ports=ports",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/portsstation.json?ports=cs_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/portsstation.json_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.extension",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.extension?type=type",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=currents_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=waterlevels_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml?type=waterlevels&units=english_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.xml_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/1611400.xml",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/1611400/benchmarks.json_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/1611400/datums.json_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/9414290.json_",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/id.extension",
+    "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/id/resource.extension",
+    "https://api.water.noaa.gov/hefs/v1/docs/",
+    "https://api.water.noaa.gov/hefs/v1/redoc/",
+    "https://api.water.noaa.gov/nwps/v1/docs/",
+    "https://api.weather.gov",
+    "https://api.weather.gov/alerts/active?area=KS",
+    "https://api.weather.gov/alerts/active?area={state}",
+    "https://api.weather.gov/alerts/types",
+    "https://api.weather.gov/gridpoints/TOP/31",
+    "https://api.weather.gov/gridpoints/{office}/{gridX}",
+    "https://api.weather.gov/openapi.json",
+    "https://api.weather.gov/points/39.7456",
+    "https://api.weather.gov/points/{latitude}",
+    "https://api.weather.gov/products/types/SEL",
+    "https://api.weather.gov/products/types/WCN",
+    "https://aviationweather.gov",
+    "https://coast.noaa.gov/htdata/lidar1_z/",
+    "https://colab.research.google.com/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/0_executive_overview.ipynb",
+    "https://colab.research.google.com/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/1_rest_demo.ipynb",
+    "https://colab.research.google.com/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/2_ensemble_plotting_demo.ipynb",
+    "https://colab.research.google.com/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/3_hydrograph_quantiles_demo.ipynb",
+    "https://colab.research.google.com/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/4_map_quantiles_demo.ipynb",
+    "https://data.noaa.gov/cedit/login/wsLogin",
+    "https://data.noaa.gov/cedit/metadata/import",
+    "https://data.noaa.gov/cedit/openApiDoc.html",
+    "https://data.noaa.gov/docucomp",
+    "https://data.noaa.gov/resources/iso19139/schema.xsd",
+    "https://data.noaa.gov/resources/iso19139/schema/resources/Codelist/gmxCodelists.xml#CI",
+    "https://data.noaa.gov/resources/iso19139/schema/resources/Codelist/gmxCodelists.xml#MD",
+    "https://digital.weather.gov",
+    "https://doi.org/{{DOI}}",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/122.github.checkout/.github",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/ccd8f9e3d120eb559601ddad9a251141d47c9423/.github",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/documentation",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/mask-atmos-plevel/.github/workflows?ref_type=heads",
+    "https://egitlab.gfdl.noaa.gov/NOAA-GFDL/fre-cli/-/tree/pytest-cov",
+    "https://forecast.weather.gov/glossary.php",
+    "https://gis.ncdc.noaa.gov/maps/ncei/",
+    "https://github.com/NOAA-OWP",
+    "https://github.com/NOAA-OWP/data-service-notebooks/tree/master/HEFS",
+    "https://github.com/Redocly/redoc",
+    "https://github.com/Redocly/redoc/blob/master/docs/redoc-vendor-extensions.md",
+    "https://github.com/hapi-server/data-specification",
+    "https://gml.noaa.gov/grad/solcalc/",
+    "https://hdsc.nws.noaa.gov/pfds/",
+    "https://https.cio.gov/",
+    "https://ioos.noaa.gov/communications/eyes-on-the-ocean-ioos-bi-weekly/eyes-on-the-ocean-ioos-bi-weekly-july-2025/",
+    "https://ioos.noaa.gov/data/dmac-webinar-erddap2mcp-making-erddap-accessible-to-ai-assistants/",
+    "https://journals.ametsoc.org/view/journals/bams/95/1/bams-d-12-00081.1.xml",
+    "https://madis-data.ncep.noaa.gov",
+    "https://madis.ncep.noaa.gov/madis_sfc_qc_notes.shtml",
+    "https://medium.com/@markwkiehl/noaa-climate-api-c2e36e7a49c5",
+    "https://mrms.ncep.noaa.gov",
+    "https://nbviewer.org/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/0_executive_overview.ipynb",
+    "https://nbviewer.org/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/1_rest_demo.ipynb",
+    "https://nbviewer.org/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/2_ensemble_plotting_demo.ipynb",
+    "https://nbviewer.org/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/3_hydrograph_quantiles_demo.ipynb",
+    "https://nbviewer.org/github/NOAA-OWP/data-service-notebooks/blob/master/HEFS/4_map_quantiles_demo.ipynb",
+    "https://ngdc.noaa.gov/wiki/index.php?title=About_Collection_Metadata_Editing_Tool",
+    "https://opendap.co-ops.nos.noaa.gov/axis/webservices/currentpredictionstations/response.jsp?format=html",
+    "https://opengeo.ncep.noaa.gov",
+    "https://psl.noaa.gov/precip/pmp/",
+    "https://radar.weather.gov",
+    "https://redocly.com/redoc/",
+    "https://registry.opendata.aws/noaa-mrms-pds",
+    "https://repository.library.noaa.gov/gsearch?terms=national%20centers%20for%20environmental%20information",
+    "https://repository.library.noaa.gov/view/noaa/54574/noaa_54574_DS1.pdf",
+    "https://repository.library.noaa.gov/view/noaa/71918/noaa_71918_DS1.pdf",
+    "https://repository.library.noaa.gov/view/noaa/72255/noaa_72255_DS1.pdf",
+    "https://ror.org/04r0wrp59",
+    "https://sites.google.com/a/noaa.gov/nws-insider/",
+    "https://tidesandcurrents.noaa.gov",
+    "https://tidesandcurrents.noaa.gov/#",
+    "https://tidesandcurrents.noaa.gov/#APIThrottling",
+    "https://tidesandcurrents.noaa.gov/#Benchmarks",
+    "https://tidesandcurrents.noaa.gov/#Bin",
+    "https://tidesandcurrents.noaa.gov/#Bins",
+    "https://tidesandcurrents.noaa.gov/#CurrPredOffsets",
+    "https://tidesandcurrents.noaa.gov/#CurrPredStations",
+    "https://tidesandcurrents.noaa.gov/#CurrentStationDeployments",
+    "https://tidesandcurrents.noaa.gov/#Currents",
+    "https://tidesandcurrents.noaa.gov/#DataAPIResponse",
+    "https://tidesandcurrents.noaa.gov/#Datums",
+    "https://tidesandcurrents.noaa.gov/#Details",
+    "https://tidesandcurrents.noaa.gov/#Disclaimers",
+    "https://tidesandcurrents.noaa.gov/#Expand",
+    "https://tidesandcurrents.noaa.gov/#FloodLevels",
+    "https://tidesandcurrents.noaa.gov/#Formats",
+    "https://tidesandcurrents.noaa.gov/#HTFStations",
+    "https://tidesandcurrents.noaa.gov/#Harcon",
+    "https://tidesandcurrents.noaa.gov/#ID",
+    "https://tidesandcurrents.noaa.gov/#Nearby",
+    "https://tidesandcurrents.noaa.gov/#Notices",
+    "https://tidesandcurrents.noaa.gov/#Ports",
+    "https://tidesandcurrents.noaa.gov/#Products",
+    "https://tidesandcurrents.noaa.gov/#Radius",
+    "https://tidesandcurrents.noaa.gov/#Resource",
+    "https://tidesandcurrents.noaa.gov/#Sensors",
+    "https://tidesandcurrents.noaa.gov/#Stations",
+    "https://tidesandcurrents.noaa.gov/#TidePredOffsets",
+    "https://tidesandcurrents.noaa.gov/#TidePredStations",
+    "https://tidesandcurrents.noaa.gov/#Type",
+    "https://tidesandcurrents.noaa.gov/#Units",
+    "https://tidesandcurrents.noaa.gov/#WaterLevelStations",
+    "https://tidesandcurrents.noaa.gov/#application",
+    "https://tidesandcurrents.noaa.gov/#benchmark",
+    "https://tidesandcurrents.noaa.gov/#bin",
+    "https://tidesandcurrents.noaa.gov/#components",
+    "https://tidesandcurrents.noaa.gov/#contact",
+    "https://tidesandcurrents.noaa.gov/#datum",
+    "https://tidesandcurrents.noaa.gov/#error",
+    "https://tidesandcurrents.noaa.gov/#eventstationpwls",
+    "https://tidesandcurrents.noaa.gov/#examples",
+    "https://tidesandcurrents.noaa.gov/#expand",
+    "https://tidesandcurrents.noaa.gov/#extremewaterlevels",
+    "https://tidesandcurrents.noaa.gov/#format",
+    "https://tidesandcurrents.noaa.gov/#htb",
+    "https://tidesandcurrents.noaa.gov/#htf",
+    "https://tidesandcurrents.noaa.gov/#interval",
+    "https://tidesandcurrents.noaa.gov/#intro",
+    "https://tidesandcurrents.noaa.gov/#products",
+    "https://tidesandcurrents.noaa.gov/#pwlevents",
+    "https://tidesandcurrents.noaa.gov/#releasenotes",
+    "https://tidesandcurrents.noaa.gov/#request",
+    "https://tidesandcurrents.noaa.gov/#requestResponse",
+    "https://tidesandcurrents.noaa.gov/#resources",
+    "https://tidesandcurrents.noaa.gov/#rfaextremewaterlevels",
+    "https://tidesandcurrents.noaa.gov/#sealvlprojections",
+    "https://tidesandcurrents.noaa.gov/#sealvltrends",
+    "https://tidesandcurrents.noaa.gov/#station",
+    "https://tidesandcurrents.noaa.gov/#timerange",
+    "https://tidesandcurrents.noaa.gov/#timezone",
+    "https://tidesandcurrents.noaa.gov/#toptenwls",
+    "https://tidesandcurrents.noaa.gov/#units",
+    "https://tidesandcurrents.noaa.gov/#velocitytype",
+    "https://tidesandcurrents.noaa.gov/api-helper/url-generator.html",
+    "https://tidesandcurrents.noaa.gov/api/",
+    "https://tidesandcurrents.noaa.gov/cdata/StationList?type=Current+Data&filter=active",
+    "https://tidesandcurrents.noaa.gov/cora/data/Accessing_and_Downloading_Coastal_Ocean_Reanalysis_Data_User_Guide.pdf",
+    "https://tidesandcurrents.noaa.gov/dpapi/latest/",
+    "https://tidesandcurrents.noaa.gov/javascript:void(0",
+    "https://tidesandcurrents.noaa.gov/map",
+    "https://tidesandcurrents.noaa.gov/mdapi/latest/",
+    "https://tidesandcurrents.noaa.gov/releasenotes.html",
+    "https://tidesandcurrents.noaa.gov/responseHelp.html",
+    "https://tidesandcurrents.noaa.gov/stations.html",
+    "https://tidesandcurrents.noaa.gov/stations.html?type=Water+Levels",
+    "https://tidesandcurrents.noaa.gov/tide_predictions.html",
+    "https://tools.ietf.org/html/rfc2616#section-9.3",
+    "https://tools.ietf.org/html/rfc4180",
+    "https://tools.ietf.org/html/rfc6797",
+    "https://tools.ietf.org/html/rfc7159",
+    "https://twitter.com/NOAANCEI",
+    "https://vlab.noaa.gov/web/nws-common-alerting-protocol/cap-documentation",
+    "https://water.noaa.gov",
+    "https://water.noaa.gov/",
+    "https://water.noaa.gov/#",
+    "https://water.noaa.gov/about/api",
+    "https://water.noaa.gov/about/atlas15",
+    "https://water.noaa.gov/about/cat-fim-locations",
+    "https://water.noaa.gov/about/data-and-web-services-catalog",
+    "https://water.noaa.gov/about/hydrograph",
+    "https://water.noaa.gov/about/nwc",
+    "https://water.noaa.gov/about/nwm",
+    "https://water.noaa.gov/about/owp",
+    "https://water.noaa.gov/about/partner-fim-locations",
+    "https://water.noaa.gov/about/release-notes",
+    "https://water.noaa.gov/about/rfc",
+    "https://water.noaa.gov/about/short-term-probabilistic-guidance-product",
+    "https://water.noaa.gov/about/significant-river-flood-outlook",
+    "https://water.noaa.gov/fim",
+    "https://water.noaa.gov/hefs",
+    "https://water.noaa.gov/long_range",
+    "https://water.noaa.gov/operations/ahd",
+    "https://water.noaa.gov/operations/fho",
+    "https://water.noaa.gov/operations/nhd",
+    "https://water.noaa.gov/precip",
+    "https://weather-gov.github.io/api/",
+    "https://weather-gov.github.io/api/general-faqs",
+    "https://weather.gov/owp/operations",
+    "https://wis2node.globaldata.nws.noaa.gov/",
+    "https://www.cbrfc.noaa.gov/dbdata/station/ensgraph/map/ensmap.html",
+    "https://www.climate.gov/maps-data/dataset/past-weather-zip-code-data-table",
+    "https://www.cnrfc.noaa.gov/documentation/hefsAtCnrfc.pdf",
+    "https://www.cnrfc.noaa.gov/hefs.php",
+    "https://www.commerce.gov/",
+    "https://www.cpc.ncep.noaa.gov",
+    "https://www.cpc.ncep.noaa.gov/products/Drought/",
+    "https://www.drought.gov/impacts",
+    "https://www.facebook.com/NOAANCEI/",
+    "https://www.ietf.org/rfc/rfc2616.txt",
+    "https://www.instagram.com/noaadata/",
+    "https://www.iso.org/standard/38920.html",
+    "https://www.iso.org/standard/40874.html",
+    "https://www.ncdc.noaa.gov/",
+    "https://www.ncdc.noaa.gov/#",
+    "https://www.ncdc.noaa.gov/#main-content",
+    "https://www.ncdc.noaa.gov/#site-search",
+    "https://www.ncdc.noaa.gov/cdo-web/",
+    "https://www.ncdc.noaa.gov/cdo-web/datasets",
+    "https://www.ncdc.noaa.gov/cdo-web/datatools",
+    "https://www.ncdc.noaa.gov/cdo-web/faq",
+    "https://www.ncdc.noaa.gov/cdo-web/search",
+    "https://www.ncdc.noaa.gov/cdo-web/token",
+    "https://www.ncdc.noaa.gov/cdo-web/webservices/getstarted",
+    "https://www.ncei.noaa.gov",
+    "https://www.ncei.noaa.gov/",
+    "https://www.ncei.noaa.gov/#/default",
+    "https://www.ncei.noaa.gov/#/default/getFiles",
+    "https://www.ncei.noaa.gov/#/default/getHapiAbout",
+    "https://www.ncei.noaa.gov/#/default/getHapiCapabilities",
+    "https://www.ncei.noaa.gov/#/default/getHapiCatalog",
+    "https://www.ncei.noaa.gov/#/default/getHapiData",
+    "https://www.ncei.noaa.gov/#/default/getHapiSummary",
+    "https://www.ncei.noaa.gov/#/default/getInstruments",
+    "https://www.ncei.noaa.gov/#/default/getMedia",
+    "https://www.ncei.noaa.gov/#/default/getMediaNames",
+    "https://www.ncei.noaa.gov/#/default/getParameters",
+    "https://www.ncei.noaa.gov/#/default/getProductCheck",
+    "https://www.ncei.noaa.gov/#/default/getProducts",
+    "https://www.ncei.noaa.gov/#/default/getSatellites",
+    "https://www.ncei.noaa.gov/#/default/getValues",
+    "https://www.ncei.noaa.gov/#fba-button",
+    "https://www.ncei.noaa.gov/#main-content",
+    "https://www.ncei.noaa.gov/#pagetop",
+    "https://www.ncei.noaa.gov/about",
+    "https://www.ncei.noaa.gov/about-us",
+    "https://www.ncei.noaa.gov/about/locations",
+    "https://www.ncei.noaa.gov/about/our-impact",
+    "https://www.ncei.noaa.gov/access",
+    "https://www.ncei.noaa.gov/access/monitoring/products/",
+    "https://www.ncei.noaa.gov/access/search/index",
+    "https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-marine&dataTypes=WIND_DIR",
+    "https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-marine…",
+    "https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-summary-of-the-year&dataTypes=DP01",
+    "https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-summar…",
+    "https://www.ncei.noaa.gov/accessibility",
+    "https://www.ncei.noaa.gov/alerts",
+    "https://www.ncei.noaa.gov/archive",
+    "https://www.ncei.noaa.gov/bams-state-of-climate",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datacategories",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datacategories/ANNAGR",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datacategories/{id}",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datacategories?limit=41",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datacategories?locationid=CITY:US390029&locationid=FIPS:37",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datasets",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datasets/GSOY",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datasets/{id}",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datasets?datatypeid=TOBS",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datasets?stationid=COOP:310090&stationid=COOP:310184&stationid=COOP:310212",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datatypes",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datatypes/ACMH",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datatypes/{id}",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datatypes?datacategoryid=TEMP&limit=56",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datatypes?stationid=COOP:310090&stationid=COOP:310184&stationid=COOP:310212",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/locationcategories",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/locationcategories/CLIM",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/locationcategories/{id}",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/locationcategories?startdate=1970-01-01",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/locations",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/locations/{id}",
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/{endpoint}",
+    "https://www.ncei.noaa.gov/cloud-access/space-weather-portal/",
+    "https://www.ncei.noaa.gov/cloud-access/space-weather-portal/api/v1/openapi/",
+    "https://www.ncei.noaa.gov/cloud-access/space-weather-portal/api/v1/static/openapi/openapi-spot.yaml",
+    "https://www.ncei.noaa.gov/contact",
+    "https://www.ncei.noaa.gov/maps-and-geospatial-products",
+    "https://www.ncei.noaa.gov/monitoring",
+    "https://www.ncei.noaa.gov/news",
+    "https://www.ncei.noaa.gov/news.xml",
+    "https://www.ncei.noaa.gov/online-store",
+    "https://www.ncei.noaa.gov/privacy",
+    "https://www.ncei.noaa.gov/products",
+    "https://www.ncei.noaa.gov/products/weather-climate-toolkit",
+    "https://www.ncei.noaa.gov/regional",
+    "https://www.ncei.noaa.gov/resources",
+    "https://www.ncei.noaa.gov/resources/education",
+    "https://www.ncei.noaa.gov/resources/metadata",
+    "https://www.ncei.noaa.gov/resources/weather-climate-links",
+    "https://www.ncei.noaa.gov/search/content",
+    "https://www.ncei.noaa.gov/services/certification",
+    "https://www.ncei.noaa.gov/services/state-of-the-services",
+    "https://www.ncei.noaa.gov/services/world-data-system",
+    "https://www.ncei.noaa.gov/sitemap",
+    "https://www.ncei.noaa.gov/sites/default/files/2020-04/CoMET_DMSQ%20User%20Manual%20CPFF-DSD-25%20.pdf",
+    "https://www.ncei.noaa.gov/support/access-data-service-api-user-documentation",
+    "https://www.ncei.noaa.gov/tel:18282714800",
+    "https://www.nco.ncep.noaa.gov/status/messages/",
+    "https://www.nesdis.noaa.gov/",
+    "https://www.nesdis.noaa.gov/about/documents-reports/notice-of-changes",
+    "https://www.ngdc.noaa.gov/",
+    "https://www.ngdc.noaa.gov/#",
+    "https://www.ngdc.noaa.gov/#maincontent",
+    "https://www.ngdc.noaa.gov/education/education.html",
+    "https://www.ngdc.noaa.gov/feedback/",
+    "https://www.ngdc.noaa.gov/hazard/",
+    "https://www.ngdc.noaa.gov/hazel/view/about",
+    "https://www.ngdc.noaa.gov/hazel/view/swagger",
+    "https://www.ngdc.noaa.gov/ngdc.html",
+    "https://www.ngdc.noaa.gov/ngdcinfo/onlineaccess.html",
+    "https://www.ngdc.noaa.gov/ngdcinfo/phone.html",
+    "https://www.ngdc.noaa.gov/ngdcinfo/privacy.html",
+    "https://www.ngdc.noaa.gov/ngdcinfo/privacy.html#disclaimer",
+    "https://www.ngdc.noaa.gov/privacy-act-statement-data-requestors.pdf",
+    "https://www.ngdc.noaa.gov/sitemap/sitemap.html",
+    "https://www.nhc.noaa.gov",
+    "https://www.noaa.gov/",
+    "https://www.noaa.gov/NWStransformation",
+    "https://www.noaa.gov/disclaimer",
+    "https://www.noaa.gov/information-technology/foia",
+    "https://www.noaa.gov/nws-careers",
+    "https://www.noaa.gov/organization/information-technology/policy-oversight/information-quality",
+    "https://www.nohrsc.noaa.gov/nsa/",
+    "https://www.nohrsc.noaa.gov/special/sarris/",
+    "https://www.spc.noaa.gov",
+    "https://www.star.nesdis.noaa.gov/goesr/acronyms.php",
+    "https://www.swpc.noaa.gov",
+    "https://www.unidata.ucar.edu/software/netcdf/",
+    "https://www.usa.gov/government-works",
+    "https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html",
+    "https://www.weather.gov",
+    "https://www.weather.gov/#",
+    "https://www.weather.gov/ForecastSearchHelp.html",
+    "https://www.weather.gov/about/",
+    "https://www.weather.gov/abrfc/about_HEFS",
+    "https://www.weather.gov/briefing/",
+    "https://www.weather.gov/contact",
+    "https://www.weather.gov/coop/",
+    "https://www.weather.gov/documentation",
+    "https://www.weather.gov/documentation/services-web-alerts",
+    "https://www.weather.gov/documentation/services-web-api",
+    "https://www.weather.gov/documentation/tb",
+    "https://www.weather.gov/education/",
+    "https://www.weather.gov/fire/",
+    "https://www.weather.gov/forecastmaps/",
+    "https://www.weather.gov/gis/",
+    "https://www.weather.gov/gis/cloudgiswebservices",
+    "https://www.weather.gov/hazstat",
+    "https://www.weather.gov/help-map",
+    "https://www.weather.gov/informationcenter",
+    "https://www.weather.gov/javascript:void(window.open(",
+    "https://www.weather.gov/marfc/HEFS-FAQ",
+    "https://www.weather.gov/marine/",
+    "https://www.weather.gov/mbrfc/hefs_long",
+    "https://www.weather.gov/media/documentation/docs/NWS_Geolocation.pdf",
+    "https://www.weather.gov/media/notification/pdf_2025/scn25-44_API_latest_changesmay22_2025.pdf",
+    "https://www.weather.gov/media/owp/operations/Viewing_FIM_NWPS.pdf",
+    "https://www.weather.gov/media/owp/operations/nwps_quick_start_guide.pdf",
+    "https://www.weather.gov/media/owp/operations/nwps_user_guide.pdf",
+    "https://www.weather.gov/ncep/",
+    "https://www.weather.gov/news",
+    "https://www.weather.gov/notification",
+    "https://www.weather.gov/notification/",
+    "https://www.weather.gov/nwr",
+    "https://www.weather.gov/organization",
+    "https://www.weather.gov/owlie/publication_brochures",
+    "https://www.weather.gov/owp/hdsc_pmp",
+    "https://www.weather.gov/owp/nha",
+    "https://www.weather.gov/owp/operations",
+    "https://www.weather.gov/owp/operations-km",
+    "https://www.weather.gov/privacy.php",
+    "https://www.weather.gov/publications/",
+    "https://www.weather.gov/safety/",
+    "https://www.weather.gov/safety/flood",
+    "https://www.weather.gov/safety/flood-turn-around-dont-drown",
+    "https://www.weather.gov/search/",
+    "https://www.weather.gov/skywarn/",
+    "https://www.weather.gov/socialmedia",
+    "https://www.weather.gov/srh/nwsoffices",
+    "https://www.weather.gov/stormready",
+    "https://www.weather.gov/tsunamiready/",
+    "https://www.weather.gov/wrh/climate",
+    "https://www.weather.gov/wrn/",
+    "https://www.weather.gov/wrn/wea",
+    "https://www.weather.gov/wrn/winter_safety",
+    "https://www.youtube.com/channel/UCIIC2c3weRXNATL1fs7SECA",
+    "https://www.youtube.com/playlist?list=PLsyDl_aqUTdHa11s6-Su9EMyFcRsFH9fK",
+    "https://x.com/NWSNWC"
+  ]
+}

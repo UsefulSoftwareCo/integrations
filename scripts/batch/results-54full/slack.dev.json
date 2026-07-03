@@ -1,0 +1,744 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "slack.dev",
+    "detect": {
+      "domain": "slack.dev",
+      "found": [
+        "llms.txt"
+      ],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": true,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-03T00:02:15.185Z",
+    "summary": "Slack exposes developer surfaces for its Web API, SCIM API, Audit Logs API, a public Status API, a Socket Mode bootstrap method for WebSocket event delivery, and the Slack CLI.",
+    "description": "Slack is a team communication and collaboration platform. It lets organizations exchange messages, automate workflows, build apps and agents, and administer users and security settings.",
+    "credentials": {
+      "slack_oauth_token": {
+        "type": "oauth2",
+        "label": "Slack app OAuth token (bot/user/configuration token)",
+        "generateUrl": "https://api.slack.com/apps",
+        "setup": "Create an app in [Your Apps](https://api.slack.com/apps), add the needed OAuth scopes in **OAuth & Permissions**, then install the app to your workspace or organization to receive a token. Slack's token docs describe bot tokens (`xoxb-`), user tokens (`xoxp-`), and configuration tokens for manifest APIs.",
+        "acquisition": "manual"
+      },
+      "slack_app_level_token": {
+        "type": "bearer",
+        "label": "Slack app-level token for Socket Mode",
+        "generateUrl": "https://api.slack.com/apps",
+        "setup": "Create or open an app in [Your Apps](https://api.slack.com/apps), enable **Socket Mode**, then under **Basic Information** generate an app-level token. Slack's Socket Mode guide says this token is used with `apps.connections.open` to obtain a temporary WebSocket URL.",
+        "acquisition": "manual"
+      },
+      "slack_cli_login": {
+        "type": "compound",
+        "label": "Slack CLI workspace login",
+        "generateUrl": "https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli",
+        "setup": "Install the Slack CLI, then run `slack login`. The CLI shows a `/slackauthticket ...` slash command to paste into a Slack conversation, after which you confirm permissions in Slack and paste the returned challenge code back into the terminal. The CLI stores credentials in `~/.slack/credentials.json`.",
+        "acquisition": "manual"
+      },
+      "slack_service_token": {
+        "type": "bearer",
+        "label": "Slack CLI service token",
+        "generateUrl": "https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli",
+        "setup": "Use the Slack CLI authorization flow in [Authorizing the Slack CLI](https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli) to mint a long-lived service token for CI/CD: run `slack auth token`, complete the `slackauthticket` exchange in Slack, copy the token shown in the terminal, then authorize the CLI with `slack login --auth <your-service-token>`.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "slack-web-api",
+        "name": "Slack Web API",
+        "type": "http",
+        "docs": "https://docs.slack.dev/apis/web-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.slack.dev/apis/web-api/",
+            "https://docs.slack.dev/reference/methods",
+            "https://docs.slack.dev/authentication/tokens"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "slack_oauth_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.slack.dev/apis/web-api/",
+                  "https://docs.slack.dev/authentication/tokens"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://slack.com/api"
+      },
+      {
+        "slug": "slack-scim-api",
+        "name": "Slack SCIM API",
+        "type": "http",
+        "docs": "https://docs.slack.dev/admins/scim-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.slack.dev/admins/scim-api/",
+            "https://docs.slack.dev/reference/scim-api/scim-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "slack_oauth_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.slack.dev/admins/scim-api/"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://api.slack.com/scim/{version}/",
+        "variables": [
+          {
+            "name": "version",
+            "description": "SCIM version, e.g. `v1` or `v2`, as documented by Slack."
+          }
+        ]
+      },
+      {
+        "slug": "slack-audit-logs-api",
+        "name": "Slack Audit Logs API",
+        "type": "http",
+        "docs": "https://docs.slack.dev/admins/audit-logs-api/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.slack.dev/admins/audit-logs-api/",
+            "https://docs.slack.dev/reference/audit-logs-api"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "slack_oauth_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.slack.dev/admins/audit-logs-api/"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "slug": "slack-status-api",
+        "name": "Slack Status API",
+        "type": "http",
+        "docs": "https://docs.slack.dev/reference/slack-status-api",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.slack.dev/reference/slack-status-api"
+          ]
+        },
+        "auth": {
+          "status": "none",
+          "basis": {
+            "via": "discovered",
+            "evidence": [
+              "https://docs.slack.dev/reference/slack-status-api"
+            ]
+          }
+        },
+        "url": "https://slack-status.com/api/v2.0.0"
+      },
+      {
+        "slug": "slack-socket-mode-connection-bootstrap",
+        "name": "Slack Socket Mode connection bootstrap",
+        "type": "http",
+        "docs": "https://docs.slack.dev/apis/events-api/using-socket-mode",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.slack.dev/apis/events-api/using-socket-mode",
+            "https://docs.slack.dev/reference/methods/apps.connections.open"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "slack_app_level_token",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.slack.dev/reference/methods/apps.connections.open",
+                  "https://docs.slack.dev/apis/events-api/using-socket-mode"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://slack.com/api/apps.connections.open"
+      },
+      {
+        "slug": "slack-cli",
+        "name": "Slack CLI",
+        "type": "cli",
+        "docs": "https://docs.slack.dev/tools/slack-cli/",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.slack.dev/tools/slack-cli/",
+            "https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "slack_cli_login",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "slack login"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "slack_service_token",
+                  "mechanics": {
+                    "source": "cli",
+                    "command": "slack login --auth <your-service-token>"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli"
+                ]
+              }
+            }
+          ]
+        },
+        "packages": [
+          {
+            "registryType": "github",
+            "identifier": "slackapi/slack-cli"
+          }
+        ],
+        "command": "slack"
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-03T00:02:15.185Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 462630,
+    "completion_tokens": 2051,
+    "total_tokens": 464681
+  },
+  "visited": [
+    "https://api.slack.com/apps",
+    "https://api.slack.com/developer-program",
+    "https://api.slack.com/developer-program/join",
+    "https://docs.slack.dev/",
+    "https://docs.slack.dev/admins/audit-logs-api/",
+    "https://docs.slack.dev/admins/scim-api/",
+    "https://docs.slack.dev/apis/",
+    "https://docs.slack.dev/apis/events-api/using-socket-mode",
+    "https://docs.slack.dev/apis/web-api/",
+    "https://docs.slack.dev/authentication/",
+    "https://docs.slack.dev/authentication/tokens",
+    "https://docs.slack.dev/reference/audit-logs-api",
+    "https://docs.slack.dev/reference/methods",
+    "https://docs.slack.dev/reference/methods/apps.connections.open",
+    "https://docs.slack.dev/reference/scim-api/scim-api",
+    "https://docs.slack.dev/reference/slack-status-api",
+    "https://docs.slack.dev/tools/cli/",
+    "https://docs.slack.dev/tools/mcp/",
+    "https://docs.slack.dev/tools/slack-cli/",
+    "https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli",
+    "https://slack.dev/"
+  ],
+  "grounding": [
+    "http://github.com/slackapi/slack-cli/issues",
+    "http://slackhack.devpost.com",
+    "https://api.slack.com/apps",
+    "https://api.slack.com/apps?new_app=1",
+    "https://api.slack.com/block-kit-builder",
+    "https://api.slack.com/developer-program",
+    "https://api.slack.com/developer-program/join",
+    "https://api.slack.com/scim/VERSION/",
+    "https://app.slack.com/block-kit-builder",
+    "https://app.slack.com/block-kit-builder/",
+    "https://authentication#flow",
+    "https://curl.haxx.se/",
+    "https://developer.salesforce.com/events",
+    "https://docs.slack.dev",
+    "https://docs.slack.dev/",
+    "https://docs.slack.dev/#",
+    "https://docs.slack.dev/#JSON-errors",
+    "https://docs.slack.dev/#__docusaurus_skipToContent_fallback",
+    "https://docs.slack.dev/#access",
+    "https://docs.slack.dev/#app-level",
+    "https://docs.slack.dev/#arguments",
+    "https://docs.slack.dev/#audit-event",
+    "https://docs.slack.dev/#authentication",
+    "https://docs.slack.dev/#basics",
+    "https://docs.slack.dev/#best-practices",
+    "https://docs.slack.dev/#best-practices-tokens",
+    "https://docs.slack.dev/#borrowed-visibility",
+    "https://docs.slack.dev/#bot",
+    "https://docs.slack.dev/#call",
+    "https://docs.slack.dev/#ci-cd",
+    "https://docs.slack.dev/#concepts",
+    "https://docs.slack.dev/#config",
+    "https://docs.slack.dev/#connect",
+    "https://docs.slack.dev/#connections",
+    "https://docs.slack.dev/#contributing",
+    "https://docs.slack.dev/#creating",
+    "https://docs.slack.dev/#creating-manifests",
+    "https://docs.slack.dev/#current-status-api",
+    "https://docs.slack.dev/#disconnect",
+    "https://docs.slack.dev/#enterprise-org",
+    "https://docs.slack.dev/#errors",
+    "https://docs.slack.dev/#events",
+    "https://docs.slack.dev/#events-api",
+    "https://docs.slack.dev/#example-error",
+    "https://docs.slack.dev/#facts",
+    "https://docs.slack.dev/#feed",
+    "https://docs.slack.dev/#getting-help",
+    "https://docs.slack.dev/#history-api",
+    "https://docs.slack.dev/#implementing",
+    "https://docs.slack.dev/#install",
+    "https://docs.slack.dev/#ip-address-allowlist",
+    "https://docs.slack.dev/#legacy-bot-tokens",
+    "https://docs.slack.dev/#legacy-custom-integration-tokens",
+    "https://docs.slack.dev/#legacy-workspace-tokens",
+    "https://docs.slack.dev/#legacy_types",
+    "https://docs.slack.dev/#limitations",
+    "https://docs.slack.dev/#manage",
+    "https://docs.slack.dev/#methods",
+    "https://docs.slack.dev/#methods_supporting_json",
+    "https://docs.slack.dev/#obtain-token",
+    "https://docs.slack.dev/#other-apis",
+    "https://docs.slack.dev/#permissions",
+    "https://docs.slack.dev/#post-bodies",
+    "https://docs.slack.dev/#posting_json",
+    "https://docs.slack.dev/#reference",
+    "https://docs.slack.dev/#request",
+    "https://docs.slack.dev/#response",
+    "https://docs.slack.dev/#responses",
+    "https://docs.slack.dev/#revoke-token",
+    "https://docs.slack.dev/#sdks",
+    "https://docs.slack.dev/#service",
+    "https://docs.slack.dev/#setup",
+    "https://docs.slack.dev/#slack-status-api",
+    "https://docs.slack.dev/#ssl",
+    "https://docs.slack.dev/#ticket",
+    "https://docs.slack.dev/#toggling",
+    "https://docs.slack.dev/#token",
+    "https://docs.slack.dev/#transition",
+    "https://docs.slack.dev/#url-encoded-bodies",
+    "https://docs.slack.dev/#usage-info",
+    "https://docs.slack.dev/#use-token",
+    "https://docs.slack.dev/#user",
+    "https://docs.slack.dev/#v1_0_0",
+    "https://docs.slack.dev/#v2_0_0",
+    "https://docs.slack.dev/#version-updates",
+    "https://docs.slack.dev/#web-api",
+    "https://docs.slack.dev/#wfb",
+    "https://docs.slack.dev/#what",
+    "https://docs.slack.dev/admins",
+    "https://docs.slack.dev/admins/",
+    "https://docs.slack.dev/admins/admin-oversight-api",
+    "https://docs.slack.dev/admins/audit-logs-api",
+    "https://docs.slack.dev/admins/audit-logs-api/",
+    "https://docs.slack.dev/admins/legal-holds-api",
+    "https://docs.slack.dev/admins/managing-app-approvals",
+    "https://docs.slack.dev/admins/managing-channels",
+    "https://docs.slack.dev/admins/managing-invite-requests",
+    "https://docs.slack.dev/admins/managing-users",
+    "https://docs.slack.dev/admins/managing-workflow-and-connector-permissions",
+    "https://docs.slack.dev/admins/scim-api",
+    "https://docs.slack.dev/admins/scim-api/",
+    "https://docs.slack.dev/ai",
+    "https://docs.slack.dev/ai/",
+    "https://docs.slack.dev/ai/agent-design/",
+    "https://docs.slack.dev/ai/agent-quickstart",
+    "https://docs.slack.dev/ai/customizing-agentforce-agents-with-custom-slack-actions",
+    "https://docs.slack.dev/apis/",
+    "https://docs.slack.dev/apis/events-api/",
+    "https://docs.slack.dev/apis/events-api/comparing-http-socket-mode",
+    "https://docs.slack.dev/apis/events-api/using-http-request-urls",
+    "https://docs.slack.dev/apis/events-api/using-socket-mode",
+    "https://docs.slack.dev/apis/events-api/using-socket-mode#sdks",
+    "https://docs.slack.dev/apis/slack-connect/",
+    "https://docs.slack.dev/apis/web-api/",
+    "https://docs.slack.dev/apis/web-api/pagination",
+    "https://docs.slack.dev/apis/web-api/rate-limits",
+    "https://docs.slack.dev/apis/web-api/real-time-search-api",
+    "https://docs.slack.dev/apis/web-api/user-presence-and-status",
+    "https://docs.slack.dev/apis/web-api/using-the-calls-api",
+    "https://docs.slack.dev/apis/web-api/using-the-conversations-api",
+    "https://docs.slack.dev/apis/web-api/using-web-api-with-postman",
+    "https://docs.slack.dev/app-management/",
+    "https://docs.slack.dev/app-management/distribution",
+    "https://docs.slack.dev/app-management/quickstart-app-settings",
+    "https://docs.slack.dev/app-management/quickstart-app-settings#installing",
+    "https://docs.slack.dev/app-manifests/",
+    "https://docs.slack.dev/app-manifests/configuring-apps-with-app-manifests",
+    "https://docs.slack.dev/app-manifests/configuring-apps-with-app-manifests#manifest_apis",
+    "https://docs.slack.dev/authentication",
+    "https://docs.slack.dev/authentication/",
+    "https://docs.slack.dev/authentication/authorizing-with-postman",
+    "https://docs.slack.dev/authentication/binding-accounts-across-services",
+    "https://docs.slack.dev/authentication/installing-with-oauth",
+    "https://docs.slack.dev/authentication/sign-in-with-slack/",
+    "https://docs.slack.dev/authentication/tokens",
+    "https://docs.slack.dev/authentication/tokens#app",
+    "https://docs.slack.dev/authentication/using-pkce",
+    "https://docs.slack.dev/authentication/using-token-rotation",
+    "https://docs.slack.dev/authentication/verifying-requests-from-slack",
+    "https://docs.slack.dev/block-kit/",
+    "https://docs.slack.dev/block-kit/designing-with-block-kit/",
+    "https://docs.slack.dev/changelog",
+    "https://docs.slack.dev/changelog/2019-07-deprecate-early-tls-versions",
+    "https://docs.slack.dev/changelog/2021-01-workspace-apps-retiring-the-platform-graveyard-in-aug-2021",
+    "https://docs.slack.dev/concepts/overview",
+    "https://docs.slack.dev/concepts/security",
+    "https://docs.slack.dev/developer-support",
+    "https://docs.slack.dev/enterprise",
+    "https://docs.slack.dev/enterprise-search/",
+    "https://docs.slack.dev/enterprise/",
+    "https://docs.slack.dev/enterprise/organization-ready-apps",
+    "https://docs.slack.dev/govslack",
+    "https://docs.slack.dev/interactivity",
+    "https://docs.slack.dev/interactivity#responses",
+    "https://docs.slack.dev/interactivity/",
+    "https://docs.slack.dev/ja-jp/",
+    "https://docs.slack.dev/legacy/",
+    "https://docs.slack.dev/legacy/legacy-app-migration/migrating-classic-apps",
+    "https://docs.slack.dev/legacy/legacy-messaging/legacy-adding-menus-to-messages",
+    "https://docs.slack.dev/legacy/legacy-rtm-api",
+    "https://docs.slack.dev/messaging/",
+    "https://docs.slack.dev/overview/",
+    "https://docs.slack.dev/quickstart",
+    "https://docs.slack.dev/quickstart/",
+    "https://docs.slack.dev/reference",
+    "https://docs.slack.dev/reference/",
+    "https://docs.slack.dev/reference/app-manifest",
+    "https://docs.slack.dev/reference/audit-logs-api",
+    "https://docs.slack.dev/reference/audit-logs-api/anomalous-events-reference",
+    "https://docs.slack.dev/reference/audit-logs-api/methods-actions-reference",
+    "https://docs.slack.dev/reference/audit-logs-api/methods-actions-reference#actions",
+    "https://docs.slack.dev/reference/block-kit",
+    "https://docs.slack.dev/reference/events",
+    "https://docs.slack.dev/reference/events/app_mention",
+    "https://docs.slack.dev/reference/interaction-payloads",
+    "https://docs.slack.dev/reference/legal-holds-api-reference",
+    "https://docs.slack.dev/reference/methods",
+    "https://docs.slack.dev/reference/methods/admin.analytics.getfile",
+    "https://docs.slack.dev/reference/methods/admin.analytics.messages.activity",
+    "https://docs.slack.dev/reference/methods/admin.analytics.messages.metadata",
+    "https://docs.slack.dev/reference/methods/admin.apps.activities.list",
+    "https://docs.slack.dev/reference/methods/admin.apps.approve",
+    "https://docs.slack.dev/reference/methods/admin.apps.approved.list",
+    "https://docs.slack.dev/reference/methods/admin.apps.clearresolution",
+    "https://docs.slack.dev/reference/methods/admin.apps.config.lookup",
+    "https://docs.slack.dev/reference/methods/admin.apps.config.set",
+    "https://docs.slack.dev/reference/methods/admin.apps.requests.cancel",
+    "https://docs.slack.dev/reference/methods/admin.apps.requests.list",
+    "https://docs.slack.dev/reference/methods/admin.apps.restrict",
+    "https://docs.slack.dev/reference/methods/admin.apps.restricted.list",
+    "https://docs.slack.dev/reference/methods/admin.apps.uninstall",
+    "https://docs.slack.dev/reference/methods/admin.audit.anomaly.allow.getitem",
+    "https://docs.slack.dev/reference/methods/admin.audit.anomaly.allow.updateitem",
+    "https://docs.slack.dev/reference/methods/admin.auth.policy.assignentities",
+    "https://docs.slack.dev/reference/methods/admin.auth.policy.getentities",
+    "https://docs.slack.dev/reference/methods/admin.auth.policy.removeentities",
+    "https://docs.slack.dev/reference/methods/admin.barriers.create",
+    "https://docs.slack.dev/reference/methods/admin.barriers.delete",
+    "https://docs.slack.dev/reference/methods/admin.barriers.list",
+    "https://docs.slack.dev/reference/methods/admin.barriers.update",
+    "https://docs.slack.dev/reference/methods/admin.conversations.archive",
+    "https://docs.slack.dev/reference/methods/admin.conversations.bulkarchive",
+    "https://docs.slack.dev/reference/methods/admin.conversations.bulkdelete",
+    "https://docs.slack.dev/reference/methods/admin.conversations.bulkmove",
+    "https://docs.slack.dev/reference/methods/admin.conversations.bulksetexcludefromslackai",
+    "https://docs.slack.dev/reference/methods/admin.conversations.converttoprivate",
+    "https://docs.slack.dev/reference/methods/admin.conversations.converttopublic",
+    "https://docs.slack.dev/reference/methods/admin.conversations.create",
+    "https://docs.slack.dev/reference/methods/admin.conversations.createforobjects",
+    "https://docs.slack.dev/reference/methods/admin.conversations.delete",
+    "https://docs.slack.dev/reference/methods/admin.conversations.disconnectshared",
+    "https://docs.slack.dev/reference/methods/admin.conversations.ekm.listoriginalconnectedchannelinfo",
+    "https://docs.slack.dev/reference/methods/admin.conversations.getconversationprefs",
+    "https://docs.slack.dev/reference/methods/admin.conversations.getcustomretention",
+    "https://docs.slack.dev/reference/methods/admin.conversations.getteams",
+    "https://docs.slack.dev/reference/methods/admin.conversations.invite",
+    "https://docs.slack.dev/reference/methods/admin.conversations.linkobjects",
+    "https://docs.slack.dev/reference/methods/admin.conversations.lookup",
+    "https://docs.slack.dev/reference/methods/admin.conversations.removecustomretention",
+    "https://docs.slack.dev/reference/methods/admin.conversations.rename",
+    "https://docs.slack.dev/reference/methods/admin.conversations.restrictaccess.addgroup",
+    "https://docs.slack.dev/reference/methods/admin.conversations.restrictaccess.listgroups",
+    "https://docs.slack.dev/reference/methods/admin.conversations.restrictaccess.removegroup",
+    "https://docs.slack.dev/reference/methods/admin.conversations.search",
+    "https://docs.slack.dev/reference/methods/admin.conversations.setconversationprefs",
+    "https://docs.slack.dev/reference/methods/admin.conversations.setcustomretention",
+    "https://docs.slack.dev/reference/methods/admin.conversations.setteams",
+    "https://docs.slack.dev/reference/methods/admin.conversations.unarchive",
+    "https://docs.slack.dev/reference/methods/admin.conversations.unlinkobjects",
+    "https://docs.slack.dev/reference/methods/admin.emoji.add",
+    "https://docs.slack.dev/reference/methods/admin.emoji.addalias",
+    "https://docs.slack.dev/reference/methods/admin.emoji.list",
+    "https://docs.slack.dev/reference/methods/admin.emoji.remove",
+    "https://docs.slack.dev/reference/methods/admin.emoji.rename",
+    "https://docs.slack.dev/reference/methods/admin.functions.list",
+    "https://docs.slack.dev/reference/methods/admin.functions.permissions.lookup",
+    "https://docs.slack.dev/reference/methods/admin.functions.permissions.set",
+    "https://docs.slack.dev/reference/methods/admin.inviterequests.approve",
+    "https://docs.slack.dev/reference/methods/admin.inviterequests.approved.list",
+    "https://docs.slack.dev/reference/methods/admin.inviterequests.denied.list",
+    "https://docs.slack.dev/reference/methods/admin.inviterequests.deny",
+    "https://docs.slack.dev/reference/methods/admin.inviterequests.list",
+    "https://docs.slack.dev/reference/methods/admin.roles.addassignments",
+    "https://docs.slack.dev/reference/methods/admin.roles.listassignments",
+    "https://docs.slack.dev/reference/methods/admin.roles.removeassignments",
+    "https://docs.slack.dev/reference/methods/admin.team",
+    "https://docs.slack.dev/reference/methods/admin.teams.admins.list",
+    "https://docs.slack.dev/reference/methods/admin.teams.create",
+    "https://docs.slack.dev/reference/methods/admin.teams.list",
+    "https://docs.slack.dev/reference/methods/admin.teams.owners.list",
+    "https://docs.slack.dev/reference/methods/admin.teams.settings.info",
+    "https://docs.slack.dev/reference/methods/admin.teams.settings.setdefaultchannels",
+    "https://docs.slack.dev/reference/methods/apps.activities.list",
+    "https://docs.slack.dev/reference/methods/apps.auth.external.delete",
+    "https://docs.slack.dev/reference/methods/apps.auth.external.get",
+    "https://docs.slack.dev/reference/methods/apps.connections.open",
+    "https://docs.slack.dev/reference/methods/apps.datastore.bulkDelete",
+    "https://docs.slack.dev/reference/methods/apps.datastore.bulkGet",
+    "https://docs.slack.dev/reference/methods/apps.datastore.bulkPut",
+    "https://docs.slack.dev/reference/methods/apps.datastore.count",
+    "https://docs.slack.dev/reference/methods/apps.datastore.delete",
+    "https://docs.slack.dev/reference/methods/apps.datastore.get",
+    "https://docs.slack.dev/reference/methods/apps.datastore.put",
+    "https://docs.slack.dev/reference/methods/apps.datastore.query",
+    "https://docs.slack.dev/reference/methods/apps.datastore.update",
+    "https://docs.slack.dev/reference/methods/apps.event.authorizations.list",
+    "https://docs.slack.dev/reference/methods/apps.icon.set",
+    "https://docs.slack.dev/reference/methods/apps.manifest.create",
+    "https://docs.slack.dev/reference/methods/apps.manifest.delete",
+    "https://docs.slack.dev/reference/methods/apps.manifest.export",
+    "https://docs.slack.dev/reference/methods/apps.manifest.update",
+    "https://docs.slack.dev/reference/methods/apps.manifest.validate",
+    "https://docs.slack.dev/reference/methods/apps.uninstall",
+    "https://docs.slack.dev/reference/methods/apps.user.connection.update",
+    "https://docs.slack.dev/reference/methods/auth.revoke",
+    "https://docs.slack.dev/reference/methods/chat.postMessage",
+    "https://docs.slack.dev/reference/methods/conversations.create",
+    "https://docs.slack.dev/reference/methods/dialog.open",
+    "https://docs.slack.dev/reference/methods?family=apps",
+    "https://docs.slack.dev/reference/objects",
+    "https://docs.slack.dev/reference/scim-api",
+    "https://docs.slack.dev/reference/scim-api/",
+    "https://docs.slack.dev/reference/scim-api/rate-limits",
+    "https://docs.slack.dev/reference/scim-api/scim-api",
+    "https://docs.slack.dev/reference/scopes",
+    "https://docs.slack.dev/reference/scopes/admin",
+    "https://docs.slack.dev/reference/scopes/chat.write.customize",
+    "https://docs.slack.dev/reference/slack-connect-api-reference",
+    "https://docs.slack.dev/reference/slack-status-api",
+    "https://docs.slack.dev/reference/views",
+    "https://docs.slack.dev/reference/views/modal-views",
+    "https://docs.slack.dev/samples",
+    "https://docs.slack.dev/samples/",
+    "https://docs.slack.dev/slack-marketplace/",
+    "https://docs.slack.dev/surfaces/",
+    "https://docs.slack.dev/surfaces/app-design/",
+    "https://docs.slack.dev/tools",
+    "https://docs.slack.dev/tools#bolt",
+    "https://docs.slack.dev/tools#sdks",
+    "https://docs.slack.dev/tools/",
+    "https://docs.slack.dev/tools/#bolt",
+    "https://docs.slack.dev/tools/#sdks",
+    "https://docs.slack.dev/tools/bolt-js",
+    "https://docs.slack.dev/tools/bolt-js/tutorials/code-assistant/",
+    "https://docs.slack.dev/tools/bolt-python",
+    "https://docs.slack.dev/tools/cli/",
+    "https://docs.slack.dev/tools/community-developed-tools",
+    "https://docs.slack.dev/tools/deno-slack-sdk/",
+    "https://docs.slack.dev/tools/deno-slack-sdk/guides/getting-started",
+    "https://docs.slack.dev/tools/deno-slack-sdk/reference/slack-functions/open_form",
+    "https://docs.slack.dev/tools/developer-sandboxes/",
+    "https://docs.slack.dev/tools/java-slack-sdk",
+    "https://docs.slack.dev/tools/java-slack-sdk/",
+    "https://docs.slack.dev/tools/mcp/",
+    "https://docs.slack.dev/tools/python-slack-sdk/tutorial/understanding-oauth-scopes",
+    "https://docs.slack.dev/tools/slack-cli/",
+    "https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli",
+    "https://docs.slack.dev/tools/slack-cli/guides/authorizing-the-slack-cli#obtain-token",
+    "https://docs.slack.dev/tools/slack-cli/guides/deploying-the-slack-cli-with-github-actions",
+    "https://docs.slack.dev/tools/slack-cli/guides/developing-locally",
+    "https://docs.slack.dev/tools/slack-cli/guides/installing-the-slack-cli-for-mac-and-linux",
+    "https://docs.slack.dev/tools/slack-cli/guides/installing-the-slack-cli-for-windows",
+    "https://docs.slack.dev/tools/slack-cli/guides/removing-an-app",
+    "https://docs.slack.dev/tools/slack-cli/guides/running-slack-cli-commands",
+    "https://docs.slack.dev/tools/slack-cli/guides/setting-up-ci-cd-with-the-slack-cli",
+    "https://docs.slack.dev/tools/slack-cli/guides/uninstalling-the-slack-cli",
+    "https://docs.slack.dev/tools/slack-cli/guides/using-environment-variables-with-the-slack-cli",
+    "https://docs.slack.dev/tools/slack-cli/guides/using-slack-cli-on-an-enterprise-grid-organization",
+    "https://docs.slack.dev/tools/slack-cli/reference/commands/slack",
+    "https://docs.slack.dev/tools/slack-cli/reference/errors",
+    "https://docs.slack.dev/tools/slack-cli/reference/experiments",
+    "https://docs.slack.dev/tools/slack-cli/reference/hooks",
+    "https://docs.slack.dev/tools/slack-github-action/",
+    "https://docs.slack.dev/workflows",
+    "https://docs.slack.dev/workflows/",
+    "https://en.wikipedia.org/wiki/Server_Name_Indication",
+    "https://en.wikipedia.org/wiki/Subnetwork#Subnetting",
+    "https://github.com/slack-samples/bolt-js-assistant-template",
+    "https://github.com/slackapi/slack-cli",
+    "https://github.com/slackapi/slack-cli/blob/main/.github/CONTRIBUTING.md",
+    "https://medium.com/@SlackAPI/an-important-update-on-workspace-apps-aabc9e42a98b",
+    "https://scim.cloud/",
+    "https://slack-status.com/",
+    "https://slack-status.com/2018-09/7dea1cd14cd0f657",
+    "https://slack-status.com/api/current",
+    "https://slack-status.com/api/v1.0.0/current",
+    "https://slack-status.com/api/v2.0.0/current",
+    "https://slack-status.com/api/v2.0.0/currentcurl",
+    "https://slack-status.com/api/v2.0.0/history",
+    "https://slack-status.com/feed/atom",
+    "https://slack-status.com/feed/rss",
+    "https://slack.com/api/METHOD_FAMILY.method",
+    "https://slack.com/api/apps.connections.open",
+    "https://slack.com/api/chat.postMessage",
+    "https://slack.com/apps",
+    "https://slack.com/cookie-policy",
+    "https://slack.com/help/articles/115001435788-Connect-IDP-groups-to-workspaces",
+    "https://slack.com/help/articles/212572638-Managing-team-members-with-SCIM-provisioning",
+    "https://slack.com/help/contact",
+    "https://slack.com/marketplace",
+    "https://slack.com/terms-of-service/api",
+    "https://slack.com/trust/privacy/privacy-policy",
+    "https://slack.dev",
+    "https://slack.dev/",
+    "https://slack.dev/#",
+    "https://slack.dev/#main",
+    "https://slack.dev/blog",
+    "https://slack.dev/blog/context-aware-agents-slack-mcp-server-real-time-search/",
+    "https://slack.dev/blog/custom-ent-search",
+    "https://slack.dev/blog/deploy-agents-to-slack-faster-with-vercel-skills",
+    "https://slack.dev/blog/slack-developer-changelog-recap-october-december-2025",
+    "https://slack.dev/blog/slack-developer-sandboxes",
+    "https://slack.dev/blog/slack-platform-reimagined-for-the-agentic-era",
+    "https://slack.dev/building-trustworthy-agentic-slack-apps/",
+    "https://slack.dev/community",
+    "https://slack.dev/developer-stories",
+    "https://slack.dev/developer-stories/",
+    "https://slack.dev/developer-stories/chance-martin-senior-salesforce-business-analyst/",
+    "https://slack.dev/developer-stories/daniel-sadavoy-building-agents-with-slack/",
+    "https://slack.dev/developer-stories/headline-paolo-sambrano-from-modding-to-salesforce-slack-mastery/",
+    "https://slack.dev/developer-stories/rootly/",
+    "https://slack.dev/events",
+    "https://slack.dev/learn",
+    "https://slack.dev/learning-paths",
+    "https://slack.dev/learning-paths/",
+    "https://slack.dev/learning-paths/24-days-of-building-with-slack/",
+    "https://slack.dev/marketplace/",
+    "https://slack.dev/newsletter",
+    "https://slack.dev/open-source",
+    "https://slack.dev/publishing-your-marketplace-app/",
+    "https://slack.dev/resource-library",
+    "https://slack.dev/security-practices-for-slack-apps/",
+    "https://slack.dev/slack-dev-day",
+    "https://slack.dev/slack-platform-reimagined-for-the-agentic-era/",
+    "https://slack.dev/slackbot-mcp-client/",
+    "https://slack.dev/two-keys-to-one-platform-understanding-bot-and-user-tokens/",
+    "https://slack.dev/workshops",
+    "https://slack.dev/workshops/build-ai-assistant-slack-boltjs/",
+    "https://slackcommunity.com",
+    "https://slackcommunity.com/chapters/",
+    "https://tools.ietf.org/html/rfc3986",
+    "https://tools.ietf.org/html/rfc6455",
+    "https://trailhead.salesforce.com",
+    "https://trailhead.salesforce.com/",
+    "https://trailhead.salesforce.com/trailblazer-community/neighborhoods/slack",
+    "https://trailheadacademy.salesforce.com/all-offerings#f-assetType=Certification&f-products=Slack&f-siteLanguage=en_US",
+    "https://trailheadacademy.salesforce.com/certificate/exam-slack-developer---Slack-Dev-201",
+    "https://www.rfc-editor.org/rfc/rfc7644#section-3.5.2",
+    "https://www.salesforce.com/form/other/privacy-request/"
+  ]
+}

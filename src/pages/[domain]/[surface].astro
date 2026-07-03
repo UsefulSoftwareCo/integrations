@@ -195,22 +195,62 @@ Astro.response.headers.set("cache-control", "public, max-age=60");
         </div>
       )}
       {surface.auth.status === "required" &&
-        surface.auth.entries.map((e) => (
-          <div class="auth-row">
-            <span class="auth-use">
-              {e.use.map((u, i) => (
-                <>
-                  {i > 0 && <span class="and">+</span>}
+        (() => {
+          // One row per distinct auth method. A single credential offered
+          // several alternative ways (e.g. `vercel login` / `env VERCEL_TOKEN`
+          // / `vercel --token <x>`) collapses into ONE row — its label shown
+          // once, mechanics listed as alternatives with `/` — instead of
+          // repeating the credential per binding. Multi-credential entries (a
+          // real conjunction like client_id + client_secret) stay their own
+          // row, uses joined with `+`. Collapsed rows carry the strongest
+          // provenance among the methods folded in.
+          const rank = (b) => (b?.via === "detected" ? 3 : b?.via === "declared" ? 2 : 1);
+          const rows = [];
+          const singles = new Map();
+          for (const e of surface.auth.entries) {
+            if (e.use.length === 1) {
+              const u = e.use[0];
+              let g = singles.get(u.id);
+              if (!g) {
+                g = { kind: "single", id: u.id, label: creds[u.id]?.label ?? u.id, mechs: [], basis: e.basis };
+                singles.set(u.id, g);
+                rows.push(g);
+              }
+              g.mechs.push(mechanicsLine(u.mechanics));
+              if (rank(e.basis) > rank(g.basis)) g.basis = e.basis;
+            } else {
+              rows.push({ kind: "multi", parts: e.use.map((u) => ({ label: creds[u.id]?.label ?? u.id, mech: mechanicsLine(u.mechanics) })), basis: e.basis });
+            }
+          }
+          return rows.map((row) => (
+            <div class="auth-row">
+              <span class="auth-use">
+                {row.kind === "single" ? (
                   <span class="use">
-                    <span class="cred">{creds[u.id]?.label ?? u.id}</span>
-                    <code class="mech">{mechanicsLine(u.mechanics)}</code>
+                    <span class="cred">{row.label}</span>
+                    {row.mechs.map((m, j) => (
+                      <>
+                        {j > 0 && <span class="or">/</span>}
+                        <code class="mech">{m}</code>
+                      </>
+                    ))}
                   </span>
-                </>
-              ))}
-            </span>
-            <span class={`disc-prov ${provClass(e.basis)} prov-end`} title={provTitle(e.basis)}>{provLabel(e.basis)}</span>
-          </div>
-        ))}
+                ) : (
+                  row.parts.map((p, i) => (
+                    <>
+                      {i > 0 && <span class="and">+</span>}
+                      <span class="use">
+                        <span class="cred">{p.label}</span>
+                        <code class="mech">{p.mech}</code>
+                      </span>
+                    </>
+                  ))
+                )}
+              </span>
+              <span class={`disc-prov ${provClass(row.basis)} prov-end`} title={provTitle(row.basis)}>{provLabel(row.basis)}</span>
+            </div>
+          ));
+        })()}
     </section>
 
     {credList.length > 0 && (
@@ -249,6 +289,7 @@ Astro.response.headers.set("cache-control", "public, max-age=60");
   .auth-use { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 9px; }
   .use { display: inline-flex; align-items: baseline; gap: 6px; }
   .and { font-family: var(--font-mono); font-size: 12px; color: var(--gray-400); }
+  .or { font-family: var(--font-mono); font-size: 11px; color: var(--gray-300); }
   .cred { font-size: 13.5px; color: var(--gray-1000); font-weight: 500; }
   .mech { font-family: var(--font-mono); font-size: 12px; color: var(--gray-700); background: var(--gray-25); border: 1px solid var(--gray-100); border-radius: 5px; padding: 1px 6px; word-break: break-all; }
   .auth-none .auth-use { font-size: 13px; color: var(--gray-500); font-weight: 400; }

@@ -1,0 +1,487 @@
+{
+  "result": {
+    "version": 3,
+    "domain": "visier.com",
+    "detect": {
+      "domain": "visier.com",
+      "found": [],
+      "probed": [
+        "integrations.json",
+        "llms.txt",
+        "api-catalog",
+        "openapi-schema",
+        "mcp-server-card",
+        "oauth-protected-resource",
+        "agent-card",
+        "agent-skills"
+      ],
+      "integrationsJson": null,
+      "mcp": [],
+      "llmsTxt": false,
+      "errors": []
+    },
+    "usedLlm": true,
+    "discoveredAt": "2026-07-03T00:14:55.184Z",
+    "summary": "Visier exposes tenant-scoped public HTTP APIs on `*.api.visier.io` plus a tenant-scoped MCP server on `*.app.visier.com/visier-query-mcp`; both require authentication, and no CLI or first-party GraphQL developer surface was found.",
+    "description": "Visier provides workforce analytics and planning software for organizations. Its platform lets customers load, model, query, and analyze people and business data, and includes AI features such as Vee and an MCP server for external AI clients.",
+    "credentials": {
+      "visier_api_key": {
+        "type": "api_key",
+        "label": "Visier API key",
+        "generateUrl": "https://docs.visier.com/developer/Studio/solution%20settings/api-key-generate.htm",
+        "setup": "In Visier Studio, go to [Generate an API Key](https://docs.visier.com/developer/Studio/solution%20settings/api-key-generate.htm). The documented path is **Settings > API Keys**; copy the displayed key, or click **Regenerate** if one is not shown. Visier notes this feature may need to be enabled by support and that regenerating invalidates the previous key.",
+        "acquisition": "manual"
+      },
+      "visier_oauth_client": {
+        "type": "oauth2",
+        "label": "Visier OAuth 2.0 client credentials",
+        "setup": "For Visier MCP, an administrator must register an OAuth 2.0 client application in Visier and obtain a `client_id` and `client_secret` for each AI agent. The setup guide points to [Register a Client Application](https://docs.visier.com/developer/Studio/sign-in%20settings/oauth2-setup.htm) and says the agent must support OAuth 2.0 confidential clients. End users then authenticate their Visier account through the MCP-compatible client via OAuth 2.0.",
+        "acquisition": "manual"
+      },
+      "visier_user_password": {
+        "type": "basic",
+        "label": "Visier API user username and password",
+        "generateUrl": "https://docs.visier.com/developer/Visier%20API/api/apis-getting-started.htm",
+        "setup": "Create or designate a Visier user for API access using [Set Up API Access](https://docs.visier.com/developer/Visier%20API/api/apis-getting-started.htm). The guide says API users must be able to sign in with a username and password; if your org uses SSO, add the API user to the bypass list so it can authenticate with local credentials. Use that username and password to request a security token from Visier's auth endpoint.",
+        "acquisition": "manual"
+      }
+    },
+    "surfaces": [
+      {
+        "slug": "visier-public-apis",
+        "name": "Visier Public APIs",
+        "type": "http",
+        "docs": "https://docs.visier.com/developer/apis/references/api-reference.htm",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.visier.com/developer/apis/apis-get-started-home.htm",
+            "https://docs.visier.com/developer/apis/references/api-reference.htm",
+            "https://docs.visier.com/developer/apis/headers.htm",
+            "https://docs.visier.com/developer/apis/authentication/authentication.htm",
+            "https://docs.visier.com/developer/Visier%20API/api/apis-getting-started.htm"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "visier_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "apikey"
+                  }
+                },
+                {
+                  "id": "visier_user_password",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "body"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.visier.com/developer/apis/headers.htm",
+                  "https://docs.visier.com/developer/apis/authentication/authentication.htm",
+                  "https://docs.visier.com/developer/Visier%20API/api/apis-getting-started.htm"
+                ]
+              }
+            },
+            {
+              "use": [
+                {
+                  "id": "visier_api_key",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "apikey"
+                  }
+                },
+                {
+                  "id": "visier_oauth_client",
+                  "mechanics": {
+                    "source": "http",
+                    "in": "header",
+                    "headerName": "Authorization",
+                    "scheme": "Bearer"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.visier.com/developer/apis/headers.htm",
+                  "https://docs.visier.com/developer/apis/authentication/authentication.htm"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{vanity_name}.api.visier.io",
+        "variables": [
+          {
+            "name": "vanity_name",
+            "in": "url",
+            "resolveFrom": "your Visier tenant vanity name",
+            "description": "Tenant-specific subdomain used in API hosts such as `https://jupiter.api.visier.io`."
+          }
+        ]
+      },
+      {
+        "slug": "visier-query-mcp-server",
+        "name": "Visier Query MCP Server",
+        "type": "mcp",
+        "docs": "https://docs.visier.com/developer/agents/mcp/mcp-server.htm",
+        "basis": {
+          "via": "discovered",
+          "evidence": [
+            "https://docs.visier.com/developer/agents/mcp/mcp-server.htm",
+            "https://docs.visier.com/developer/agents/mcp/mcp-server-set-up.htm",
+            "https://docs.visier.com/developer/agents/mcp/mcp-server-use.htm"
+          ]
+        },
+        "auth": {
+          "status": "required",
+          "entries": [
+            {
+              "use": [
+                {
+                  "id": "visier_oauth_client",
+                  "mechanics": {
+                    "source": "unknown"
+                  }
+                }
+              ],
+              "basis": {
+                "via": "discovered",
+                "evidence": [
+                  "https://docs.visier.com/developer/agents/mcp/mcp-server-set-up.htm",
+                  "https://docs.visier.com/developer/agents/mcp/mcp-server-use.htm"
+                ]
+              }
+            }
+          ]
+        },
+        "url": "https://{vanity_name}.app.visier.com/visier-query-mcp",
+        "transports": [
+          "streamable-http"
+        ],
+        "variables": [
+          {
+            "name": "vanity_name",
+            "in": "url",
+            "resolveFrom": "your Visier tenant vanity name",
+            "description": "The setup guide says to replace `{vanity_name}` with your tenant name; example vanity names are derived from Visier service provider URLs."
+          }
+        ]
+      }
+    ]
+  },
+  "discoveredAt": "2026-07-03T00:14:55.185Z",
+  "model": "loop-gpt-5.4",
+  "usage": {
+    "prompt_tokens": 251452,
+    "completion_tokens": 1814,
+    "total_tokens": 253266
+  },
+  "visited": [
+    "https://docs.visier.com/developer/Studio/data/data%20connectors/data-connectors.htm",
+    "https://docs.visier.com/developer/Studio/solution%20settings/api-key-generate.htm",
+    "https://docs.visier.com/developer/Visier%20API/api/apis-getting-started.htm",
+    "https://docs.visier.com/developer/agents/mcp/mcp-server-set-up.htm",
+    "https://docs.visier.com/developer/agents/mcp/mcp-server-use.htm",
+    "https://docs.visier.com/developer/agents/mcp/mcp-server.htm",
+    "https://docs.visier.com/developer/agents/mcp/mcp-server.htm#Authentication",
+    "https://docs.visier.com/developer/apis/analytic-model/concepts/concepts-api.htm",
+    "https://docs.visier.com/developer/apis/apis-get-started-home.htm",
+    "https://docs.visier.com/developer/apis/authentication/authentication.htm",
+    "https://docs.visier.com/developer/apis/data-out/data-query/data-query-api.htm",
+    "https://docs.visier.com/developer/apis/headers.htm",
+    "https://docs.visier.com/developer/apis/references/api-reference.htm",
+    "https://github.com/visier/sample-langchain-mcp-client",
+    "https://wundergraph.com/blog/graphql-persisted-operations-llms-mcp",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo"
+  ],
+  "grounding": [
+    "http://localhost:{port}/callback",
+    "http://modelcontextprotocol.io/clients",
+    "https://ai.meta.com/blog/practical-ai-agent-security/",
+    "https://archiveprogram.github.com",
+    "https://claude.ai/api/mcp/auth_callback",
+    "https://claude.com/api/mcp/auth_callback",
+    "https://claude.com/download",
+    "https://claude.com/pricing#team-&-enterprise",
+    "https://code.claude.com/docs/en/mcp#use-a-fixed-oauth-callback-port",
+    "https://code.claude.com/docs/en/quickstart",
+    "https://datatracker.ietf.org/doc/html/rfc6749#section-4.1",
+    "https://datatracker.ietf.org/doc/html/rfc8414#section-3.2",
+    "https://detailed.status.visier.com/",
+    "https://docs.github.com",
+    "https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax",
+    "https://docs.visier.com/#APIHeaders",
+    "https://docs.visier.com/#Accept",
+    "https://docs.visier.com/#AcceptLanguage",
+    "https://docs.visier.com/#Authorization",
+    "https://docs.visier.com/#BasicAuth",
+    "https://docs.visier.com/#ConceptsAPI",
+    "https://docs.visier.com/#ConnectClaude",
+    "https://docs.visier.com/#ContentType",
+    "https://docs.visier.com/#CookieVisierASIDToken",
+    "https://docs.visier.com/#GenerateanAPIKey",
+    "https://docs.visier.com/#NonVersioned",
+    "https://docs.visier.com/#OAuth2.0",
+    "https://docs.visier.com/#Overview",
+    "https://docs.visier.com/#Prefer",
+    "https://docs.visier.com/#Prerequisites",
+    "https://docs.visier.com/#ProjectID",
+    "https://docs.visier.com/#Security",
+    "https://docs.visier.com/#SessionBasedPermissions",
+    "https://docs.visier.com/#SessionRepoId",
+    "https://docs.visier.com/#SetUpAPIAccess",
+    "https://docs.visier.com/#StepFive",
+    "https://docs.visier.com/#StepFiveRetrieveasecuritytoken",
+    "https://docs.visier.com/#StepFour",
+    "https://docs.visier.com/#StepFourRetrieveanAPIkey",
+    "https://docs.visier.com/#StepOne",
+    "https://docs.visier.com/#StepOneCreateauseraccountfortheAPIuser",
+    "https://docs.visier.com/#StepSix",
+    "https://docs.visier.com/#StepSixSetupAPInetworksubnets",
+    "https://docs.visier.com/#StepThree",
+    "https://docs.visier.com/#StepThreeAssignthecorrectdataaccesspermissionstotheAPIuser",
+    "https://docs.visier.com/#StepTwo",
+    "https://docs.visier.com/#StepTwoAssignanAPIprofiletotheAPIuser",
+    "https://docs.visier.com/#TargetTenantID",
+    "https://docs.visier.com/#UseVisierMCP",
+    "https://docs.visier.com/#UseVisierMCPpromptsinClaude",
+    "https://docs.visier.com/#UseVisierQueryMCPServerasaClaudeuser",
+    "https://docs.visier.com/#UseVisierQueryMCPServerasauser",
+    "https://docs.visier.com/#apikey",
+    "https://docs.visier.com/#mc-main-content",
+    "https://docs.visier.com/../../../Analytic",
+    "https://docs.visier.com/../../../GenAI/overview.htm",
+    "https://docs.visier.com/../../../Release",
+    "https://docs.visier.com/../../../Tutorials/data-model-query/aggregate-query-perform.htm",
+    "https://docs.visier.com/../../../Tutorials/data-model-query/list-query-perform.htm",
+    "https://docs.visier.com/../../../agents/mcp/mcp-server.htm",
+    "https://docs.visier.com/../../../agents/studio-assistant/studio-assistant.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/alerts/alerts-api.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/analytic-objects/analytic-objects-api.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/concepts/code-samples.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/concepts/concepts-api.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/concepts/get-started.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/data-model/data-model-api.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/dimensions/dimensions-api.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/metrics/metrics-api.htm",
+    "https://docs.visier.com/../../../apis/analytic-model/object-configuration/object-configuration-api.htm",
+    "https://docs.visier.com/../../../apis/apis-get-started-home.htm",
+    "https://docs.visier.com/../../../apis/apis.htm",
+    "https://docs.visier.com/../../../apis/references/api-reference.htm",
+    "https://docs.visier.com/../../Analytics/data",
+    "https://docs.visier.com/../../GenAI/overview.htm",
+    "https://docs.visier.com/../../Release",
+    "https://docs.visier.com/../../Studio/data/data",
+    "https://docs.visier.com/../../Studio/permissions/security",
+    "https://docs.visier.com/../../Studio/sign-in",
+    "https://docs.visier.com/../../Studio/solution",
+    "https://docs.visier.com/../../Studio/users/permissions",
+    "https://docs.visier.com/../../Studio/users/profiles/profiles.htm#ProfilesUserAssign",
+    "https://docs.visier.com/../../Studio/users/user",
+    "https://docs.visier.com/../../Visier",
+    "https://docs.visier.com/../../administration/projects/projects-api.htm",
+    "https://docs.visier.com/../../agents/mcp/mcp-server-set-up.htm",
+    "https://docs.visier.com/../../agents/mcp/mcp-server-use.htm",
+    "https://docs.visier.com/../../agents/mcp/mcp-server.htm",
+    "https://docs.visier.com/../../agents/studio-assistant/studio-assistant.htm",
+    "https://docs.visier.com/../../apis/apis-get-started-home.htm",
+    "https://docs.visier.com/../../apis/apis.htm",
+    "https://docs.visier.com/../../apis/authentication/authentication.htm",
+    "https://docs.visier.com/../../apis/data-out/data-query/fundamentals/postman-use.htm",
+    "https://docs.visier.com/../../apis/headers.htm",
+    "https://docs.visier.com/../../apis/rate-limit.htm",
+    "https://docs.visier.com/../../apis/references/api-reference.htm",
+    "https://docs.visier.com/../../apis/status-codes-errors.htm",
+    "https://docs.visier.com/../../apis/version-control.htm",
+    "https://docs.visier.com/../../authentication/authentication.htm",
+    "https://docs.visier.com/../../references/api-reference.htm",
+    "https://docs.visier.com/../GenAI/overview.htm",
+    "https://docs.visier.com/../Release",
+    "https://docs.visier.com/../Studio/permissions/non-versioned-security.htm",
+    "https://docs.visier.com/../Studio/permissions/non-versioned-security.htm#Locking",
+    "https://docs.visier.com/../Studio/solution",
+    "https://docs.visier.com/../Visier",
+    "https://docs.visier.com/../agents/mcp/mcp-server.htm",
+    "https://docs.visier.com/../agents/studio-assistant/studio-assistant.htm",
+    "https://docs.visier.com/../apis.htm",
+    "https://docs.visier.com/../apis/apis-get-started-home.htm",
+    "https://docs.visier.com/../apis/apis.htm",
+    "https://docs.visier.com/../apis/authentication/authentication.htm",
+    "https://docs.visier.com/../apis/data-out/data-query/fundamentals/postman-use.htm",
+    "https://docs.visier.com/../apis/headers.htm",
+    "https://docs.visier.com/../apis/rate-limit.htm",
+    "https://docs.visier.com/../apis/references/api-reference.htm",
+    "https://docs.visier.com/../apis/status-codes-errors.htm",
+    "https://docs.visier.com/../apis/version-control.htm",
+    "https://docs.visier.com/../headers.htm#Headers",
+    "https://docs.visier.com/../references/api-reference.htm",
+    "https://docs.visier.com/administration/permission-management/fundamentals/overview.htm#SessionBasedSecurity",
+    "https://docs.visier.com/administration/projects/projects-api.htm",
+    "https://docs.visier.com/authentication/authentication.htm",
+    "https://docs.visier.com/authentication/authentication.htm#BasicAuth",
+    "https://docs.visier.com/authentication/authentication.htm#OAuth2.0",
+    "https://docs.visier.com/blob:https://docs.visier.com/e519e80e-926d-4cc0-a719-e55e0a3a3787",
+    "https://docs.visier.com/code-samples.htm",
+    "https://docs.visier.com/data-out/data-query/fundamentals/postman-use.htm",
+    "https://docs.visier.com/developer",
+    "https://docs.visier.com/developer/Studio/data/data%20connectors/data-connectors.htm",
+    "https://docs.visier.com/developer/Studio/solution%20settings/api-key-generate.htm",
+    "https://docs.visier.com/developer/Visier%20API/api/apis-getting-started.htm",
+    "https://docs.visier.com/developer/agents/mcp/mcp-server-set-up.htm",
+    "https://docs.visier.com/developer/agents/mcp/mcp-server-use.htm",
+    "https://docs.visier.com/developer/agents/mcp/mcp-server.htm",
+    "https://docs.visier.com/developer/agents/mcp/mcp-server.htm#Authentication",
+    "https://docs.visier.com/developer/apis/analytic-model/concepts/concepts-api.htm",
+    "https://docs.visier.com/developer/apis/apis-get-started-home.htm",
+    "https://docs.visier.com/developer/apis/authentication/authentication.htm",
+    "https://docs.visier.com/developer/apis/data-out/data-query/data-query-api.htm",
+    "https://docs.visier.com/developer/apis/headers.htm",
+    "https://docs.visier.com/developer/apis/references/api-reference.htm",
+    "https://docs.visier.com/fundamentals/code-samples.htm",
+    "https://docs.visier.com/fundamentals/overview.htm",
+    "https://docs.visier.com/get-started.htm",
+    "https://docs.visier.com/javascript:void(0",
+    "https://docs.visier.com/mcp-server-set-up.htm",
+    "https://docs.visier.com/mcp-server-set-up.htm#Prerequisites",
+    "https://docs.visier.com/mcp-server-use.htm",
+    "https://docs.visier.com/mcp-server.htm#Prompts",
+    "https://docs.visier.com/rate-limit.htm",
+    "https://docs.visier.com/references/api-reference.htm",
+    "https://docs.visier.com/status-codes-errors.htm",
+    "https://docs.visier.com/swp",
+    "https://docs.visier.com/version-control.htm",
+    "https://docs.visier.com/visier-people",
+    "https://github.blog",
+    "https://github.blog/changelog",
+    "https://github.com/#",
+    "https://github.com/#llm-setup-choose-one",
+    "https://github.com/#start-of-content",
+    "https://github.com/accelerator",
+    "https://github.com/collections",
+    "https://github.com/customer-stories",
+    "https://github.com/enterprise",
+    "https://github.com/enterprise/startups",
+    "https://github.com/features",
+    "https://github.com/features/actions",
+    "https://github.com/features/ai/github-app",
+    "https://github.com/features/code-review",
+    "https://github.com/features/codespaces",
+    "https://github.com/features/copilot",
+    "https://github.com/features/copilot/copilot-business",
+    "https://github.com/features/issues",
+    "https://github.com/langchain-ai/langchain-mcp-adapters",
+    "https://github.com/login?return_to=%2Fvisier%2Fsample-langchain-mcp-client",
+    "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fvisier%2Fsample-langchain-mcp-client",
+    "https://github.com/marketplace",
+    "https://github.com/mcp",
+    "https://github.com/modelcontextprotocol/python-sdk",
+    "https://github.com/orgs/community/discussions",
+    "https://github.com/partners",
+    "https://github.com/premium-support",
+    "https://github.com/pricing",
+    "https://github.com/resources",
+    "https://github.com/resources/articles",
+    "https://github.com/resources/articles?topic=ai",
+    "https://github.com/resources/articles?topic=devops",
+    "https://github.com/resources/articles?topic=security",
+    "https://github.com/resources/articles?topic=software-development",
+    "https://github.com/resources/events",
+    "https://github.com/resources/whitepapers",
+    "https://github.com/security/advanced-security",
+    "https://github.com/security/advanced-security/code-security",
+    "https://github.com/security/advanced-security/secret-protection",
+    "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=visier%2Fsample-langchain-mcp-client",
+    "https://github.com/solutions",
+    "https://github.com/solutions/executive-insights",
+    "https://github.com/solutions/industry",
+    "https://github.com/solutions/industry/financial-services",
+    "https://github.com/solutions/industry/government",
+    "https://github.com/solutions/industry/healthcare",
+    "https://github.com/solutions/industry/manufacturing",
+    "https://github.com/solutions/industry/nonprofits",
+    "https://github.com/solutions/use-case",
+    "https://github.com/solutions/use-case/app-modernization",
+    "https://github.com/solutions/use-case/ci-cd",
+    "https://github.com/solutions/use-case/devops",
+    "https://github.com/solutions/use-case/devsecops",
+    "https://github.com/sponsors",
+    "https://github.com/team",
+    "https://github.com/topics",
+    "https://github.com/trending",
+    "https://github.com/trust-center",
+    "https://github.com/visier",
+    "https://github.com/visier/api-samples/tree/main/authentication/oauth2-code",
+    "https://github.com/visier/sample-langchain-mcp-client",
+    "https://github.com/visier/sample-langchain-mcp-client/actions",
+    "https://github.com/visier/sample-langchain-mcp-client/blob/main/.gitignore",
+    "https://github.com/visier/sample-langchain-mcp-client/blob/main/LICENSE",
+    "https://github.com/visier/sample-langchain-mcp-client/blob/main/README.md",
+    "https://github.com/visier/sample-langchain-mcp-client/blob/main/main.py",
+    "https://github.com/visier/sample-langchain-mcp-client/blob/main/pyproject.toml",
+    "https://github.com/visier/sample-langchain-mcp-client/blob/main/uv.lock",
+    "https://github.com/visier/sample-langchain-mcp-client/branches",
+    "https://github.com/visier/sample-langchain-mcp-client/commit/3804c947e08b44c63b434405799c0914931bf8e2",
+    "https://github.com/visier/sample-langchain-mcp-client/commit/4af82e4f54e1400328be08f8b8d92a010e3f5e47",
+    "https://github.com/visier/sample-langchain-mcp-client/commit/899e522d80cdcdb530e3b82fa03cbe2cd8a2e74d",
+    "https://github.com/visier/sample-langchain-mcp-client/commit/b6327f887dfedd14b1157e0443607f7a94cbced0",
+    "https://github.com/visier/sample-langchain-mcp-client/commit/cc1efc7ca5a4a65ff24d5ffa001bec16c01caefc",
+    "https://github.com/visier/sample-langchain-mcp-client/commit/d126eda030aae83dff31cec06f4b7d8cafe5502f",
+    "https://github.com/visier/sample-langchain-mcp-client/commit/d4801c81730292c4414d49450355a99ef3d083ea",
+    "https://github.com/visier/sample-langchain-mcp-client/commits/main/",
+    "https://github.com/visier/sample-langchain-mcp-client/commits?author=jenniferleung",
+    "https://github.com/visier/sample-langchain-mcp-client/issues",
+    "https://github.com/visier/sample-langchain-mcp-client/projects",
+    "https://github.com/visier/sample-langchain-mcp-client/pull/7",
+    "https://github.com/visier/sample-langchain-mcp-client/pulls",
+    "https://github.com/visier/sample-langchain-mcp-client/pulse",
+    "https://github.com/visier/sample-langchain-mcp-client/security",
+    "https://github.com/visier/sample-langchain-mcp-client/tags",
+    "https://github.com/visier/sample-langchain-mcp-client/tree/main/client",
+    "https://github.com/visier/sample-langchain-mcp-client/tree/main/docs/images",
+    "https://github.com/visier/sample-langchain-mcp-client/tree/main/web",
+    "https://github.com/why-github",
+    "https://jupiter.api.visier.io/v1/admin/visierSecureToken",
+    "https://jupiter.visier.com/VServer/auth**",
+    "https://learning.postman.com/docs/getting-started/settings/#working-directory",
+    "https://maintainers.github.com",
+    "https://modelcontextprotocol.io/docs/getting-started/intro",
+    "https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization",
+    "https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization#server-metadata-discovery",
+    "https://modelcontextprotocol.io/specification/2025-11-25/ba",
+    "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#resource-parameter-implementation",
+    "https://my.visier.com/csm?id=csm_sc_category",
+    "https://my.visier.com/csm?id=kb_home",
+    "https://securitylab.github.com",
+    "https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/",
+    "https://skills.github.com",
+    "https://stars.github.com",
+    "https://status.claude.com/",
+    "https://study.visier.com/",
+    "https://support.claude.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers",
+    "https://support.github.com",
+    "https://visier.discourse.group/",
+    "https://wundergraph.com/blog/graphql-persisted-operations-llms-mcp",
+    "https://www.apache.org/licenses/LICENSE-2.0",
+    "https://www.postman.com/visier-alpine?tab=collections",
+    "https://www.pulsemcp.com/clients",
+    "https://www.visier.com/cookies/",
+    "https://www.youtube.com/watch?v=tMTsNn09GNo",
+    "https://{vanity-name}.api.visier.io/v1/data/query/aggregate**",
+    "https://{vanity_name}.api.visier.io/v1/admin/users",
+    "https://{vanity_name}.app.visier.com/.well-known/oauth-authorization-server/hr/oauth2",
+    "https://{vanity_name}.app.visier.com/visier-query-mcp"
+  ]
+}

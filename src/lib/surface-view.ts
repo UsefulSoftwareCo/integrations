@@ -65,27 +65,28 @@ export function credCta(type: string): string {
   return "Get key";
 }
 
-/** The CLI login command that acquires a credential, when every one of its
- * bindings across the given auths is such a flow. In that case the command IS
- * the acquisition — `mint login` runs the OAuth dance — so the "go mint one"
- * CTA (often a raw authorize endpoint) is wrong. A cli binding that merely
- * CONSUMES an existing credential (`resend --api-key <key>`, env vars) is not
- * acquisition: those keep the normal get-it-from-the-dashboard card. */
+/** The CLI login command that acquires a credential, when ANY of its bindings
+ * across the given auths is such a flow. `mint login` / `vercel login` runs the
+ * OAuth dance — it IS the acquisition and the PRIMARY path — so the "go mint
+ * one" CTA (often a raw authorize endpoint or dashboard token page) is wrong,
+ * even when the same credential can ALSO be passed via env var or a
+ * `--token <x>` flag for CI. Those consumption bindings (`resend --api-key
+ * <key>`, env vars) are the non-interactive fallback, not the acquisition, so
+ * they no longer suppress the login treatment — login wins if it exists. */
 export function cliLoginFor(credId: string, auths: AuthStatus[]): string | undefined {
   const uses = auths
     .flatMap((a) => (a.status === "required" ? a.entries : []))
     .flatMap((e) => e.use)
     .filter((u) => u.id === credId);
-  if (!uses.length) return undefined;
-  const commands = uses.map((u) => {
+  for (const u of uses) {
     const m = u.mechanics;
-    if (m.source !== "cli" || !m.command) return undefined;
+    if (m.source !== "cli" || !m.command) continue;
     // A placeholder (`<key>`) or env injection means the credential already
     // exists before the command runs — consumption, not acquisition.
-    if (/[<{$]/.test(m.command) || m.env?.length) return undefined;
+    if (/[<{$]/.test(m.command) || m.env?.length) continue;
     return m.command;
-  });
-  return commands.every(Boolean) ? commands[0] : undefined;
+  }
+  return undefined;
 }
 
 /** One-line "how the credential is passed" summary for an auth entry. */

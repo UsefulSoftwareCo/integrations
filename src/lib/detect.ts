@@ -31,7 +31,7 @@ export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
 export interface McpDetection {
   url: string;
-  source: "api-catalog" | "server-card" | "probe";
+  source: "api-catalog" | "server-card" | "probe" | "discovered";
   /** "oauth2" | "none" | undefined (unknown) */
   auth?: string;
   authorizationServer?: string;
@@ -321,6 +321,14 @@ async function checkApiOAuth(fetchImpl: FetchLike, domain: string) {
  * MCP self-onboarding: initialize → WWW-Authenticate → PRM → AS metadata →
  * registration_endpoint (DCR) + client_id_metadata_document_supported (CIMD).
  */
+/** Public single-URL probe: given an MCP connect URL, resolve its onboarding
+ * capability (auth type, DCR, CIMD). Used to cover MCP servers the LLM
+ * discovers at a host detect's domain-scoped probes never reach (e.g.
+ * mcp.api.gusto.com/anthropic). Returns {} on any failure. */
+export function probeMcpOnboarding(mcpUrl: string, fetchImpl: FetchLike = fetch): Promise<Partial<McpDetection>> {
+  return detectMcpOnboarding(fetchImpl, mcpUrl).catch(() => ({}));
+}
+
 async function detectMcpOnboarding(fetchImpl: FetchLike, mcpUrl: string): Promise<Partial<McpDetection>> {
   const init = await get(fetchImpl, mcpUrl, {
     method: "POST",

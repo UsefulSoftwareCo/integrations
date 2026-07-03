@@ -1,5 +1,6 @@
 import { KIND_ORDER, SECTION_LABEL } from "./domain-labels.ts";
 import type { DiscoveryResult } from "./discovery-schema.ts";
+import { isSdkNotCli } from "./surface-classify.ts";
 import type { DiscoveryDoc, Surface } from "./surface-view.ts";
 
 export type DiscoverData = Partial<Pick<DiscoveryResult, "summary" | "description" | "discoveredAt">> & DiscoveryDoc & { detect?: unknown };
@@ -61,7 +62,8 @@ export function buildSections(data: DiscoverData | null, domain: string): Surfac
 
   for (const kind of KIND_ORDER) {
     const entries = surfaces
-      .map((surface, idx) => ({ surface, idx, kind: kindOf(surface.type) }))
+      // A client SDK/library mis-typed as `cli` is not a CLI surface — drop it.
+      .map((surface, idx) => ({ surface, idx, kind: isSdkNotCli(surface) ? null : kindOf(surface.type) }))
       .filter((item) => item.kind === kind)
       .map(({ surface, idx }) => ({
         key: `${surface.slug || surface.name}-${idx}`,

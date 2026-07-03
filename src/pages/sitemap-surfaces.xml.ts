@@ -5,6 +5,7 @@ import { baselineDiscoveryGroups, catalogDiscovery } from "~/lib/catalog-to-disc
 export const prerender = true;
 
 const SITE = "https://integrations.sh";
+const RESERVED_SURFACE_SLUGS = new Set(["api", "disc", "ssr"]);
 
 function escapeXml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[c]!);
@@ -17,6 +18,7 @@ export const GET: APIRoute = () => {
   for (const [domain, records] of groups) {
     const doc = catalogDiscovery(domain, records);
     for (const surface of doc.surfaces) {
+      if (RESERVED_SURFACE_SLUGS.has(surface.slug.toLowerCase())) continue;
       const loc = new URL(`/${encodeURIComponent(domain)}/${encodeURIComponent(surface.slug)}/`, SITE).href;
       urls.push(`  <url><loc>${escapeXml(loc)}</loc></url>`);
     }

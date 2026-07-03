@@ -403,8 +403,13 @@ const DISCOVERED_KIND_PRIORITY: Kind[] = ["mcp", "openapi", "graphql", "cli"];
 const DISCOVERED_ALIAS_DEDUPE = new Set(aliasesOf("railway.com"));
 
 const discoveredKind = (type: DiscoveredSurfaceType): Kind => (type === "http" ? "openapi" : type);
+const domainKindKey = (domain: string, kind: Kind) => `${canonicalDomain(domain)}:${kind}`;
 
-function buildDiscovered(knownDomains: Set<string>): Integration[] {
+function buildDiscovered(
+  knownRawDomains: Set<string>,
+  knownDomainKinds: Set<string>,
+  knownDomains: Set<string>,
+): Integration[] {
   const path = join(SOURCES, "discovered.json");
   if (!existsSync(path)) return [];
   const data = readJson<{ domains: DiscoveredDomain[] }>(path);
@@ -412,14 +417,17 @@ function buildDiscovered(knownDomains: Set<string>): Integration[] {
 
   for (const d of data.domains ?? []) {
     const domain = d.domain.trim().toLowerCase();
-    if (!domain || knownDomains.has(domain)) continue;
-    if (DISCOVERED_ALIAS_DEDUPE.has(domain) && knownDomains.has(canonicalDomain(domain))) continue;
+    if (!domain) continue;
+    const canonical = canonicalDomain(domain);
+    if (knownRawDomains.has(domain)) continue;
+    if (DISCOVERED_ALIAS_DEDUPE.has(domain) && knownDomains.has(canonical)) continue;
     const surfaces = d.surfaces ?? [];
     const byKind = new Map<Kind, DiscoveredSurface>();
     for (const surface of surfaces) {
       // A client SDK/library mis-typed as `cli` is not a CLI surface — skip it.
       if (isSdkNotCli(surface)) continue;
       const kind = discoveredKind(surface.type);
+      if (canonical === domain && knownDomainKinds.has(domainKindKey(domain, kind))) continue;
       if (!byKind.has(kind)) byKind.set(kind, surface);
     }
     const kinds = DISCOVERED_KIND_PRIORITY.filter((kind) => byKind.has(kind));
@@ -904,12 +912,24 @@ function main() {
   const baseGraphql = applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql()))).filter(isPublic);
   const baseCli = buildCli().filter(isPublic);
 
-  const knownDomains = new Set(
+  const knownRawDomains = new Set(
     [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
-      .flatMap((r) => [rawRecordDomain(r), recordDomain(r)])
+      .map(rawRecordDomain)
       .filter(Boolean),
   );
-  const discovered = buildDiscovered(knownDomains).filter(isPublic);
+  const knownDomains = new Set(
+    [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
+      .map(recordDomain)
+      .filter(Boolean),
+  );
+  const knownDomainKinds = new Set(
+    [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
+      .flatMap((r) => {
+        const domain = recordDomain(r);
+        return domain ? [domainKindKey(domain, r.kind)] : [];
+      }),
+  );
+  const discovered = buildDiscovered(knownRawDomains, knownDomainKinds, knownDomains).filter(isPublic);
   const mcp = [...baseMcp, ...discovered.filter((r) => r.kind === "mcp")];
   const openapi = [...baseOpenapi, ...discovered.filter((r) => r.kind === "openapi")];
   const graphql = [...baseGraphql, ...discovered.filter((r) => r.kind === "graphql")];

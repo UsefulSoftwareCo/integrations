@@ -94,7 +94,7 @@ const example = `{
 // Prompt A — the main one. Paste into a coding agent from the product's repo.
 // It embeds a compact schema summary so it works offline, and quotes the exact
 // paths this site probes (see src/lib/conventions.ts + src/lib/detect.ts).
-const promptMain = `You are working inside my product's repository. Goal: make my product discoverable on integrations.sh by publishing standard discovery files on my own domain. Derive every value from THIS repo and its docs. Never invent endpoints, specs, or auth. Leave out any surface my product does not actually have.
+const promptMain = `You are working inside my product's repository. Goal: make my product discoverable on integrations.sh by publishing discovery files on my own domain — both the open standards it reads and its own /.well-known/integrations.json declaration. Publish every format that applies to my product; they are complementary, not alternatives. Derive every value from THIS repo and its docs. Never invent endpoints, specs, or auth. Leave out any file or surface my product does not actually have.
 
 # 1. Inventory the integration surfaces
 
@@ -155,18 +155,28 @@ Rules:
 - Only include surfaces that exist. Omit "credentials" / "surfaces" entirely if there are none.
 - The file must parse as strict JSON and validate against the v3 shape above, or integrations.sh silently ignores it.
 
-# 3. Also publish, if applicable
+# 3. Publish the open standards that apply
 
-- If my product has an HTTP API and an OpenAPI/Swagger spec exists (or can be generated from the code), serve it at /openapi.json (integrations.sh also probes /swagger.json, /api/openapi.json, /v1/openapi.json, /api/schema/ — /openapi.json is the canonical one). Serve as application/json, publicly cacheable. If a spec route already exists, just make sure one of those paths resolves to it.
-- If my product ships an MCP server, also serve /.well-known/mcp/server-card.json with at least { "url": "<mcp connect endpoint>" } and, if the server needs auth, "authentication": { "type": "oauth2", "authorization_server"?: "<as url>" }. application/json, publicly cacheable.
+integrations.sh reads these alongside integrations.json — publish every one my product qualifies for:
+
+- OpenAPI: if my product has an HTTP API and an OpenAPI/Swagger spec exists (or can be generated from the code), serve it at /openapi.json (integrations.sh also probes /swagger.json, /api/openapi.json, /v1/openapi.json, /api/schema/ — /openapi.json is the canonical one). Serve as application/json, publicly cacheable. If a spec route already exists, just make sure one of those paths resolves to it.
+- MCP server card: if my product ships an MCP server, serve /.well-known/mcp/server-card.json with at least { "url": "<mcp connect endpoint>" } and, if the server needs auth, "authentication": { "type": "oauth2", "authorization_server"?: "<as url>" }. application/json, publicly cacheable.
+- llms.txt: if my docs have a good plain-language overview, serve /llms.txt summarizing the product and linking the key docs pages.
+- api-catalog (RFC 9727): if I publish more than one API surface, serve /.well-known/api-catalog as a linkset pointing at my API base URLs, OpenAPI docs, and MCP endpoints.
+- OAuth protected resource (RFC 9728): if my API or MCP endpoint is protected by OAuth, serve /.well-known/oauth-protected-resource with the resource id and authorization server(s).
+- Agent card: if my site publishes an agent-facing identity, serve /.well-known/agent-card.json.
+- Agent skills: if my product ships reusable agent skills or task instructions, serve /.well-known/agent-skills/index.json listing them.
+
+Skip any of these that don't apply — only publish files backed by something real in this repo.
 
 # 4. Verify
 
-Print copy-paste curl commands to confirm each published file resolves on my live domain with a JSON content-type, e.g.:
+Print copy-paste curl commands to confirm EVERY file you published resolves on my live domain with the right content-type (JSON files as application/json), e.g.:
   curl -sS -D- -o/dev/null https://MY_DOMAIN/.well-known/integrations.json
   curl -sS https://MY_DOMAIN/.well-known/integrations.json | jq .
   curl -sS -D- -o/dev/null https://MY_DOMAIN/openapi.json                 # if you published one
   curl -sS https://MY_DOMAIN/.well-known/mcp/server-card.json | jq .      # if you published one
+  ...and one per standard from step 3 that you published.
 
 Then tell me: open https://integrations.sh/MY_DOMAIN/ and click "Map integration surface" to publish the listing.`;
 
@@ -293,8 +303,8 @@ const standardFormats = formats.filter((format) => format.path !== integrationsF
             <div class="step-head"><span class="step-n">1</span><h2>Publish discovery files</h2></div>
             <p>
               Paste this into your coding agent (Claude Code, Cursor, Codex) from your product's repo. It inventories your
-              integration surfaces, writes <code>/.well-known/integrations.json</code>, and serves an OpenAPI spec and MCP
-              server card if you have them.
+              integration surfaces, writes <code>/.well-known/integrations.json</code>, and publishes every open standard
+              that applies — OpenAPI spec, MCP server card, llms.txt, and the rest.
             </p>
 
             <div class="prompt" data-copy>

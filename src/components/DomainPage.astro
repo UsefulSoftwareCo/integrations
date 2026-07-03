@@ -12,6 +12,7 @@ import Surfaces from "~/components/Surfaces.tsx";
 import { faviconUrl } from "~/lib/favicon.ts";
 import { KIND_ORDER, SHORT_LABEL } from "~/lib/domain-labels.ts";
 import { kindOf, type DiscoverData } from "~/lib/surface-sections.ts";
+import { isSdkNotCli } from "~/lib/surface-classify.ts";
 import type { Kind } from "~/lib/types.ts";
 import "~/styles/discovery.css";
 
@@ -21,7 +22,15 @@ interface Props {
   initialData?: DiscoverData | null;
 }
 
-const { domain, initialData = null } = Astro.props;
+const { domain, initialData: rawInitialData = null } = Astro.props;
+
+// A client SDK/library mis-typed as `cli` is not a surface — strip it once here
+// so the header counts, the sections, the JSON-LD ItemList, and the hydrated
+// island all agree. Covers both the prerendered and the SSR domain page, which
+// both render this component.
+const initialData = rawInitialData?.surfaces
+  ? { ...rawInitialData, surfaces: rawInitialData.surfaces.filter((s) => !isSdkNotCli(s)) }
+  : rawInitialData;
 
 // Header line: counts and kinds from the discovery document only.
 const surfaces = initialData?.surfaces ?? [];

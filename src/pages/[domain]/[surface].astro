@@ -12,6 +12,7 @@ import Base from "~/layouts/Base.astro";
 import Breadcrumb from "~/components/Breadcrumb.astro";
 import Setup from "~/components/surface/Setup.tsx";
 import { faviconFor, isJunkDomain } from "~/lib/favicon.ts";
+import { isSdkNotCli } from "~/lib/surface-classify.ts";
 import {
   SURFACE_TYPE_LABEL,
   cliLoginFor,
@@ -35,8 +36,10 @@ const slug = decodeURIComponent(Astro.params.surface ?? "");
 // plain 404 (Astro renders 404.astro for rewrites to a missing route).
 const looksLikeDomain = domain.includes(".");
 
-// Slugs are server-assigned identity (v3) — match directly.
-const find = (doc?: DiscoveryDoc | null) => (doc?.surfaces ?? []).find((s) => s.slug === slug);
+// Slugs are server-assigned identity (v3) — match directly. A client SDK/library
+// mis-typed as `cli` is not a surface, so its slug resolves to nothing → 404.
+const find = (doc?: DiscoveryDoc | null) =>
+  (doc?.surfaces ?? []).find((s) => s.slug === slug && !isSdkNotCli(s));
 
 let surface: Surface | undefined;
 let creds: Record<string, Credential> = {};

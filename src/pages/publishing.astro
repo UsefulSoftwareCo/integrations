@@ -193,6 +193,10 @@ const formats = [
   { path: "/.well-known/agent-skills/index.json", feeds: "Agent skill inventory.", adoption: "Use it when your domain publishes reusable skills or task instructions." },
   { path: "/.well-known/integrations.json", feeds: "Your declared v3 summary, credentials, and surfaces.", adoption: "Use it when you want this registry page to reflect your own integration map directly." },
 ];
+
+const integrationsFormat = formats.find((format) => format.path === "/.well-known/integrations.json");
+if (!integrationsFormat) throw new Error("Missing integrations.json format");
+const standardFormats = formats.filter((format) => format.path !== integrationsFormat.path);
 ---
 
 <Base title={title} description={description} path="/publishing/">
@@ -268,33 +272,77 @@ curl -sS https://your-domain.com/.well-known/mcp/server-card.json | jq . # if pu
       </section>
 
       <section>
-        <div class="sec-header"><span class="sec-label">integrations.json</span></div>
-        <p>
-          <code>/.well-known/integrations.json</code> is the integrations.sh owner declaration format. It is a v3 discovery
-          subset you can author: <code>{`{ version: 3, summary?, credentials?, surfaces? }`}</code>. Credentials and surfaces
-          use the same wire schema as the registry output.
-        </p>
-        <pre class="code-block own-code"><code>{example}</code></pre>
-        <p>
-          We needed a way to represent this data for ourselves; we publish the format so you can own it. If a better community
-          standard emerges, we'll happily migrate.
-        </p>
-      </section>
-
-      <section>
-        <div class="sec-header"><span class="sec-label">Formats We Read</span></div>
+        <div class="sec-header"><span class="sec-label">Formats</span></div>
         <p class="sec-intro">
-          <code>integrations.json</code> is the direct route, but you can also publish any of these and we'll pick them up. All
-          are open — nothing is proprietary to us.
+          We read both open discovery standards and integrations.sh's own declaration format, so listings can come from shared
+          conventions or an explicit owner map.
         </p>
-        <div class="format-table">
-          {formats.map((format) => (
-            <div class="format-row">
-              <code>{format.path}</code>
-              <p>{format.feeds}</p>
-              <p>{format.adoption}</p>
+        <div class="format-tabs" data-tabs>
+          <div class="tab-list" role="tablist" aria-label="Publishing formats">
+            <button
+              class="tab-btn"
+              type="button"
+              role="tab"
+              id="formats-tab-standards"
+              aria-selected="true"
+              aria-controls="formats-panel-standards"
+            >
+              Official standards
+            </button>
+            <button
+              class="tab-btn"
+              type="button"
+              role="tab"
+              id="formats-tab-integrations"
+              aria-selected="false"
+              aria-controls="formats-panel-integrations"
+              tabindex="-1"
+            >
+              integrations.json
+            </button>
+          </div>
+          <div
+            class="tab-panel"
+            role="tabpanel"
+            id="formats-panel-standards"
+            aria-labelledby="formats-tab-standards"
+          >
+            <p>
+              Publish any of these open, official formats and we'll pick them up. Nothing here is proprietary to us.
+            </p>
+            <div class="format-table">
+              {standardFormats.map((format) => (
+                <div class="format-row">
+                  <code>{format.path}</code>
+                  <p>{format.feeds}</p>
+                  <p>{format.adoption}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div
+            class="tab-panel"
+            role="tabpanel"
+            id="formats-panel-integrations"
+            aria-labelledby="formats-tab-integrations"
+            hidden
+          >
+            <div class="format-detail">
+              <code>{integrationsFormat.path}</code>
+              <p>{integrationsFormat.feeds}</p>
+              <p>{integrationsFormat.adoption}</p>
+            </div>
+            <p>
+              <code>/.well-known/integrations.json</code> is the integrations.sh owner declaration format. It is a v3 discovery
+              subset you can author: <code>{`{ version: 3, summary?, credentials?, surfaces? }`}</code>. Credentials and surfaces
+              use the same wire schema as the registry output.
+            </p>
+            <pre class="code-block own-code"><code>{example}</code></pre>
+            <p>
+              We needed a way to represent this data for ourselves; we publish the format so you can own it. If a better community
+              standard emerges, we'll happily migrate.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -335,6 +383,39 @@ curl -sS https://your-domain.com/.well-known/mcp/server-card.json | jq . # if pu
       btn.classList.add("copied");
       btn.textContent = "copied";
       setTimeout(() => { btn.classList.remove("copied"); btn.textContent = "copy"; }, 1400);
+    });
+  }
+
+  for (const tablist of document.querySelectorAll<HTMLElement>("[data-tabs] [role='tablist']")) {
+    const tabs = Array.from(tablist.querySelectorAll<HTMLButtonElement>("[role=tab]"));
+    const activate = (tab: HTMLButtonElement) => {
+      for (const item of tabs) {
+        const selected = item === tab;
+        item.setAttribute("aria-selected", String(selected));
+        item.tabIndex = selected ? 0 : -1;
+        const panel = document.getElementById(item.getAttribute("aria-controls") ?? "");
+        if (panel) panel.hidden = !selected;
+      }
+    };
+
+    tablist.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const tab = target.closest<HTMLButtonElement>("[role=tab]");
+      if (!tab || !tablist.contains(tab)) return;
+      activate(tab);
+    });
+
+    tablist.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (tabs.length === 0) return;
+      event.preventDefault();
+      const currentIndex = Math.max(tabs.indexOf(document.activeElement as HTMLButtonElement), 0);
+      const offset = event.key === "ArrowRight" ? 1 : -1;
+      const next = tabs[(currentIndex + offset + tabs.length) % tabs.length];
+      if (!next) return;
+      next.focus();
+      activate(next);
     });
   }
 </script>
@@ -400,14 +481,32 @@ curl -sS https://your-domain.com/.well-known/mcp/server-card.json | jq . # if pu
     border: 1px solid var(--gray-100); border-radius: 4px; padding: 1px 5px; font-size: 12px;
   }
 
+  .format-tabs { margin-top: 18px; }
+  .tab-list { display: flex; gap: 18px; border-bottom: 1px solid var(--gray-100); }
+  .tab-btn {
+    appearance: none; cursor: pointer;
+    margin: 0 0 -1px; padding: 0 0 9px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--gray-500);
+    background: transparent; border: 0; border-bottom: 1px solid transparent;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  .tab-btn:hover { color: var(--gray-1000); }
+  .tab-btn[aria-selected="true"] { color: var(--gray-1000); border-bottom-color: var(--gray-1000); }
+  .tab-btn:focus-visible { outline: 2px solid var(--gray-400); outline-offset: 3px; border-radius: 3px; }
+  .tab-panel { padding-top: 16px; }
+  .tab-panel[hidden] { display: none; }
+  .tab-panel > :first-child { margin-top: 0; }
+
   .format-table { margin-top: 12px; }
   .format-row { display: grid; grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; padding: 13px 0; border-bottom: 1px solid var(--gray-100); align-items: baseline; }
-  .format-row code { color: var(--gray-1000); background: var(--gray-25); border: 1px solid var(--gray-100); border-radius: 4px; padding: 1px 5px; font-size: 12px; overflow-wrap: anywhere; }
-  .format-row p { margin: 0; color: var(--gray-500); font-size: 13px; line-height: 1.55; }
+  .format-detail { display: grid; grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin: 0 0 14px; padding: 13px 0; border-bottom: 1px solid var(--gray-100); align-items: baseline; }
+  .format-row code, .format-detail code { color: var(--gray-1000); background: var(--gray-25); border: 1px solid var(--gray-100); border-radius: 4px; padding: 1px 5px; font-size: 12px; overflow-wrap: anywhere; }
+  .format-row p, .format-detail p { margin: 0; color: var(--gray-500); font-size: 13px; line-height: 1.55; }
   .own-code { margin: 14px 0; max-height: 560px; }
 
   @media (max-width: 720px) {
     .own-head h1 { font-size: 29px; }
-    .format-row { grid-template-columns: 1fr; gap: 5px; }
+    .tab-list { gap: 14px; }
+    .format-row, .format-detail { grid-template-columns: 1fr; gap: 5px; }
   }
 </style>

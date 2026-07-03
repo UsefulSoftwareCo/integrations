@@ -9,6 +9,7 @@ import { getDomain as tldGetDomain } from "tldts";
 const getDomain = (url: string) => tldGetDomain(url, { allowPrivateDomains: true });
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
 import { faviconUrl, isJunkDomain } from "../src/lib/favicon.ts";
+import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCES = join(ROOT, "sources");
@@ -411,6 +412,8 @@ function buildDiscovered(knownDomains: Set<string>): Integration[] {
     const surfaces = d.surfaces ?? [];
     const byKind = new Map<Kind, DiscoveredSurface>();
     for (const surface of surfaces) {
+      // A client SDK/library mis-typed as `cli` is not a CLI surface — skip it.
+      if (isSdkNotCli(surface)) continue;
       const kind = discoveredKind(surface.type);
       if (!byKind.has(kind)) byKind.set(kind, surface);
     }

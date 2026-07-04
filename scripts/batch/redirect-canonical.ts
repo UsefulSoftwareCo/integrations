@@ -396,6 +396,95 @@ export async function probeRedirectCanonicals(domains: string[], options: ProbeO
   return mapLimit(unique, concurrency, (domain) => probeRedirectCanonical(domain, options));
 }
 
+export type DomainAlias = { source: string; target: string };
+
+export type DomainAliasTargetResolution =
+  | { kind: "target"; target: string; path: string[] }
+  | { kind: "cycle"; path: string[] };
+
+export type DomainAliasUpdateResult = {
+  aliases: Record<string, string>;
+  added: DomainAlias[];
+  rewritten: Array<{ source: string; previousTarget: string; target: string }>;
+  skipped: Array<{ source: string; target: string; reason: "cycle"; path: string[] }>;
+  applied: DomainAlias[];
+};
+
+export type DomainAliasFileUpdateResult = Omit<DomainAliasUpdateResult, "aliases"> & {
+  changed: boolean;
+};
+
+export function resolveDomainAliasTarget(source: string, target: string, aliases: Record<string, string>): DomainAliasTargetResolution {
+  const normalizedSource = normalizeDomain(source);
+  let current = normalizeDomain(target);
+  const path = [normalizedSource];
+  const seen = new Set(path);
+
+  while (current) {
+    path.push(current);
+    if (seen.has(current)) return { kind: "cycle", path };
+    seen.add(current);
+    const next = aliases[current];
+    if (!next) return { kind: "target", target: current, path };
+    current = normalizeDomain(next);
+  }
+
+  return { kind: "cycle", path };
+}
+
+function warnSkippedAlias(skip: DomainAliasUpdateResult["skipped"][number], warn: (message: string) => void): void {
+  warn(`redirect-probe: skipped alias ${skip.source} -> ${skip.target}: adding it would create an alias cycle (${skip.path.join(" -> ")})`);
+}
+
+export function resolveDomainAliasUpdates(
+  current: Record<string, string>,
+  aliases: readonly DomainAlias[],
+  options: { warn?: (message: string) => void } = {},
+): DomainAliasUpdateResult {
+  const next = { ...current };
+  const added: DomainAlias[] = [];
+  const rewritten: DomainAliasUpdateResult["rewritten"] = [];
+  const skipped: DomainAliasUpdateResult["skipped"] = [];
+  const warn = options.warn ?? console.warn;
+
+  for (const alias of aliases) {
+    const source = normalizeDomain(alias.source);
+    const requestedTarget = normalizeDomain(alias.target);
+    if (!source || !requestedTarget) continue;
+
+    const resolution = resolveDomainAliasTarget(source, requestedTarget, next);
+    if (resolution.kind === "cycle") {
+      const skip = { source, target: requestedTarget, reason: "cycle" as const, path: resolution.path };
+      skipped.push(skip);
+      warnSkippedAlias(skip, warn);
+      continue;
+    }
+
+    const target = resolution.target;
+    const previousTarget = next[source];
+    if (previousTarget === target) continue;
+
+    next[source] = target;
+    if (previousTarget) {
+      rewritten.push({ source, previousTarget, target });
+    } else {
+      added.push({ source, target });
+    }
+
+    for (const [otherSource, otherTarget] of Object.entries(next)) {
+      if (otherSource === source || otherTarget !== source) continue;
+      next[otherSource] = target;
+      rewritten.push({ source: otherSource, previousTarget: otherTarget, target });
+    }
+  }
+
+  const applied = [
+    ...rewritten.map(({ source, target }) => ({ source, target })),
+    ...added,
+  ];
+  return { aliases: next, added, rewritten, skipped, applied };
+}
+
 function parseAliasEntries(source: string): Record<string, string> {
   const match = source.match(/export const DOMAIN_ALIASES: Record<string, string> = \{\n([\s\S]*?)\n\};/);
   if (!match) throw new Error("Could not find DOMAIN_ALIASES object");
@@ -408,32 +497,25 @@ function parseAliasEntries(source: string): Record<string, string> {
 }
 
 export function upsertDomainAliasesFile(
-  aliases: readonly { source: string; target: string }[],
+  aliases: readonly DomainAlias[],
   aliasPath = join(ROOT, "src", "lib", "domain-aliases.ts"),
-): { changed: boolean; added: Array<{ source: string; target: string }> } {
+): DomainAliasFileUpdateResult {
   const before = readFileSync(aliasPath, "utf8");
   const current = parseAliasEntries(before);
-  const next = { ...current };
-  const added: Array<{ source: string; target: string }> = [];
+  const update = resolveDomainAliasUpdates(current, aliases);
+  const { aliases: _aliases, ...result } = update;
 
-  for (const alias of aliases) {
-    const source = normalizeDomain(alias.source);
-    let target = normalizeDomain(alias.target);
-    while (next[target]) target = next[target]!;
-    if (!source || !target || source === target) continue;
-    if (next[source] === target) continue;
-    next[source] = target;
-    added.push({ source, target });
+  if (update.added.length === 0 && update.rewritten.length === 0) {
+    return { changed: false, ...result };
   }
 
-  if (added.length === 0) return { changed: false, added };
-  for (const [source, target] of Object.entries(next)) {
-    if (!source || !target || source === target || next[target]) {
+  for (const [source, target] of Object.entries(update.aliases)) {
+    if (!source || !target || source === target || update.aliases[target]) {
       throw new Error(`Invalid domain alias after update: ${source} -> ${target}`);
     }
   }
 
-  const body = Object.entries(next)
+  const body = Object.entries(update.aliases)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([source, target]) => `  "${source}": "${target}",`)
     .join("\n");
@@ -442,7 +524,7 @@ export function upsertDomainAliasesFile(
     `export const DOMAIN_ALIASES: Record<string, string> = {\n${body}\n};`,
   );
   if (after !== before) writeFileSync(aliasPath, after);
-  return { changed: after !== before, added };
+  return { changed: after !== before, ...result };
 }
 
 function catalogPath(root: string, domain: string): string {
@@ -577,12 +659,18 @@ async function main(): Promise<void> {
 
   const acceptedAliases = accepted.map((decision) => ({ source: decision.source, target: decision.target }));
   const applyMissingTargets = hasFlag(args, "apply-missing-targets");
+  const aliasPath = join(ROOT, "src", "lib", "domain-aliases.ts");
+  const plannedAliasWrite = resolveDomainAliasUpdates(parseAliasEntries(readFileSync(aliasPath, "utf8")), acceptedAliases);
+  const plannedTargetBySource = new Map(plannedAliasWrite.applied.map((alias) => [alias.source, alias.target]));
   const newAliases = applyMissingTargets
     ? acceptedAliases
-    : acceptedAliases.filter((alias) => hasCatalogRecord(catalogDir, alias.target));
+    : acceptedAliases.filter((alias) => {
+      const target = plannedTargetBySource.get(normalizeDomain(alias.source));
+      return target ? hasCatalogRecord(catalogDir, target) : false;
+    });
   const skippedMissingTargets = acceptedAliases.filter((alias) => !newAliases.some((applied) => applied.source === alias.source));
-  const aliasWrite = upsertDomainAliasesFile(newAliases);
-  const mergeResults = mergeAliasCatalogFiles(catalogDir, newAliases);
+  const aliasWrite = upsertDomainAliasesFile(newAliases, aliasPath);
+  const mergeResults = mergeAliasCatalogFiles(catalogDir, aliasWrite.applied);
   if (!hasFlag(args, "json")) {
     console.log(`aliases file changed=${aliasWrite.changed} added=${aliasWrite.added.length}`);
     for (const alias of skippedMissingTargets) {

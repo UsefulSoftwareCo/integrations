@@ -215,6 +215,8 @@ async function main(): Promise<void> {
       .map((domain) => domain.domain.toLowerCase())
       .filter((domain) => !DOMAIN_ALIASES[domain]);
     const redirectDecisions = await probeRedirectCanonicals(probeDomains, {
+      catalogDir: outDir,
+      catalogDomains: incoming,
       timeoutMs: getNumberFlag(args, "redirect-timeout-ms", 8000),
       concurrency: getNumberFlag(args, "redirect-concurrency", 8),
       trace: true,

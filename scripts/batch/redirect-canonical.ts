@@ -83,9 +83,11 @@ export type RedirectDecision =
         | "denylisted-target"
         | "intermediate-unrelated-hop"
         | "invalid-domain"
+        | "live-surfaces-on-source"
         | "root-second-target-mismatch"
         | "root-fetch-failed"
         | "source-exempted"
+        | "subdomain-source"
         | "second-fetch-failed";
       detail: string;
       root?: PathProbe;
@@ -100,6 +102,8 @@ export type RedirectDecision =
     };
 
 export type ProbeOptions = {
+  catalogDir?: string;
+  catalogDomains?: readonly CatalogDomain[];
   fetchImpl?: FetchLike;
   timeoutMs?: number;
   secondPath?: string;
@@ -134,6 +138,34 @@ function hasDeepPath(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+function locatorUrls(surface: CatalogDomain["surfaces"][number]): string[] {
+  return [surface.url, surface.spec].filter((value): value is string => Boolean(value));
+}
+
+function sourceCatalogRows(source: string, options: ProbeOptions): CatalogDomain[] {
+  const rows = (options.catalogDomains ?? []).filter((row) => normalizeDomain(row.domain) === source);
+  if (!options.catalogDir) return rows;
+  const path = catalogPath(options.catalogDir, source);
+  if (!existsSync(path)) return rows;
+  return [...rows, readDomainCatalogFile(path)];
+}
+
+function liveSurfaceLocatorsOnSource(source: string, rows: readonly CatalogDomain[]): string[] {
+  const locators = new Set<string>();
+  for (const row of rows) {
+    for (const surface of row.surfaces ?? []) {
+      for (const locator of locatorUrls(surface)) {
+        // Subdomain-hosted surfaces do not veto an apex alias: canonicalDomain()
+        // rewrites exact catalog keys only, so pscale.dev -> planetscale.com
+        // does not rewrite mcp.pscale.dev.
+        if (hostnameOf(locator) !== source) continue;
+        locators.add(locator);
+      }
+    }
+  }
+  return [...locators].sort();
 }
 
 function chainRegistrables(chain: RedirectHop[]): string[] {
@@ -209,12 +241,31 @@ export async function probeRedirectCanonical(domain: string, options: ProbeOptio
     };
   }
 
+  if (source !== sourceRegistrable) {
+    return {
+      kind: "rejected",
+      source,
+      reason: "subdomain-source",
+      detail: `source ${source} is a subdomain of registrable apex ${sourceRegistrable}; automatic redirect aliases are only proposed for apex domains`,
+    };
+  }
+
   if (SOURCE_EXEMPTIONS.has(source)) {
     return {
       kind: "rejected",
       source,
       reason: "source-exempted",
       detail: "source apex redirects, but subdomains under this registrable domain are independent service endpoints",
+    };
+  }
+
+  const sourceSurfaceLocators = liveSurfaceLocatorsOnSource(source, sourceCatalogRows(source, options));
+  if (sourceSurfaceLocators.length > 0) {
+    return {
+      kind: "rejected",
+      source,
+      reason: "live-surfaces-on-source",
+      detail: `catalog surface locator(s) use the source host: ${sourceSurfaceLocators.slice(0, 5).join(", ")}`,
     };
   }
 
@@ -502,6 +553,7 @@ async function main(): Promise<void> {
   if (domains.length === 0) usage(HELP);
 
   const decisions = await probeRedirectCanonicals(domains, {
+    catalogDir,
     timeoutMs: getNumberFlag(args, "timeout-ms", DEFAULT_TIMEOUT_MS),
     concurrency: getNumberFlag(args, "concurrency", DEFAULT_CONCURRENCY),
     trace: true,

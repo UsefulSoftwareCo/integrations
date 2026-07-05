@@ -241,7 +241,8 @@ const SYSTEM =
   "- For authStatus=required, `auth` is the OR alternatives (any one works). Each entry's `use` is the credentials sent TOGETHER (AND), and EACH use carries its OWN `mechanics` — so an app-id in one header and an api-key in a differently-named header are two uses in one entry, each with its own placement.\n\n" +
   "Each use's mechanics.source tells where its binding resolves from: 'spec' (give the ONE OpenAPI securityScheme name this credential satisfies, in `scheme`), 'well-known' (MCP OAuth, derives from the url), 'http' (you read it from docs — give in/headerName/scheme), 'cli' (command/env), or 'unknown' (it exists but you couldn't pin the mechanics).\n\n" +
   "How to work — page by page:\n" +
-  "- Start with web_search to find the key developer pages. Then read the most relevant with scrape_page — issue SEVERAL scrape_page calls in the SAME turn so they run in parallel; don't read one, wait, read the next.\n" +
+  "- If seed facts include llms.txt contents, use them as the starting index for which docs pages to scrape; web_search can fill gaps, and scrape_page is still how you read the actual pages.\n" +
+  "- Otherwise start with web_search to find the key developer pages. Then read the most relevant with scrape_page — issue SEVERAL scrape_page calls in the SAME turn so they run in parallel; don't read one, wait, read the next.\n" +
   "- After a batch of reads, record_credential / record_surface for what those pages revealed before reading more. Pass `evidence` (the doc URLs you read) on each surface and auth entry.\n" +
   "- Catalog facts are authoritative like detect signals: include a surface for each catalog fact, enrich it with docs/auth, and never contradict them.\n" +
   "- Capture spec/schema URLs as POINTERS; never inline a spec. Only state URLs/endpoints you actually saw. Never invent them.\n" +
@@ -268,6 +269,7 @@ const SYSTEM =
 const MAX_STEPS = 16;
 const MAX_SCRAPES = 30; // runaway guard, not a doc cap
 const PER_DOC_CHARS = 8000;
+export const LLMS_TXT_SEED_CONTENT_CHAR_LIMIT = 40_000;
 
 // ── the loop ───────────────────────────────────────────────────────────────────
 
@@ -437,8 +439,23 @@ function seedFacts(domain: string, detect: DetectionResult): string[] {
   for (const m of detect.mcp ?? []) facts.push(`MCP server endpoint: ${m.url}${m.auth ? ` (auth: ${m.auth})` : ""}`);
   if (detect.apiSchema) facts.push(`OpenAPI spec published at ${detect.apiSchema.url}`);
   if (detect.apiCatalog?.docs?.length) facts.push(`Docs linked from api-catalog: ${detect.apiCatalog.docs.join(", ")}`);
-  if (detect.llmsTxt) facts.push(`A plain-text llms.txt exists at https://${domain}/llms.txt — a fallback to scrape only if web_search doesn't surface the developer docs.`);
+  if (detect.llmsTxt) {
+    const url = detect.llmsTxt.url || `https://${domain}/llms.txt`;
+    facts.push(
+      `The domain publishes an llms.txt at ${url} — a plain-text index of its documentation. Contents:\n` +
+      `<<<llms.txt\n${truncateLlmsTxtContent(detect.llmsTxt.content, url)}\n>>>`,
+    );
+  }
   return facts;
+}
+
+function truncateLlmsTxtContent(content: string, url: string): string {
+  if (content.length <= LLMS_TXT_SEED_CONTENT_CHAR_LIMIT) return content;
+  const capped = content.slice(0, LLMS_TXT_SEED_CONTENT_CHAR_LIMIT);
+  const boundary = capped.lastIndexOf("\n");
+  const body = boundary >= 0 ? capped.slice(0, boundary) : capped;
+  const marker = `[llms.txt truncated at ${LLMS_TXT_SEED_CONTENT_CHAR_LIMIT} chars — full file at ${url}]`;
+  return `${body}${body.endsWith("\n") || body.length === 0 ? "" : "\n"}${marker}`;
 }
 
 function ownerDeclarationPrompt(detect: DetectionResult): string {

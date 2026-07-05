@@ -103,8 +103,9 @@ export function buildConventionRows(detectValue: unknown, domain: string): Conve
       "/publishing/",
     ),
     row(detect, PROBE_KEYS.llmsTxt, "llms.txt", LLMS_TXT_PATH, () => {
-      if (detect?.llmsTxt !== true) return null;
-      const url = pathUrl(domain, LLMS_TXT_PATH);
+      const value = detect?.llmsTxt;
+      if (value !== true && !isRecord(value)) return null;
+      const url = isRecord(value) && typeof value.url === "string" ? value.url : pathUrl(domain, LLMS_TXT_PATH);
       return { detail: url, valueUrl: url };
     }, "https://llmstxt.org"),
     row(detect, PROBE_KEYS.apiCatalog, "API catalog", API_CATALOG_PATH, () => {

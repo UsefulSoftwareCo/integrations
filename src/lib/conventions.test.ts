@@ -11,7 +11,6 @@ describe("buildConventionRows", () => {
           url: "https://example.com/.well-known/integrations.json",
           result: { version: 3 },
         },
-        llmsTxt: false,
       },
       "example.com",
     );
@@ -38,11 +37,13 @@ describe("buildConventionRows", () => {
     const rows = buildConventionRows(
       {
         probed: [
+          PROBE_KEYS.llmsTxt,
           PROBE_KEYS.apiCatalog,
           PROBE_KEYS.openapiSchema,
           PROBE_KEYS.oauthProtectedResource,
           PROBE_KEYS.agentSkills,
         ],
+        llmsTxt: { url: "https://example.com/llms.txt", content: "# Docs" },
         apiCatalog: { rest: ["https://api.example.com"], openapi: ["https://example.com/openapi.json"] },
         apiSchema: { url: "https://example.com/openapi.json", format: "openapi", version: "3.1.0" },
         auth: {
@@ -56,6 +57,10 @@ describe("buildConventionRows", () => {
       "example.com",
     );
 
+    expect(rows.find((row) => row.key === PROBE_KEYS.llmsTxt)).toMatchObject({
+      detail: "https://example.com/llms.txt",
+      specHref: "https://llmstxt.org",
+    });
     expect(rows.find((row) => row.key === PROBE_KEYS.apiCatalog)).toMatchObject({
       detail: "https://example.com/.well-known/api-catalog",
       specHref: "https://www.rfc-editor.org/rfc/rfc9727",

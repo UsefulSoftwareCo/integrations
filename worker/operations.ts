@@ -27,7 +27,7 @@ export const DetectionResult = Schema.Struct({
   mcp: Schema.Array(Schema.Unknown),
   agentCard: Schema.optional(Schema.Unknown),
   agentSkills: Schema.optional(Schema.Unknown),
-  llmsTxt: Schema.Boolean,
+  llmsTxt: Schema.optional(Schema.Struct({ url: Schema.String, content: Schema.String })),
   errors: Schema.Array(Schema.String),
 });
 

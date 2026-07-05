@@ -46,6 +46,11 @@ export interface IntegrationsJsonDetection {
   result: OwnerDeclaredDiscovery;
 }
 
+export interface LlmsTxtDetection {
+  url: string;
+  content: string;
+}
+
 export interface DetectionResult {
   domain: string;
   /** Signals that were actually found, for a quick readiness summary. */
@@ -79,7 +84,7 @@ export interface DetectionResult {
   mcp: McpDetection[];
   agentCard?: { name?: string; url?: string };
   agentSkills?: { count: number; names: string[] };
-  llmsTxt: boolean;
+  llmsTxt?: LlmsTxtDetection;
   errors: string[];
 }
 
@@ -232,10 +237,13 @@ async function checkAgentSkills(fetchImpl: FetchLike, domain: string) {
   return { count: doc.skills.length, names: doc.skills.map((s: any) => s.name).filter(Boolean).slice(0, 50) };
 }
 
-async function checkLlmsTxt(fetchImpl: FetchLike, domain: string): Promise<boolean> {
-  const hit = await get(fetchImpl, `https://${domain}${LLMS_TXT_PATH}`);
-  if (!hit || !hit.res.ok) return false;
-  return hit.text.length > 0 && !/<!doctype|<html/i.test(hit.text.slice(0, 200));
+async function checkLlmsTxt(fetchImpl: FetchLike, domain: string): Promise<LlmsTxtDetection | undefined> {
+  const url = `https://${domain}${LLMS_TXT_PATH}`;
+  const hit = await get(fetchImpl, url);
+  if (!hit || !hit.res.ok || hit.text.length === 0) return undefined;
+  const head = hit.text.trimStart().slice(0, 200);
+  if (/^(?:<!doctype|<html)\b/i.test(head)) return undefined;
+  return { url, content: hit.text };
 }
 
 async function checkIntegrationsJson(fetchImpl: FetchLike, domain: string): Promise<IntegrationsJsonDetection | null> {
@@ -379,7 +387,7 @@ export async function detect(domain: string, fetchImpl: FetchLike = fetch): Prom
     checkServerCard(fetchImpl, domain).catch((e) => (errors.push(`server-card: ${e}`), undefined)),
     checkAgentCard(fetchImpl, domain).catch((e) => (errors.push(`agent-card: ${e}`), undefined)),
     checkAgentSkills(fetchImpl, domain).catch((e) => (errors.push(`agent-skills: ${e}`), undefined)),
-    checkLlmsTxt(fetchImpl, domain).catch(() => false),
+    checkLlmsTxt(fetchImpl, domain).catch(() => undefined),
     checkApiSchema(fetchImpl, domain).catch(() => undefined),
     checkApiOAuth(fetchImpl, domain).catch(() => undefined),
   ]);

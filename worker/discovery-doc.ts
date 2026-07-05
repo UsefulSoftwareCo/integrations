@@ -18,8 +18,15 @@ export async function discoveryKvGet(env: Env, domain: string): Promise<string |
  * loader feeds the `/api/{domain}/discovery` JSON endpoint (the island's mount
  * fetch) and the OG image, so filtering here keeps them consistent with the
  * SSR'd pages. */
-const stripSdkSurfaces = (doc: DiscoverData): DiscoverData =>
-  doc.surfaces?.length ? { ...doc, surfaces: doc.surfaces.filter((s) => !isSdkNotCli(s)) } : doc;
+type DiscoveryDocWithSurfaces = DiscoverData & { surfaces: NonNullable<DiscoverData["surfaces"]> };
+
+const hasSurfaceArray = (doc: DiscoverData | undefined): doc is DiscoveryDocWithSurfaces =>
+  Array.isArray(doc?.surfaces);
+
+const stripSdkSurfaces = (doc: DiscoveryDocWithSurfaces): DiscoveryDocWithSurfaces => ({
+  ...doc,
+  surfaces: doc.surfaces.filter((s) => !isSdkNotCli(s)),
+});
 
 /** The domain page's render source: durable discovery result first, then the
  * prerendered baseline discovery JSON. */
@@ -29,14 +36,14 @@ export async function discoveryDoc(env: Env, origin: string, domain: string): Pr
     const raw = await discoveryKvGet(env, canonical);
     if (raw) {
       const stored = JSON.parse(raw) as { result?: DiscoverData; discoveredAt?: string };
-      if (stored.result?.surfaces?.length) {
+      if (hasSurfaceArray(stored.result)) {
         return stripSdkSurfaces({ ...stored.result, discoveredAt: stored.result.discoveredAt ?? stored.discoveredAt });
       }
     }
     const res = await env.ASSETS.fetch(`${origin}/disc/${encodeURIComponent(canonical)}.json`);
     if (res.ok) {
       const baseline = (await res.json()) as DiscoverData;
-      if (baseline.surfaces?.length) return stripSdkSurfaces(baseline);
+      if (hasSurfaceArray(baseline)) return stripSdkSurfaces(baseline);
     }
   } catch {
     /* unavailable or malformed discovery data */

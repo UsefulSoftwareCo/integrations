@@ -177,7 +177,7 @@ async function ogResponse(request: Request, env: Env, ctx: ExecutionContext, cac
     const domain = registrableDomain(decodeURIComponent(match[1]).trim().toLowerCase());
     if (!domain) return null;
     const doc = await discoveryDoc(env, url.origin, domain);
-    if (!doc?.surfaces?.length) return null;
+    if (!doc || !Array.isArray(doc.surfaces)) return null;
 
     const favicon = await faviconData(url.origin, domain);
     const slug = match[2] ? decodeURIComponent(match[2]) : "";

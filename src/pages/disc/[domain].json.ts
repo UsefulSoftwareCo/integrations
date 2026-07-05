@@ -8,12 +8,13 @@
  */
 import type { APIRoute } from "astro";
 import { all, domainById } from "~/lib/data.ts";
+import { allDomains } from "~/lib/catalog.ts";
 import { baselineDiscoveryGroups, catalogDiscovery } from "~/lib/catalog-to-discovery.ts";
 
 const groups = baselineDiscoveryGroups(all, (r) => domainById.get(r.id) || r.slug);
 
 export function getStaticPaths() {
-  return [...groups.keys()].map((domain) => ({ params: { domain } }));
+  return allDomains().map(({ domain }) => ({ params: { domain } }));
 }
 
 export const GET: APIRoute = ({ params }) => {

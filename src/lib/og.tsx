@@ -259,7 +259,10 @@ function Domain({ domain, doc, favicon }: { domain: string; doc: DiscoveryDoc; f
   const surfaces = doc.surfaces ?? [];
   const visible = surfaces.slice(0, 5);
   const hasOverflow = surfaces.length > 5;
-  const meta = `${surfaces.length.toLocaleString()} integrations · ${kinds(surfaces).join(" · ")}`;
+  const hasSurfaces = surfaces.length > 0;
+  const meta = hasSurfaces
+    ? [`${surfaces.length.toLocaleString()} integration${surfaces.length === 1 ? "" : "s"}`, ...kinds(surfaces)].join(" · ")
+    : "on the radar · no verified integration surfaces yet";
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 36 }}>
@@ -269,30 +272,61 @@ function Domain({ domain, doc, favicon }: { domain: string; doc: DiscoveryDoc; f
           <div style={{ fontFamily: monoFont, fontSize: 24, color: c.muted, marginTop: 12 }}>{meta}</div>
         </div>
       </div>
-      <div style={{
-        marginTop: 52,
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-        ...(hasOverflow ? { maxHeight: 436, overflow: "hidden" as const } : {}),
-      }}>
-        {visible.map((surface) => (
-          <div key={surface.slug} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "26px 4px", borderTop: `1px solid ${c.hairline}`, gap: 24 }}>
-            <span style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 650 }}>
-              {surface.name}
-            </span>
-            <span style={{ fontFamily: monoFont, fontSize: 22, color: c.muted, border: `1.5px solid ${c.chip}`, borderRadius: 8, padding: "6px 16px", whiteSpace: "nowrap" }}>
-              {rowSignature(surface, doc.credentials ?? {})}
-            </span>
-          </div>
-        ))}
-        {hasOverflow && (
-          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 250, backgroundColor: c.bg, opacity: 0.92 }} />
-        )}
-      </div>
+      {hasSurfaces ? (
+        <div style={{
+          marginTop: 52,
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          ...(hasOverflow ? { maxHeight: 436, overflow: "hidden" as const } : {}),
+        }}>
+          {visible.map((surface) => (
+            <div key={surface.slug} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "26px 4px", borderTop: `1px solid ${c.hairline}`, gap: 24 }}>
+              <span style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 650 }}>
+                {surface.name}
+              </span>
+              <span style={{ fontFamily: monoFont, fontSize: 22, color: c.muted, border: `1.5px solid ${c.chip}`, borderRadius: 8, padding: "6px 16px", whiteSpace: "nowrap" }}>
+                {rowSignature(surface, doc.credentials ?? {})}
+              </span>
+            </div>
+          ))}
+          {hasOverflow && (
+            <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 250, backgroundColor: c.bg, opacity: 0.92 }} />
+          )}
+        </div>
+      ) : (
+        <EmptyDomainBody />
+      )}
       <div style={{ position: "relative", marginTop: hasOverflow ? -30 : "auto", paddingTop: 40, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <Wordmark />
         <SecLabel>how to integrate</SecLabel>
+      </div>
+    </div>
+  );
+}
+
+function EmptyDomainBody() {
+  const labels = ["API", "MCP", "GraphQL", "CLI"];
+  return (
+    <div style={{ marginTop: 36, display: "flex", flexDirection: "column", borderTop: `1px solid ${c.hairline}`, borderBottom: `1px solid ${c.hairline}`, padding: "28px 4px 24px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 28 }}>
+        <div style={{ display: "flex", flexDirection: "column", maxWidth: 720 }}>
+          <span style={{ fontSize: 38, fontWeight: 600, letterSpacing: "-0.03em", lineHeight: 1.1 }}>No verified surfaces yet</span>
+          <span style={{ fontSize: 23, color: c.muted, lineHeight: 1.35, marginTop: 14 }}>
+            This domain is tracked in the registry while discovery waits for a confirmed REST, MCP, GraphQL, or CLI endpoint.
+          </span>
+        </div>
+        <span style={{ fontFamily: monoFont, fontSize: 20, color: c.muted, border: `1.5px solid ${c.chip}`, borderRadius: 8, padding: "7px 14px", whiteSpace: "nowrap" }}>
+          WATCHLIST
+        </span>
+      </div>
+      <div style={{ display: "flex", marginTop: 28, borderTop: `1px solid ${c.hairline}` }}>
+        {labels.map((label, index) => (
+          <div key={label} style={{ width: "25%", padding: "16px 18px 0 0", borderRight: index < labels.length - 1 ? `1px solid ${c.hairline}` : "none", display: "flex", flexDirection: "column" }}>
+            <span style={{ fontFamily: monoFont, fontSize: 18, color: c.muted, letterSpacing: "0.06em" }}>{label}</span>
+            <span style={{ fontSize: 20, color: c.fg, marginTop: 8 }}>pending signal</span>
+          </div>
+        ))}
       </div>
     </div>
   );

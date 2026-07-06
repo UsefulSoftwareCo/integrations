@@ -1,35 +1,43 @@
 ---
 name: integrations-sh
-description: Find how to integrate with any service — its APIs, MCP servers, GraphQL endpoints, and CLIs, each mapped to the credentials it needs. Use when connecting an agent or app to a third-party service, choosing between integration surfaces, or working out what auth a service requires and where to mint it.
+description: Use the `integrations` CLI to find how to integrate with any service — its APIs, MCP servers, GraphQL endpoints, and CLIs, each mapped to the credentials it needs. Use when connecting an agent or app to a third-party service, choosing between integration surfaces, or working out what auth a service requires and where to mint it.
 ---
 
-# integrations.sh
+# integrations.sh CLI
 
-integrations.sh is an open registry of integration surfaces: for thousands of
-services it answers "what does this service expose to agents, and exactly how
-do I authenticate to each interface?" Every fact is tagged with its basis —
-`detected` (machine-verified signal), `discovered` (read from docs by an
-agent), or `declared` (published by the service owner) — so you know how much
-to trust it.
+The `integrations` CLI queries integrations.sh, an open registry that answers
+"what does this service expose to agents, and exactly how do I authenticate
+to each interface?" for thousands of services.
 
-All endpoints are public, no API key, CORS `*`, JSON.
+Run it with npx (no install needed):
+
+```sh
+npx integrationsdotsh search stripe
+```
+
+Or install once: `npm i -g integrationsdotsh` — the command is `integrations`.
+
+**Output contract**: when stdout is piped (or `--json` is passed), every
+command emits exactly one JSON document on stdout; diagnostics go to stderr.
+You are almost always piping — parse the JSON, don't scrape text.
 
 ## Workflow
 
 **1. Search** when you have a service name, not a domain:
 
-```
-GET https://integrations.sh/api/search?q=stripe&limit=5
+```sh
+integrations search stripe --json
+integrations search "issue tracking" --kind mcp --json
 ```
 
-Optional `kind=mcp|openapi|graphql|cli` narrows to one surface type. Results
-are domain-level: `{ domain, name, description, kinds[], url }`.
+`--kind mcp|openapi|graphql|cli` narrows to one surface type, `--limit` caps
+results. Results are domain-level: `{ domain, name, description, kinds[], url }`.
 
-**2. Read the surface document** — the main lookup. One call returns every
-known surface for a domain plus its auth requirements:
+**2. Look up the domain** — the main call. One lookup returns every known
+surface for a service plus its auth requirements:
 
-```
-GET https://integrations.sh/api/stripe.com/surface
+```sh
+integrations stripe.com --json
 ```
 
 How to read the response:
@@ -48,52 +56,47 @@ How to read the response:
   entry's `use[]` lists credentials needed **together (AND)**;
   `status: "unknown"` means not yet determined.
 
-A 404 means the domain isn't cataloged yet — escalate to step 3.
+Not found means the domain isn't cataloged yet — escalate to step 3.
 
-**3. Detect / discover** when the surface document is missing or stale:
+**3. Detect / discover** when the lookup came back empty or stale:
 
+```sh
+integrations detect acme.com --json      # fast, deterministic probe
+integrations discover acme.com --json    # full agentic discovery
 ```
-GET https://integrations.sh/api/{domain}/detect     # fast, deterministic probe
-GET https://integrations.sh/api/{domain}/discover   # full agentic discovery
-```
 
-`detect` checks well-known manifests (`.well-known/integrations.json`, MCP
+`detect` checks the domain's well-known manifests (`integrations.json`, MCP
 server cards, `llms.txt`, OpenAPI catalogs) and live capabilities. `discover`
-runs an LLM-backed crawl of the service's docs; it takes up to a minute and is
-**rate-limited to 3 requests per 60s per IP** — call it once per domain and
-reuse the result, never in a loop.
+runs a doc-reading agent server-side; it can take up to a minute and is
+**rate-limited to 3 requests per 60s** — call it once per domain and reuse
+the result, never in a loop.
+
+Every fact in the registry carries a `basis` tag: `detected`
+(machine-verified signal), `discovered` (read from docs by an agent), or
+`declared` (published by the service owner). Trust `declared`/`detected`
+over `discovered` when they conflict.
 
 ## Choosing a surface
 
 When a service exposes several surfaces, prefer in order: an official MCP
 server (agent-native), an OpenAPI-specced HTTP API (typed, tool-compilable),
-GraphQL, then CLI. Prefer surfaces whose auth basis is `declared` or
-`detected` over `discovered` when they conflict.
+GraphQL, then CLI.
 
-## CLI
+## More commands
 
-If the `integrations` CLI is installed (`npm i -g integrationsdotsh`), it
-wraps the same API with agent-friendly output — pipe or pass `--json` for
-machine-readable output:
+- `integrations help` — the full command list (the CLI grows automatically
+  as the API does; `integrations help <cmd>` for flags)
+- `integrations mcp` — connection snippets for the hosted MCP server, if you
+  prefer MCP tools over shelling out
+- `integrations skill` — prints this skill (for self-install:
+  `integrations skill > ~/.claude/skills/integrations-sh/SKILL.md`)
+- `--no-cache` bypasses the cached API description; `INTEGRATIONS_BASE`
+  points the CLI at another host
 
-```
-integrations search stripe --json
-integrations stripe.com          # surface lookup
-integrations detect resend.com
-```
+## Without the CLI
 
-## MCP server
-
-integrations.sh is itself reachable over MCP (streamable HTTP, public):
-
-```
-claude mcp add --transport http integrations https://integrations.sh/mcp
-```
-
-Tools: `detect { domain }`, `discover { domain }`.
-
-## Bulk data
-
-- `https://integrations.sh/api.json` — full registry index (~5k records)
-- `https://integrations.sh/api/domains.json` — all domains with format counts
-- `https://integrations.sh/openapi.json` — this API's own spec
+The same data is plain HTTPS (public, no key, CORS `*`):
+`https://integrations.sh/api/search?q=…`, `/api/{domain}/surface`,
+`/api/{domain}/detect`, `/api/{domain}/discover`, bulk index at `/api.json`,
+spec at `/openapi.json`, MCP server at `https://integrations.sh/mcp`
+(streamable-http; tools `detect` and `discover`).

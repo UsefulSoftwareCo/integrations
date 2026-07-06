@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import skillMarkdown from "~/data/skill.md?raw";
+import skillMarkdown from "../../cli/src/skill.md?raw";
 
 export const GET: APIRoute = () =>
   new Response(skillMarkdown, {

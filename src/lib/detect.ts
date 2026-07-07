@@ -35,6 +35,8 @@ export interface McpDetection {
   /** "oauth2" | "none" | undefined (unknown) */
   auth?: string;
   authorizationServer?: string;
+  /** Authorization Server metadata was fetched and parsed. False/undefined means unknown, not no-DCR. */
+  authorizationServerMetadataFetched?: boolean;
   /** Dynamic Client Registration (RFC 7591) — agent can self-register. */
   dcr?: boolean;
   /** Client ID Metadata Document — agent uses a URL as client_id, no registration. */
@@ -79,7 +81,7 @@ export interface DetectionResult {
       cimd?: boolean;
       grantTypes?: string[];
     };
-    mcp?: ReadonlyArray<{ url: string; type?: string; authorizationServer?: string; dcr?: boolean; cimd?: boolean }>;
+    mcp?: ReadonlyArray<{ url: string; type?: string; authorizationServer?: string; authorizationServerMetadataFetched?: boolean; dcr?: boolean; cimd?: boolean }>;
   };
   mcp: McpDetection[];
   agentCard?: { name?: string; url?: string };
@@ -357,6 +359,7 @@ async function detectMcpOnboarding(fetchImpl: FetchLike, mcpUrl: string): Promis
   return {
     auth: "oauth2",
     authorizationServer: as,
+    authorizationServerMetadataFetched: Boolean(asDoc),
     dcr: Boolean(asDoc?.registration_endpoint),
     cimd: asDoc?.client_id_metadata_document_supported === true,
   };
@@ -407,7 +410,7 @@ export async function detect(domain: string, fetchImpl: FetchLike = fetch): Prom
   // authorization server (DCR/CIMD/scopes) and each MCP endpoint's auth.
   const mcpAuth = mcp
     .filter((m) => m.auth && m.auth !== "none")
-    .map((m) => ({ url: m.url, type: m.auth, authorizationServer: m.authorizationServer, dcr: m.dcr, cimd: m.cimd }));
+    .map((m) => ({ url: m.url, type: m.auth, authorizationServer: m.authorizationServer, authorizationServerMetadataFetched: m.authorizationServerMetadataFetched, dcr: m.dcr, cimd: m.cimd }));
   const auth = {
     ...(apiOAuth ? { oauth: apiOAuth } : {}),
     ...(mcpAuth.length ? { mcp: mcpAuth } : {}),

@@ -32,6 +32,70 @@ import { probeMcpOnboarding } from "./detect.ts";
 import { catalogSeeds } from "./catalog-seed.ts";
 import { validateSpecUrl, type SpecValidationResult } from "./spec-validate.ts";
 
+export const SLACK_MCP_USER_SCOPES = [
+  "search:read.public",
+  "search:read.private",
+  "search:read.mpim",
+  "search:read.im",
+  "search:read.files",
+  "search:read.users",
+  "chat:write",
+  "channels:history",
+  "groups:history",
+  "mpim:history",
+  "im:history",
+  "canvases:read",
+  "canvases:write",
+  "users:read",
+  "reactions:write",
+  "reactions:read",
+  "emoji:read",
+  "files:read",
+  "channels:write",
+  "groups:write",
+  "im:write",
+  "mpim:write",
+  "channels:read",
+  "groups:read",
+  "mpim:read",
+] as const;
+
+export const SLACK_MCP_MANIFEST = {
+  display_information: { name: "Slack MCP client" },
+  oauth_config: {
+    scopes: { user: [...SLACK_MCP_USER_SCOPES] },
+  },
+  settings: {
+    org_deploy_enabled: false,
+    socket_mode_enabled: false,
+    token_rotation_enabled: false,
+    is_mcp_enabled: true,
+  },
+} as const;
+
+export function slackMcpAppManifestUrl(): string {
+  return `https://api.slack.com/apps?new_app=1&manifest_json=${encodeURIComponent(JSON.stringify(SLACK_MCP_MANIFEST))}`;
+}
+
+const MCP_MANUAL_ONBOARD_GENERIC_SETUP =
+  "## OAuth 2.0 — pre-registered app required\n" +
+  "This server does not support automatic client registration (no DCR or CIMD), so the MCP client cannot register itself. Create an OAuth app in the provider's developer settings, allow-list your MCP client's OAuth callback URL as a redirect URL, and give the client that app's client ID and secret. Then connect and approve access in the browser.";
+
+const MCP_MANUAL_ONBOARD_HOSTS: Record<string, { setup: string; generateUrl?: string }> = {
+  "mcp.slack.com": {
+    generateUrl: slackMcpAppManifestUrl(),
+    setup:
+      "The Slack app must also have **Slack MCP server access** enabled (`settings.is_mcp_enabled: true` in the app manifest) — Slack rejects tokens from apps without it, and clients typically surface that as a generic connection failure.\n\n" +
+      `Fastest path: [create a pre-configured Slack app](${slackMcpAppManifestUrl()}) — the manifest pre-fills the MCP flag and all \`search:read.*\`, history, and write scopes; you add your client's callback URL under **OAuth & Permissions** after creation, then copy the client ID and secret from **Basic Information**.`,
+  },
+  "slack.com": {
+    generateUrl: slackMcpAppManifestUrl(),
+    setup:
+      "The Slack app must also have **Slack MCP server access** enabled (`settings.is_mcp_enabled: true` in the app manifest) — Slack rejects tokens from apps without it, and clients typically surface that as a generic connection failure.\n\n" +
+      `Fastest path: [create a pre-configured Slack app](${slackMcpAppManifestUrl()}) — the manifest pre-fills the MCP flag and all \`search:read.*\`, history, and write scopes; you add your client's callback URL under **OAuth & Permissions** after creation, then copy the client ID and secret from **Basic Information**.`,
+  },
+};
+
 // ── injected model (OpenAI-style tool-calling) ────────────────────────────────
 
 export interface ParsedToolCall {
@@ -259,7 +323,7 @@ const SYSTEM =
   "- An mcp surface's `url` is the CONNECT ENDPOINT an MCP client would use (e.g. https://mcp.example.com/mcp), never a docs page about the server. If only a docs page exists, put it in `docs` and leave `url` unset.\n" +
   "- Write each credential's `setup` around the EASIEST acquisition path. When a CLI login acquires it (`mint login`, `wrangler login`), setup says 'run `x login`' and the binding is mechanics 'cli' with that command — do NOT walk through raw OAuth authorize/token/register endpoints anywhere in setup.\n" +
   "- When a CLI has an interactive `login` command AND the same credential can also be supplied via env var or a `--token`/`--key` flag, the `login` command is the PRIMARY path: write `setup` around 'run `x login`' and mention the env/flag token only as a non-interactive/CI fallback. NEVER lead with 'create a token in dashboard settings' when an interactive login exists — record both bindings (login as an acquisition command, env/flag as consumption) on the one credential.\n" +
-  "- MCP servers almost always authenticate via OAuth with Dynamic Client Registration (DCR) or CIMD — the MCP client REGISTERS ITSELF and the user only completes an OAuth consent in the browser. Treat an OAuth-protected MCP server as SELF-ONBOARDING by default: its credential `setup` says the client registers automatically and the user just approves access, binding mechanics 'well-known'. Do NOT tell the user to create a developer-portal application, configure a redirect_uri, or copy a client_id/client_secret — UNLESS the server's docs EXPLICITLY require pre-registering an app (no DCR). Manual app creation is at most a trailing fallback note, never the primary setup.\n" +
+  "- MCP servers almost always authenticate via OAuth with Dynamic Client Registration (DCR) or CIMD — the MCP client REGISTERS ITSELF and the user only completes an OAuth consent in the browser. Treat an OAuth-protected MCP server as SELF-ONBOARDING by default: its credential `setup` says the client registers automatically and the user just approves access, binding mechanics 'well-known'. Do NOT tell the user to create a developer-portal application, configure a redirect_uri, or copy a client_id/client_secret — UNLESS the server's docs EXPLICITLY require pre-registering an app (no DCR). When the well-known authorization-server metadata is available and shows no `registration_endpoint` and no CIMD support, describe manual app registration in the provider's developer portal instead. Manual app creation is at most a trailing fallback note, never the primary setup.\n" +
   "- Exotic auth (AWS SigV4, GitHub-App JWT exchange) — name the credential `type` (signature/aws_sigv4/app/two_step) and write the flow in `setup`; you don't need to model its execution. Use mechanics.source 'http', 'cli', or 'unknown'.\n" +
   "- Credentials are for DEVELOPER surfaces. An end-user app login (a consumer account for booking/shopping/streaming) is not an integration credential — omit it and the flows that need it.\n" +
   "- Record only credentials THIS service issues. A third-party platform's token that the service consumes (a BigCommerce API token you paste into an integration) belongs to that platform's own entry — mention it in the surface notes at most.\n" +
@@ -818,12 +882,40 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     };
   };
 
+  const mcpHostKnowledge = (url: string): { setup: string; generateUrl?: string } | undefined => {
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      return MCP_MANUAL_ONBOARD_HOSTS[host] ?? MCP_MANUAL_ONBOARD_HOSTS[host.split(".").slice(-2).join(".")];
+    } catch {
+      return undefined;
+    }
+  };
+
+  const isMcpManualOnboard = (mcp: McpDetection): boolean => mcp.authorizationServerMetadataFetched === true && !mcp.dcr && !mcp.cimd;
+
+  const bindMcpManualOnboard = (surface: Surface, mcp: McpDetection): void => {
+    const id = ensureOauthCred();
+    const c = r.credentials[id];
+    const hostKnowledge = mcpHostKnowledge(mcp.url);
+    c.type = "oauth2";
+    c.label = "OAuth 2.0";
+    c.generateUrl = hostKnowledge?.generateUrl;
+    c.acquisition = undefined;
+    c.setup = `${MCP_MANUAL_ONBOARD_GENERIC_SETUP}${hostKnowledge ? `\n\n${hostKnowledge.setup}` : ""}`;
+    emit?.({ kind: "credential", id, credential: c });
+    surface.auth = {
+      status: "required",
+      entries: [{ use: [{ id, mechanics: { source: "well-known" } }], basis: { via: "detected", signal: "oauth-no-dynamic-registration", verifiedAt } }],
+    };
+  };
+
   // Detected MCP servers — authoritative.
   for (const mcp of detect.mcp ?? []) {
     const existing = r.surfaces.find((s) => s.type === "mcp" && s.url === mcp.url);
     if (existing) {
       existing.basis = { via: "detected", signal: "mcp:initialize", verifiedAt };
       if (mcp.dcr || mcp.cimd) bindMcpSelfOnboard(existing, mcp);
+      else if (isMcpManualOnboard(mcp)) bindMcpManualOnboard(existing, mcp);
       emit?.({ kind: "surface", surface: existing });
       continue;
     }
@@ -834,6 +926,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     const s: Surface = { slug: assignSlug("MCP server", r.surfaces), name: "MCP server", type: "mcp", url: mcp.url, basis: { via: "detected", signal: "mcp:initialize", verifiedAt }, auth, notes: mcp.dcr || mcp.cimd ? "Self-onboarding (DCR/CIMD)" : undefined };
     r.surfaces.unshift(s);
     if (mcp.dcr || mcp.cimd) bindMcpSelfOnboard(s, mcp);
+    else if (isMcpManualOnboard(mcp)) bindMcpManualOnboard(s, mcp);
     emit?.({ kind: "surface", surface: s });
   }
 

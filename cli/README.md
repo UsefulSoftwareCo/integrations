@@ -120,3 +120,8 @@ bun run typecheck
 bun run build
 bun test
 ```
+
+## Credits
+
+Thanks to [Zachary Kirby](https://www.zkirby.com/) for the `integrations`
+package name on npm.

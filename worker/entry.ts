@@ -306,7 +306,7 @@ async function healthz(env: Env): Promise<Response> {
 
 const TRAILING_SLASH_SKIP_PREFIXES = ["/api/", "/og/", "/_i/", "/logo/"];
 
-function trailingSlashRedirect(request: Request, url: URL): Response | null {
+async function trailingSlashRedirect(request: Request, url: URL, env: Env): Promise<Response | null> {
   if (request.method !== "GET" || url.pathname.endsWith("/")) return null;
   if (TRAILING_SLASH_SKIP_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) return null;
   const segments = url.pathname.split("/").filter(Boolean);
@@ -319,6 +319,13 @@ function trailingSlashRedirect(request: Request, url: URL): Response | null {
   const last = segments[segments.length - 1];
   if (!registrableDomain(first)) return null;
   if (last !== first && last.includes(".")) return null;
+  // A prerendered file can still look like a domain page — /skill.md parses
+  // as a registrable .md domain. If the exact path is a built asset, let the
+  // normal asset flow serve it instead of redirecting into a 404. redirect:
+  // "manual" so the binding's own trailing-slash redirect for directory-style
+  // pages (/gitlab.com → /gitlab.com/) isn't followed and counted as a hit.
+  const asset = await env.ASSETS.fetch(new Request(url.origin + url.pathname, { redirect: "manual" }));
+  if (asset.ok) return null;
   const target = new URL(url);
   target.pathname = `${url.pathname}/`;
   return Response.redirect(target.toString(), 301);
@@ -722,7 +729,7 @@ async function handleRequest(
       return Response.redirect(new URL(`/${ssrLeak[1]}/`, url.origin).toString(), 301);
     }
 
-    const slashRedirect = trailingSlashRedirect(request, url);
+    const slashRedirect = await trailingSlashRedirect(request, url, env);
     if (slashRedirect) return slashRedirect;
 
     // Domain page with a STORED discovery → SSR it with the map baked in

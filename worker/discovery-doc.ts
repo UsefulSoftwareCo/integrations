@@ -2,6 +2,7 @@ import type { Env } from "./env.ts";
 import type { DiscoverData } from "../src/lib/surface-sections.ts";
 import { aliasesOf, canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
+import { dedupeDocSurfaces } from "../src/lib/dedup.ts";
 
 export async function discoveryKvGet(env: Env, domain: string): Promise<string | null> {
   const canonical = canonicalDomain(domain);
@@ -28,6 +29,12 @@ const stripSdkSurfaces = (doc: DiscoveryDocWithSurfaces): DiscoveryDocWithSurfac
   surfaces: doc.surfaces.filter((s) => !isSdkNotCli(s)),
 });
 
+/** Read-time cleanup shared by every render source: drop SDK-as-CLI surfaces,
+ * then collapse duplicate surfaces (e.g. one MCP server listed under both its
+ * apex and `mcp.` host) so a stale KV row or baseline never renders twice. */
+const cleanSurfaces = (doc: DiscoveryDocWithSurfaces): DiscoveryDocWithSurfaces =>
+  dedupeDocSurfaces(stripSdkSurfaces(doc));
+
 /** The domain page's render source: durable discovery result first, then the
  * prerendered baseline discovery JSON. */
 export async function discoveryDoc(env: Env, origin: string, domain: string): Promise<DiscoverData | null> {
@@ -37,13 +44,13 @@ export async function discoveryDoc(env: Env, origin: string, domain: string): Pr
     if (raw) {
       const stored = JSON.parse(raw) as { result?: DiscoverData; discoveredAt?: string };
       if (hasSurfaceArray(stored.result)) {
-        return stripSdkSurfaces({ ...stored.result, discoveredAt: stored.result.discoveredAt ?? stored.discoveredAt });
+        return cleanSurfaces({ ...stored.result, discoveredAt: stored.result.discoveredAt ?? stored.discoveredAt });
       }
     }
     const res = await env.ASSETS.fetch(`${origin}/disc/${encodeURIComponent(canonical)}.json`);
     if (res.ok) {
       const baseline = (await res.json()) as DiscoverData;
-      if (hasSurfaceArray(baseline)) return stripSdkSurfaces(baseline);
+      if (hasSurfaceArray(baseline)) return cleanSurfaces(baseline);
     }
   } catch {
     /* unavailable or malformed discovery data */

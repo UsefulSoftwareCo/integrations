@@ -41,17 +41,41 @@ export function surfaceDedupKey(surface: SurfaceLike): string {
       ? (surface.command ?? surface.packages?.[0]?.identifier)
       : type === "http" || type === "graphql"
         ? (stripSpecExt(surface.spec) ?? surface.url)
-        : type === "mcp"
-          ? surface.url
-          : undefined;
+        : undefined;
   // Distinct APIs can share one base url (hanko's Public + Flow APIs on the
   // tenant host). A url-only key merges them wrongly — qualify with the name;
   // spec-keyed and name-keyed surfaces keep exact-collision semantics.
   if ((type === "http" || type === "graphql") && !surface.spec && surface.url) {
     return `${type}|${normalizeLocator(surface.url)}|${normalizeLocator(surface.name)}`;
   }
+  // One MCP server is routinely listed under cosmetic host variants — the apex,
+  // a `www.` alias, and the dedicated `mcp.` host all resolve to the SAME server
+  // (slack.com/mcp === mcp.slack.com/mcp). Key on the host-normalized endpoint
+  // so those collapse. Genuinely distinct servers differ by path or a
+  // non-cosmetic subdomain (core-mcp./metrics-mcp.) and keep separate keys.
+  if (type === "mcp") {
+    return `mcp|${normalizeMcpLocator(surface.url) || normalizeLocator(surface.name)}`;
+  }
 
   return `${type}|${normalizeLocator(locator) || normalizeLocator(surface.name)}`;
+}
+
+/** Strip a leading `mcp.`/`www.` host label from an otherwise-normalized MCP
+ * endpoint so cosmetic host variants of one server share a dedup key. */
+function normalizeMcpLocator(url: unknown): string {
+  return normalizeLocator(url).replace(/^(?:mcp|www)\./, "");
+}
+
+/** Rank an MCP surface's host for merge preference: the dedicated `mcp.` host is
+ * the vendor-canonical endpoint, the apex is next, and a `www.` marketing alias
+ * is least preferred. Used only to pick which URL survives a same-server
+ * collapse — auth entries are unioned regardless of which side is kept. */
+function mcpHostRank(surface: SurfaceLike): number {
+  if (surface.type !== "mcp") return 0;
+  const host = normalizeLocator(surface.url).split("/")[0] ?? "";
+  if (host.startsWith("mcp.")) return 2;
+  if (host.startsWith("www.")) return 0;
+  return host ? 1 : 0;
 }
 
 function stripSpecExt(spec: string | null | undefined): string | undefined {
@@ -87,6 +111,12 @@ function populatedCount(value: unknown): number {
 }
 
 function shouldPrefer(candidate: SurfaceLike, current: SurfaceLike): boolean {
+  // For two collapsed MCP variants the URL is the field that matters and auth is
+  // unioned either way, so the canonical host wins before auth/populated-ness.
+  if (candidate.type === "mcp" && current.type === "mcp") {
+    const hostDelta = mcpHostRank(candidate) - mcpHostRank(current);
+    if (hostDelta !== 0) return hostDelta > 0;
+  }
   const rankDelta = authRank(candidate) - authRank(current);
   if (rankDelta !== 0) return rankDelta > 0;
   return populatedCount(candidate) > populatedCount(current);
@@ -174,13 +204,17 @@ function rewriteAuthIds(surface: SurfaceLike, ids: Map<string, string>): void {
   }
 }
 
-export function dedupSurfacesWithReport<T>(result: T, domain = (result as { domain?: string })?.domain ?? "unknown"): { result: T; collapses: DedupCollapse[] } {
-  const next = clone(result) as T & { surfaces?: SurfaceLike[]; credentials?: unknown };
+/** Collapse duplicate surfaces within one discovery result. Pure over the
+ * surface array (no credential reshaping), so both the ingestion path and the
+ * render path can reuse it. */
+export function collapseDuplicateSurfaces(
+  input: readonly SurfaceLike[],
+  domain = "unknown",
+): { surfaces: SurfaceLike[]; collapses: DedupCollapse[] } {
   const collapses: DedupCollapse[] = [];
-  const surfaces = Array.isArray(next.surfaces) ? next.surfaces : [];
   const byKey = new Map<string, number>();
   const deduped: SurfaceLike[] = [];
-  for (const surface of surfaces) {
+  for (const surface of input) {
     const key = surfaceDedupKey(surface);
     const existingIndex = byKey.get(key);
     if (existingIndex === undefined) {
@@ -226,6 +260,24 @@ export function dedupSurfacesWithReport<T>(result: T, domain = (result as { doma
     deduped.splice(i, 1);
     collapses.push({ domain, dropped: String(stub.name ?? "mcp stub"), kept: String(merged.name ?? "mcp") });
   }
+
+  return { surfaces: deduped, collapses };
+}
+
+/** Render-safe surface dedup for a discovery doc: collapse duplicate surfaces
+ * without reshaping credentials. Applied at read time so any duplicate already
+ * stored in KV or a baseline renders as one server. */
+export function dedupeDocSurfaces<T extends { surfaces?: unknown; domain?: unknown }>(doc: T): T {
+  if (!Array.isArray(doc.surfaces)) return doc;
+  const domain = typeof doc.domain === "string" ? doc.domain : "unknown";
+  const { surfaces } = collapseDuplicateSurfaces(doc.surfaces as SurfaceLike[], domain);
+  return { ...doc, surfaces };
+}
+
+export function dedupSurfacesWithReport<T>(result: T, domain = (result as { domain?: string })?.domain ?? "unknown"): { result: T; collapses: DedupCollapse[] } {
+  const next = clone(result) as T & { surfaces?: SurfaceLike[]; credentials?: unknown };
+  const surfaces = Array.isArray(next.surfaces) ? next.surfaces : [];
+  const { surfaces: deduped, collapses } = collapseDuplicateSurfaces(surfaces, domain);
 
   const idRewrite = new Map<string, string>();
   const credentials: CredentialLike[] = [];

@@ -23,6 +23,7 @@ import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
 import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { isJunkDomain, registrableDomain } from "../src/lib/favicon.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
+import { collapseDuplicateSurfaces } from "../src/lib/dedup.ts";
 import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
 import type { Surface } from "../src/lib/surface-view.ts";
 import type { Credential } from "../src/lib/surface-view.ts";
@@ -281,9 +282,13 @@ function discoveryCounts(result: {
  * value unchanged if it doesn't parse into the expected shape. */
 function stripSdkFromStored(raw: string): string {
   try {
-    const envelope = JSON.parse(raw) as { result?: { surfaces?: Surface[] } };
+    const envelope = JSON.parse(raw) as { result?: { surfaces?: Surface[]; domain?: string } };
     if (envelope.result?.surfaces?.length) {
-      envelope.result.surfaces = envelope.result.surfaces.filter((s) => !isSdkNotCli(s));
+      // Match what the pages render: drop SDK-as-CLI surfaces, then collapse
+      // duplicate surfaces (e.g. one MCP server under both its apex and `mcp.`
+      // host) so the island's client render agrees with the deduped SSR.
+      const stripped = envelope.result.surfaces.filter((s) => !isSdkNotCli(s));
+      envelope.result.surfaces = collapseDuplicateSurfaces(stripped as never, envelope.result.domain ?? "unknown").surfaces as unknown as Surface[];
       return JSON.stringify(envelope);
     }
   } catch {

@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  aliasMapWith,
   catalogDomainFromLooseStored,
   catalogDomainFromStored,
   mergeCatalogs,
@@ -26,6 +27,96 @@ const domain = (domainName: string, discoveredAt: string, summary = `${domainNam
     },
   ],
 });
+
+const splitPlanetScaleAlias: CatalogDomain = {
+  description: "PlanetScale is a managed database platform for Vitess/MySQL and Postgres. It provides hosted database infrastructure plus management features such as organizations, databases, branches, deploy requests, schema information, and insights.",
+  discoveredAt: "2026-07-02T22:20:07.089Z",
+  domain: "pscale.dev",
+  summary: "PlanetScale exposes a REST API at `https://api.planetscale.com/v1` with an OpenAPI spec, a hosted MCP server at `https://mcp.pscale.dev/mcp/planetscale`, and the `pscale` CLI.",
+  surfaces: [
+    {
+      authStatus: "required",
+      name: "PlanetScale API",
+      slug: "planetscale-api",
+      spec: "https://planetscale.com/docs/openapi.yaml",
+      type: "http",
+      url: "https://api.planetscale.com/v1",
+    },
+    {
+      authStatus: "required",
+      name: "PlanetScale MCP server",
+      slug: "planetscale-mcp-server",
+      type: "mcp",
+      url: "https://mcp.pscale.dev/mcp/planetscale",
+    },
+    {
+      authStatus: "required",
+      command: "pscale",
+      name: "pscale CLI",
+      packages: [
+        {
+          identifier: "planetscale/tap/pscale",
+          registryType: "homebrew",
+        },
+        {
+          identifier: "planetscale/cli",
+          registryType: "github",
+          runtimeHint: "prebuilt binaries/releases",
+        },
+        {
+          identifier: "pscale",
+          registryType: "scoop",
+        },
+      ],
+      slug: "pscale-cli",
+      type: "cli",
+    },
+  ],
+};
+
+const splitPlanetScaleCanonical: CatalogDomain = {
+  description: "PlanetScale is a database platform for managing MySQL/Vitess and Postgres databases, branches, schema workflows, and related organization resources. Its APIs and tools let developers automate database administration, access metadata and Insights, and integrate PlanetScale into scripts and applications.",
+  discoveredAt: "2026-07-03T12:59:49.162Z",
+  domain: "planetscale.com",
+  summary: "PlanetScale exposes a REST API at https://api.planetscale.com/v1 with an OpenAPI spec, two hosted MCP servers, and the `pscale` CLI.",
+  surfaces: [
+    {
+      authStatus: "required",
+      name: "PlanetScale MCP server",
+      slug: "planetscale-mcp-server",
+      type: "mcp",
+      url: "https://mcp.pscale.dev/mcp/planetscale",
+    },
+    {
+      authStatus: "required",
+      name: "PlanetScale insights-only MCP server",
+      slug: "planetscale-insights-only-mcp-server",
+      type: "mcp",
+      url: "https://mcp.pscale.dev/mcp/planetscale-insights-only",
+    },
+    {
+      authStatus: "required",
+      command: "pscale",
+      name: "pscale CLI",
+      packages: [
+        {
+          identifier: "planetscale/tap/pscale",
+          registryType: "homebrew",
+        },
+      ],
+      slug: "planetscale-cli",
+      type: "cli",
+    },
+    {
+      authStatus: "required",
+      name: "PlanetScale API",
+      slug: "planetscale-api",
+      spec: "https://planetscale.com/docs/openapi.yaml",
+      type: "http",
+      url: "https://api.planetscale.com/v1",
+    },
+  ],
+};
 
 describe("mergeCatalogs", () => {
   test("adds new domains, updates older existing domains, preserves existing-only domains, and keeps newer existing rows", () => {
@@ -56,7 +147,7 @@ describe("mergeCatalogs", () => {
     expect(merged.catalog.domains.find((row) => row.domain === "existing-only.com")).toBeDefined();
   });
 
-  test("merges aliases by canonical domain with newest row winning", () => {
+  test("merges aliases by canonical domain with canonical scalars winning", () => {
     const existing: Catalog = { domains: [domain("zoom.us", "2026-07-01T00:00:00.000Z", "alias")] };
     const incoming = [domain("zoom.com", "2026-07-02T00:00:00.000Z", "canonical")];
 
@@ -68,6 +159,30 @@ describe("mergeCatalogs", () => {
     expect(merged.catalog.domains[0]?.summary).toBe("canonical");
   });
 
+  test("merges aliased PlanetScale records without dropping split surfaces or packages", () => {
+    const merged = mergeCatalogs(
+      { domains: [splitPlanetScaleCanonical, splitPlanetScaleAlias] },
+      [],
+      { aliases: aliasMapWith({ "pscale.dev": "planetscale.com" }) },
+    );
+
+    expect(merged.catalog.domains).toHaveLength(1);
+    const row = merged.catalog.domains[0]!;
+    expect(row.domain).toBe("planetscale.com");
+    expect(row.summary).toBe(splitPlanetScaleCanonical.summary);
+    expect(row.surfaces.filter((surface) => surface.type === "mcp").map((surface) => surface.url)).toEqual([
+      "https://mcp.pscale.dev/mcp/planetscale",
+      "https://mcp.pscale.dev/mcp/planetscale-insights-only",
+    ]);
+    const cli = row.surfaces.find((surface) => surface.type === "cli" && surface.command === "pscale");
+    expect(cli?.slug).toBe("planetscale-cli");
+    expect(cli?.packages?.map((pkg) => `${pkg.registryType}:${pkg.identifier}${pkg.runtimeHint ? `:${pkg.runtimeHint}` : ""}`)).toEqual([
+      "homebrew:planetscale/tap/pscale",
+      "github:planetscale/cli:prebuilt binaries/releases",
+      "scoop:pscale",
+    ]);
+  });
+
   test("writes and reads one integrations.json file per canonical domain", () => {
     const dir = mkdtempSync(join(tmpdir(), "catalog-tree-"));
     try {
@@ -77,7 +192,7 @@ describe("mergeCatalogs", () => {
       ]);
 
       expect(written).toEqual({ written: 2, changed: 2, skipped: [] });
-      expect(readDomainCatalogTree(dir).domains.map((row) => row.domain)).toEqual(["brand-new.com", "zoom.us"]);
+      expect(readDomainCatalogTree(dir).domains.map((row) => row.domain)).toEqual(["brand-new.com", "zoom.com"]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

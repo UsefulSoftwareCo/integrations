@@ -94,4 +94,37 @@ describe("dedupSurfaces", () => {
     };
     expect(dedupSurfaces(raw).surfaces).toHaveLength(1);
   });
+
+  test("unions CLI package registries when duplicate CLI surfaces collapse", () => {
+    const raw = {
+      surfaces: [
+        {
+          type: "cli",
+          name: "pscale CLI",
+          command: "pscale",
+          packages: [{ registryType: "homebrew", identifier: "planetscale/tap/pscale" }],
+          auth: { status: "required" },
+        },
+        {
+          type: "cli",
+          name: "pscale CLI",
+          command: "pscale",
+          packages: [
+            { registryType: "homebrew", identifier: "planetscale/tap/pscale" },
+            { registryType: "github", identifier: "planetscale/cli", runtimeHint: "prebuilt binaries/releases" },
+            { registryType: "scoop", identifier: "pscale" },
+          ],
+          auth: { status: "required" },
+        },
+      ],
+    };
+
+    const merged = dedupSurfaces(raw);
+    expect(merged.surfaces).toHaveLength(1);
+    expect(merged.surfaces[0]!.packages).toEqual([
+      { registryType: "homebrew", identifier: "planetscale/tap/pscale" },
+      { registryType: "github", identifier: "planetscale/cli", runtimeHint: "prebuilt binaries/releases" },
+      { registryType: "scoop", identifier: "pscale" },
+    ]);
+  });
 });

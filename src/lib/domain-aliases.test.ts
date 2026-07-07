@@ -9,6 +9,7 @@ describe("domain aliases", () => {
     expect(canonicalDomain("Vercel.SH")).toBe("vercel.com");
     expect(canonicalDomain("zeit.co")).toBe("vercel.com");
     expect(canonicalDomain("railway.app")).toBe("railway.com");
+    expect(canonicalDomain("pscale.dev")).toBe("planetscale.com");
     expect(canonicalDomain(" zoom.us ")).toBe("zoom.com");
   });
 

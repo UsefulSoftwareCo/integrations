@@ -1,0 +1,685 @@
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import {
+  aliasMapWith,
+  DEFAULT_DOMAIN_CATALOG_DIR,
+  listDomainCatalogFiles,
+  mergeCatalogDomainRows,
+  readDomainCatalogFile,
+  stableJson,
+  type CatalogDomain,
+} from "./discovered-catalog.ts";
+import { getFlag, getNumberFlag, hasFlag, mapLimit, parseArgs, registrable, ROOT, usage } from "./shared.ts";
+
+const HELP = `
+Usage: bun scripts/batch/redirect-canonical.ts [--all | --domain example.com] [flags]
+
+Probes catalog domains for domain-wide cross-registrable redirects.
+
+Flags:
+  --all                 Probe every domains/<domain>/integrations.json row
+  --domain domain       Probe one domain (can be passed more than once)
+  --catalog-dir dir     Catalog tree to scan/apply against (default: domains)
+  --apply               Write accepted aliases and merge catalog duplicates
+  --apply-missing-targets  Also write aliases whose target has no catalog record
+  --timeout-ms n        Per-request timeout (default: 8000)
+  --concurrency n       Parallel probes for --all (default: 8)
+  --verbose             Include no-alias decisions in text output
+  --json                Emit JSON instead of text
+  --help                Show this help
+`;
+
+const SECOND_PATH = "/.well-known/integrationsdotsh-redirect-probe";
+const DEFAULT_TIMEOUT_MS = 8000;
+const DEFAULT_CONCURRENCY = 8;
+const MAX_REDIRECTS = 10;
+const PARKED_TARGETS = new Set([
+  "dan.com",
+  "godaddy.com",
+  "google.com",
+  "hugedomains.com",
+  "linktr.ee",
+  "parkingcrew.net",
+  "sedo.com",
+]);
+const SOURCE_EXEMPTIONS = new Set([
+  "amazonaws.com",
+  "amazonaws.com.cn",
+]);
+
+export type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
+
+export type RedirectHop = {
+  url: string;
+  status: number;
+  location?: string;
+};
+
+export type PathProbe = {
+  path: string;
+  startUrl: string;
+  finalUrl: string;
+  finalHostname: string | null;
+  finalRegistrable: string | null;
+  status: number;
+  chain: RedirectHop[];
+};
+
+export type RedirectDecision =
+  | {
+      kind: "alias";
+      source: string;
+      target: string;
+      reason: "domain-wide-redirect";
+      root: PathProbe;
+      second: PathProbe;
+    }
+  | {
+      kind: "rejected";
+      source: string;
+      target?: string;
+      reason:
+        | "deep-unrelated-final-path"
+        | "denylisted-target"
+        | "intermediate-unrelated-hop"
+        | "invalid-domain"
+        | "live-surfaces-on-source"
+        | "root-second-target-mismatch"
+        | "root-fetch-failed"
+        | "source-exempted"
+        | "subdomain-source"
+        | "second-fetch-failed";
+      detail: string;
+      root?: PathProbe;
+      second?: PathProbe;
+    }
+  | {
+      kind: "no_alias";
+      source: string;
+      reason: "same-registrable" | "no-registrable-target";
+      detail: string;
+      root: PathProbe;
+    };
+
+export type ProbeOptions = {
+  catalogDir?: string;
+  catalogDomains?: readonly CatalogDomain[];
+  fetchImpl?: FetchLike;
+  timeoutMs?: number;
+  secondPath?: string;
+  trace?: boolean;
+};
+
+function normalizeDomain(domain: string): string {
+  return domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\.$/, "");
+}
+
+function probeUrl(domain: string, path: string): string {
+  return `https://${domain}${path}`;
+}
+
+function hostnameOf(url: string): string | null {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function targetIsParked(registrableDomain: string | null, hostname: string | null): boolean {
+  if (!registrableDomain || PARKED_TARGETS.has(registrableDomain)) return Boolean(registrableDomain);
+  return Boolean(hostname && [...PARKED_TARGETS].some((target) => hostname === target || hostname.endsWith(`.${target}`)));
+}
+
+function hasDeepPath(url: string): boolean {
+  try {
+    const path = new URL(url).pathname.replace(/\/+$/, "");
+    return path.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function locatorUrls(surface: CatalogDomain["surfaces"][number]): string[] {
+  return [surface.url, surface.spec].filter((value): value is string => Boolean(value));
+}
+
+function sourceCatalogRows(source: string, options: ProbeOptions): CatalogDomain[] {
+  const rows = (options.catalogDomains ?? []).filter((row) => normalizeDomain(row.domain) === source);
+  if (!options.catalogDir) return rows;
+  const path = catalogPath(options.catalogDir, source);
+  if (!existsSync(path)) return rows;
+  return [...rows, readDomainCatalogFile(path)];
+}
+
+function liveSurfaceLocatorsOnSource(source: string, rows: readonly CatalogDomain[]): string[] {
+  const locators = new Set<string>();
+  for (const row of rows) {
+    for (const surface of row.surfaces ?? []) {
+      for (const locator of locatorUrls(surface)) {
+        // Subdomain-hosted surfaces do not veto an apex alias: canonicalDomain()
+        // rewrites exact catalog keys only, so pscale.dev -> planetscale.com
+        // does not rewrite mcp.pscale.dev.
+        if (hostnameOf(locator) !== source) continue;
+        locators.add(locator);
+      }
+    }
+  }
+  return [...locators].sort();
+}
+
+function chainRegistrables(chain: RedirectHop[]): string[] {
+  const out: string[] = [];
+  for (const hop of chain) {
+    for (const url of [hop.url, hop.location]) {
+      if (!url) continue;
+      const hostname = hostnameOf(url);
+      const domain = hostname ? registrable(hostname) : null;
+      if (domain) out.push(domain);
+    }
+  }
+  return [...new Set(out)];
+}
+
+function unrelatedIntermediateRegistrables(probe: PathProbe, sourceRegistrable: string, target: string): string[] {
+  const registrables = chainRegistrables(probe.chain);
+  return registrables.filter((domain) => domain !== sourceRegistrable && domain !== target);
+}
+
+async function fetchWithTimeout(fetchImpl: FetchLike, url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetchImpl(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function traceRedirects(fetchImpl: FetchLike, startUrl: string, timeoutMs: number): Promise<RedirectHop[]> {
+  const chain: RedirectHop[] = [];
+  let current = startUrl;
+  for (let i = 0; i <= MAX_REDIRECTS; i++) {
+    const res = await fetchWithTimeout(fetchImpl, current, { redirect: "manual" }, timeoutMs);
+    const rawLocation = res.headers.get("location") ?? undefined;
+    const location = rawLocation ? new URL(rawLocation, current).toString() : undefined;
+    chain.push({ url: current, status: res.status, ...(location ? { location } : {}) });
+    if (res.status < 300 || res.status >= 400 || !location) return chain;
+    current = location;
+  }
+  return chain;
+}
+
+async function probePath(domain: string, path: string, options: Required<Pick<ProbeOptions, "timeoutMs" | "trace">> & { fetchImpl: FetchLike }): Promise<PathProbe> {
+  const startUrl = probeUrl(domain, path);
+  const res = await fetchWithTimeout(options.fetchImpl, startUrl, { redirect: "follow" }, options.timeoutMs);
+  const finalUrl = res.url || startUrl;
+  const finalHostname = hostnameOf(finalUrl);
+  const chain = options.trace && finalUrl !== startUrl
+    ? await traceRedirects(options.fetchImpl, startUrl, options.timeoutMs)
+    : [{ url: startUrl, status: res.status }];
+  return {
+    path,
+    startUrl,
+    finalUrl,
+    finalHostname,
+    finalRegistrable: finalHostname ? registrable(finalHostname) : null,
+    status: res.status,
+    chain,
+  };
+}
+
+export async function probeRedirectCanonical(domain: string, options: ProbeOptions = {}): Promise<RedirectDecision> {
+  const source = normalizeDomain(domain);
+  const sourceRegistrable = registrable(source);
+  if (!sourceRegistrable) {
+    return {
+      kind: "rejected",
+      source,
+      reason: "invalid-domain",
+      detail: "source domain does not have a valid registrable domain",
+    };
+  }
+
+  if (source !== sourceRegistrable) {
+    return {
+      kind: "rejected",
+      source,
+      reason: "subdomain-source",
+      detail: `source ${source} is a subdomain of registrable apex ${sourceRegistrable}; automatic redirect aliases are only proposed for apex domains`,
+    };
+  }
+
+  if (SOURCE_EXEMPTIONS.has(source)) {
+    return {
+      kind: "rejected",
+      source,
+      reason: "source-exempted",
+      detail: "source apex redirects, but subdomains under this registrable domain are independent service endpoints",
+    };
+  }
+
+  const sourceSurfaceLocators = liveSurfaceLocatorsOnSource(source, sourceCatalogRows(source, options));
+  if (sourceSurfaceLocators.length > 0) {
+    return {
+      kind: "rejected",
+      source,
+      reason: "live-surfaces-on-source",
+      detail: `catalog surface locator(s) use the source host: ${sourceSurfaceLocators.slice(0, 5).join(", ")}`,
+    };
+  }
+
+  const probeOptions = {
+    fetchImpl: options.fetchImpl ?? fetch,
+    timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    trace: options.trace ?? false,
+  };
+
+  let root: PathProbe;
+  try {
+    root = await probePath(source, "/", probeOptions);
+  } catch (err) {
+    return {
+      kind: "rejected",
+      source,
+      reason: "root-fetch-failed",
+      detail: (err as Error).message,
+    };
+  }
+
+  if (!root.finalRegistrable) {
+    return {
+      kind: "no_alias",
+      source,
+      reason: "no-registrable-target",
+      detail: `root landed on ${root.finalUrl}`,
+      root,
+    };
+  }
+
+  if (root.finalRegistrable === sourceRegistrable) {
+    return {
+      kind: "no_alias",
+      source,
+      reason: "same-registrable",
+      detail: `${sourceRegistrable} stayed within the same registrable domain`,
+      root,
+    };
+  }
+
+  const target = root.finalRegistrable;
+  if (targetIsParked(target, root.finalHostname)) {
+    return {
+      kind: "rejected",
+      source,
+      target,
+      reason: "denylisted-target",
+      detail: `root landed on parked/aggregator target ${root.finalHostname ?? target}`,
+      root,
+    };
+  }
+
+  const unrelatedIntermediates = unrelatedIntermediateRegistrables(root, sourceRegistrable, target);
+  if (unrelatedIntermediates.length > 0) {
+    return {
+      kind: "rejected",
+      source,
+      target,
+      reason: "intermediate-unrelated-hop",
+      detail: `redirect chain passed through unrelated domain(s): ${unrelatedIntermediates.join(", ")}`,
+      root,
+    };
+  }
+
+  if (hasDeepPath(root.finalUrl)) {
+    return {
+      kind: "rejected",
+      source,
+      target,
+      reason: "deep-unrelated-final-path",
+      detail: `root landed on non-root path ${new URL(root.finalUrl).pathname}`,
+      root,
+    };
+  }
+
+  let second: PathProbe;
+  try {
+    second = await probePath(source, options.secondPath ?? SECOND_PATH, probeOptions);
+  } catch (err) {
+    return {
+      kind: "rejected",
+      source,
+      target,
+      reason: "second-fetch-failed",
+      detail: (err as Error).message,
+      root,
+    };
+  }
+
+  if (second.finalRegistrable !== target) {
+    return {
+      kind: "rejected",
+      source,
+      target,
+      reason: "root-second-target-mismatch",
+      detail: `root landed on ${target}, second path landed on ${second.finalRegistrable ?? second.finalUrl}`,
+      root,
+      second,
+    };
+  }
+
+  if (targetIsParked(second.finalRegistrable, second.finalHostname)) {
+    return {
+      kind: "rejected",
+      source,
+      target,
+      reason: "denylisted-target",
+      detail: `second path landed on parked/aggregator target ${second.finalHostname ?? target}`,
+      root,
+      second,
+    };
+  }
+
+  return {
+    kind: "alias",
+    source,
+    target,
+    reason: "domain-wide-redirect",
+    root,
+    second,
+  };
+}
+
+export async function probeRedirectCanonicals(domains: string[], options: ProbeOptions & { concurrency?: number } = {}): Promise<RedirectDecision[]> {
+  const unique = [...new Set(domains.map(normalizeDomain).filter(Boolean))].sort();
+  const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
+  return mapLimit(unique, concurrency, (domain) => probeRedirectCanonical(domain, options));
+}
+
+export type DomainAlias = { source: string; target: string };
+
+export type DomainAliasTargetResolution =
+  | { kind: "target"; target: string; path: string[] }
+  | { kind: "cycle"; path: string[] };
+
+export type DomainAliasUpdateResult = {
+  aliases: Record<string, string>;
+  added: DomainAlias[];
+  rewritten: Array<{ source: string; previousTarget: string; target: string }>;
+  skipped: Array<{ source: string; target: string; reason: "cycle"; path: string[] }>;
+  applied: DomainAlias[];
+};
+
+export type DomainAliasFileUpdateResult = Omit<DomainAliasUpdateResult, "aliases"> & {
+  changed: boolean;
+};
+
+export function resolveDomainAliasTarget(source: string, target: string, aliases: Record<string, string>): DomainAliasTargetResolution {
+  const normalizedSource = normalizeDomain(source);
+  let current = normalizeDomain(target);
+  const path = [normalizedSource];
+  const seen = new Set(path);
+
+  while (current) {
+    path.push(current);
+    if (seen.has(current)) return { kind: "cycle", path };
+    seen.add(current);
+    const next = aliases[current];
+    if (!next) return { kind: "target", target: current, path };
+    current = normalizeDomain(next);
+  }
+
+  return { kind: "cycle", path };
+}
+
+function warnSkippedAlias(skip: DomainAliasUpdateResult["skipped"][number], warn: (message: string) => void): void {
+  warn(`redirect-probe: skipped alias ${skip.source} -> ${skip.target}: adding it would create an alias cycle (${skip.path.join(" -> ")})`);
+}
+
+export function resolveDomainAliasUpdates(
+  current: Record<string, string>,
+  aliases: readonly DomainAlias[],
+  options: { warn?: (message: string) => void } = {},
+): DomainAliasUpdateResult {
+  const next = { ...current };
+  const added: DomainAlias[] = [];
+  const rewritten: DomainAliasUpdateResult["rewritten"] = [];
+  const skipped: DomainAliasUpdateResult["skipped"] = [];
+  const warn = options.warn ?? console.warn;
+
+  for (const alias of aliases) {
+    const source = normalizeDomain(alias.source);
+    const requestedTarget = normalizeDomain(alias.target);
+    if (!source || !requestedTarget) continue;
+
+    const resolution = resolveDomainAliasTarget(source, requestedTarget, next);
+    if (resolution.kind === "cycle") {
+      const skip = { source, target: requestedTarget, reason: "cycle" as const, path: resolution.path };
+      skipped.push(skip);
+      warnSkippedAlias(skip, warn);
+      continue;
+    }
+
+    const target = resolution.target;
+    const previousTarget = next[source];
+    if (previousTarget === target) continue;
+
+    next[source] = target;
+    if (previousTarget) {
+      rewritten.push({ source, previousTarget, target });
+    } else {
+      added.push({ source, target });
+    }
+
+    for (const [otherSource, otherTarget] of Object.entries(next)) {
+      if (otherSource === source || otherTarget !== source) continue;
+      next[otherSource] = target;
+      rewritten.push({ source: otherSource, previousTarget: otherTarget, target });
+    }
+  }
+
+  const applied = [
+    ...rewritten.map(({ source, target }) => ({ source, target })),
+    ...added,
+  ];
+  return { aliases: next, added, rewritten, skipped, applied };
+}
+
+function parseAliasEntries(source: string): Record<string, string> {
+  const match = source.match(/export const DOMAIN_ALIASES: Record<string, string> = \{\n([\s\S]*?)\n\};/);
+  if (!match) throw new Error("Could not find DOMAIN_ALIASES object");
+  const entries: Record<string, string> = {};
+  for (const line of match[1]!.split(/\r?\n/)) {
+    const entry = line.match(/^\s*"([^"]+)":\s*"([^"]+)",\s*$/);
+    if (entry) entries[entry[1]!] = entry[2]!;
+  }
+  return entries;
+}
+
+export function upsertDomainAliasesFile(
+  aliases: readonly DomainAlias[],
+  aliasPath = join(ROOT, "src", "lib", "domain-aliases.ts"),
+): DomainAliasFileUpdateResult {
+  const before = readFileSync(aliasPath, "utf8");
+  const current = parseAliasEntries(before);
+  const update = resolveDomainAliasUpdates(current, aliases);
+  const { aliases: _aliases, ...result } = update;
+
+  if (update.added.length === 0 && update.rewritten.length === 0) {
+    return { changed: false, ...result };
+  }
+
+  for (const [source, target] of Object.entries(update.aliases)) {
+    if (!source || !target || source === target || update.aliases[target]) {
+      throw new Error(`Invalid domain alias after update: ${source} -> ${target}`);
+    }
+  }
+
+  const body = Object.entries(update.aliases)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([source, target]) => `  "${source}": "${target}",`)
+    .join("\n");
+  const after = before.replace(
+    /export const DOMAIN_ALIASES: Record<string, string> = \{\n[\s\S]*?\n\};/,
+    `export const DOMAIN_ALIASES: Record<string, string> = {\n${body}\n};`,
+  );
+  if (after !== before) writeFileSync(aliasPath, after);
+  return { changed: after !== before, ...result };
+}
+
+function catalogPath(root: string, domain: string): string {
+  return join(root, domain, "integrations.json");
+}
+
+function hasCatalogRecord(root: string, domain: string): boolean {
+  return existsSync(catalogPath(root, domain));
+}
+
+function removeEmptyDomainDir(root: string, domain: string): void {
+  const dir = join(root, domain);
+  if (!existsSync(dir)) return;
+  if (readdirSync(dir).length > 0) return;
+  rmdirSync(dir);
+}
+
+function writeCatalogDomain(root: string, domain: CatalogDomain): boolean {
+  const path = catalogPath(root, domain.domain);
+  mkdirSync(join(path, ".."), { recursive: true });
+  const next = stableJson(domain);
+  const before = existsSync(path) ? readFileSync(path, "utf8") : undefined;
+  if (before === next) return false;
+  writeFileSync(path, next);
+  return true;
+}
+
+export function mergeAliasCatalogFiles(
+  root: string,
+  aliases: readonly { source: string; target: string }[],
+): Array<{ source: string; target: string; action: "merged" | "moved" | "canonicalized" | "missing" }> {
+  const results: Array<{ source: string; target: string; action: "merged" | "moved" | "canonicalized" | "missing" }> = [];
+  for (const alias of aliases) {
+    const source = normalizeDomain(alias.source);
+    const target = normalizeDomain(aliasMapWith({ [source]: alias.target })[source] ?? alias.target);
+    if (!source || !target || source === target) continue;
+    const sourcePath = catalogPath(root, source);
+    const targetPath = catalogPath(root, target);
+    const sourceExists = existsSync(sourcePath);
+    const targetExists = existsSync(targetPath);
+
+    if (sourceExists && targetExists) {
+      const canonical = readDomainCatalogFile(targetPath);
+      const dropped = readDomainCatalogFile(sourcePath);
+      writeCatalogDomain(root, mergeCatalogDomainRows(canonical, dropped, target));
+      unlinkSync(sourcePath);
+      removeEmptyDomainDir(root, source);
+      results.push({ source, target, action: "merged" });
+    } else if (sourceExists) {
+      const moved = { ...readDomainCatalogFile(sourcePath), domain: target };
+      writeCatalogDomain(root, moved);
+      unlinkSync(sourcePath);
+      removeEmptyDomainDir(root, source);
+      results.push({ source, target, action: "moved" });
+    } else if (targetExists) {
+      const canonical = readDomainCatalogFile(targetPath);
+      const changed = writeCatalogDomain(root, { ...canonical, domain: target });
+      results.push({ source, target, action: changed ? "canonicalized" : "missing" });
+    } else {
+      results.push({ source, target, action: "missing" });
+    }
+  }
+  return results;
+}
+
+function chainText(probe: PathProbe | undefined): string {
+  if (!probe) return "";
+  return probe.chain
+    .map((hop) => `${hop.status} ${hop.url}${hop.location ? ` -> ${hop.location}` : ""}`)
+    .join(" | ");
+}
+
+function formatDecision(decision: RedirectDecision, verbose: boolean): string | null {
+  if (decision.kind === "alias") {
+    return [
+      `ALIAS ${decision.source} -> ${decision.target}`,
+      `  / final: ${decision.root.finalUrl}`,
+      `  / chain: ${chainText(decision.root)}`,
+      `  ${decision.second.path} final: ${decision.second.finalUrl}`,
+      `  ${decision.second.path} chain: ${chainText(decision.second)}`,
+    ].join("\n");
+  }
+  if (decision.kind === "rejected") {
+    return [
+      `REJECT ${decision.source}${decision.target ? ` -> ${decision.target}` : ""} (${decision.reason})`,
+      `  ${decision.detail}`,
+      decision.root ? `  / final: ${decision.root.finalUrl}` : undefined,
+      decision.second ? `  ${decision.second.path} final: ${decision.second.finalUrl}` : undefined,
+    ].filter(Boolean).join("\n");
+  }
+  if (!verbose) return null;
+  return `NO_ALIAS ${decision.source} (${decision.reason}) ${decision.detail}`;
+}
+
+function domainsFromCatalog(root: string): string[] {
+  return listDomainCatalogFiles(root).map((path) => readDomainCatalogFile(path).domain);
+}
+
+async function main(): Promise<void> {
+  const args = parseArgs();
+  if (hasFlag(args, "help")) usage(HELP);
+
+  const catalogDir = resolve(ROOT, getFlag(args, "catalog-dir", DEFAULT_DOMAIN_CATALOG_DIR)!);
+  const explicitDomains = args.flags.get("domain") ?? [];
+  const domains = hasFlag(args, "all")
+    ? domainsFromCatalog(catalogDir)
+    : [...explicitDomains, ...args.positionals];
+  if (domains.length === 0) usage(HELP);
+
+  const decisions = await probeRedirectCanonicals(domains, {
+    catalogDir,
+    timeoutMs: getNumberFlag(args, "timeout-ms", DEFAULT_TIMEOUT_MS),
+    concurrency: getNumberFlag(args, "concurrency", DEFAULT_CONCURRENCY),
+    trace: true,
+  });
+
+  const accepted = decisions.filter((decision): decision is Extract<RedirectDecision, { kind: "alias" }> => decision.kind === "alias");
+  const rejected = decisions.filter((decision) => decision.kind === "rejected");
+  const noAlias = decisions.filter((decision) => decision.kind === "no_alias");
+
+  if (hasFlag(args, "json")) {
+    console.log(JSON.stringify({ accepted, rejected, noAlias }, null, 2));
+  } else {
+    for (const decision of decisions) {
+      const line = formatDecision(decision, hasFlag(args, "verbose"));
+      if (line) console.log(line);
+    }
+    console.log(`summary: accepted=${accepted.length} rejected=${rejected.length} no_alias=${noAlias.length}`);
+  }
+
+  if (!hasFlag(args, "apply")) return;
+
+  const acceptedAliases = accepted.map((decision) => ({ source: decision.source, target: decision.target }));
+  const applyMissingTargets = hasFlag(args, "apply-missing-targets");
+  const aliasPath = join(ROOT, "src", "lib", "domain-aliases.ts");
+  const plannedAliasWrite = resolveDomainAliasUpdates(parseAliasEntries(readFileSync(aliasPath, "utf8")), acceptedAliases);
+  const plannedTargetBySource = new Map(plannedAliasWrite.applied.map((alias) => [alias.source, alias.target]));
+  const newAliases = applyMissingTargets
+    ? acceptedAliases
+    : acceptedAliases.filter((alias) => {
+      const target = plannedTargetBySource.get(normalizeDomain(alias.source));
+      return target ? hasCatalogRecord(catalogDir, target) : false;
+    });
+  const skippedMissingTargets = acceptedAliases.filter((alias) => !newAliases.some((applied) => applied.source === alias.source));
+  const aliasWrite = upsertDomainAliasesFile(newAliases, aliasPath);
+  const mergeResults = mergeAliasCatalogFiles(catalogDir, aliasWrite.applied);
+  if (!hasFlag(args, "json")) {
+    console.log(`aliases file changed=${aliasWrite.changed} added=${aliasWrite.added.length}`);
+    for (const alias of skippedMissingTargets) {
+      console.log(`alias skipped missing target catalog record: ${alias.source} -> ${alias.target}`);
+    }
+    for (const result of mergeResults) {
+      console.log(`catalog ${result.action}: ${result.source} -> ${result.target}`);
+    }
+  }
+}
+
+if (import.meta.main) await main();

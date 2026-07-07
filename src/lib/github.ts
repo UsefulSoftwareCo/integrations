@@ -14,7 +14,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import seed from "~/data/github-stars.json";
 
-const REPO = "UsefulSoftwareCo/integrationsdotsh";
+const REPO = "UsefulSoftwareCo/integrations";
 const GITHUB_STARS_URL = `https://api.github.com/repos/${REPO}`;
 const STARS_CACHE_DIR = "node_modules/.cache/integrationsdotsh";
 const STARS_CACHE_FILE = `${STARS_CACHE_DIR}/github-stars.json`;

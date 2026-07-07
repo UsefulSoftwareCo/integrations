@@ -11,7 +11,7 @@ import type { EdgeCaches, Fetcher } from "../../../worker/env.ts";
 
 export const prerender = false;
 
-const GITHUB_STARS_URL = "https://api.github.com/repos/UsefulSoftwareCo/integrationsdotsh";
+const GITHUB_STARS_URL = "https://api.github.com/repos/UsefulSoftwareCo/integrations";
 const LONG_CACHE_CONTROL = "public, max-age=3600, s-maxage=3600";
 const SHORT_CACHE_CONTROL = "public, max-age=300, s-maxage=300";
 

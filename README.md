@@ -25,7 +25,7 @@ Readable by you and your agent.
   <img alt="Cloudflare Workers" src="https://img.shields.io/badge/edge-Cloudflare_Workers-F38020?style=flat-square&logo=cloudflare&logoColor=white">
   <img alt="MCP" src="https://img.shields.io/badge/exposes-MCP_server-000?style=flat-square">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-111?style=flat-square"></a>
-  <a href="https://github.com/UsefulSoftwareCo/integrationsdotsh/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/UsefulSoftwareCo/integrationsdotsh?style=flat-square"></a>
+  <a href="https://github.com/UsefulSoftwareCo/integrations/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/UsefulSoftwareCo/integrations?style=flat-square"></a>
 </p>
 
 </div>
@@ -110,7 +110,7 @@ curl https://integrations.sh/api/stripe.com/detect
 ## Project layout
 
 ```
-integrationsdotsh/
+integrations/
 ├─ src/
 │  ├─ pages/            # routes — homepage, [domain], surface pages, api.json, /disc/*
 │  ├─ components/       # Nav, DomainPage, Surfaces (the explorer island), …

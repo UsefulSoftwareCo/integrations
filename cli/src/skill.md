@@ -12,10 +12,10 @@ to each interface?" for thousands of services.
 Run it with npx (no install needed):
 
 ```sh
-npx integrationsdotsh search stripe
+npx integrations search stripe
 ```
 
-Or install once: `npm i -g integrationsdotsh` — the command is `integrations`.
+Or install once: `npm i -g integrations` — the command is `integrations`.
 
 **Output contract**: when stdout is piped (or `--json` is passed), every
 command emits exactly one JSON document on stdout; diagnostics go to stderr.

@@ -3,10 +3,10 @@
 CLI for [integrations.sh](https://integrations.sh).
 
 ```sh
-npx integrationsdotsh search stripe
+npx integrations search stripe
 ```
 
-The npm package is `integrationsdotsh`; the installed bin is `integrations`.
+Install globally with `npm i -g integrations`; the command is `integrations`.
 
 ## Quickstart
 

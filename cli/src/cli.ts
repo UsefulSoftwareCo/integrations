@@ -27,8 +27,8 @@ import skillMarkdown from "./skill.md" with { type: "text" };
 
 const BASE = (process.env.INTEGRATIONS_BASE ?? "https://integrations.sh").replace(/\/$/, "");
 const SPEC_URL = `${BASE}/openapi.json`;
-const SPEC_CACHE = join(tmpdir(), "integrationsdotsh-spec.json");
-const UPDATE_STATE = join(tmpdir(), "integrationsdotsh-update.json");
+const SPEC_CACHE = join(tmpdir(), "integrations-sh-spec.json");
+const UPDATE_STATE = join(tmpdir(), "integrations-sh-update.json");
 const SPEC_TTL_MS = 60 * 60 * 1000;
 const UPDATE_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
@@ -622,14 +622,14 @@ async function maybePrintUpdateNudge() {
   await writeJsonFile(UPDATE_STATE, { checkedAt: Date.now() });
 
   try {
-    const res = await fetchUrl("https://registry.npmjs.org/integrationsdotsh", {
+    const res = await fetchUrl("https://registry.npmjs.org/integrations", {
       headers: { accept: "application/json" },
     }, 1000);
     if (!res.ok) return;
     const body = await res.json() as { "dist-tags"?: { latest?: string } };
     const latest = body["dist-tags"]?.latest;
     if (latest && latest !== VERSION) {
-      process.stderr.write(dim(`update available: ${VERSION} → ${latest} (npm i -g integrationsdotsh)\n`));
+      process.stderr.write(dim(`update available: ${VERSION} → ${latest} (npm i -g integrations)\n`));
     }
   } catch {
     // Update checks are opportunistic.

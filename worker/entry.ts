@@ -92,9 +92,12 @@ async function priorSurfaces(env: Env, origin: string, domain: string): Promise<
   return (await discoveryDoc(env, origin, domain))?.surfaces ?? [];
 }
 
-async function persistDiscovery(env: Env, result: { domain?: string; surfaces?: readonly unknown[]; summary?: unknown }, model: string): Promise<void> {
+async function persistDiscovery(env: Env, result: { domain?: string; surfaces?: readonly unknown[]; summary?: unknown; discoveredAt?: string }, model: string): Promise<void> {
   if (!result.domain) return;
-  const discoveredAt = new Date().toISOString();
+  // Keep the result's own generation timestamp: the cache-hit backfill also
+  // lands here, and stamping `now` would relabel a day-old cached result as
+  // fresh — hiding the regenerate affordance for another staleness window.
+  const discoveredAt = result.discoveredAt ?? new Date().toISOString();
   await Promise.all([
     env.DISCOVERY.put(canonicalDomain(result.domain), JSON.stringify({ result, discoveredAt, model })),
     upsertLiveIndex(env, result, discoveredAt),
@@ -565,6 +568,9 @@ async function handleRequest(
     const streamMatch = /^\/api\/([^/]+)\/discover\/stream\/?$/.exec(url.pathname);
     if (streamMatch) {
       const domain = canonicalDomain(decodeURIComponent(streamMatch[1]));
+      // `force=1` (the regenerate button) skips the cached result and re-runs
+      // discovery; the fresh run then overwrites the cache entry below.
+      const force = url.searchParams.get("force") === "1";
       const cache = (caches as unknown as EdgeCaches).default;
       const keyUrl = new URL(url.origin + `/api/${encodeURIComponent(domain)}/discover`);
       keyUrl.searchParams.set("__cv", CACHE_VERSION);
@@ -577,7 +583,7 @@ async function handleRequest(
 
       // Cached results are free to serve; an uncached run costs an LLM loop —
       // cap those per client IP. 429 before the stream starts.
-      const cachedProbe = await cache.match(cacheKey);
+      const cachedProbe = force ? undefined : await cache.match(cacheKey);
       if (!cachedProbe && env.DISCOVER_LIMITER) {
         const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
         const { success } = await env.DISCOVER_LIMITER.limit({ key: ip });
@@ -589,9 +595,9 @@ async function handleRequest(
       const producer = (async () => {
         const started = Date.now();
         try {
-          const cached = await cache.match(cacheKey);
+          const cached = force ? undefined : await cache.match(cacheKey);
           if (cached) {
-            const result = (await cached.json()) as { domain?: string; surfaces?: unknown[]; credentials?: Record<string, unknown>; usedLlm?: boolean };
+            const result = (await cached.json()) as { domain?: string; surfaces?: unknown[]; credentials?: Record<string, unknown>; usedLlm?: boolean; discoveredAt?: string };
             await send("done", result);
             track(env, ctx, request, "discovery_run", {
               domain,

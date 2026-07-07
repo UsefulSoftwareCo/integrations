@@ -193,7 +193,9 @@ export default function Surfaces({
     const surfaceKeys = new Set<string>();
     const started = Date.now();
     try {
-      const res = await fetch(`/api/${encodeURIComponent(domain)}/discover/stream`);
+      // Regenerate must actually re-run: `force=1` makes the worker skip its
+      // edge-cached result (still rate-limited per IP like any uncached run).
+      const res = await fetch(`/api/${encodeURIComponent(domain)}/discover/stream${opts?.regenerate ? "?force=1" : ""}`);
       if (!res.ok || !res.body) throw new Error();
       const reader = res.body.getReader();
       const dec = new TextDecoder();

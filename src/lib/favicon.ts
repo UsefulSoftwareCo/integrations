@@ -1,6 +1,6 @@
 import { parse } from "tldts";
 
-const JUNK_TLDS = new Set(["local", "test", "internal", "example"]);
+const JUNK_TLDS = new Set(["local", "test", "internal", "example", "invalid", "localhost"]);
 const JUNK_HOSTING_SUFFIXES = [
   "workers.dev",
   "awsapprunner.com",
@@ -80,6 +80,7 @@ export function isJunkDomain(domain: string | null | undefined): boolean {
   const labels = host.split(".").filter(Boolean);
   const tld = labels[labels.length - 1];
   if (tld && JUNK_TLDS.has(tld)) return true;
+  if (host === "localhost" || labels[0] === "example") return true;
   if (JUNK_HOSTING_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))) return true;
 
   const info = parse(host, { allowPrivateDomains: true });

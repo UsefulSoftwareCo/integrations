@@ -29,7 +29,7 @@
  */
 import type { DetectionResult, McpDetection } from "./detect.ts";
 import { probeMcpOnboarding } from "./detect.ts";
-import { catalogSeeds } from "./catalog-seed.ts";
+import { catalogSeedRecords, catalogSeeds, type CatalogSeedEntry } from "./catalog-seed.ts";
 import { validateSpecUrl, type SpecValidationResult } from "./spec-validate.ts";
 
 export const SLACK_MCP_USER_SCOPES = [
@@ -741,6 +741,11 @@ function surfaceLocator(s: Surface): string {
   return `${s.type}|${(s.spec || s.url || s.command || packageId || s.name).toLowerCase()}`;
 }
 
+function surfaceLocatorCandidates(s: Surface): string[] {
+  const locators = [s.spec, s.url, s.command, s.packages?.[0]?.identifier].filter((v): v is string => !!v);
+  return locators.length ? locators.map((locator) => `${s.type}|${locator.toLowerCase()}`) : [surfaceLocator(s)];
+}
+
 function entryKey(entry: AuthEntry): string {
   return entry.use
     .map((use) => `${use.id}:${JSON.stringify(use.mechanics)}`)
@@ -826,6 +831,52 @@ function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit)
     r.surfaces.push(surface);
     byLocator.set(surfaceLocator(surface), surface);
     emit?.({ kind: "surface", surface });
+  }
+}
+
+function mergeCatalogSeeds(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): void {
+  const byLocator = new Map<string, Surface>();
+  for (const surface of r.surfaces) {
+    for (const locator of surfaceLocatorCandidates(surface)) byLocator.set(locator, surface);
+  }
+
+  for (const record of catalogSeedRecords(detect.domain)) {
+    const surface = catalogSeedToSurface(record);
+    if (!surface) continue;
+    if (surfaceLocatorCandidates(surface).some((locator) => byLocator.has(locator))) continue;
+    surface.slug = assignSlug(surface.name || "Registry surface", r.surfaces);
+    r.surfaces.push(surface);
+    for (const locator of surfaceLocatorCandidates(surface)) byLocator.set(locator, surface);
+    emit?.({ kind: "surface", surface });
+  }
+}
+
+function isAuthlessSeed(record: CatalogSeedEntry): boolean {
+  return record.authTypes?.some((type) => type.toLowerCase() === "none" || type.toLowerCase() === "authless") ?? false;
+}
+
+function catalogSeedToSurface(record: CatalogSeedEntry): Surface | null {
+  const basis: Basis = { via: "detected", signal: "registry" };
+  const auth: AuthStatus = isAuthlessSeed(record) ? { status: "none", basis } : { status: "unknown" };
+  switch (record.kind) {
+    case "mcp":
+      return record.remoteUrl
+        ? { slug: "", name: record.name, type: "mcp", docs: record.docsUrl ?? record.docs, basis, url: record.remoteUrl, transports: record.transport ? [record.transport] : undefined, auth }
+        : null;
+    case "openapi":
+      return record.specUrl
+        ? { slug: "", name: record.name, type: "http", docs: record.docsUrl ?? record.docs, basis, spec: record.specUrl, auth }
+        : null;
+    case "graphql":
+      return record.endpoint
+        ? { slug: "", name: record.name, type: "graphql", docs: record.docsUrl ?? record.docs, basis, url: record.endpoint, auth }
+        : null;
+    case "cli":
+      return record.command
+        ? { slug: "", name: record.name, type: "cli", docs: record.docs ?? record.docsUrl, basis, command: record.command, notes: record.install, auth }
+        : null;
+    default:
+      return null;
   }
 }
 
@@ -946,6 +997,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   }
 
   mergeDeclared(r, detect, emit);
+  mergeCatalogSeeds(r, detect, emit);
 
   if (!r.summary && r.surfaces.length) {
     r.summary = `Exposes ${[...new Set(r.surfaces.map((s) => s.type))].join(", ")} for this service.`;

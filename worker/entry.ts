@@ -27,6 +27,7 @@ import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
 import type { Surface } from "../src/lib/surface-view.ts";
 import type { Credential } from "../src/lib/surface-view.ts";
 import type { EdgeCaches, Env, ExecutionContext } from "./env.ts";
+import { validateDiscoverableDomain } from "./domain-validation.ts";
 import { McpDurableObject } from "./mcp-do.ts";
 
 // Bump when detect/discover output shape or logic changes, so the edge Cache API
@@ -574,7 +575,9 @@ async function handleRequest(
     // instantly; a cold run streams real progress and warms the cache.
     const streamMatch = /^\/api\/([^/]+)\/discover\/stream\/?$/.exec(url.pathname);
     if (streamMatch) {
-      const domain = canonicalDomain(decodeURIComponent(streamMatch[1]));
+      const validation = validateDiscoverableDomain(streamMatch[1]);
+      if ("error" in validation) return json({ error: validation.error }, 400);
+      const domain = validation.domain;
       // `force=1` (the regenerate button) skips the cached result and re-runs
       // discovery; the fresh run then overwrites the cache entry below.
       const force = url.searchParams.get("force") === "1";
@@ -668,6 +671,14 @@ async function handleRequest(
       /^\/api\/[^/]+\/(?:detect|discover|surface)\/?$/.test(url.pathname)
     ) {
       const endpoint = apiEndpoint(url.pathname);
+      const domainMatch = /^\/api\/([^/]+)\/(?:detect|discover)\/?$/.exec(url.pathname);
+      if (domainMatch) {
+        const validation = validateDiscoverableDomain(domainMatch[1]);
+        if ("error" in validation) {
+          track(env, ctx, request, "api_request", { ...(endpoint && { endpoint }), cache_hit: false, status: 400 });
+          return json({ error: validation.error }, 400);
+        }
+      }
       const cache = (caches as unknown as EdgeCaches).default;
       // Version the cache key so a deploy that bumps CACHE_VERSION orphans stale
       // entries (the Cache API otherwise survives deploys).

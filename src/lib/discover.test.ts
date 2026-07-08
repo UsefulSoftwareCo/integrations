@@ -154,7 +154,8 @@ describe("discover MCP onboarding overrides", () => {
     const manifest = decodeSlackManifestFrom(slackMcpAppManifestUrl());
 
     expect(manifest.settings.is_mcp_enabled).toBe(true);
-    expect(manifest.oauth_config.scopes.user).toHaveLength(25);
+    expect(manifest.oauth_config.scopes.user).toHaveLength(26);
+    expect(manifest.oauth_config.scopes.user).toContain("users:read.email");
     expect(manifest.oauth_config).not.toHaveProperty("redirect_urls");
     expect(manifest.settings).not.toHaveProperty("agent_view");
   });

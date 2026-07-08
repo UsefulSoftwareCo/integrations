@@ -47,6 +47,7 @@ export const SLACK_MCP_USER_SCOPES = [
   "canvases:read",
   "canvases:write",
   "users:read",
+  "users:read.email",
   "reactions:write",
   "reactions:read",
   "emoji:read",

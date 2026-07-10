@@ -1,6 +1,10 @@
 import type { APIRoute } from "astro";
+import { curatedProviderForDomain } from "~/lib/curated.ts";
 import { all, domainById } from "~/lib/data.ts";
-import { baselineDiscoveryGroups, catalogDiscovery } from "~/lib/catalog-to-discovery.ts";
+import { readDomainCatalogTree } from "~/lib/discovered-catalog.ts";
+import { discoveredDomainsByTarget } from "~/lib/discovered-domains.ts";
+import { buildDomainDiscovery } from "~/lib/domain-discovery.ts";
+import { baselineDiscoveryGroups } from "~/lib/catalog-to-discovery.ts";
 
 export const prerender = true;
 
@@ -12,11 +16,17 @@ function escapeXml(s: string): string {
 }
 
 const groups = baselineDiscoveryGroups(all, (r) => domainById.get(r.id) || r.slug);
+const discoveredByDomain = discoveredDomainsByTarget(readDomainCatalogTree().domains);
 
 export const GET: APIRoute = () => {
   const urls: string[] = [];
   for (const [domain, records] of groups) {
-    const doc = catalogDiscovery(domain, records);
+    const doc = buildDomainDiscovery(
+      domain,
+      records,
+      discoveredByDomain.get(domain) ?? null,
+      curatedProviderForDomain(domain),
+    );
     for (const surface of doc.surfaces) {
       if (RESERVED_SURFACE_SLUGS.has(surface.slug.toLowerCase())) continue;
       const loc = new URL(`/${encodeURIComponent(domain)}/${encodeURIComponent(surface.slug)}/`, SITE).href;

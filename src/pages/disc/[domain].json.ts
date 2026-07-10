@@ -7,11 +7,16 @@
  * produce baseline surfaces here. Emitted at build via getStaticPaths.
  */
 import type { APIRoute } from "astro";
+import { curatedProviderForDomain } from "~/lib/curated.ts";
 import { all, domainById } from "~/lib/data.ts";
+import { readDomainCatalogTree } from "~/lib/discovered-catalog.ts";
+import { discoveredDomainsByTarget } from "~/lib/discovered-domains.ts";
+import { buildDomainDiscovery } from "~/lib/domain-discovery.ts";
 import { allDomains } from "~/lib/catalog.ts";
-import { baselineDiscoveryGroups, catalogDiscovery } from "~/lib/catalog-to-discovery.ts";
+import { baselineDiscoveryGroups } from "~/lib/catalog-to-discovery.ts";
 
 const groups = baselineDiscoveryGroups(all, (r) => domainById.get(r.id) || r.slug);
+const discoveredByDomain = discoveredDomainsByTarget(readDomainCatalogTree().domains);
 
 export function getStaticPaths() {
   return allDomains().map(({ domain }) => ({ params: { domain } }));
@@ -19,7 +24,12 @@ export function getStaticPaths() {
 
 export const GET: APIRoute = ({ params }) => {
   const domain = params.domain ?? "";
-  const body = catalogDiscovery(domain, groups.get(domain) ?? []);
+  const body = buildDomainDiscovery(
+    domain,
+    groups.get(domain) ?? [],
+    discoveredByDomain.get(domain) ?? null,
+    curatedProviderForDomain(domain),
+  );
   return new Response(JSON.stringify(body), {
     headers: { "content-type": "application/json; charset=utf-8" },
   });

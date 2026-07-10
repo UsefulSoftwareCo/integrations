@@ -6,6 +6,10 @@
  * uses (no ad-hoc grouping in templates). Built over the enriched index.
  */
 import { index } from "./data.ts";
+import { allCuratedProviders, curatedProviderForDomain } from "./curated.ts";
+import { readDomainCatalogTree } from "./discovered-catalog.ts";
+import { discoveredDomainsByTarget } from "./discovered-domains.ts";
+import { mergeDomainSurfaceCounts } from "./domain-surface-types.ts";
 import { faviconUrl, isJunkDomain } from "./favicon.ts";
 import { searchIndex } from "./search-index.ts";
 import type { Kind } from "./types.ts";
@@ -21,6 +25,8 @@ export interface DomainSummary {
 }
 
 const KIND_ORDER: Kind[] = ["mcp", "openapi", "graphql", "cli"];
+
+const discoveredByDomain = discoveredDomainsByTarget(readDomainCatalogTree().domains);
 
 const DOMAINS: DomainSummary[] = (() => {
   const map = new Map<string, DomainSummary>();
@@ -53,6 +59,68 @@ const DOMAINS: DomainSummary[] = (() => {
       popularity: entry.popularity,
       devtool: entry.devtool,
       description: entry.description,
+    });
+  }
+  for (const [domain, group] of map) {
+    const discovered = discoveredByDomain.get(domain);
+    const curated = curatedProviderForDomain(domain);
+    group.formats = mergeDomainSurfaceCounts(group.formats, {
+      catalog: Object.entries(group.formats)
+        .filter(([, count]) => (count ?? 0) > 0)
+        .map(([kind]) => kind as Kind),
+      discovered: discovered?.surfaces.map((surface) => surface.type),
+      curated: curated?.interfaces.map((iface) => iface.format),
+    });
+    if (!group.description) {
+      group.description =
+        discovered?.description?.replace(/\s+/g, " ").slice(0, 110) ??
+        curated?.description?.replace(/\s+/g, " ").slice(0, 110) ??
+        "";
+    }
+  }
+  for (const [domain, discovered] of discoveredByDomain) {
+    if (isJunkDomain(domain)) continue;
+    if (map.has(domain)) continue;
+    const curated = curatedProviderForDomain(domain);
+    map.set(domain, {
+      domain,
+      icon: faviconUrl(domain),
+      total: 0,
+      formats: mergeDomainSurfaceCounts({}, {
+        discovered: discovered.surfaces.map((surface) => surface.type),
+        curated: curated?.interfaces.map((iface) => iface.format),
+      }),
+      popularity: 0,
+      devtool: false,
+      description:
+        discovered.description?.replace(/\s+/g, " ").slice(0, 110) ??
+        curated?.description?.replace(/\s+/g, " ").slice(0, 110) ??
+        "",
+    });
+  }
+  for (const domain of [...map.keys()]) {
+    const curated = curatedProviderForDomain(domain);
+    if (!curated) continue;
+    const group = map.get(domain)!;
+    group.formats = mergeDomainSurfaceCounts(group.formats, {
+      catalog: Object.entries(group.formats)
+        .filter(([, count]) => (count ?? 0) > 0)
+        .map(([kind]) => kind as Kind),
+      curated: curated.interfaces.map((iface) => iface.format),
+    });
+  }
+  for (const curated of allCuratedProviders()) {
+    const domain = curated.domain;
+    if (isJunkDomain(domain)) continue;
+    if (map.has(domain)) continue;
+    map.set(domain, {
+      domain,
+      icon: faviconUrl(domain),
+      total: 0,
+      formats: mergeDomainSurfaceCounts({}, { curated: curated.interfaces.map((iface) => iface.format) }),
+      popularity: 0,
+      devtool: false,
+      description: curated.description.replace(/\s+/g, " ").slice(0, 110),
     });
   }
   // Dev tools first — the audience's daily drivers — then popularity.

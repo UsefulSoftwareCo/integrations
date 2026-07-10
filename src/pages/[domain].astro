@@ -4,9 +4,12 @@
 // intercepts the request and SSRs the same DomainPage with the map baked in
 // (src/pages/ssr/[domain].astro) instead of serving this asset.
 import DomainPage from "~/components/DomainPage.astro";
+import { curatedProviderForDomain } from "~/lib/curated.ts";
 import { all, domainById } from "~/lib/data.ts";
+import { readDomainCatalogTree } from "~/lib/discovered-catalog.ts";
+import { discoveredDomainsByTarget } from "~/lib/discovered-domains.ts";
+import { buildDomainDiscovery } from "~/lib/domain-discovery.ts";
 import { allDomains } from "~/lib/catalog.ts";
-import { catalogDiscovery } from "~/lib/catalog-to-discovery.ts";
 
 // Group every enriched record by its registrable domain (the same key the
 // homepage groups by: `domain`, else the slug). One page per domain.
@@ -18,7 +21,14 @@ export function getStaticPaths() {
 }
 
 const { domain } = Astro.props;
-const baseline = catalogDiscovery(domain, all.filter((r) => (domainById.get(r.id) || r.slug) === domain));
+const records = all.filter((r) => (domainById.get(r.id) || r.slug) === domain);
+const discoveredByDomain = discoveredDomainsByTarget(readDomainCatalogTree().domains);
+const baseline = buildDomainDiscovery(
+  domain,
+  records,
+  discoveredByDomain.get(domain) ?? null,
+  curatedProviderForDomain(domain),
+);
 const domainSummary = allDomains().find((row) => row.domain === domain);
 const zeroSurfaceSummary =
   domainSummary?.total === 0

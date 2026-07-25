@@ -9,7 +9,7 @@
  */
 import { Effect, Schema } from "effect";
 import { detect } from "../src/lib/detect.ts";
-import { discover, type ChatFn, type DiscoverEvent, type WebBackend } from "../src/lib/discover.ts";
+import { discover, surfaceLocatorValue, type ChatFn, type DiscoverEvent, type WebBackend } from "../src/lib/discover.ts";
 import { naiveWeb } from "../src/lib/contextdev.ts";
 import { Credential, CredentialType, DISCOVERY_VERSION, Surface } from "../src/lib/discovery-schema.ts";
 import { canonicalDomain } from "../src/lib/domain-aliases.ts";
@@ -114,7 +114,7 @@ type SlugSurface = {
 };
 
 export const locatorOf = (s: SlugSurface): string | undefined => {
-  const loc = s.type === "cli" ? (s.command ?? s.packages?.[0]?.identifier) : (s.url ?? s.spec);
+  const loc = surfaceLocatorValue(s);
   return loc ? `${s.type}|${loc.toLowerCase()}` : undefined;
 };
 

@@ -6,7 +6,7 @@ import { parse as parseDomain } from "tldts";
 import { DiscoveryResult as DiscoveryResultSchema, type DiscoveryResult } from "../../src/lib/discovery-schema.ts";
 import { assignSlug } from "../../src/lib/discover.ts";
 import { preserveSlugs } from "../../worker/operations.ts";
-import { dedupSurfacesWithReport, type DedupCollapse } from "./dedup.ts";
+import { dedupSurfacesWithReport, type DedupCollapse } from "../../src/lib/dedup.ts";
 
 export const ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
 

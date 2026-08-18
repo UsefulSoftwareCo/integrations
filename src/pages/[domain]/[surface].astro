@@ -14,6 +14,7 @@ import Setup from "~/components/surface/Setup.tsx";
 import { aliasesOf, canonicalDomain } from "~/lib/domain-aliases.ts";
 import { faviconFor, isJunkDomain } from "~/lib/favicon.ts";
 import { isSdkNotCli } from "~/lib/surface-classify.ts";
+import { dedupeDocSurfaces } from "~/lib/dedup.ts";
 import {
   SURFACE_TYPE_LABEL,
   cliLoginFor,
@@ -39,8 +40,11 @@ const looksLikeDomain = domain.includes(".");
 
 // Slugs are server-assigned identity (v3) — match directly. A client SDK/library
 // mis-typed as `cli` is not a surface, so its slug resolves to nothing → 404.
+// Collapse duplicate surfaces first so a dropped duplicate's slug (e.g. an MCP
+// server's non-canonical host variant) resolves to nothing → 404, matching the
+// deduped domain page.
 const find = (doc?: DiscoveryDoc | null) =>
-  (doc?.surfaces ?? []).find((s) => s.slug === slug && !isSdkNotCli(s));
+  ((doc?.surfaces ? dedupeDocSurfaces(doc).surfaces : []) ?? []).find((s) => s.slug === slug && !isSdkNotCli(s));
 
 let surface: Surface | undefined;
 let creds: Record<string, Credential> = {};

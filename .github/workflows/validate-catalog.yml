@@ -1,0 +1,37 @@
+name: Validate catalog
+
+# Blocks a PR that introduces a duplicate surface — the same server listed twice
+# under cosmetic host variants (slack.com/mcp vs mcp.slack.com/mcp) or two labels
+# for one endpoint. Scoped to that failure class via --fail-on, so the 700+
+# pre-existing data-quality findings stay non-blocking (still printed).
+on:
+  pull_request:
+    paths:
+      - "domains/**"
+      - "scripts/batch/**"
+      - "src/lib/dedup.ts"
+      - ".github/workflows/validate-catalog.yml"
+
+jobs:
+  duplicates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Dedup unit tests
+        run: bun test src/lib/dedup.test.ts
+
+      # The validator pulls in the catalog seed (output/catalog-seeds.json), a
+      # gitignored generated file. normalize regenerates it from domains/.
+      - name: Generate catalog data
+        run: bun run normalize
+
+      - name: Validate catalog for duplicate surfaces
+        run: bun run validate:duplicates

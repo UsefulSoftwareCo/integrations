@@ -2,6 +2,7 @@ import { basename, dirname } from "node:path";
 import { resolve } from "node:path";
 import { getFlag, hasFlag, listJsonFiles, parseArgs, readJson, ROOT, usage } from "./shared.ts";
 import { isSdkNotCli } from "../../src/lib/surface-classify.ts";
+import { surfaceDedupKey } from "../../src/lib/dedup.ts";
 import type { AuthStatus, Credential, StoredDiscovery, Surface } from "../../src/lib/discovery-schema.ts";
 import {
   catalogDomainKey,
@@ -62,6 +63,13 @@ class Report {
 
   get failed(): boolean {
     return [...this.byCheck.values()].some((list) => list.length > 0);
+  }
+
+  /** Whether any of the named checks has findings — for a CI gate that blocks on
+   * a specific failure class (e.g. duplicate surfaces) while leaving unrelated
+   * pre-existing findings non-blocking. */
+  failedOn(checks: readonly string[]): boolean {
+    return checks.some((check) => (this.byCheck.get(check)?.length ?? 0) > 0);
   }
 
   print(maxExamples: number): void {
@@ -208,16 +216,18 @@ function withinDomainDuplicates(domain: string, surfaces: readonly Surface[], re
     }
   }
 
-  // Same locator (url/spec/command), different name — e.g. "Stripe CLI" and
-  // "Stripe MCP" both pointing at the same command/endpoint with mismatched
-  // labels is the reported Stripe CLI/MCP dupe shape when the locator is
-  // actually identical (as opposed to two genuinely distinct surfaces).
+  // Same locator, different name — e.g. "Stripe CLI" and "Stripe MCP" pointing at
+  // the same command/endpoint with mismatched labels, or the same MCP server
+  // listed under both its apex and `mcp.` host (slack.com/mcp vs
+  // mcp.slack.com/mcp). Key on the dedup key so this flags exactly the pairs the
+  // dedup pass would collapse — host-normalized for MCP, spec-normalized for
+  // http/graphql — instead of only exact-string locator matches.
   const byLocator = new Map<string, Surface>();
   for (const surface of surfaces) {
     if (isSdkNotCli(surface)) continue;
     const locator = surfaceLocator(surface);
     if (!locator) continue;
-    const key = `${surface.type}|${locator.trim().toLowerCase()}`;
+    const key = surfaceDedupKey(surface as never);
     const prior = byLocator.get(key);
     if (prior && normName(prior.name) !== normName(surface.name)) {
       report.add(
@@ -335,6 +345,7 @@ async function main(): Promise<void> {
       }
 
       const seenInDomain = new Map<string, CatalogCheckSurface>();
+      const seenByDedupKey = new Map<string, CatalogCheckSurface>();
       for (const s of d.surfaces ?? []) {
         if (isBadPathSegment(s.slug)) {
           report.add("catalogBadSlug", domain, `type=${String(s.type)} name=${JSON.stringify(s.name)} slug=${JSON.stringify(s.slug)}`);
@@ -365,6 +376,19 @@ async function main(): Promise<void> {
         } else {
           seenInDomain.set(surfaceKey, s);
         }
+
+        // Same server, different name — the same MCP endpoint under both its
+        // apex and `mcp.`/`www.` host, or one API under two labels. Key on the
+        // dedup key so this flags exactly what the dedup pass would collapse.
+        if (hasUrl || hasSpec || hasCommand || hasPackages) {
+          const dedupKey = surfaceDedupKey(s as never);
+          const dupPrior = seenByDedupKey.get(dedupKey);
+          if (dupPrior && normName(String(dupPrior.name ?? "")) !== normName(String(s.name ?? ""))) {
+            report.add("catalogMismatchedDuplicateLocator", domain, `type=${type} resolves to the same locator as ${JSON.stringify(dupPrior.name)}: name=${JSON.stringify(s.name)} (slugs: ${String(dupPrior.slug)}, ${String(s.slug)})`);
+          } else if (!dupPrior) {
+            seenByDedupKey.set(dedupKey, s);
+          }
+        }
       }
     }
 
@@ -374,7 +398,12 @@ async function main(): Promise<void> {
   }
 
   report.print(maxExamples);
-  if (report.failed) process.exit(1);
+  // `--fail-on a,b` blocks only on the named checks (a CI gate for one failure
+  // class); without it, any finding fails as before.
+  const failOnFlag = getFlag(args, "fail-on");
+  const failChecks = failOnFlag ? failOnFlag.split(",").map((c) => c.trim()).filter(Boolean) : null;
+  const failed = failChecks ? report.failedOn(failChecks) : report.failed;
+  if (failed) process.exit(1);
 }
 
 await main();

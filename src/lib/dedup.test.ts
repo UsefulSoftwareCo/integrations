@@ -94,4 +94,47 @@ describe("dedupSurfaces", () => {
     };
     expect(dedupSurfaces(raw).surfaces).toHaveLength(1);
   });
+
+  test("collapses an apex + dedicated `mcp.` host into one server, keeping the mcp. endpoint", () => {
+    const raw = {
+      domain: "slack.com",
+      surfaces: [
+        { type: "mcp", name: "MCP server", slug: "mcp-server", url: "https://slack.com/mcp", auth: { status: "required", entries: [{ use: [{ id: "slack_oauth", mechanics: { source: "well-known" } }] }] } },
+        { type: "mcp", name: "Slack MCP Server", slug: "slack-mcp-server", url: "https://mcp.slack.com/mcp", auth: { status: "required", entries: [{ use: [{ id: "slack_oauth", mechanics: { source: "well-known" } }] }] } },
+      ],
+    };
+    const { result, collapses } = dedupSurfacesWithReport(raw);
+    expect(result.surfaces).toHaveLength(1);
+    expect(result.surfaces[0]!.url).toBe("https://mcp.slack.com/mcp");
+    expect(collapses).toHaveLength(1);
+  });
+
+  test("collapses a `www.` alias into the apex endpoint", () => {
+    const raw = {
+      domain: "send.co",
+      surfaces: [
+        { type: "mcp", name: "MCP server", url: "https://send.co/mcp", auth: { status: "required", entries: [{ use: [{ id: "send_oauth" }] }] } },
+        { type: "mcp", name: "Send MCP Server", url: "https://www.send.co/mcp", auth: { status: "required", entries: [{ use: [{ id: "send_oauth" }] }] } },
+      ],
+    };
+    const result = dedupSurfaces(raw);
+    expect(result.surfaces).toHaveLength(1);
+    expect(result.surfaces[0]!.url).toBe("https://send.co/mcp");
+  });
+
+  test("keeps genuinely distinct MCP servers on the same domain", () => {
+    const raw = {
+      domain: "webex.com",
+      surfaces: [
+        { type: "mcp", name: "Webex Meetings MCP", url: "https://mcp.webexapis.com/mcp/webex-meeting", auth: { status: "required", entries: [{ use: [{ id: "webex_oauth" }] }] } },
+        { type: "mcp", name: "Webex Messaging MCP", url: "https://mcp.webexapis.com/mcp/webex-messaging", auth: { status: "required", entries: [{ use: [{ id: "webex_oauth" }] }] } },
+      ],
+    };
+    // Distinct paths on one dedicated host stay separate — different servers.
+    expect(dedupSurfaces(raw).surfaces).toHaveLength(2);
+    // core-mcp./metrics-mcp. are non-cosmetic subdomains, not the mcp. label.
+    expect(surfaceDedupKey({ type: "mcp", url: "https://core-mcp.commercelayer.io/mcp" })).not.toBe(
+      surfaceDedupKey({ type: "mcp", url: "https://metrics-mcp.commercelayer.io/mcp" }),
+    );
+  });
 });

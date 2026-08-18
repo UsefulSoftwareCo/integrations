@@ -9,6 +9,7 @@
 // component renders both, so nothing can drift.
 import DomainPage from "~/components/DomainPage.astro";
 import { aliasesOf, canonicalDomain } from "~/lib/domain-aliases.ts";
+import { dedupeDocSurfaces } from "~/lib/dedup.ts";
 import type { DiscoverData } from "~/lib/surface-sections.ts";
 
 export const prerender = false;
@@ -48,6 +49,11 @@ if (!initialData && runtime) {
 
 // No KV and no baseline discovery surfaces → true 404.
 if (!initialData) return new Response(null, { status: 404 });
+
+// Collapse duplicate surfaces (e.g. one MCP server listed under both its apex
+// and `mcp.` host) so a stale KV row renders one server — matching the deduped
+// island API and surface-detail pages.
+initialData = dedupeDocSurfaces(initialData);
 
 Astro.response.headers.set("cache-control", "public, max-age=60");
 ---

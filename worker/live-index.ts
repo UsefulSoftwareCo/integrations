@@ -1,6 +1,8 @@
 import { apiEnvelope, unwrapEnvelope, type ApiEnvelope } from "../src/lib/api-envelope.ts";
 import type { DomainSummary } from "../src/lib/catalog.ts";
+import type { IndexRecord } from "../src/lib/data.ts";
 import { canonicalDomain } from "../src/lib/domain-aliases.ts";
+import { slugifyName } from "../src/lib/discover.ts";
 import { faviconUrl } from "../src/lib/favicon.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 import type { SearchIndexEntry } from "../src/lib/search-index.ts";
@@ -36,6 +38,14 @@ export type SearchResultRow = {
   description: string;
   kinds: Kind[];
   url: string;
+};
+
+type DiscoveryEnv = Pick<Env, "DISCOVERY">;
+type CatalogEnv = Pick<Env, "ASSETS" | "DISCOVERY">;
+type ApiIndexRecord = Omit<IndexRecord, "url" | "icon" | "popularity"> & {
+  url?: string | null;
+  icon?: string | null;
+  popularity?: number | null;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -88,7 +98,7 @@ export function normalizeLiveIndex(value: unknown): LiveIndexEntry[] {
   return [...byDomain.values()].sort((a, b) => discoveredTime(b) - discoveredTime(a) || a.domain.localeCompare(b.domain));
 }
 
-export async function readLiveIndex(env: Env): Promise<LiveIndexEntry[]> {
+export async function readLiveIndex(env: DiscoveryEnv): Promise<LiveIndexEntry[]> {
   const raw = await env.DISCOVERY.get(LIVE_INDEX_KEY);
   if (!raw) return [];
   try {
@@ -113,7 +123,7 @@ export function liveIndexEntryFromResult(result: LiveDiscoveryResult, discovered
   return { domain: canonicalDomain(domain), ...(summary ? { summary } : {}), kinds: orderedKinds, discoveredAt };
 }
 
-export async function upsertLiveIndex(env: Env, result: LiveDiscoveryResult, discoveredAt: string): Promise<void> {
+export async function upsertLiveIndex(env: DiscoveryEnv, result: LiveDiscoveryResult, discoveredAt: string): Promise<void> {
   const entry = liveIndexEntryFromResult(result, discoveredAt);
   if (!entry) return;
   const existing = await readLiveIndex(env);
@@ -185,7 +195,83 @@ export function mergeLiveDomains(staticRows: readonly DomainSummary[], liveEntri
   return [...staticRows, ...liveRows];
 }
 
-export async function domainsJsonWithLiveIndex(env: Env, origin: string): Promise<Response> {
+/** Add live discoveries to the static surface index using the same one-row-per-kind
+ * projection as the catalog normalizer. Domains already present in the static
+ * build stay authoritative until the next catalog sync. */
+export function mergeLiveApiIndex(staticRows: readonly ApiIndexRecord[], liveEntries: readonly LiveIndexEntry[]): ApiIndexRecord[] {
+  const liveRows = liveEntriesNotInStatic(liveEntries, staticRows)
+    .toSorted((a, b) => a.domain.localeCompare(b.domain))
+    .flatMap((entry) => {
+      const domainSlug = slugifyName(entry.domain);
+      const description = (entry.summary ?? "").replace(/\s+/g, " ").trim().slice(0, 240);
+      return entry.kinds.map((kind, index) => ({
+        id: `discovered/${domainSlug}-${kind}`,
+        kind,
+        slug: index === 0 ? domainSlug : `${domainSlug}-${kind}`,
+        name: entry.domain,
+        description,
+        icon: faviconUrl(entry.domain) ?? undefined,
+        domain: entry.domain,
+        categories: [],
+        feeds: ["discovered"],
+      } satisfies ApiIndexRecord));
+    });
+  return [...staticRows, ...liveRows];
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isIndexRecord(value: unknown): value is ApiIndexRecord {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === "string" &&
+    kindOfSurfaceType(value.kind) === value.kind &&
+    typeof value.slug === "string" &&
+    typeof value.name === "string" &&
+    typeof value.description === "string" &&
+    typeof value.domain === "string" &&
+    isStringArray(value.categories) &&
+    isStringArray(value.feeds) &&
+    (value.url == null || typeof value.url === "string") &&
+    (value.icon == null || typeof value.icon === "string") &&
+    (value.popularity == null || typeof value.popularity === "number") &&
+    (value.devtool === undefined || typeof value.devtool === "boolean")
+  );
+}
+
+function parseApiIndex(value: unknown): ApiIndexRecord[] | null {
+  const data = Array.isArray(value) ? value : isRecord(value) && Array.isArray(value.data) ? value.data : null;
+  return data?.every(isIndexRecord) ? data : null;
+}
+
+/** Generate `/api.json` from the build-time index plus the durable live index.
+ * The caller owns edge caching; malformed or unavailable build assets pass
+ * through unchanged rather than publishing a partial catalog. */
+export async function apiJsonWithLiveIndex(env: CatalogEnv, origin: string): Promise<Response> {
+  const staticResponse = await env.ASSETS.fetch(`${origin}/api.json`);
+  if (!staticResponse.ok) return staticResponse;
+
+  let staticRows: ApiIndexRecord[] | null = null;
+  try {
+    staticRows = parseApiIndex(await staticResponse.clone().json());
+  } catch {
+    // The build asset is authoritative. Preserve it if it cannot be projected.
+  }
+  if (!staticRows) return staticResponse;
+
+  const merged = mergeLiveApiIndex(staticRows, await readLiveIndex(env));
+  return new Response(JSON.stringify(apiEnvelope(merged)), {
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "access-control-allow-origin": "*",
+      "cache-control": "public, max-age=60",
+    },
+  });
+}
+
+export async function domainsJsonWithLiveIndex(env: CatalogEnv, origin: string): Promise<Response> {
   const staticResponse = await env.ASSETS.fetch(`${origin}/api/domains.json`);
   if (!staticResponse.ok) return staticResponse;
 

@@ -122,15 +122,18 @@ function EntryRow({ e }: { e: SurfaceEntry }) {
 function DiscoveryMeta({ discoveredAt, hasSurfaces, onRegenerate }: { discoveredAt?: string; hasSurfaces: boolean; onRegenerate: () => void }) {
   const freshness = discoveryFreshness(discoveredAt, hasSurfaces);
   // Unknown-age data (timestampless baselines) shows no age claim at all —
-  // just the regenerate affordance.
+  // just the refresh affordance. Refresh is always available: even a fresh or
+  // zero-surface result may need remapping after the provider changes its APIs.
   return (
     <div className="disc-freshness" title={freshness.title}>
       {freshness.known && <span>discovered {freshness.label}</span>}
-      {freshness.shouldRegenerate && (
-        <button className="conv-action disc-regenerate" onClick={onRegenerate}>
-          regenerate
-        </button>
-      )}
+      <button
+        className="conv-action disc-regenerate"
+        onClick={onRegenerate}
+        aria-label={freshness.shouldRegenerate ? "Refresh stale integration surfaces" : "Refresh integration surfaces"}
+      >
+        refresh surfaces
+      </button>
     </div>
   );
 }
@@ -180,11 +183,11 @@ export default function Surfaces({
   }, [domain, initialData]);
 
   async function run(opts?: { regenerate?: boolean }) {
-    const posthog = (window as { posthog?: { capture: (e: string, p?: Record<string, unknown>) => void } }).posthog;
+    const posthog = (window as { posthog?: { capture?: (e: string, p?: Record<string, unknown>) => void } }).posthog;
     if (opts?.regenerate) {
-      posthog?.capture("regenerate_clicked", { domain });
+      posthog?.capture?.("regenerate_clicked", { domain });
     } else {
-      posthog?.capture("map_surface_clicked", { domain });
+      posthog?.capture?.("map_surface_clicked", { domain });
     }
     setState("loading");
     setProgress("Starting…");
@@ -245,22 +248,22 @@ export default function Surfaces({
             setData(parsed as unknown as DiscoverData);
             setState("done");
             finished = true;
-            posthog?.capture("discovery_stream_done", { domain, surfaces: surfaceCount, duration_ms: Date.now() - started });
+            posthog?.capture?.("discovery_stream_done", { domain, surfaces: surfaceCount, duration_ms: Date.now() - started });
           } else if (ev === "error") {
             setState("error");
             finished = true;
-            posthog?.capture("discovery_stream_error", { domain });
+            posthog?.capture?.("discovery_stream_error", { domain });
           }
         }
       }
       reader.cancel().catch(() => {});
       if (!finished) {
         setState("error");
-        posthog?.capture("discovery_stream_error", { domain });
+        posthog?.capture?.("discovery_stream_error", { domain });
       }
     } catch {
       setState("error");
-      posthog?.capture("discovery_stream_error", { domain });
+      posthog?.capture?.("discovery_stream_error", { domain });
     }
   }
 
@@ -310,7 +313,7 @@ export default function Surfaces({
         </div>
       )}
       {state === "done" && data?.summary && <p className="disc-summary">{data.summary}</p>}
-      {state === "done" && hasSurfaceData && <DiscoveryMeta discoveredAt={data?.discoveredAt} hasSurfaces={hasSurfaceData} onRegenerate={regenerate} />}
+      {state === "done" && <DiscoveryMeta discoveredAt={data?.discoveredAt} hasSurfaces={hasSurfaceData} onRegenerate={regenerate} />}
 
       {built.map((sec) => (
         <section className="disc-sec" id={sec.kind} key={sec.kind}>

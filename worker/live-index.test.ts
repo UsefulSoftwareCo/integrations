@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { appendLiveSearchResults, liveIndexEntryFromResult, mergeLiveDomains, normalizeLiveIndex, type LiveIndexEntry, type SearchResultRow } from "./live-index.ts";
+import { apiJsonWithLiveIndex, appendLiveSearchResults, liveIndexEntryFromResult, mergeLiveApiIndex, mergeLiveDomains, normalizeLiveIndex, type LiveIndexEntry, type SearchResultRow } from "./live-index.ts";
+import type { IndexRecord } from "../src/lib/data.ts";
 import type { SearchIndexEntry } from "../src/lib/search-index.ts";
 
 const staticIndex: SearchIndexEntry[] = [
@@ -146,5 +147,77 @@ describe("live index", () => {
       devtool: false,
       description: "No public developer integration surfaces were found.",
     });
+  });
+
+  test("projects new live domains into one api.json row per surface kind", () => {
+    const staticRows: IndexRecord[] = [
+      {
+        id: "openapi/static",
+        kind: "openapi",
+        slug: "static",
+        name: "Static",
+        description: "Static API",
+        domain: "static.com",
+        categories: [],
+        feeds: ["curated"],
+      },
+    ];
+
+    expect(mergeLiveApiIndex(staticRows, live)).toEqual([
+      staticRows[0],
+      {
+        id: "discovered/fresh-com-mcp",
+        kind: "mcp",
+        slug: "fresh-com",
+        name: "fresh.com",
+        description: "Fresh MCP and REST",
+        icon: "https://integrations.sh/logo/fresh.com",
+        domain: "fresh.com",
+        categories: [],
+        feeds: ["discovered"],
+      },
+      {
+        id: "discovered/fresh-com-openapi",
+        kind: "openapi",
+        slug: "fresh-com-openapi",
+        name: "fresh.com",
+        description: "Fresh MCP and REST",
+        icon: "https://integrations.sh/logo/fresh.com",
+        domain: "fresh.com",
+        categories: [],
+        feeds: ["discovered"],
+      },
+    ]);
+  });
+
+  test("generates a fresh api.json envelope from the static asset and live index", async () => {
+    const staticRows: IndexRecord[] = [
+      {
+        id: "openapi/static",
+        kind: "openapi",
+        slug: "static",
+        name: "Static",
+        description: "Static API",
+        domain: "static.com",
+        categories: [],
+        feeds: ["curated"],
+      },
+    ];
+    const env = {
+      ASSETS: {
+        fetch: async () => new Response(JSON.stringify({ version: 1, generatedAt: "2020-01-01T00:00:00.000Z", data: staticRows })),
+      },
+      DISCOVERY: {
+        get: async () => JSON.stringify(live),
+        put: async () => {},
+      },
+    };
+
+    const response = await apiJsonWithLiveIndex(env, "https://integrations.sh");
+    const body = (await response.json()) as { generatedAt: string; data: IndexRecord[] };
+
+    expect(response.headers.get("cache-control")).toBe("public, max-age=60");
+    expect(body.generatedAt).not.toBe("2020-01-01T00:00:00.000Z");
+    expect(body.data).toHaveLength(3);
   });
 });

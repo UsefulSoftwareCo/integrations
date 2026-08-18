@@ -1,7 +1,8 @@
-import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
+  aliasMapWith,
   catalogDomainFromLooseStored,
   catalogDomainKey,
   DEFAULT_DOMAIN_CATALOG_DIR,
@@ -11,7 +12,17 @@ import {
   type CatalogDomain,
   writeDomainCatalogTree,
 } from "./discovered-catalog.ts";
-import { getFlag, hasFlag, parseArgs, ROOT, usage } from "./shared.ts";
+import { DOMAIN_ALIASES } from "../../src/lib/domain-aliases.ts";
+import {
+  mergeAliasCatalogFiles,
+  probeRedirectCanonicals,
+  resolveDomainAliasTarget,
+  resolveDomainAliasUpdates,
+  upsertDomainAliasesFile,
+  type DomainAlias,
+  type DomainAliasFileUpdateResult,
+} from "./redirect-canonical.ts";
+import { getFlag, getNumberFlag, hasFlag, parseArgs, ROOT, usage } from "./shared.ts";
 
 const DISCOVERY_NAMESPACE_ID = "7456151d9722471ca000f6d3b03a62c7";
 const BULK_CHUNK_SIZE = 100;
@@ -25,6 +36,9 @@ Flags:
   --local              Read local wrangler KV instead of production KV
   --dry-run            Print counts and a sample diff, write nothing
   --out dir            Catalog tree output directory (default: domains)
+  --skip-redirect-probe  Do not probe newly synced domains for canonical redirects
+  --redirect-timeout-ms n Per-request redirect probe timeout (default: 8000)
+  --redirect-concurrency n Parallel redirect probes (default: 8)
   --help               Show this help
 `;
 
@@ -152,8 +166,109 @@ function sampleDiff(changes: ReturnType<typeof mergeCatalogs>["changes"], limit 
   return `sample diff:\n${lines.join("\n")}`;
 }
 
-export function mergeDiscoveredCatalog(existing: Catalog, incoming: readonly CatalogDomain[]): ReturnType<typeof mergeCatalogs> {
-  return mergeCatalogs(existing, incoming);
+export function mergeDiscoveredCatalog(existing: Catalog, incoming: readonly CatalogDomain[], options?: { aliases?: Record<string, string> }): ReturnType<typeof mergeCatalogs> {
+  return mergeCatalogs(existing, incoming, options);
+}
+
+type SyncCatalogOptions = {
+  acceptedAliases?: readonly DomainAlias[];
+  dryRun?: boolean;
+  incoming: readonly CatalogDomain[];
+  keysListed: number;
+  log?: (message: string) => void;
+  mergeAliases?: typeof mergeAliasCatalogFiles;
+  outDir: string;
+  skippedInvalid: number;
+  warn?: (message: string) => void;
+  writeAliases?: (aliases: readonly DomainAlias[]) => DomainAliasFileUpdateResult;
+};
+
+export type SyncCatalogResult = {
+  aliasWrite?: DomainAliasFileUpdateResult;
+  aliasWriteError?: Error;
+  mergeResults: ReturnType<typeof mergeAliasCatalogFiles>;
+  sampleDiff?: string;
+  summary: SyncSummary;
+  written?: ReturnType<typeof writeDomainCatalogTree>;
+};
+
+function aliasList(aliases: readonly DomainAlias[]): string {
+  return aliases.map((alias) => `${alias.source} -> ${alias.target}`).join(", ");
+}
+
+function aliasOverrides(aliases: readonly DomainAlias[]): Record<string, string> {
+  return Object.fromEntries(aliases.map((alias) => [alias.source, alias.target]));
+}
+
+export function writeSyncedCatalog(options: SyncCatalogOptions): SyncCatalogResult {
+  const acceptedAliases = options.acceptedAliases ?? [];
+  const dryRun = options.dryRun ?? false;
+  const log = options.log ?? console.log;
+  const warn = options.warn ?? console.warn;
+  const writeAliases = options.writeAliases ?? upsertDomainAliasesFile;
+  const mergeAliases = options.mergeAliases ?? mergeAliasCatalogFiles;
+
+  let aliasWrite: DomainAliasFileUpdateResult | undefined;
+  let aliasWriteError: Error | undefined;
+  let appliedAliases: DomainAlias[] = [];
+
+  if (acceptedAliases.length > 0) {
+    if (dryRun) {
+      appliedAliases = resolveDomainAliasUpdates(DOMAIN_ALIASES, acceptedAliases, { warn }).applied;
+    } else {
+      try {
+        aliasWrite = writeAliases(acceptedAliases);
+        appliedAliases = aliasWrite.applied;
+        log(`redirect-probe: aliases file changed=${aliasWrite.changed} added=${aliasWrite.added.length}`);
+      } catch (err) {
+        aliasWriteError = err as Error;
+        warn(`redirect-probe: failed to write aliases for ${aliasList(acceptedAliases)}: ${aliasWriteError.message}`);
+        warn("redirect-probe: continuing catalog sync without applying new redirect aliases; run redirect:canonical --apply after fixing aliases.");
+      }
+    }
+  }
+
+  const catalogOptions = { aliases: aliasMapWith(aliasOverrides(appliedAliases)) };
+  const existing = readDomainCatalogTree(options.outDir, catalogOptions);
+  const merged = mergeDiscoveredCatalog(existing, options.incoming, catalogOptions);
+  const summary: SyncSummary = {
+    keysListed: options.keysListed,
+    skippedInvalid: options.skippedInvalid,
+    parsed: options.incoming.length,
+    mergedNew: merged.stats.new,
+    updated: merged.stats.updated,
+    unchanged: merged.stats.unchanged,
+  };
+
+  log(
+    [
+      `keys listed: ${summary.keysListed}`,
+      `skipped invalid: ${summary.skippedInvalid}`,
+      `parsed: ${summary.parsed}`,
+      `domain files added: ${summary.mergedNew}`,
+      `domain files updated: ${summary.updated}`,
+      `domain files unchanged: ${summary.unchanged}`,
+    ].join("\n"),
+  );
+
+  if (dryRun) {
+    const diff = sampleDiff(merged.changes);
+    log(diff);
+    return { aliasWrite, aliasWriteError, mergeResults: [], sampleDiff: diff, summary };
+  }
+
+  const written = writeDomainCatalogTree(options.outDir, merged.catalog.domains, catalogOptions);
+  for (const skip of written.skipped) {
+    warn(`sync-kv: skipped ${skip.domain}: ${skip.reason}`);
+  }
+
+  const mergeResults = aliasWriteError ? [] : mergeAliases(options.outDir, appliedAliases);
+  for (const result of mergeResults) {
+    log(`redirect-probe: catalog ${result.action} ${result.source} -> ${result.target}`);
+  }
+  log(`wrote ${written.written} domain files to ${options.outDir} (${written.changed} changed)`);
+
+  return { aliasWrite, aliasWriteError, mergeResults, summary, written };
 }
 
 async function main(): Promise<void> {
@@ -201,38 +316,46 @@ async function main(): Promise<void> {
     }
   }
 
-  const existing = readDomainCatalogTree(outDir);
-  const merged = mergeDiscoveredCatalog(existing, incoming);
-  const summary: SyncSummary = {
-    keysListed: keys.length,
-    skippedInvalid,
-    parsed: incoming.length,
-    mergedNew: merged.stats.new,
-    updated: merged.stats.updated,
-    unchanged: merged.stats.unchanged,
+  const incomingTargets = new Set(incoming.map((domain) => catalogDomainKey(domain.domain)).filter((domain): domain is string => Boolean(domain)));
+  const hasAliasTarget = (source: string, target: string): boolean => {
+    const resolution = resolveDomainAliasTarget(source, target, DOMAIN_ALIASES);
+    const candidates = resolution.kind === "target" ? [resolution.target] : [source, target];
+    return candidates.some((candidate) => incomingTargets.has(candidate) || existsSync(join(outDir, candidate, "integrations.json")));
   };
-
-  console.log(
-    [
-      `keys listed: ${summary.keysListed}`,
-      `skipped invalid: ${summary.skippedInvalid}`,
-      `parsed: ${summary.parsed}`,
-      `domain files added: ${summary.mergedNew}`,
-      `domain files updated: ${summary.updated}`,
-      `domain files unchanged: ${summary.unchanged}`,
-    ].join("\n"),
-  );
-
-  if (dryRun) {
-    console.log(sampleDiff(merged.changes));
-    return;
+  const acceptedAliases: Array<{ source: string; target: string }> = [];
+  if (!hasFlag(args, "skip-redirect-probe")) {
+    const probeDomains = incoming
+      .map((domain) => domain.domain.toLowerCase())
+      .filter((domain) => !DOMAIN_ALIASES[domain]);
+    const redirectDecisions = await probeRedirectCanonicals(probeDomains, {
+      catalogDir: outDir,
+      catalogDomains: incoming,
+      timeoutMs: getNumberFlag(args, "redirect-timeout-ms", 8000),
+      concurrency: getNumberFlag(args, "redirect-concurrency", 8),
+      trace: true,
+    });
+    for (const decision of redirectDecisions) {
+      if (decision.kind === "alias") {
+        console.log(`redirect-probe: accepted ${decision.source} -> ${decision.target}`);
+        if (hasAliasTarget(decision.source, decision.target)) {
+          acceptedAliases.push({ source: decision.source, target: decision.target });
+        } else {
+          console.log(`redirect-probe: skipped ${decision.source} -> ${decision.target}: target catalog record not found`);
+        }
+      } else if (decision.kind === "rejected") {
+        console.log(`redirect-probe: rejected ${decision.source}${decision.target ? ` -> ${decision.target}` : ""} (${decision.reason}): ${decision.detail}`);
+      }
+    }
   }
 
-  const written = writeDomainCatalogTree(outDir, merged.catalog.domains);
-  for (const skip of written.skipped) {
-    console.warn(`sync-kv: skipped ${skip.domain}: ${skip.reason}`);
-  }
-  console.log(`wrote ${written.written} domain files to ${outDir} (${written.changed} changed)`);
+  writeSyncedCatalog({
+    acceptedAliases,
+    dryRun,
+    incoming,
+    keysListed: keys.length,
+    outDir,
+    skippedInvalid,
+  });
 }
 
 if (import.meta.main) await main();

@@ -12,7 +12,7 @@ type SurfaceLike = JsonObject & {
   spec?: string | null;
   specAlternates?: string[] | null;
   command?: string | null;
-  packages?: Array<{ identifier?: string | null }>;
+  packages?: Array<{ registryType?: string | null; identifier?: string | null; runtimeHint?: string | null }>;
 };
 
 type CredentialLike = JsonObject & {
@@ -122,6 +122,30 @@ function unionAuthEntries(a: unknown[] | undefined, b: unknown[] | undefined): u
   return out;
 }
 
+function packageKey(pkg: { registryType?: string | null; identifier?: string | null; runtimeHint?: string | null }): string {
+  return [
+    normalizeLocator(pkg.registryType),
+    normalizeLocator(pkg.identifier),
+    normalizeLocator(pkg.runtimeHint),
+  ].join("|");
+}
+
+function unionPackages(
+  a: SurfaceLike["packages"] | undefined,
+  b: SurfaceLike["packages"] | undefined,
+): SurfaceLike["packages"] | undefined {
+  const out: NonNullable<SurfaceLike["packages"]> = [];
+  const seen = new Set<string>();
+  for (const pkg of [...(a ?? []), ...(b ?? [])]) {
+    if (!pkg?.identifier) continue;
+    const key = packageKey(pkg);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(pkg);
+  }
+  return out.length ? out : undefined;
+}
+
 function mergeSurface(kept: SurfaceLike, dropped: SurfaceLike): SurfaceLike {
   const keep = shouldPrefer(dropped, kept) ? dropped : kept;
   const other = keep === kept ? dropped : kept;
@@ -145,6 +169,11 @@ function mergeSurface(kept: SurfaceLike, dropped: SurfaceLike): SurfaceLike {
   }
   if (!merged.docs && other.docs) merged.docs = other.docs;
   if (!merged.notes && other.notes) merged.notes = other.notes;
+  if (merged.type === "cli") {
+    const packages = unionPackages(keep.packages, other.packages);
+    if (packages) merged.packages = packages;
+    else delete merged.packages;
+  }
   if (keep.auth?.status === "required" || other.auth?.status === "required") {
     const keepEntries = keep.auth?.status === "required" ? keep.auth.entries : [];
     const otherEntries = other.auth?.status === "required" ? other.auth.entries : [];

@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseDomain } from "tldts";
 import type { AuthStatus, StoredDiscovery, Surface } from "../../src/lib/discovery-schema.ts";
-import { canonicalDomain } from "../../src/lib/domain-aliases.ts";
+import { canonicalDomain, DOMAIN_ALIASES } from "../../src/lib/domain-aliases.ts";
+import { dedupSurfaces, normalizeLocator, surfaceDedupKey } from "./dedup.ts";
 
 export const ROOT = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/, "");
 export const DEFAULT_DOMAIN_CATALOG_DIR = join(ROOT, "domains");
@@ -49,6 +50,10 @@ export type CatalogMergeResult = {
   changes: Array<{ kind: "new" | "updated"; domain: string; previousDiscoveredAt?: string; nextDiscoveredAt?: string }>;
 };
 
+export type CatalogDomainOptions = {
+  aliases?: Record<string, string>;
+};
+
 type LooseRecord = Record<string, unknown>;
 
 function isRecord(value: unknown): value is LooseRecord {
@@ -70,13 +75,22 @@ export function stableJson(value: unknown): string {
   return `${JSON.stringify(sortJsonValue(value), null, 2)}\n`;
 }
 
-export function catalogDomainKey(input: string | undefined): string | null {
+function canonicalDomainWithAliases(domain: string, options?: CatalogDomainOptions): string {
+  const normalized = domain.toLowerCase().trim();
+  return options?.aliases?.[normalized] ?? canonicalDomain(normalized);
+}
+
+export function aliasMapWith(overrides: Record<string, string> = {}): Record<string, string> {
+  return { ...DOMAIN_ALIASES, ...overrides };
+}
+
+export function catalogDomainKey(input: string | undefined, options?: CatalogDomainOptions): string | null {
   const domain = input?.trim().toLowerCase().replace(/\.$/, "");
   if (!domain || domain.startsWith("__")) return null;
   if (!/^[a-z0-9.-]+$/.test(domain) || !domain.includes(".")) return null;
   const info = parseDomain(`https://${domain}`, { allowPrivateDomains: true });
   if (info.isIp || !info.domain || !(info.isIcann || info.isPrivate)) return null;
-  const canonical = canonicalDomain(domain);
+  const canonical = canonicalDomainWithAliases(domain, options);
   const canonicalInfo = parseDomain(`https://${canonical}`, { allowPrivateDomains: true });
   if (canonicalInfo.isIp || !canonicalInfo.domain || !(canonicalInfo.isIcann || canonicalInfo.isPrivate)) return null;
   return canonical;
@@ -181,6 +195,126 @@ function discoveredTime(domain: CatalogDomain): number {
   return Number.isFinite(time) ? time : 0;
 }
 
+function catalogPackageKey(pkg: CatalogPackage): string {
+  return [
+    normalizeLocator(pkg.registryType),
+    normalizeLocator(pkg.identifier),
+    normalizeLocator(pkg.runtimeHint),
+  ].join("|");
+}
+
+function mergeCatalogPackages(primary: CatalogPackage[] | undefined, secondary: CatalogPackage[] | undefined): CatalogPackage[] | undefined {
+  const out: CatalogPackage[] = [];
+  const seen = new Set<string>();
+  for (const pkg of [...(primary ?? []), ...(secondary ?? [])]) {
+    const key = catalogPackageKey(pkg);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(pkg);
+  }
+  return out.length ? out : undefined;
+}
+
+function toDedupSurface(surface: CatalogSurface): Record<string, unknown> {
+  return {
+    ...surface,
+    auth: { status: surface.authStatus },
+  };
+}
+
+function fromDedupSurface(surface: Record<string, unknown>): CatalogSurface {
+  const auth = isRecord(surface.auth) ? authStatusValue(surface.auth.status) : authStatusValue(surface.authStatus);
+  const out: CatalogSurface = {
+    slug: stringValue(surface.slug) ?? stringValue(surface.name) ?? "surface",
+    name: stringValue(surface.name) ?? stringValue(surface.slug) ?? "Surface",
+    type: surface.type as Surface["type"],
+    authStatus: auth,
+  };
+  const url = stringValue(surface.url);
+  const spec = stringValue(surface.spec);
+  const command = stringValue(surface.command);
+  if (url) out.url = url;
+  if (spec) out.spec = spec;
+  if (out.type === "cli") {
+    if (command) out.command = command;
+    const packages = compactPackages(surface.packages);
+    if (packages) out.packages = packages;
+  }
+  return out;
+}
+
+function catalogSurfaceIdentityKey(surface: CatalogSurface): string {
+  return `${surface.type}|${normalizeLocator(surface.name)}`;
+}
+
+function mergeCatalogSurfaceRows(primary: CatalogSurface, secondary: CatalogSurface): CatalogSurface {
+  const merged: CatalogSurface = { ...secondary, ...primary };
+  const packages = mergeCatalogPackages(primary.packages, secondary.packages);
+  if (packages) merged.packages = packages;
+  else delete merged.packages;
+  return merged;
+}
+
+function collapseCatalogSurfaceIdentities(surfaces: CatalogSurface[]): CatalogSurface[] {
+  const out: CatalogSurface[] = [];
+  const byIdentity = new Map<string, number>();
+  for (const surface of surfaces) {
+    const key = catalogSurfaceIdentityKey(surface);
+    const existingIndex = byIdentity.get(key);
+    if (existingIndex === undefined) {
+      byIdentity.set(key, out.length);
+      out.push(surface);
+      continue;
+    }
+    out[existingIndex] = mergeCatalogSurfaceRows(out[existingIndex]!, surface);
+  }
+  return out;
+}
+
+function mergeCatalogSurfaces(primary: CatalogDomain, secondary: CatalogDomain): CatalogSurface[] {
+  const primarySurfaces = primary.surfaces.map(toDedupSurface);
+  const primaryByKey = new Map(primarySurfaces.map((surface) => [surfaceDedupKey(surface), surface]));
+  const raw = {
+    domain: primary.domain,
+    surfaces: [...primarySurfaces, ...secondary.surfaces.map(toDedupSurface)],
+  };
+  const deduped = dedupSurfaces(raw).surfaces as Record<string, unknown>[];
+
+  const merged = deduped.map((surface) => {
+    const primarySurface = primaryByKey.get(surfaceDedupKey(surface));
+    if (!primarySurface) return fromDedupSurface(surface);
+    const merged: Record<string, unknown> = { ...surface, ...primarySurface };
+    const packages = mergeCatalogPackages(compactPackages(primarySurface.packages), compactPackages(surface.packages));
+    if (packages) merged.packages = packages;
+    else delete merged.packages;
+    return fromDedupSurface(merged);
+  });
+  return collapseCatalogSurfaceIdentities(merged);
+}
+
+function isCanonicalRow(domain: CatalogDomain, key: string): boolean {
+  return domain.domain.toLowerCase() === key;
+}
+
+export function mergeCatalogDomainRows(
+  a: CatalogDomain,
+  b: CatalogDomain,
+  key = catalogDomainKey(a.domain) ?? catalogDomainKey(b.domain) ?? a.domain.toLowerCase(),
+): CatalogDomain {
+  const aCanonical = isCanonicalRow(a, key);
+  const bCanonical = isCanonicalRow(b, key);
+  const primary = aCanonical !== bCanonical
+    ? aCanonical ? a : b
+    : discoveredTime(b) > discoveredTime(a) ? b : a;
+  const secondary = primary === a ? b : a;
+  return {
+    ...secondary,
+    ...primary,
+    domain: key,
+    surfaces: mergeCatalogSurfaces(primary, secondary),
+  };
+}
+
 function domainFilePath(root: string, canonical: string): string {
   return join(root, canonical, "integrations.json");
 }
@@ -198,13 +332,13 @@ export function readDomainCatalogFile(path: string): CatalogDomain {
   return JSON.parse(readFileSync(path, "utf8")) as CatalogDomain;
 }
 
-export function readDomainCatalogTree(root = DEFAULT_DOMAIN_CATALOG_DIR): Catalog {
+export function readDomainCatalogTree(root = DEFAULT_DOMAIN_CATALOG_DIR, options?: CatalogDomainOptions): Catalog {
   const domains = listDomainCatalogFiles(root)
     .map(readDomainCatalogFile)
-    .filter((domain) => catalogDomainKey(domain.domain) !== null)
+    .filter((domain) => catalogDomainKey(domain.domain, options) !== null)
     .sort((a, b) => {
-      const aKey = catalogDomainKey(a.domain) ?? a.domain;
-      const bKey = catalogDomainKey(b.domain) ?? b.domain;
+      const aKey = catalogDomainKey(a.domain, options) ?? a.domain;
+      const bKey = catalogDomainKey(b.domain, options) ?? b.domain;
       return aKey.localeCompare(bKey) || a.domain.localeCompare(b.domain);
     });
   return { domains };
@@ -213,25 +347,26 @@ export function readDomainCatalogTree(root = DEFAULT_DOMAIN_CATALOG_DIR): Catalo
 export function writeDomainCatalogTree(
   root: string,
   domains: readonly CatalogDomain[],
+  options?: CatalogDomainOptions,
 ): { written: number; changed: number; skipped: Array<{ domain: string; reason: string }> } {
   let written = 0;
   let changed = 0;
   const skipped: Array<{ domain: string; reason: string }> = [];
 
   const rows = [...domains].sort((a, b) => {
-    const aKey = catalogDomainKey(a.domain) ?? a.domain;
-    const bKey = catalogDomainKey(b.domain) ?? b.domain;
+    const aKey = catalogDomainKey(a.domain, options) ?? a.domain;
+    const bKey = catalogDomainKey(b.domain, options) ?? b.domain;
     return aKey.localeCompare(bKey) || a.domain.localeCompare(b.domain);
   });
 
   for (const domain of rows) {
-    const key = catalogDomainKey(domain.domain);
+    const key = catalogDomainKey(domain.domain, options);
     if (!key) {
       skipped.push({ domain: domain.domain, reason: "invalid registrable domain" });
       continue;
     }
     const path = domainFilePath(root, key);
-    const next = stableJson(domain);
+    const next = stableJson({ ...domain, domain: key });
     const before = existsSync(path) ? readFileSync(path, "utf8") : undefined;
     mkdirSync(join(path, ".."), { recursive: true });
     if (before !== next) {
@@ -244,13 +379,13 @@ export function writeDomainCatalogTree(
   return { written, changed, skipped };
 }
 
-export function mergeCatalogs(existing: Catalog, incomingDomains: readonly CatalogDomain[]): CatalogMergeResult {
+export function mergeCatalogs(existing: Catalog, incomingDomains: readonly CatalogDomain[], options?: CatalogDomainOptions): CatalogMergeResult {
   const byCanonical = new Map<string, CatalogDomain>();
   for (const domain of existing.domains ?? []) {
-    const key = catalogDomainKey(domain.domain);
+    const key = catalogDomainKey(domain.domain, options);
     if (!key) continue;
     const prior = byCanonical.get(key);
-    if (!prior || discoveredTime(domain) > discoveredTime(prior)) byCanonical.set(key, domain);
+    byCanonical.set(key, prior ? mergeCatalogDomainRows(prior, domain, key) : { ...domain, domain: key });
   }
 
   const stats: CatalogMergeStats = { new: 0, updated: 0, unchanged: 0 };
@@ -258,27 +393,26 @@ export function mergeCatalogs(existing: Catalog, incomingDomains: readonly Catal
   const touched = new Set<string>();
 
   for (const incoming of incomingDomains) {
-    const key = catalogDomainKey(incoming.domain);
+    const key = catalogDomainKey(incoming.domain, options);
     if (!key) continue;
     touched.add(key);
     const prior = byCanonical.get(key);
     if (!prior) {
-      byCanonical.set(key, incoming);
+      byCanonical.set(key, { ...incoming, domain: key });
       stats.new++;
-      changes.push({ kind: "new", domain: incoming.domain, nextDiscoveredAt: incoming.discoveredAt });
+      changes.push({ kind: "new", domain: key, nextDiscoveredAt: incoming.discoveredAt });
       continue;
     }
 
-    const priorTime = discoveredTime(prior);
-    const incomingTime = discoveredTime(incoming);
-    if (incomingTime > priorTime) {
-      byCanonical.set(key, incoming);
+    const merged = mergeCatalogDomainRows(prior, incoming, key);
+    if (stableJson(merged) !== stableJson(prior)) {
+      byCanonical.set(key, merged);
       stats.updated++;
       changes.push({
         kind: "updated",
-        domain: incoming.domain,
+        domain: key,
         previousDiscoveredAt: prior.discoveredAt,
-        nextDiscoveredAt: incoming.discoveredAt,
+        nextDiscoveredAt: merged.discoveredAt,
       });
     } else {
       stats.unchanged++;

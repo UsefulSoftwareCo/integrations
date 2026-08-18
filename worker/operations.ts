@@ -162,7 +162,7 @@ export const runDiscover = (domain: string): Effect.Effect<typeof DiscoverResult
   Effect.promise(async () => {
     const d = await detect(canonicalDomain(domain));
     if (!chatFn) return packDiscovery(d.domain, d, null, false);
-    const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb()).catch(() => null);
+    const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb());
     return packDiscovery(d.domain, d, disc, true);
   });
 
@@ -178,6 +178,6 @@ export const discoverWithProgress = async (
   const d = await detect(canonicalDomain(domain));
   emit({ kind: "progress", message: d.found.length ? `Detected: ${d.found.join(", ")}` : "No standard signals — searching" });
   if (!chatFn) return packDiscovery(d.domain, d, null, false);
-  const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb(), emit).catch(() => null);
+  const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb(), emit);
   return packDiscovery(d.domain, d, disc, true);
 };

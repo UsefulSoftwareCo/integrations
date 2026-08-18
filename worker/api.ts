@@ -13,6 +13,7 @@ import { Credential, DISCOVERY_VERSION, Surface } from "../src/lib/discovery-sch
 import { canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { searchIndex } from "../src/lib/search-index.ts";
 import type { Env } from "./env.ts";
+import { validateDiscoverableDomain } from "./domain-validation.ts";
 import { discoveryDoc } from "./discovery-doc.ts";
 import { appendLiveSearchResults, readLiveIndex, type LiveIndexEntry } from "./live-index.ts";
 import {
@@ -62,6 +63,10 @@ const SearchResults = Schema.Struct({
 const SurfaceNotFound = Schema.Struct({
   error: Schema.String.annotate({ description: "Surface document lookup failure." }),
 }).pipe(HttpApiSchema.status(404)).annotate({ description: "No stored or baseline surface document exists for the domain." });
+
+const InvalidDomain = Schema.Struct({
+  error: Schema.String.annotate({ description: "Domain validation failure." }),
+}).pipe(HttpApiSchema.status(400)).annotate({ description: "The supplied domain is not a public discoverable domain." });
 
 const SurfaceResult = Schema.Struct({
   version: Schema.Literal(DISCOVERY_VERSION),
@@ -118,6 +123,7 @@ const Search = HttpApiEndpoint.get("search", "/api/search", {
 const Detect = HttpApiEndpoint.get("detect", "/api/:domain/detect", {
   params: DetectParams,
   success: DetectionResult,
+  error: InvalidDomain,
 })
   .annotate(OpenApi.Summary, "Detect a domain's agent-readiness")
   .annotate(OpenApi.Description, DETECT_DESCRIPTION);
@@ -125,6 +131,7 @@ const Detect = HttpApiEndpoint.get("detect", "/api/:domain/detect", {
 const Discover = HttpApiEndpoint.get("discover", "/api/:domain/discover", {
   params: DiscoverParams,
   success: DiscoverResult,
+  error: InvalidDomain,
 })
   .annotate(OpenApi.Summary, "Discover how to authenticate with a domain's API")
   .annotate(OpenApi.Description, DISCOVER_DESCRIPTION);
@@ -178,8 +185,14 @@ const DetectGroup = HttpApiBuilder.group(Api, "detect", (handlers) =>
         const liveEntries = yield* Effect.promise(() => readLiveIndex(env));
         return searchCatalog(req.query, liveEntries);
       }))
-    .handle("detect", (req: { readonly params: { readonly domain: string } }) => runDetect(canonicalDomain(req.params.domain)))
-    .handle("discover", (req: { readonly params: { readonly domain: string } }) => runDiscover(canonicalDomain(req.params.domain)))
+    .handle("detect", (req: { readonly params: { readonly domain: string } }) => {
+      const validation = validateDiscoverableDomain(req.params.domain);
+      return "error" in validation ? Effect.fail(validation as typeof InvalidDomain.Type) : runDetect(validation.domain);
+    })
+    .handle("discover", (req: { readonly params: { readonly domain: string } }) => {
+      const validation = validateDiscoverableDomain(req.params.domain);
+      return "error" in validation ? Effect.fail(validation as typeof InvalidDomain.Type) : runDiscover(validation.domain);
+    })
     .handle("surface", (req: { readonly params: { readonly domain: string } }) =>
       Effect.gen(function*() {
         const { env, origin } = yield* ApiRuntime;

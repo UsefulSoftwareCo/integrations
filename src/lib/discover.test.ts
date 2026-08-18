@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { PROBE_KEYS } from "./conventions.ts";
 import { discover, slackMcpAppManifestUrl, type ChatFn, type WebBackend } from "./discover.ts";
+import { setCatalogSeedDataForTest } from "./catalog-seed.ts";
 import type { DetectionResult } from "./detect.ts";
 
 const web: WebBackend = {
@@ -187,5 +188,110 @@ describe("discover MCP onboarding overrides", () => {
     expect(setup).toContain("pre-registered app required");
     expect(setup).not.toContain("Slack MCP server access");
     expect(setup).not.toContain("api.slack.com/apps?new_app=1");
+  });
+});
+
+describe("discover completion behavior", () => {
+  test("propagates a chat failure instead of returning an empty success", async () => {
+    const chat: ChatFn = async () => {
+      throw new Error("model crashed");
+    };
+
+    await expect(discover("example.com", { ...baseDetection(""), found: [], probed: [], llmsTxt: undefined }, chat, web)).rejects.toThrow("model crashed");
+  });
+
+  test("keeps a completed zero-surface run as a valid success", async () => {
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        {
+          id: "finish-1",
+          name: "finish",
+          arguments: {
+            summary: "No public developer integration surfaces were found.",
+            description: "Example is a test service.",
+          },
+        },
+      ],
+    });
+
+    const result = await discover("example.com", { ...baseDetection(""), found: [], probed: [], llmsTxt: undefined }, chat, web);
+
+    expect(result?.surfaces).toEqual([]);
+    expect(result?.summary).toBe("No public developer integration surfaces were found.");
+  });
+});
+
+describe("discover catalog seed merge", () => {
+  test("appends a registry seed when the model records nothing", async () => {
+    setCatalogSeedDataForTest({
+      "seeded.test": [
+        {
+          kind: "openapi",
+          name: "Seeded REST API",
+          feeds: ["apis-guru"],
+          specUrl: "https://api.seeded.test/openapi.json",
+          docsUrl: "https://docs.seeded.test/api",
+        },
+      ],
+    });
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [{ id: "finish-1", name: "finish", arguments: { summary: "", description: "Seeded service." } }],
+    });
+
+    try {
+      const result = await discover("seeded.test", { domain: "seeded.test", found: [], probed: [], mcp: [], errors: [] }, chat, web);
+
+      expect(result?.surfaces).toHaveLength(1);
+      expect(result?.surfaces[0]).toMatchObject({
+        slug: "seeded-rest-api",
+        name: "Seeded REST API",
+        type: "http",
+        spec: "https://api.seeded.test/openapi.json",
+        basis: { via: "detected", signal: "registry" },
+        auth: { status: "unknown" },
+      });
+    } finally {
+      setCatalogSeedDataForTest(null);
+    }
+  });
+
+  test("does not append a duplicate when a model surface matches the seed locator", async () => {
+    setCatalogSeedDataForTest({
+      "seeded.test": [
+        {
+          kind: "openapi",
+          name: "Seeded REST API",
+          feeds: ["apis-guru"],
+          specUrl: "https://api.seeded.test/openapi.json",
+        },
+      ],
+    });
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        {
+          id: "surface-1",
+          name: "record_surface",
+          arguments: {
+            name: "Enriched REST API",
+            type: "http",
+            url: "https://api.seeded.test/openapi.json",
+            authStatus: "unknown",
+          },
+        },
+        { id: "finish-1", name: "finish", arguments: { summary: "REST API.", description: "Seeded service." } },
+      ],
+    });
+
+    try {
+      const result = await discover("seeded.test", { domain: "seeded.test", found: [], probed: [], mcp: [], errors: [] }, chat, web);
+
+      expect(result?.surfaces).toHaveLength(1);
+      expect(result?.surfaces[0]?.name).toBe("Enriched REST API");
+    } finally {
+      setCatalogSeedDataForTest(null);
+    }
   });
 });

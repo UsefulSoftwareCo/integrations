@@ -1,7 +1,7 @@
 import catalogSeedJson from "../../output/catalog-seeds.json";
 import type { Feed, Kind } from "./types.ts";
 
-interface CatalogSeedEntry {
+export interface CatalogSeedEntry {
   kind: Kind;
   name: string;
   feeds: Feed[];
@@ -17,15 +17,24 @@ interface CatalogSeedEntry {
   repo?: string;
 }
 
-const catalogSeedData = catalogSeedJson as Record<string, CatalogSeedEntry[]>;
+let catalogSeedData = catalogSeedJson as Record<string, CatalogSeedEntry[]>;
+
+export function setCatalogSeedDataForTest(data: Record<string, CatalogSeedEntry[]> | null): void {
+  catalogSeedData = data ?? (catalogSeedJson as Record<string, CatalogSeedEntry[]>);
+}
+
+export function catalogSeedRecords(domain: string): CatalogSeedEntry[] {
+  const target = domain.trim().toLowerCase();
+  if (!target) return [];
+  return (catalogSeedData[target] ?? []).filter((record) => !record.feeds.includes("discovered"));
+}
 
 export function catalogSeeds(domain: string): string[] {
   const target = domain.trim().toLowerCase();
   if (!target) return [];
 
   const facts: string[] = [];
-  for (const record of catalogSeedData[target] ?? []) {
-    if (record.feeds.includes("discovered")) continue;
+  for (const record of catalogSeedRecords(target)) {
     const fact = seedFor(record);
     if (fact) facts.push(fact);
   }

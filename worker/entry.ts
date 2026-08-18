@@ -17,7 +17,7 @@ import yogaWasmModule from "satori/yoga.wasm?module";
 import { apiContext, apiHandler } from "./api.ts";
 import { canonicalRedirect } from "./canonical.ts";
 import { discoveryDoc, discoveryKvGet } from "./discovery-doc.ts";
-import { domainsJsonWithLiveIndex, upsertLiveIndex } from "./live-index.ts";
+import { apiJsonWithLiveIndex, domainsJsonWithLiveIndex, upsertLiveIndex } from "./live-index.ts";
 import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
 import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
@@ -32,6 +32,7 @@ import { McpDurableObject } from "./mcp-do.ts";
 // Bump when detect/discover output shape or logic changes, so the edge Cache API
 // (which survives deploys) stops serving results produced by the old code.
 const CACHE_VERSION = "20"; // 20: llms.txt content seeds discovery
+const API_JSON_CACHE_VERSION = "1";
 
 // The discovery-loop model. gpt-5.4 drives the agentic tool-calling loop
 // (search/sitemap/scrape/report). (Note: gpt-5.x rejects `reasoning_effort`
@@ -720,6 +721,19 @@ async function handleRequest(
 
     if (request.method === "GET" && url.pathname === "/api/domains.json") {
       return domainsJsonWithLiveIndex(env, url.origin);
+    }
+
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/api.json") {
+      const cache = (caches as unknown as EdgeCaches).default;
+      const keyUrl = new URL(`${url.origin}/api.json`);
+      keyUrl.searchParams.set("__cv", API_JSON_CACHE_VERSION);
+      const cacheKey = new Request(keyUrl.toString(), { method: "GET" });
+      const cached = await cache.match(cacheKey);
+      if (cached) return request.method === "HEAD" ? new Response(null, cached) : cached;
+
+      const response = await apiJsonWithLiveIndex(env, url.origin);
+      if (response.ok) ctx.waitUntil(cache.put(cacheKey, response.clone()));
+      return request.method === "HEAD" ? new Response(null, response) : response;
     }
 
     // /ssr/{domain}/ is the INTERNAL render target below — never a public URL.

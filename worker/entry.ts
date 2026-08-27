@@ -31,7 +31,7 @@ import { McpDurableObject } from "./mcp-do.ts";
 
 // Bump when detect/discover output shape or logic changes, so the edge Cache API
 // (which survives deploys) stops serving results produced by the old code.
-const CACHE_VERSION = "20"; // 20: llms.txt content seeds discovery
+const CACHE_VERSION = "21"; // 21: dynamic API responses carry CORS headers
 const API_JSON_CACHE_VERSION = "1";
 
 // The discovery-loop model. gpt-5.4 drives the agentic tool-calling loop
@@ -669,6 +669,19 @@ async function handleRequest(
       /^\/api\/[^/]+\/(?:detect|discover|surface)\/?$/.test(url.pathname)
     ) {
       const endpoint = apiEndpoint(url.pathname);
+      // Browser callers (e.g. the executor console's catalog search) hit these
+      // endpoints cross-origin; the static JSON routes are already CORS-open.
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            "access-control-allow-origin": "*",
+            "access-control-allow-methods": "GET, HEAD, OPTIONS",
+            "access-control-allow-headers": "content-type",
+            "access-control-max-age": "86400",
+          },
+        });
+      }
       const cache = (caches as unknown as EdgeCaches).default;
       // Version the cache key so a deploy that bumps CACHE_VERSION orphans stale
       // entries (the Cache API otherwise survives deploys).
@@ -698,10 +711,13 @@ async function handleRequest(
         // discover runs the LLM agent — cache a day; live-indexed search and
         // surface reads stay fresh within a minute; the rest are cheap — an hour.
         out.headers.set("cache-control", `public, max-age=${maxAge}`);
+        out.headers.set("access-control-allow-origin", "*");
         if (res.status === 200) ctx.waitUntil(cache.put(cacheKey, out.clone()));
         return out;
       }
-      return res;
+      const passthrough = new Response(res.body, res);
+      passthrough.headers.set("access-control-allow-origin", "*");
+      return passthrough;
     }
 
     // Analytics on fallthrough: `hit` for executor agents, `data_fetch` for

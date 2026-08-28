@@ -36,6 +36,10 @@ export const DOMAIN_ALIASES: Record<string, string> = {
   "avatars3.githubusercontent.com": "github.com",
   "avatars.githubusercontent.com": "github.com",
   "gist.githubusercontent.com": "github.com",
+  // Gmail's API host is Gmail. Left unaliased it became a second Gmail in the
+  // catalog, carrying a duplicate API surface and a fabricated MCP endpoint
+  // (https://gmail.googleapis.com/mcp/ 404s).
+  "gmail.googleapis.com": "gmail.com",
   "user-images.githubusercontent.com": "github.com",
   "graphite.dev": "graphite.com",
   "heapanalytics.com": "heap.io",

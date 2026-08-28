@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDomain as tldGetDomain } from "tldts";
-import { aliasesOf, canonicalDomain } from "../src/lib/domain-aliases.ts";
+import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
 
 // Registrable domain per the Public Suffix List, with the PSL's private section
 // enabled so platform-hosted services resolve to their own host
@@ -17,6 +17,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCES = join(ROOT, "sources");
 const DOMAINS = join(ROOT, "domains");
 const OVERRIDES = join(ROOT, "overrides");
+const CURATED = join(ROOT, "curated");
 const OUTPUT = join(ROOT, "output");
 
 mkdirSync(OUTPUT, { recursive: true });
@@ -249,6 +250,47 @@ function buildOpenapi(): Integration[] {
   }
   for (const s of manual) byKey.set(keyOf(s), s);
 
+  // Second pass: one record per (domain, title).
+  //
+  // apis.guru catalogues every deployment target and dated release of the same
+  // API as its own spec. GitHub ships 20 copies of "GitHub v3 REST API"
+  // (GHES 2.18 through 3.8, GHEC, github.ae, dated `api.github.com` variants)
+  // and Azure 510 of "NetworkManagementClient". The provider+service pass above
+  // cannot see it, because each of those IS a distinct service string — but to
+  // anyone choosing something to connect they are one integration, and left
+  // alone they make a domain's API count meaningless (github.com read as 21).
+  //
+  // Pick order: a hand-curated override wins; then the base provider (no
+  // `:service` suffix), which is the vendor's own current deployment; then the
+  // most recently updated.
+  const providerDomain = (s: ApiGuruSpec) => (s.provider ?? "").split(":")[0].toLowerCase();
+  const titleKey = (s: ApiGuruSpec) => {
+    const title = (s.title ?? "").trim().toLowerCase();
+    // No title is no evidence of sameness — keep those records distinct.
+    return title.length === 0 ? null : `${providerDomain(s)}::${title}`;
+  };
+  const rank = (s: ApiGuruSpec): number =>
+    (manualKeys.has(keyOf(s)) ? 2 : 0) + (s.provider.includes(":") ? 0 : 1);
+  const byTitle = new Map<string, ApiGuruSpec>();
+  for (const [key, s] of byKey) {
+    const group = titleKey(s);
+    if (group === null) continue;
+    const prev = byTitle.get(group);
+    if (!prev) {
+      byTitle.set(group, s);
+      continue;
+    }
+    const better =
+      rank(s) > rank(prev) ||
+      (rank(s) === rank(prev) && (s.updated ?? "") > (prev.updated ?? ""));
+    if (better) {
+      byKey.delete(keyOf(prev));
+      byTitle.set(group, s);
+    } else {
+      byKey.delete(key);
+    }
+  }
+
   const recs: Integration[] = [];
   for (const [key, s] of byKey) {
     const slug = slugify(key);
@@ -385,9 +427,13 @@ interface DiscoveredDomain {
 }
 
 const DISCOVERED_KIND_PRIORITY: Kind[] = ["mcp", "openapi", "graphql", "cli"];
-// Railway's hand-maintained CLI source moved to railway.com. Keep the old
-// crawler row deduped against that source so normalization does not add records.
-const DISCOVERED_ALIAS_DEDUPE = new Set(aliasesOf("railway.com"));
+// An alias means "same vendor", so a crawled record for the alias must not open
+// a second bucket beside the canonical domain's. This was hardcoded to
+// railway.com's one migration; every alias has the same problem, and the ones
+// that went unhandled are how a static-asset host like
+// avatars1.githubusercontent.com ended up in the catalog claiming GitHub's REST,
+// GraphQL and CLI surfaces as its own.
+const DISCOVERED_ALIAS_DEDUPE = new Set(Object.keys(DOMAIN_ALIASES));
 
 const discoveredKind = (type: DiscoveredSurfaceType): Kind => (type === "http" ? "openapi" : type);
 const domainKindKey = (domain: string, kind: Kind) => `${canonicalDomain(domain)}:${kind}`;
@@ -478,6 +524,98 @@ export function buildDiscoveredEntries(
   }
 
   return { records: dedupeSlugs(recs), zeroSurfaceDomains: [...zeroSurfaceDomains.values()] };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Curated: curated/*.json
+//
+// Hand-verified records, and the only place in this repo where a human has
+// actually checked what a vendor exposes. They were previously read by nothing
+// — the files existed and fed free text into the discovery prompt, while the
+// index was built entirely from crawled and third-party feeds. That is how
+// github.com came to list 21 API rows and no MCP server at all, while
+// curated/github.json had the correct four surfaces sitting on disk the whole
+// time.
+//
+// Curated records are built FIRST, so every later source dedupes against them.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface CuratedInterface {
+  format?: string;
+  name?: string;
+  endpoint?: string;
+  spec?: string;
+  docs?: string;
+  install?: string;
+}
+
+interface CuratedRecord {
+  slug?: string;
+  name?: string;
+  description?: string;
+  tagline?: string;
+  domain?: string;
+  icon?: string;
+  categories?: string[];
+  interfaces?: CuratedInterface[];
+}
+
+const CURATED_KIND: Record<string, Kind> = {
+  mcp: "mcp",
+  openapi: "openapi",
+  rest: "openapi",
+  http: "openapi",
+  graphql: "graphql",
+  cli: "cli",
+};
+
+export function buildCurated(): Integration[] {
+  if (!existsSync(CURATED)) return [];
+  const recs: Integration[] = [];
+  for (const file of readdirSync(CURATED)) {
+    if (!file.endsWith(".json")) continue;
+    const entry = readJson<CuratedRecord>(join(CURATED, file));
+    const domain = (entry.domain ?? "").trim().toLowerCase();
+    if (!domain) continue;
+    const description = (entry.description ?? entry.tagline ?? "").replace(/\s+/g, " ").trim();
+    const domainSlug = slugify(domain);
+    const seen = new Set<Kind>();
+    for (const iface of entry.interfaces ?? []) {
+      const kind = CURATED_KIND[(iface.format ?? "").toLowerCase()];
+      // One record per kind: the picker offers a surface, not every endpoint.
+      if (!kind || seen.has(kind)) continue;
+      seen.add(kind);
+      const rec: Integration = {
+        id: `curated/${domainSlug}-${kind}`,
+        slug: seen.size === 1 ? domainSlug : `${domainSlug}-${kind}`,
+        kind,
+        name: entry.name ?? domain,
+        description,
+        url: undefined,
+        icon: entry.icon ?? faviconUrl(domain) ?? undefined,
+        categories: entry.categories ?? [],
+        feeds: ["curated"],
+        raw: { curated: { domain, interface: iface } },
+      };
+      if (kind === "mcp") {
+        rec.mcp = { remoteUrl: iface.endpoint };
+      } else if (kind === "openapi") {
+        rec.openapi = {
+          provider: domain,
+          version: "curated",
+          specUrl: iface.spec,
+          docsUrl: iface.docs,
+          openapiVer: "",
+        };
+      } else if (kind === "graphql") {
+        rec.graphql = { endpoint: iface.endpoint ?? "", hasSecurity: true, docs: [] };
+      } else {
+        rec.cli = { install: iface.install ?? iface.name ?? "", domain };
+      }
+      recs.push(rec);
+    }
+  }
+  return dedupeSlugs(recs);
 }
 
 function buildDiscovered(
@@ -689,8 +827,14 @@ function rawRecordDomain(r: Integration): string {
   } else {
     url = r.graphql?.endpoint ?? r.url;
   }
-  const discoveredDomain = (r.raw.discovered as { domain?: string } | undefined)?.domain;
-  if (discoveredDomain) return discoveredDomain;
+  // A record that names its own domain is believed over one inferred from a
+  // URL. GitHub's MCP server lives on api.githubcopilot.com and Slack's on
+  // slack.dev — deriving the vendor from the endpoint host files those under
+  // the wrong product entirely.
+  const declaredDomain =
+    (r.raw.curated as { domain?: string } | undefined)?.domain ??
+    (r.raw.discovered as { domain?: string } | undefined)?.domain;
+  if (declaredDomain) return declaredDomain;
   return (url ? getDomain(url) : null) ?? (r.url ? getDomain(r.url) ?? "" : "");
 }
 
@@ -931,10 +1075,36 @@ function main() {
   // Order: build feed records → apply overrides (may add new records) → fill
   // tools from cache → swap broken icons for domain-based fallbacks → keep only
   // publicly-accessible records.
-  const baseMcp = applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp()))).filter(isPublic);
-  const baseOpenapi = applyFavicons(applyToolsCache("openapi", applyOverrides("openapi", buildOpenapi()))).filter(isPublic);
-  const baseGraphql = applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql()))).filter(isPublic);
-  const baseCli = buildCli().filter(isPublic);
+  // Curated records come first so every other source dedupes against them.
+  const curated = buildCurated();
+  const curatedKinds = new Set(curated.map((r) => domainKindKey(recordDomain(r), r.kind)));
+  // A crawled or third-party row for a (domain, kind) a human has already
+  // verified is noise beside it, not extra coverage.
+  const notCurated = (r: Integration) =>
+    !curatedKinds.has(domainKindKey(recordDomain(r), r.kind));
+
+  const baseMcp = [
+    ...curated.filter((r) => r.kind === "mcp"),
+    ...applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp())))
+      .filter(isPublic)
+      .filter(notCurated),
+  ];
+  const baseOpenapi = [
+    ...curated.filter((r) => r.kind === "openapi"),
+    ...applyFavicons(applyToolsCache("openapi", applyOverrides("openapi", buildOpenapi())))
+      .filter(isPublic)
+      .filter(notCurated),
+  ];
+  const baseGraphql = [
+    ...curated.filter((r) => r.kind === "graphql"),
+    ...applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql())))
+      .filter(isPublic)
+      .filter(notCurated),
+  ];
+  const baseCli = [
+    ...curated.filter((r) => r.kind === "cli"),
+    ...buildCli().filter(isPublic).filter(notCurated),
+  ];
 
   const knownRawDomains = new Set(
     [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]

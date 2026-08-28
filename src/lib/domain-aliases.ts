@@ -28,7 +28,15 @@ export const DOMAIN_ALIASES: Record<string, string> = {
   "fellow.app": "fellow.ai",
   "frontapp.com": "front.com",
   "getpinwheel.com": "pinwheelapi.com",
+  // GitHub's asset hosts. They serve avatars and attachments, not APIs — the
+  // crawler discovered them as domains and attributed GitHub's own surfaces to
+  // them, which is worse than useless in a picker.
+  "avatars1.githubusercontent.com": "github.com",
+  "avatars2.githubusercontent.com": "github.com",
+  "avatars3.githubusercontent.com": "github.com",
+  "avatars.githubusercontent.com": "github.com",
   "gist.githubusercontent.com": "github.com",
+  "user-images.githubusercontent.com": "github.com",
   "graphite.dev": "graphite.com",
   "heapanalytics.com": "heap.io",
   "helpscout.net": "helpscout.com",

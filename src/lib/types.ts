@@ -3,7 +3,17 @@ export type Kind = "mcp" | "openapi" | "graphql" | "cli";
 /** Display formats. Superset of Kind: curated providers can also expose CLIs. */
 export type Format = "mcp" | "openapi" | "graphql" | "cli";
 
-export type Feed = "claude" | "openai" | "apis-guru" | "graphql-apis" | "override" | "cli-seed" | "discovered";
+export type Feed =
+  | "claude"
+  | "openai"
+  | "apis-guru"
+  | "graphql-apis"
+  | "override"
+  | "cli-seed"
+  | "discovered"
+  /** Hand-verified records in `curated/`. Highest confidence: a human checked
+   *  what the vendor actually exposes. */
+  | "curated";
 
 export interface Integration {
   id: string;

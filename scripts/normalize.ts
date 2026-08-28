@@ -624,7 +624,12 @@ export function buildCurated(): Integration[] {
         raw: { curated: { domain: productDomain, interface: iface } },
       };
       if (kind === "mcp") {
-        rec.mcp = { remoteUrl: iface.endpoint };
+        rec.mcp = {
+          remoteUrl: iface.endpoint,
+          ...(iface.auth ? { authTypes: [iface.auth] } : {}),
+          ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
+          ...(iface.note ? { authNote: iface.note } : {}),
+        };
       } else if (kind === "openapi") {
         rec.openapi = {
           provider: productDomain,
@@ -1033,7 +1038,13 @@ function buildIndex(all: Integration[]) {
             }
           : r.kind === "openapi" && r.openapi?.authHeader
             ? { kind: "api_key", header: r.openapi.authHeader }
-            : undefined,
+            : r.kind === "mcp" && r.mcp?.authHeader
+              ? {
+                  ...(r.mcp.authTypes?.[0] ? { kind: r.mcp.authTypes[0] } : {}),
+                  header: r.mcp.authHeader,
+                  ...(r.mcp.authNote ? { note: r.mcp.authNote } : {}),
+                }
+              : undefined,
     };
   });
 }

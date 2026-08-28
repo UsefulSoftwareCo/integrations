@@ -36,6 +36,10 @@ export interface Integration {
     isAuthless?: boolean;
     toolNames?: string[];
     authTypes?: string[];
+    /** Header pattern for clients without OAuth support, e.g. GitHub's MCP
+     *  accepting "Authorization: Bearer {pat}". */
+    authHeader?: string;
+    authNote?: string;
     worksWith?: string[];
     install?: string;
   };

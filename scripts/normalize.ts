@@ -923,14 +923,34 @@ function buildIndex(all: Integration[]) {
       feeds: r.feeds,
       popularity: r.popularity,
       devtool: undefined,
+      // What a client must actually point at to connect this surface. Callers
+      // otherwise have to fetch the per-domain surface document just to learn
+      // it, and had no stable way to tell whether a surface was already
+      // connected — the domain is not that identifier (GitHub's MCP server
+      // lives on api.githubcopilot.com).
+      connectUrl:
+        r.kind === "mcp"
+          ? r.mcp?.remoteUrl
+          : r.kind === "openapi"
+            ? r.openapi?.specUrl
+            : r.kind === "graphql"
+              ? r.graphql?.endpoint
+              : undefined,
     };
   });
 }
 
 type IndexEntry = ReturnType<typeof buildIndex>[number];
 
+interface SearchIndexSurface {
+  kind: Kind;
+  slug: string;
+  url?: string;
+}
+
 interface SearchIndexEntry {
   domain: string;
+  surfaces: SearchIndexSurface[];
   description: string;
   kinds: Kind[];
   devtool: boolean;
@@ -939,18 +959,27 @@ interface SearchIndexEntry {
 }
 
 export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readonly ZeroSurfaceDomain[] = []): SearchIndexEntry[] {
-  const map = new Map<string, { domain: string; description: string; kinds: Set<Kind>; devtool: boolean; popularity: number; total: number }>();
+  const map = new Map<string, { domain: string; description: string; kinds: Set<Kind>; devtool: boolean; popularity: number; total: number; surfaces: Map<Kind, SearchIndexSurface> }>();
   for (const r of index) {
     const domain = r.domain || r.slug;
     if (!domain) continue;
     if (isJunkDomain(domain)) continue;
     let group = map.get(domain);
     if (!group) {
-      group = { domain, description: "", kinds: new Set(), devtool: false, popularity: 0, total: 0 };
+      group = { domain, description: "", kinds: new Set(), devtool: false, popularity: 0, total: 0, surfaces: new Map() };
       map.set(domain, group);
     }
     group.total++;
     group.kinds.add(r.kind);
+    // First record per kind wins: index order already puts curated and
+    // higher-confidence rows first.
+    if (!group.surfaces.has(r.kind)) {
+      group.surfaces.set(r.kind, {
+        kind: r.kind,
+        slug: r.slug,
+        ...(r.connectUrl ? { url: r.connectUrl } : {}),
+      });
+    }
     group.popularity = Math.max(group.popularity, r.popularity ?? 0);
     group.devtool ||= r.devtool === true;
     if (!group.description && r.description) group.description = r.description.replace(/\s+/g, " ").slice(0, 110);
@@ -968,6 +997,7 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
       devtool: false,
       popularity: 0,
       total: 0,
+      surfaces: new Map(),
     });
   }
 
@@ -976,6 +1006,15 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
       domain: group.domain,
       description: group.description,
       kinds: KIND_ORDER.filter((kind) => group.kinds.has(kind)),
+      // Omitted rather than empty: a domain with no connectable surface should
+      // not carry an empty array on every row of a multi-thousand-entry index.
+      ...(group.surfaces.size > 0
+        ? {
+            surfaces: KIND_ORDER.filter((kind) => group.surfaces.has(kind)).map(
+              (kind) => group.surfaces.get(kind)!,
+            ),
+          }
+        : {}),
       devtool: group.devtool,
       popularity: group.popularity,
       total: group.total,

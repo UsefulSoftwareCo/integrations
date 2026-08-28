@@ -47,12 +47,32 @@ const SearchQuery = Schema.Struct({
   ),
 });
 
+const SearchSurface = Schema.Struct({
+  kind: Kind.annotate({ description: "The kind of integration surface." }),
+  slug: Schema.String.annotate({
+    description:
+      "Stable registry identifier for this surface. Record it to recognise later that you already added this integration — the domain is not that identifier, since a vendor's surfaces can live on other hosts (GitHub's MCP server is on api.githubcopilot.com).",
+  }),
+  url: Schema.optional(
+    Schema.String.annotate({
+      description:
+        "What to point at to connect this surface: the MCP endpoint, the OpenAPI spec URL, or the GraphQL endpoint. Absent when the registry has no machine-readable locator on record.",
+    }),
+  ),
+});
+
 const SearchResult = Schema.Struct({
   domain: Schema.String.annotate({ description: "Registrable domain for the catalog entry." }),
   name: Schema.String.annotate({ description: "Display name for the result. Domain-level catalog results use the domain name." }),
   description: Schema.String.annotate({ description: "Short catalog description for the service or its integration surface." }),
   kinds: Schema.Array(Kind).annotate({ description: "Integration kinds currently cataloged for this domain, in canonical display order." }),
   url: Schema.String.annotate({ description: "Canonical integrations.sh page for this domain." }),
+  surfaces: Schema.optional(
+    Schema.Array(SearchSurface).annotate({
+      description:
+        "Per-kind connect targets, so a client can connect (and recognise what it has already connected) without a second request for the domain's surface document.",
+    }),
+  ),
 });
 
 const SearchResults = Schema.Struct({
@@ -155,6 +175,13 @@ export function searchCatalog(query: typeof SearchQuery.Type, liveEntries: reado
       description: entry.description,
       kinds: entry.kinds,
       url: `https://integrations.sh/${encodeURIComponent(entry.domain)}/`,
+      ...(entry.surfaces && entry.surfaces.length > 0
+        ? {
+            surfaces: query.kind
+              ? entry.surfaces.filter((surface) => surface.kind === query.kind)
+              : entry.surfaces,
+          }
+        : {}),
     }));
   const results = appendLiveSearchResults(query, staticIndex, staticResults, liveEntries);
   return { results };

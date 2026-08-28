@@ -13,6 +13,9 @@ export interface SearchIndexSurface {
 
 export interface SearchIndexEntry {
   domain: string;
+  /** Set on standalone product rows (many products on one vendor domain, like
+   *  Microsoft Graph workloads); domain-level rows are named by their domain. */
+  name?: string;
   surfaces?: SearchIndexSurface[];
   description: string;
   kinds: Kind[];

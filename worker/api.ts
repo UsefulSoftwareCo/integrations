@@ -162,16 +162,20 @@ export function searchCatalog(query: typeof SearchQuery.Type, liveEntries: reado
   const q = query.q.trim().toLowerCase();
   const limit = Math.min(Math.max(query.limit ?? 20, 1), 100);
   const staticIndex = searchIndex();
-  const staticResults = staticIndex
-    .filter((entry) => {
-      if (query.kind && !entry.kinds.includes(query.kind)) return false;
-      const haystack = [entry.domain, entry.description, ...entry.kinds].join(" ").toLowerCase();
-      return q.length === 0 || haystack.includes(q);
-    })
+  const matches = staticIndex.filter((entry) => {
+    if (query.kind && !entry.kinds.includes(query.kind)) return false;
+    const haystack = [entry.domain, entry.name ?? "", entry.description, ...entry.kinds].join(" ").toLowerCase();
+    return q.length === 0 || haystack.includes(q);
+  });
+  // What the entry is called beats what its description happens to mention:
+  // "teams" should surface Teams Chats before every service whose blurb says
+  // it is "built for teams". Index order (ranking) is preserved within each.
+  const named = (entry: (typeof matches)[number]) => `${entry.domain} ${entry.name ?? ""}`.toLowerCase().includes(q);
+  const staticResults = (q.length === 0 ? matches : [...matches.filter(named), ...matches.filter((entry) => !named(entry))])
     .slice(0, limit)
     .map((entry) => ({
       domain: entry.domain,
-      name: entry.domain,
+      name: entry.name ?? entry.domain,
       description: entry.description,
       kinds: entry.kinds,
       url: `https://integrations.sh/${encodeURIComponent(entry.domain)}/`,

@@ -20,6 +20,10 @@ export interface Integration {
   kind: Kind;
   slug: string;
   name: string;
+  /** A product in its own right on a shared vendor domain (Microsoft Graph's
+   *  workloads all live on graph.microsoft.com). Standalone records get their
+   *  own search row instead of merging into the domain's per-kind surface set. */
+  standalone?: boolean;
   description: string;
   url?: string;
   icon?: string;
@@ -41,6 +45,9 @@ export interface Integration {
     version: string;
     /** Machine-readable OpenAPI spec URL. */
     specUrl?: string;
+    /** Delegated OAuth scopes the surface needs, so an add flow can request
+     *  consent without a vendor-specific table. */
+    scopes?: string[];
     /** Human-facing docs or developer portal URL. */
     docsUrl?: string;
     openapiVer: string;

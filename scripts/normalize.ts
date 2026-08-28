@@ -709,6 +709,53 @@ interface ToolsCache {
   tools: ExtractedTool[];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MCP endpoint verdicts: output/mcp-endpoints.json from verify-mcp-endpoints.ts
+//
+// A large share of MCP surfaces came from LLM discovery, which will assert a
+// server at `https://<domain>/mcp` because that is the convention. Often it is
+// right. Sometimes it is not, and the catalog then sends people to an endpoint
+// that cannot work — executor's add form rejects it, but only after the click.
+// Publishing an endpoint nobody verified is the bug; this drops the ones the
+// network positively denied.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface EndpointVerdict {
+  status: "live" | "auth" | "dead" | "unknown";
+  detail: string;
+  checkedAt: string;
+}
+
+/** Structurally unpublishable regardless of what a probe says: an unsubstituted
+ *  `{placeholder}` copied out of docs, or a loopback address that could only
+ *  ever have meant the author's own machine. */
+export function isUnusableEndpoint(url: string): boolean {
+  if (/[{}]/.test(url)) return true;
+  // oxlint-disable-next-line executor/no-try-catch-or-throw -- boundary: URL parsing reports failure by throwing
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local");
+  } catch {
+    return true;
+  }
+}
+
+function applyEndpointVerdicts(recs: Integration[]): Integration[] {
+  const path = join(OUTPUT, "mcp-endpoints.json");
+  const verdicts: Record<string, EndpointVerdict> = existsSync(path)
+    ? (JSON.parse(readFileSync(path, "utf8")) as { endpoints: Record<string, EndpointVerdict> })
+        .endpoints
+    : {};
+  return recs.filter((r) => {
+    const url = r.mcp?.remoteUrl?.trim();
+    if (!url) return true;
+    if (isUnusableEndpoint(url)) return false;
+    // Only a positive denial removes a record. A timeout or a 5xx means the
+    // service had a bad minute, not that it does not exist.
+    return verdicts[url]?.status !== "dead";
+  });
+}
+
 function applyToolsCache(kind: Kind, recs: Integration[]): Integration[] {
   const dir = join(OUTPUT, "tools", kind);
   if (!existsSync(dir)) return recs;
@@ -1124,7 +1171,7 @@ function main() {
 
   const baseMcp = [
     ...curated.filter((r) => r.kind === "mcp"),
-    ...applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp())))
+    ...applyEndpointVerdicts(applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp()))))
       .filter(isPublic)
       .filter(notCurated),
   ];
@@ -1163,7 +1210,7 @@ function main() {
       }),
   );
   const discoveredBuild = buildDiscovered(knownRawDomains, knownDomainKinds, knownDomains);
-  const discovered = discoveredBuild.records.filter(isPublic);
+  const discovered = applyEndpointVerdicts(discoveredBuild.records.filter(isPublic));
   const mcp = [...baseMcp, ...discovered.filter((r) => r.kind === "mcp")];
   const openapi = [...baseOpenapi, ...discovered.filter((r) => r.kind === "openapi")];
   const graphql = [...baseGraphql, ...discovered.filter((r) => r.kind === "graphql")];

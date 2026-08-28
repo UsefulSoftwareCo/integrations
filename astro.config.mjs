@@ -14,6 +14,9 @@ const satoriWasmEntry = fileURLToPath(new URL("./node_modules/satori/dist/index.
 // Object alongside the Astro fetch handler.
 export default defineConfig({
   site: "https://integrations.sh",
+  prefetch: {
+    defaultStrategy: "hover",
+  },
   output: "static",
   adapter: cloudflare({
     workerEntryPoint: {

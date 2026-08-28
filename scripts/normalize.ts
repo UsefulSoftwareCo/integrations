@@ -1038,18 +1038,35 @@ function buildIndex(all: Integration[]) {
             }
           : r.kind === "openapi" && r.openapi?.authHeader
             ? { kind: "api_key", header: r.openapi.authHeader }
-            : r.kind === "mcp" && r.mcp?.authHeader
-              ? {
-                  ...(r.mcp.authTypes?.[0] ? { kind: r.mcp.authTypes[0] } : {}),
-                  header: r.mcp.authHeader,
-                  ...(r.mcp.authNote ? { note: r.mcp.authNote } : {}),
-                }
+            : r.kind === "mcp" && r.mcp
+              ? mcpSurfaceAuth(r.mcp)
               : undefined,
     };
   });
 }
 
 type IndexEntry = ReturnType<typeof buildIndex>[number];
+
+/** MCP auth facts come from three signals of falling confidence: a curated
+ *  header pattern (a human verified it), Claude's explicit `is_authless`
+ *  flag, and the OpenAI feed's supported auth types (NONE/OAUTH/API_KEY). */
+function mcpSurfaceAuth(
+  mcp: NonNullable<Integration["mcp"]>,
+): { kind?: string; header?: string; note?: string } | undefined {
+  if (mcp.authHeader) {
+    return {
+      ...(mcp.authTypes?.[0] ? { kind: mcp.authTypes[0] } : {}),
+      header: mcp.authHeader,
+      ...(mcp.authNote ? { note: mcp.authNote } : {}),
+    };
+  }
+  if (mcp.isAuthless === true) return { kind: "none" };
+  const kinds = (mcp.authTypes ?? []).map((type) => type.toLowerCase());
+  for (const kind of ["oauth", "api_key", "none"]) {
+    if (kinds.includes(kind)) return { kind };
+  }
+  return undefined;
+}
 
 interface SearchIndexSurface {
   kind: Kind;

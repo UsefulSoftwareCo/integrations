@@ -560,6 +560,11 @@ interface CuratedInterface {
   domain?: string;
   /** Delegated OAuth scopes the surface needs. */
   scopes?: string[];
+  /** Credential kind: "api_key", "oauth", … */
+  auth?: string;
+  /** Header pattern, e.g. "Authorization: {api_key}". */
+  authHeader?: string;
+  note?: string;
 }
 
 interface CuratedRecord {
@@ -628,9 +633,17 @@ export function buildCurated(): Integration[] {
           docsUrl: iface.docs,
           openapiVer: "",
           ...(iface.scopes && iface.scopes.length > 0 ? { scopes: iface.scopes } : {}),
+          ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
         };
       } else if (kind === "graphql") {
-        rec.graphql = { endpoint: iface.endpoint ?? "", hasSecurity: true, docs: [] };
+        rec.graphql = {
+          endpoint: iface.endpoint ?? "",
+          hasSecurity: true,
+          docs: [],
+          ...(iface.auth ? { auth: iface.auth } : {}),
+          ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
+          ...(iface.note ? { authNote: iface.note } : {}),
+        };
       } else {
         rec.cli = { install: iface.install ?? iface.name ?? "", domain: productDomain };
       }
@@ -1007,6 +1020,20 @@ function buildIndex(all: Integration[]) {
               ? r.graphql?.endpoint
               : undefined,
       scopes: r.kind === "openapi" ? r.openapi?.scopes : undefined,
+      // How to authenticate, for surfaces whose connect target cannot carry it
+      // itself (a GraphQL endpoint has no spec document; some curated specs
+      // lack securitySchemes). The header pattern is the load-bearing part:
+      // Linear's personal keys take no Bearer prefix, and only this says so.
+      auth:
+        r.kind === "graphql" && r.graphql && (r.graphql.auth ?? r.graphql.authHeader)
+          ? {
+              ...(r.graphql.auth ? { kind: r.graphql.auth } : {}),
+              ...(r.graphql.authHeader ? { header: r.graphql.authHeader } : {}),
+              ...(r.graphql.authNote ? { note: r.graphql.authNote } : {}),
+            }
+          : r.kind === "openapi" && r.openapi?.authHeader
+            ? { kind: "api_key", header: r.openapi.authHeader }
+            : undefined,
     };
   });
 }
@@ -1017,6 +1044,7 @@ interface SearchIndexSurface {
   kind: Kind;
   slug: string;
   url?: string;
+  auth?: { kind?: string; header?: string; note?: string };
 }
 
 interface SearchIndexEntry {
@@ -1057,6 +1085,7 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
         kind: r.kind,
         slug: r.slug,
         ...(r.connectUrl ? { url: r.connectUrl } : {}),
+        ...(r.auth ? { auth: r.auth } : {}),
       });
     }
     group.popularity = Math.max(group.popularity, r.popularity ?? 0);

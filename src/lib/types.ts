@@ -48,6 +48,9 @@ export interface Integration {
     /** Delegated OAuth scopes the surface needs, so an add flow can request
      *  consent without a vendor-specific table. */
     scopes?: string[];
+    /** Header pattern for API-key auth, e.g. "Authorization: Bearer {token}",
+     *  for specs that do not declare their own securitySchemes. */
+    authHeader?: string;
     /** Human-facing docs or developer portal URL. */
     docsUrl?: string;
     openapiVer: string;
@@ -58,6 +61,14 @@ export interface Integration {
     endpoint: string;
     hasSecurity: boolean;
     docs: { description?: string; url: string }[];
+    /** Credential kind ("api_key", "oauth", …) from the curated record. A
+     *  GraphQL endpoint has no spec document to carry auth, so the registry
+     *  record is the only possible carrier. */
+    auth?: string;
+    /** Header pattern, e.g. "Authorization: {api_key}" — Linear's personal
+     *  keys famously take no Bearer prefix, and only this field says so. */
+    authHeader?: string;
+    authNote?: string;
   };
   cli?: {
     /** Install / run command, e.g. "brew install gh && gh auth login". */

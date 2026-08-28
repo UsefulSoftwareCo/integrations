@@ -59,6 +59,25 @@ const SearchSurface = Schema.Struct({
         "What to point at to connect this surface: the MCP endpoint, the OpenAPI spec URL, or the GraphQL endpoint. Absent when the registry has no machine-readable locator on record.",
     }),
   ),
+  auth: Schema.optional(
+    Schema.Struct({
+      kind: Schema.optional(
+        Schema.String.annotate({ description: "Credential kind: api_key, oauth, …" }),
+      ),
+      header: Schema.optional(
+        Schema.String.annotate({
+          description:
+            "Header pattern for the credential, e.g. \"Authorization: Bearer {token}\" — or \"Authorization: {api_key}\" for APIs like Linear whose keys take no Bearer prefix.",
+        }),
+      ),
+      note: Schema.optional(
+        Schema.String.annotate({ description: "One-line human note about the credential." }),
+      ),
+    }).annotate({
+      description:
+        "How to authenticate this surface, for kinds whose connect target cannot describe it itself (GraphQL endpoints have no spec document).",
+    }),
+  ),
 });
 
 const SearchResult = Schema.Struct({

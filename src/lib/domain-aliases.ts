@@ -45,6 +45,12 @@ export const DOMAIN_ALIASES: Record<string, string> = {
   "intercom.io": "intercom.com",
   "letsdeel.com": "deel.com",
   "logtail.com": "betterstack.com",
+  "notion.notion.site": "notion.com",
+  "notion.so": "notion.com",
+  // Vendor docs/dev domains that the crawler discovered as separate services.
+  "shopify.dev": "shopify.com",
+  "slack.dev": "slack.com",
+  "spotify.net": "spotify.com",
   "meetcampfire.com": "campfire.ai",
   "mermaidchart.com": "mermaid.ai",
   "neon.tech": "neon.com",

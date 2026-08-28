@@ -28,7 +28,19 @@ export const DOMAIN_ALIASES: Record<string, string> = {
   "fellow.app": "fellow.ai",
   "frontapp.com": "front.com",
   "getpinwheel.com": "pinwheelapi.com",
+  // GitHub's asset hosts. They serve avatars and attachments, not APIs — the
+  // crawler discovered them as domains and attributed GitHub's own surfaces to
+  // them, which is worse than useless in a picker.
+  "avatars1.githubusercontent.com": "github.com",
+  "avatars2.githubusercontent.com": "github.com",
+  "avatars3.githubusercontent.com": "github.com",
+  "avatars.githubusercontent.com": "github.com",
   "gist.githubusercontent.com": "github.com",
+  // Gmail's API host is Gmail. Left unaliased it became a second Gmail in the
+  // catalog, carrying a duplicate API surface and a fabricated MCP endpoint
+  // (https://gmail.googleapis.com/mcp/ 404s).
+  "gmail.googleapis.com": "gmail.com",
+  "user-images.githubusercontent.com": "github.com",
   "graphite.dev": "graphite.com",
   "heapanalytics.com": "heap.io",
   "helpscout.net": "helpscout.com",
@@ -37,6 +49,12 @@ export const DOMAIN_ALIASES: Record<string, string> = {
   "intercom.io": "intercom.com",
   "letsdeel.com": "deel.com",
   "logtail.com": "betterstack.com",
+  "notion.notion.site": "notion.com",
+  "notion.so": "notion.com",
+  // Vendor docs/dev domains that the crawler discovered as separate services.
+  "shopify.dev": "shopify.com",
+  "slack.dev": "slack.com",
+  "spotify.net": "spotify.com",
   "meetcampfire.com": "campfire.ai",
   "mermaidchart.com": "mermaid.ai",
   "neon.tech": "neon.com",

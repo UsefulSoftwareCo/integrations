@@ -55,6 +55,11 @@ export interface Integration {
     /** Header pattern for API-key auth, e.g. "Authorization: Bearer {token}",
      *  for specs that do not declare their own securitySchemes. */
     authHeader?: string;
+    /** RFC 6902 JSON Patch operations to apply to the spec before use. Where
+     *  the registry improves a vendor's document over time without hosting a
+     *  fork: Neon's spec, for example, declares its console's session cookies
+     *  as security schemes alongside the real API key. */
+    specOverrides?: unknown[];
     /** Human-facing docs or developer portal URL. */
     docsUrl?: string;
     openapiVer: string;

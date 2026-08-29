@@ -565,6 +565,8 @@ interface CuratedInterface {
   /** Header pattern, e.g. "Authorization: {api_key}". */
   authHeader?: string;
   note?: string;
+  /** RFC 6902 JSON Patch to apply to the spec before use. */
+  specOverrides?: unknown[];
 }
 
 interface CuratedRecord {
@@ -639,6 +641,9 @@ export function buildCurated(): Integration[] {
           openapiVer: "",
           ...(iface.scopes && iface.scopes.length > 0 ? { scopes: iface.scopes } : {}),
           ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
+          ...(iface.specOverrides && iface.specOverrides.length > 0
+            ? { specOverrides: iface.specOverrides }
+            : {}),
         };
       } else if (kind === "graphql") {
         rec.graphql = {
@@ -1025,6 +1030,7 @@ function buildIndex(all: Integration[]) {
               ? r.graphql?.endpoint
               : undefined,
       scopes: r.kind === "openapi" ? r.openapi?.scopes : undefined,
+      specOverrides: r.kind === "openapi" ? r.openapi?.specOverrides : undefined,
       // How to authenticate, for surfaces whose connect target cannot carry it
       // itself (a GraphQL endpoint has no spec document; some curated specs
       // lack securitySchemes). The header pattern is the load-bearing part:
@@ -1073,6 +1079,8 @@ interface SearchIndexSurface {
   slug: string;
   url?: string;
   auth?: { kind?: string; header?: string; note?: string };
+  /** RFC 6902 JSON Patch a client should apply to the spec before use. */
+  specOverrides?: unknown[];
 }
 
 interface SearchIndexEntry {
@@ -1114,6 +1122,7 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
         slug: r.slug,
         ...(r.connectUrl ? { url: r.connectUrl } : {}),
         ...(r.auth ? { auth: r.auth } : {}),
+        ...(r.specOverrides && r.specOverrides.length > 0 ? { specOverrides: r.specOverrides } : {}),
       });
     }
     group.popularity = Math.max(group.popularity, r.popularity ?? 0);

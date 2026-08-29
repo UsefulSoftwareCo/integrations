@@ -12,6 +12,8 @@ export interface SearchIndexSurface {
   /** How to authenticate, for surfaces whose connect target cannot carry it
    *  itself (a GraphQL endpoint has no spec document). */
   auth?: { kind?: string; header?: string; note?: string };
+  /** RFC 6902 JSON Patch a client should apply to the spec before use. */
+  specOverrides?: unknown[];
 }
 
 export interface SearchIndexEntry {

@@ -59,6 +59,12 @@ const SearchSurface = Schema.Struct({
         "What to point at to connect this surface: the MCP endpoint, the OpenAPI spec URL, or the GraphQL endpoint. Absent when the registry has no machine-readable locator on record.",
     }),
   ),
+  specOverrides: Schema.optional(
+    Schema.Array(Schema.Unknown).annotate({
+      description:
+        "RFC 6902 JSON Patch operations to apply to the fetched spec before use. How the registry improves a vendor's published document without hosting a fork — e.g. removing console session-cookie security schemes that are not real credentials.",
+    }),
+  ),
   auth: Schema.optional(
     Schema.Struct({
       kind: Schema.optional(

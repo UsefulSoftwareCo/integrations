@@ -9,6 +9,9 @@ export interface SearchIndexSurface {
   kind: Kind;
   slug: string;
   url?: string;
+  /** A hand-picked product mark from the curated record, when it beats the
+   *  domain favicon. */
+  icon?: string;
   /** How to authenticate, for surfaces whose connect target cannot carry it
    *  itself (a GraphQL endpoint has no spec document). */
   auth?: { kind?: string; header?: string; note?: string };

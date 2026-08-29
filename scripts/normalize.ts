@@ -1009,9 +1009,12 @@ function buildIndex(all: Integration[]) {
       name: remapped ? r.name.replace(/^.*?[–-]\s*/, "") : r.name,
       description: r.description.slice(0, 240),
       url: r.url,
-      // Icon is the provider's own apex-domain favicon — never a third-party host,
-      // and never a LAN address (.local/private hosts return null).
-      icon: faviconUrl(domain) ?? undefined,
+      // Icon is the provider's own apex-domain favicon — never a third-party
+      // host, and never a LAN address (.local/private hosts return null) —
+      // EXCEPT curated records, whose icons a human picked deliberately
+      // (product marks: Google Calendar's own logo, Outlook's, not the
+      // vendor's generic favicon).
+      icon: (r.feeds.includes("curated") ? r.icon : undefined) ?? faviconUrl(domain) ?? undefined,
       domain,
       categories: r.categories,
       feeds: r.feeds,
@@ -1079,6 +1082,9 @@ interface SearchIndexSurface {
   kind: Kind;
   slug: string;
   url?: string;
+  /** A hand-picked product mark from the curated record, when it beats the
+   *  domain favicon (Google Calendar's own logo, not the generic G). */
+  icon?: string;
   auth?: { kind?: string; header?: string; note?: string };
   /** RFC 6902 JSON Patch a client should apply to the spec before use. */
   specOverrides?: unknown[];
@@ -1122,6 +1128,9 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
         kind: r.kind,
         slug: r.slug,
         ...(r.connectUrl ? { url: r.connectUrl } : {}),
+        ...(r.feeds.includes("curated") && r.icon && !r.icon.startsWith("https://integrations.sh/logo/")
+          ? { icon: r.icon }
+          : {}),
         ...(r.auth ? { auth: r.auth } : {}),
         ...(r.specOverrides && r.specOverrides.length > 0 ? { specOverrides: r.specOverrides } : {}),
       });

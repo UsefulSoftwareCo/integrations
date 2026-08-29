@@ -45,6 +45,12 @@ const SearchQuery = Schema.Struct({
       description: "Maximum number of results to return. Defaults to 20 and cannot exceed 100.",
     }),
   ),
+  offset: Schema.optional(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)).annotate({
+      description:
+        "Number of ranked results to skip, for paging through a long result set. Defaults to 0.",
+    }),
+  ),
 });
 
 const SearchSurface = Schema.Struct({
@@ -197,7 +203,6 @@ export function searchCatalog(query: typeof SearchQuery.Type, liveEntries: reado
   // it is "built for teams". Index order (ranking) is preserved within each.
   const named = (entry: (typeof matches)[number]) => `${entry.domain} ${entry.name ?? ""}`.toLowerCase().includes(q);
   const staticResults = (q.length === 0 ? matches : [...matches.filter(named), ...matches.filter((entry) => !named(entry))])
-    .slice(0, limit)
     .map((entry) => ({
       domain: entry.domain,
       name: entry.name ?? entry.domain,
@@ -212,7 +217,13 @@ export function searchCatalog(query: typeof SearchQuery.Type, liveEntries: reado
           }
         : {}),
     }));
-  const results = appendLiveSearchResults(query, staticIndex, staticResults, liveEntries);
+  // Page over the COMBINED ranked list — static matches then live discoveries
+  // — so an offset deep into the catalog pages seamlessly into live rows.
+  const offset = Math.max(query.offset ?? 0, 0);
+  const results = appendLiveSearchResults(query, staticIndex, staticResults, liveEntries).slice(
+    offset,
+    offset + limit,
+  );
   return { results };
 }
 

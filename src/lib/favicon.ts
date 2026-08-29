@@ -39,6 +39,26 @@ export function faviconUrl(domain: string | null | undefined): string | null {
 
 /** The registrable domain behind `faviconUrl`'s validation, for callers that
  * need the domain itself (the /logo proxy route) rather than a favicon URL. */
+/** The host to look a logo up by.
+ *
+ *  `registrableDomain` answers "what domain was registered", which is not the
+ *  same question. `googleapis.com` is a public suffix in the PSL's private
+ *  section, so it HAS no registrable domain and was rejected outright — every
+ *  Google API service therefore resolved to no logo at all. A logo lookup only
+ *  needs a plausible public hostname, so fall back to the host itself.
+ *
+ *  Still refuses what could never carry a logo: IP addresses, single-label
+ *  hosts, and anything that is not a hostname. */
+export function logoHost(input: string | null | undefined): string | null {
+  const registrable = registrableDomain(input);
+  if (registrable) return registrable;
+  const host = normalizeHost(input);
+  if (!host || !host.includes(".")) return null;
+  const info = parse(host, { allowPrivateDomains: true });
+  if (info.isIp || !(info.isIcann || info.isPrivate)) return null;
+  return host;
+}
+
 export function registrableDomain(domain: string | null | undefined): string | null {
   if (!domain) return null;
   const info = parse(domain, { allowPrivateDomains: true });

@@ -21,7 +21,7 @@ import { apiJsonWithLiveIndex, domainsJsonWithLiveIndex, upsertLiveIndex } from 
 import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
 import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
-import { isJunkDomain, registrableDomain } from "../src/lib/favicon.ts";
+import { isJunkDomain, logoHost, registrableDomain } from "../src/lib/favicon.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
 import type { Surface } from "../src/lib/surface-view.ts";
@@ -452,6 +452,29 @@ async function handleRequest(
       return healthz(env);
     }
 
+    // A neutral mark for a domain with no logo on file: its first letter on a
+    // tinted square, deterministic per domain so the same service always looks
+    // the same. Served with the same cache headers as a real logo.
+    const letterLogo = (domain: string, size: number): Response => {
+      const letter = (domain.replace(/^www\./, "")[0] ?? "?").toUpperCase();
+      // A stable hue per domain — recognisable at a glance, never garish.
+      let hash = 0;
+      for (const char of domain) hash = (hash * 31 + char.charCodeAt(0)) % 360;
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">` +
+        `<rect width="64" height="64" rx="12" fill="hsl(${hash} 12% 88%)"/>` +
+        `<text x="32" y="33" fill="hsl(${hash} 14% 34%)" font-family="ui-sans-serif,system-ui,sans-serif" ` +
+        `font-size="34" font-weight="600" text-anchor="middle" dominant-baseline="central">${letter}</text>` +
+        `</svg>`;
+      return new Response(svg, {
+        headers: {
+          "content-type": "image/svg+xml; charset=utf-8",
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=86400",
+        },
+      });
+    };
+
     // Logo proxy — the single logo source for executor clients (and anything
     // else): /logo/{domain}?theme=light|dark&sz=64. Proxies context.dev Logo
     // Link, falling back to Google's favicon service when the client id is
@@ -461,8 +484,11 @@ async function handleRequest(
     // upstream's own 24h Cache-Control — no KV/R2.
     const logoMatch = /^\/logo\/([^/]+)\/?$/.exec(url.pathname);
     if (logoMatch) {
-      const domain = registrableDomain(decodeURIComponent(logoMatch[1]).trim().toLowerCase());
-      if (!domain) return json({ error: "not a public registrable domain" }, 400);
+      const domain = logoHost(decodeURIComponent(logoMatch[1]).trim().toLowerCase());
+      // Only a host that could never carry a logo is refused. Everything else
+      // gets an image — see letterLogo below for why an error is the wrong
+      // answer here.
+      if (!domain) return json({ error: "not a usable logo host" }, 400);
       const theme = url.searchParams.get("theme");
       const size = Math.min(Math.max(Number(url.searchParams.get("sz")) || 64, 16), 256);
 
@@ -498,7 +524,16 @@ async function handleRequest(
           `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`,
         ).catch(() => null);
       }
-      if (!upstream || !isImage(upstream)) return json({ error: "no logo found" }, 404);
+      // A LOGO ENDPOINT MUST RETURN A LOGO. Clients put this URL in an <img>;
+      // a JSON 404 renders as a broken image, and since the failure is silent
+      // to onError-less callers it reads as "the icon system is broken" rather
+      // than "this brand has no mark on file". A letter placeholder is a
+      // truthful answer to "show me something for this domain".
+      if (!upstream || !isImage(upstream)) {
+        const placeholder = letterLogo(domain, size);
+        ctx.waitUntil(cache.put(cacheKey, placeholder.clone()));
+        return placeholder;
+      }
 
       const res = new Response(upstream.body, {
         headers: {

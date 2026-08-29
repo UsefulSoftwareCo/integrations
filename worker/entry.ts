@@ -703,7 +703,13 @@ async function handleRequest(
           return json({ error: "rate limited — try again in a minute" }, 429, { "retry-after": "60" });
         }
       }
-      const res = await apiHandler(request, apiContext(env, url.origin));
+      // The Host header, not url.origin: wrangler dev emulates the custom
+      // domain in request.url, so url.origin claims to be integrations.sh
+      // while the server actually answers on 127.0.0.1. Self-hosted asset
+      // URLs in API responses must point where the caller can reach.
+      const requestHost = request.headers.get("host");
+      const requestOrigin = requestHost ? `${url.protocol}//${requestHost}` : url.origin;
+      const res = await apiHandler(request, apiContext(env, requestOrigin));
       track(env, ctx, request, "api_request", { ...(endpoint && { endpoint }), cache_hit: false, status: res.status });
       const maxAge = url.pathname.includes("/discover") ? 86400 : url.pathname.includes("/surface") || url.pathname === "/api/search" ? 60 : 3600;
       if (request.method === "GET" && (res.status === 200 || (url.pathname.includes("/surface") && res.status === 404))) {

@@ -52,6 +52,9 @@ export interface Integration {
     /** Delegated OAuth scopes the surface needs, so an add flow can request
      *  consent without a vendor-specific table. */
     scopes?: string[];
+    /** Credential kind ("api_key", "token", "oauth", …) from the curated
+     *  record, for surfaces whose header pattern needs classing. */
+    auth?: string;
     /** Header pattern for API-key auth, e.g. "Authorization: Bearer {token}",
      *  for specs that do not declare their own securitySchemes. */
     authHeader?: string;

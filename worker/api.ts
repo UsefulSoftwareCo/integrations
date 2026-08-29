@@ -189,7 +189,26 @@ const SurfaceEndpoint = HttpApiEndpoint.get("surface", "/api/:domain/surface", {
   .annotate(OpenApi.Summary, "Get a domain's integration surface document")
   .annotate(OpenApi.Description, SURFACE_DESCRIPTION);
 
-export function searchCatalog(query: typeof SearchQuery.Type, liveEntries: readonly LiveIndexEntry[] = []): typeof SearchResults.Type {
+const CANONICAL_ORIGIN = "https://integrations.sh";
+const CANONICAL_HOST = "integrations.sh";
+
+/** Self-hosted assets (spec mirrors under /specs/) keep working when the
+ *  worker serves from another HOST — a workers.dev preview, a fork — by
+ *  pointing at the origin that answered the search. Compared by host, not
+ *  origin string: wrangler dev emulates the canonical domain over http, and a
+ *  scheme-only difference must not downgrade canonical URLs. */
+const surfaceUrlForOrigin = (url: string | undefined, origin: string): string | undefined => {
+  if (url === undefined || !url.startsWith(`${CANONICAL_ORIGIN}/specs/`)) return url;
+  // oxlint-disable-next-line executor/no-try-catch-or-throw -- boundary: URL() rejects malformed origins; keep the canonical URL then
+  try {
+    if (origin === "" || new URL(origin).hostname === CANONICAL_HOST) return url;
+  } catch {
+    return url;
+  }
+  return `${origin}${url.slice(CANONICAL_ORIGIN.length)}`;
+};
+
+export function searchCatalog(query: typeof SearchQuery.Type, liveEntries: readonly LiveIndexEntry[] = [], origin = ""): typeof SearchResults.Type {
   const q = query.q.trim().toLowerCase();
   const limit = Math.min(Math.max(query.limit ?? 20, 1), 100);
   const staticIndex = searchIndex();
@@ -211,9 +230,16 @@ export function searchCatalog(query: typeof SearchQuery.Type, liveEntries: reado
       url: `https://integrations.sh/${encodeURIComponent(entry.domain)}/`,
       ...(entry.surfaces && entry.surfaces.length > 0
         ? {
-            surfaces: query.kind
+            surfaces: (query.kind
               ? entry.surfaces.filter((surface) => surface.kind === query.kind)
-              : entry.surfaces,
+              : entry.surfaces
+            ).map((surface) => {
+              const url = surfaceUrlForOrigin(surface.url, origin);
+              // Never reintroduce the key: an explicit `url: undefined`
+              // encodes as null, which is not an optional string.
+              const { url: _dropped, ...rest } = surface;
+              return { ...rest, ...(url !== undefined ? { url } : {}) };
+            }),
           }
         : {}),
     }));
@@ -241,9 +267,9 @@ const DetectGroup = HttpApiBuilder.group(Api, "detect", (handlers) =>
   handlers
     .handle("search", (req: { readonly query: typeof SearchQuery.Type }) =>
       Effect.gen(function*() {
-        const { env } = yield* ApiRuntime;
+        const { env, origin } = yield* ApiRuntime;
         const liveEntries = yield* Effect.promise(() => readLiveIndex(env));
-        return searchCatalog(req.query, liveEntries);
+        return searchCatalog(req.query, liveEntries, origin);
       }))
     .handle("detect", (req: { readonly params: { readonly domain: string } }) => runDetect(canonicalDomain(req.params.domain)))
     .handle("discover", (req: { readonly params: { readonly domain: string } }) => runDiscover(canonicalDomain(req.params.domain)))

@@ -639,6 +639,7 @@ export function buildCurated(): Integration[] {
           specUrl: iface.spec,
           docsUrl: iface.docs,
           openapiVer: "",
+          ...(iface.auth ? { auth: iface.auth } : {}),
           ...(iface.scopes && iface.scopes.length > 0 ? { scopes: iface.scopes } : {}),
           ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
           ...(iface.specOverrides && iface.specOverrides.length > 0
@@ -1043,7 +1044,7 @@ function buildIndex(all: Integration[]) {
               ...(r.graphql.authNote ? { note: r.graphql.authNote } : {}),
             }
           : r.kind === "openapi" && r.openapi?.authHeader
-            ? { kind: "api_key", header: r.openapi.authHeader }
+            ? { kind: r.openapi.auth ?? "api_key", header: r.openapi.authHeader }
             : r.kind === "mcp" && r.mcp
               ? mcpSurfaceAuth(r.mcp)
               : undefined,

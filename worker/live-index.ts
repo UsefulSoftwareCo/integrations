@@ -151,6 +151,10 @@ function searchHaystack(entry: { domain: string; summary?: string; description?:
   return [entry.domain, entry.summary ?? entry.description ?? "", ...entry.kinds].join(" ").toLowerCase();
 }
 
+/** Every matching live discovery, appended after the static results. The
+ *  caller owns paging: the full combined list is windowed in one place
+ *  (`searchCatalog`), so an `offset` deep into the set can still reach live
+ *  rows. */
 export function appendLiveSearchResults(
   query: SearchQueryLike,
   staticIndex: readonly SearchIndexEntry[],
@@ -158,16 +162,11 @@ export function appendLiveSearchResults(
   liveEntries: readonly LiveIndexEntry[],
 ): SearchResultRow[] {
   const q = query.q.trim().toLowerCase();
-  const limit = Math.min(Math.max(query.limit ?? 20, 1), 100);
-  const remaining = limit - staticResults.length;
-  if (remaining <= 0) return [...staticResults];
-
   const liveResults = liveEntriesNotInStatic(liveEntries, staticIndex)
     .filter((entry) => {
       if (query.kind && !entry.kinds.includes(query.kind)) return false;
       return q.length === 0 || searchHaystack(entry).includes(q);
     })
-    .slice(0, remaining)
     .map((entry) => ({
       domain: entry.domain,
       name: entry.domain,

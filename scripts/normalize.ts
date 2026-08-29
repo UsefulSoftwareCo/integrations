@@ -547,6 +547,26 @@ interface CuratedInterface {
   spec?: string;
   docs?: string;
   install?: string;
+  /** Present when the interface is a product of its own — one vendor domain
+   *  exposing many separately-addable APIs, like Microsoft Graph's workloads.
+   *  A slugged interface becomes its own record (and its own search row)
+   *  instead of merging into the domain's one-surface-per-kind set. */
+  slug?: string;
+  description?: string;
+  icon?: string;
+  /** The product's own domain, when it differs from the file-level one:
+   *  Gmail's record belongs on gmail.com even though the provider file is
+   *  Google's. Also what suppresses same-domain rows from crawled feeds. */
+  domain?: string;
+  /** Delegated OAuth scopes the surface needs. */
+  scopes?: string[];
+  /** Credential kind: "api_key", "oauth", … */
+  auth?: string;
+  /** Header pattern, e.g. "Authorization: {api_key}". */
+  authHeader?: string;
+  note?: string;
+  /** RFC 6902 JSON Patch to apply to the spec before use. */
+  specOverrides?: unknown[];
 }
 
 interface CuratedRecord {
@@ -582,35 +602,61 @@ export function buildCurated(): Integration[] {
     const seen = new Set<Kind>();
     for (const iface of entry.interfaces ?? []) {
       const kind = CURATED_KIND[(iface.format ?? "").toLowerCase()];
+      if (!kind) continue;
+      const productSlug = iface.slug?.trim().toLowerCase();
       // One record per kind: the picker offers a surface, not every endpoint.
-      if (!kind || seen.has(kind)) continue;
-      seen.add(kind);
+      // Slugged interfaces are exempt — each is a product in its own right.
+      if (!productSlug) {
+        if (seen.has(kind)) continue;
+        seen.add(kind);
+      }
+      const productDescription = (iface.description ?? "").replace(/\s+/g, " ").trim();
+      const productDomain = iface.domain?.trim().toLowerCase() || domain;
       const rec: Integration = {
-        id: `curated/${domainSlug}-${kind}`,
-        slug: seen.size === 1 ? domainSlug : `${domainSlug}-${kind}`,
+        id: productSlug ? `curated/${productSlug}` : `curated/${domainSlug}-${kind}`,
+        slug: productSlug ?? (seen.size === 1 ? domainSlug : `${domainSlug}-${kind}`),
         kind,
-        name: entry.name ?? domain,
-        description,
+        name: (productSlug ? iface.name : undefined) ?? entry.name ?? domain,
+        ...(productSlug ? { standalone: true } : {}),
+        description: productDescription || description,
         url: undefined,
-        icon: entry.icon ?? faviconUrl(domain) ?? undefined,
+        icon: iface.icon ?? entry.icon ?? faviconUrl(productDomain) ?? undefined,
         categories: entry.categories ?? [],
         feeds: ["curated"],
-        raw: { curated: { domain, interface: iface } },
+        raw: { curated: { domain: productDomain, interface: iface } },
       };
       if (kind === "mcp") {
-        rec.mcp = { remoteUrl: iface.endpoint };
+        rec.mcp = {
+          remoteUrl: iface.endpoint,
+          ...(iface.auth ? { authTypes: [iface.auth] } : {}),
+          ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
+          ...(iface.note ? { authNote: iface.note } : {}),
+        };
       } else if (kind === "openapi") {
         rec.openapi = {
-          provider: domain,
+          provider: productDomain,
           version: "curated",
           specUrl: iface.spec,
           docsUrl: iface.docs,
           openapiVer: "",
+          ...(iface.auth ? { auth: iface.auth } : {}),
+          ...(iface.scopes && iface.scopes.length > 0 ? { scopes: iface.scopes } : {}),
+          ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
+          ...(iface.specOverrides && iface.specOverrides.length > 0
+            ? { specOverrides: iface.specOverrides }
+            : {}),
         };
       } else if (kind === "graphql") {
-        rec.graphql = { endpoint: iface.endpoint ?? "", hasSecurity: true, docs: [] };
+        rec.graphql = {
+          endpoint: iface.endpoint ?? "",
+          hasSecurity: true,
+          docs: [],
+          ...(iface.auth ? { auth: iface.auth } : {}),
+          ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
+          ...(iface.note ? { authNote: iface.note } : {}),
+        };
       } else {
-        rec.cli = { install: iface.install ?? iface.name ?? "", domain };
+        rec.cli = { install: iface.install ?? iface.name ?? "", domain: productDomain };
       }
       recs.push(rec);
     }
@@ -958,6 +1004,7 @@ function buildIndex(all: Integration[]) {
       id: r.id,
       kind: r.kind,
       slug: r.slug,
+      standalone: r.standalone,
       // Strip the platform prefix from remapped names: "googleapis.com – gmail" → "gmail".
       name: remapped ? r.name.replace(/^.*?[–-]\s*/, "") : r.name,
       description: r.description.slice(0, 240),
@@ -983,20 +1030,65 @@ function buildIndex(all: Integration[]) {
             : r.kind === "graphql"
               ? r.graphql?.endpoint
               : undefined,
+      scopes: r.kind === "openapi" ? r.openapi?.scopes : undefined,
+      specOverrides: r.kind === "openapi" ? r.openapi?.specOverrides : undefined,
+      // How to authenticate, for surfaces whose connect target cannot carry it
+      // itself (a GraphQL endpoint has no spec document; some curated specs
+      // lack securitySchemes). The header pattern is the load-bearing part:
+      // Linear's personal keys take no Bearer prefix, and only this says so.
+      auth:
+        r.kind === "graphql" && r.graphql && (r.graphql.auth ?? r.graphql.authHeader)
+          ? {
+              ...(r.graphql.auth ? { kind: r.graphql.auth } : {}),
+              ...(r.graphql.authHeader ? { header: r.graphql.authHeader } : {}),
+              ...(r.graphql.authNote ? { note: r.graphql.authNote } : {}),
+            }
+          : r.kind === "openapi" && r.openapi?.authHeader
+            ? { kind: r.openapi.auth ?? "api_key", header: r.openapi.authHeader }
+            : r.kind === "mcp" && r.mcp
+              ? mcpSurfaceAuth(r.mcp)
+              : undefined,
     };
   });
 }
 
 type IndexEntry = ReturnType<typeof buildIndex>[number];
 
+/** MCP auth facts come from three signals of falling confidence: a curated
+ *  header pattern (a human verified it), Claude's explicit `is_authless`
+ *  flag, and the OpenAI feed's supported auth types (NONE/OAUTH/API_KEY). */
+function mcpSurfaceAuth(
+  mcp: NonNullable<Integration["mcp"]>,
+): { kind?: string; header?: string; note?: string } | undefined {
+  if (mcp.authHeader) {
+    return {
+      ...(mcp.authTypes?.[0] ? { kind: mcp.authTypes[0] } : {}),
+      header: mcp.authHeader,
+      ...(mcp.authNote ? { note: mcp.authNote } : {}),
+    };
+  }
+  if (mcp.isAuthless === true) return { kind: "none" };
+  const kinds = (mcp.authTypes ?? []).map((type) => type.toLowerCase());
+  for (const kind of ["oauth", "api_key", "none"]) {
+    if (kinds.includes(kind)) return { kind };
+  }
+  return undefined;
+}
+
 interface SearchIndexSurface {
   kind: Kind;
   slug: string;
   url?: string;
+  auth?: { kind?: string; header?: string; note?: string };
+  /** RFC 6902 JSON Patch a client should apply to the spec before use. */
+  specOverrides?: unknown[];
 }
 
 interface SearchIndexEntry {
   domain: string;
+  /** Set on standalone product rows (many products on one vendor domain);
+   *  domain-level rows are named by their domain and omit this. */
+  name?: string;
   surfaces: SearchIndexSurface[];
   description: string;
   kinds: Kind[];
@@ -1006,15 +1098,20 @@ interface SearchIndexEntry {
 }
 
 export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readonly ZeroSurfaceDomain[] = []): SearchIndexEntry[] {
-  const map = new Map<string, { domain: string; description: string; kinds: Set<Kind>; devtool: boolean; popularity: number; total: number; surfaces: Map<Kind, SearchIndexSurface> }>();
+  const map = new Map<string, { domain: string; name?: string; description: string; kinds: Set<Kind>; devtool: boolean; popularity: number; total: number; surfaces: Map<Kind, SearchIndexSurface> }>();
+  const seenDomains = new Set<string>();
   for (const r of index) {
     const domain = r.domain || r.slug;
     if (!domain) continue;
     if (isJunkDomain(domain)) continue;
-    let group = map.get(domain);
+    seenDomains.add(domain);
+    // A standalone product is its own search row: 25 Microsoft Graph workloads
+    // on graph.microsoft.com must not collapse into one openapi surface.
+    const key = r.standalone ? `${domain} ${r.slug}` : domain;
+    let group = map.get(key);
     if (!group) {
-      group = { domain, description: "", kinds: new Set(), devtool: false, popularity: 0, total: 0, surfaces: new Map() };
-      map.set(domain, group);
+      group = { domain, ...(r.standalone ? { name: r.name } : {}), description: "", kinds: new Set(), devtool: false, popularity: 0, total: 0, surfaces: new Map() };
+      map.set(key, group);
     }
     group.total++;
     group.kinds.add(r.kind);
@@ -1025,6 +1122,8 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
         kind: r.kind,
         slug: r.slug,
         ...(r.connectUrl ? { url: r.connectUrl } : {}),
+        ...(r.auth ? { auth: r.auth } : {}),
+        ...(r.specOverrides && r.specOverrides.length > 0 ? { specOverrides: r.specOverrides } : {}),
       });
     }
     group.popularity = Math.max(group.popularity, r.popularity ?? 0);
@@ -1036,7 +1135,7 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
     const domain = zero.domain.trim().toLowerCase();
     if (!domain) continue;
     if (isJunkDomain(domain)) continue;
-    if (map.has(domain) || map.has(canonicalDomain(domain))) continue;
+    if (seenDomains.has(domain) || seenDomains.has(canonicalDomain(domain)) || map.has(domain)) continue;
     map.set(domain, {
       domain,
       description: zero.description.replace(/\s+/g, " ").trim().slice(0, 110),
@@ -1051,6 +1150,7 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
   return [...map.values()]
     .map((group) => ({
       domain: group.domain,
+      ...(group.name ? { name: group.name } : {}),
       description: group.description,
       kinds: KIND_ORDER.filter((kind) => group.kinds.has(kind)),
       // Omitted rather than empty: a domain with no connectable surface should

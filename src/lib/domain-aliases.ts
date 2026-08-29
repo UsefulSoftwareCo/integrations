@@ -40,6 +40,25 @@ export const DOMAIN_ALIASES: Record<string, string> = {
   // catalog, carrying a duplicate API surface and a fabricated MCP endpoint
   // (https://gmail.googleapis.com/mcp/ 404s).
   "gmail.googleapis.com": "gmail.com",
+  // Google product API hosts → the product domains the catalog files them
+  // under, so crawled rows collapse onto (and are suppressed by) the curated
+  // per-product records.
+  "calendar-json.googleapis.com": "calendar.google.com",
+  "docs.googleapis.com": "docs.google.com",
+  "sheets.googleapis.com": "sheets.google.com",
+  "slides.googleapis.com": "slides.google.com",
+  "forms.googleapis.com": "forms.google.com",
+  "tasks.googleapis.com": "tasks.google.com",
+  "chat.googleapis.com": "chat.google.com",
+  "people.googleapis.com": "contacts.google.com",
+  "youtube.googleapis.com": "youtube.com",
+  "www.youtube.com": "youtube.com",
+  "searchconsole.googleapis.com": "search.google.com",
+  "classroom.googleapis.com": "classroom.google.com",
+  "admin.googleapis.com": "admin.google.com",
+  "script.googleapis.com": "script.google.com",
+  "bigquery.googleapis.com": "cloud.google.com",
+  "cloudresourcemanager.googleapis.com": "cloud.google.com",
   "user-images.githubusercontent.com": "github.com",
   "graphite.dev": "graphite.com",
   "heapanalytics.com": "heap.io",

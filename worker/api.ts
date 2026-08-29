@@ -65,6 +65,12 @@ const SearchSurface = Schema.Struct({
         "What to point at to connect this surface: the MCP endpoint, the OpenAPI spec URL, or the GraphQL endpoint. Absent when the registry has no machine-readable locator on record.",
     }),
   ),
+  icon: Schema.optional(
+    Schema.String.annotate({
+      description:
+        "A hand-picked product mark for this surface (e.g. Google Calendar's own logo), when it represents the product better than the domain favicon.",
+    }),
+  ),
   specOverrides: Schema.optional(
     Schema.Array(Schema.Unknown).annotate({
       description:

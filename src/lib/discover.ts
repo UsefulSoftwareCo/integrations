@@ -202,6 +202,15 @@ export interface DiscoveryResult {
   surfaces: Surface[];
 }
 
+type SurfaceLocatorInput = {
+  type: string;
+  name?: string;
+  url?: string;
+  spec?: string;
+  command?: string;
+  packages?: readonly { identifier?: string }[];
+};
+
 // ── streamed events (partials emitted as findings are confirmed) ──────────────
 
 export type DiscoverEvent =
@@ -420,7 +429,7 @@ export async function discover(
             return `auth references undefined credential id(s): ${missing.join(", ")}. Call record_credential for each first (or use authStatus "unknown" if the credential isn't a real user-minted one), then re-record this surface.`;
           }
         }
-        const key = `${s.type}|${(s.spec || s.url || s.name).toLowerCase()}`;
+        const key = surfaceLocator(s);
         if (surfaceKeys.has(key)) return `Already recorded ${s.name}.`;
         surfaceKeys.add(key);
         s.slug = assignSlug(s.name, surfaces);
@@ -736,9 +745,16 @@ function markDeclaredSurface(surface: Surface, source: string): Surface {
   return surface;
 }
 
-function surfaceLocator(s: Surface): string {
-  const packageId = s.packages?.[0]?.identifier;
-  return `${s.type}|${(s.spec || s.url || s.command || packageId || s.name).toLowerCase()}`;
+export function surfaceLocatorValue(s: SurfaceLocatorInput): string | undefined {
+  const packageId = s.packages?.[0]?.identifier ?? undefined;
+  if (s.type === "cli") return s.command ?? packageId;
+  if (s.type === "http" || s.type === "graphql") return s.url ?? s.spec;
+  return s.spec ?? s.url ?? s.command ?? packageId;
+}
+
+export function surfaceLocator(s: Surface): string {
+  const value = surfaceLocatorValue(s) ?? s.name ?? "unknown";
+  return `${s.type}|${value.toLowerCase()}`;
 }
 
 function entryKey(entry: AuthEntry): string {

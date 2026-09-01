@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { PROBE_KEYS } from "./conventions.ts";
 import { discover, slackMcpAppManifestUrl, type ChatFn, type WebBackend } from "./discover.ts";
+import { locatorOf } from "../../worker/operations.ts";
 import type { DetectionResult } from "./detect.ts";
 
 const web: WebBackend = {
@@ -187,5 +188,77 @@ describe("discover MCP onboarding overrides", () => {
     expect(setup).toContain("pre-registered app required");
     expect(setup).not.toContain("Slack MCP server access");
     expect(setup).not.toContain("api.slack.com/apps?new_app=1");
+  });
+});
+
+describe("declared HTTP merge with discovered HTTP", () => {
+  test("merges declared and discovered HTTP surfaces when both point to the same base URL", async () => {
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        {
+          id: "surface-1",
+          name: "record_surface",
+          arguments: {
+            name: "Buddy REST API",
+            type: "http",
+            url: "https://api.buddy.works",
+            spec: "https://api.buddy.works/openapi.json",
+            authStatus: "none",
+            publicEvidence: ["https://docs.buddy.works/reference"],
+            basis: { via: "discovered", evidence: ["https://docs.buddy.works/reference"] },
+          },
+        },
+        {
+          id: "finish-1",
+          name: "finish",
+          arguments: {
+            summary: "Buddy provides a REST API.",
+            description: "Buddy helps teams build software faster.",
+          },
+        },
+      ],
+    });
+
+    const detect: DetectionResult = {
+      domain: "buddy.works",
+      found: [],
+      probed: [],
+      mcp: [],
+      errors: [],
+      integrationsJson: {
+        url: "https://buddy.works/.well-known/integrations.json",
+        result: {
+          version: 3,
+          surfaces: [
+            {
+              name: "Buddy REST API",
+              type: "http",
+              url: "https://api.buddy.works",
+              auth: { status: "none", basis: { via: "discovered", evidence: ["https://docs.buddy.works/reference"] } },
+            },
+          ],
+        },
+      },
+    };
+
+    const result = await discover(detect.domain, detect, chat, web);
+    expect(result).not.toBeNull();
+    expect(result?.surfaces).toHaveLength(1);
+    expect(result?.surfaces[0]?.type).toBe("http");
+    expect(result?.surfaces[0]?.url).toBe("https://api.buddy.works");
+  });
+});
+
+describe("slug continuity locator strategy", () => {
+  test("uses URL when available for HTTP locator continuity", () => {
+    expect(
+      locatorOf({
+        slug: "buddy-rest-api",
+        type: "http",
+        url: "https://api.buddy.works",
+        spec: "https://api.buddy.works/openapi.json",
+      }),
+    ).toBe("http|https://api.buddy.works");
   });
 });

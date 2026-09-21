@@ -36,6 +36,11 @@ jobs:
           count=$(find domains -mindepth 2 -maxdepth 2 -type f -name integrations.json 2>/dev/null | wc -l | tr -d ' ')
           echo "count=$count" >> "$GITHUB_OUTPUT"
 
+      # sync:discovered no longer imports the generated output/catalog-seeds.json
+      # (scripts/batch/args.ts explains why), so it runs straight from a clean
+      # checkout with no normalize step in front of it. That import is what made
+      # every nightly run since July fail with
+      # `Cannot find module '../../output/catalog-seeds.json'`.
       - name: Sync from KV
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -48,6 +53,8 @@ jobs:
           after=$(find domains -mindepth 2 -maxdepth 2 -type f -name integrations.json 2>/dev/null | wc -l | tr -d ' ')
           min=$(( before - before / 10 ))
           echo "domains before=$before after=$after min=$min"
+          # The denylist legitimately removes a handful of files; only a large
+          # loss (>10%) means the sync went wrong.
           if [ "$after" -lt "$min" ]; then
             echo "Refusing to commit: domains/ lost more than 10% of domain files."
             exit 1
@@ -71,20 +78,31 @@ jobs:
           printf '{ "stars": %s, "fetchedAt": %s }\n' "$stars" "$fetched_at" > "$tmp"
           mv "$tmp" src/data/github-stars.json
 
+      # Probe the MCP endpoints before the build reads their verdicts. normalize
+      # writes output/mcp.json, which the probe reads alongside the domains/
+      # tree; the build then re-runs normalize so the fresh verdicts reach the
+      # published pages in the same commit.
+      - name: Normalize catalog for probing
+        run: bun run normalize
+
+      - name: Verify MCP endpoints
+        continue-on-error: true
+        run: bun scripts/verify-mcp-endpoints.ts --stale 7
+
       - name: Build
         run: bun run build
 
       - name: Commit and push changes
         run: |
           # git diff misses untracked files — new domain files are the common case.
-          if [ -z "$(git status --porcelain -- domains/ src/data/github-stars.json)" ]; then
-            echo "No discovered catalog or GitHub stars changes."
+          if [ -z "$(git status --porcelain -- domains/ output/mcp-endpoints.json src/data/github-stars.json)" ]; then
+            echo "No discovered catalog, endpoint verdict or GitHub stars changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add domains/ src/data/github-stars.json
-          git commit -m "sync discovered catalog and GitHub stars"
+          git add -A domains/ output/mcp-endpoints.json src/data/github-stars.json
+          git commit -m "sync discovered catalog, endpoint verdicts and GitHub stars"
           # A human push to main between checkout and here would make this
           # non-fast-forward; rebase our one commit on top instead of failing.
           git pull --rebase origin main

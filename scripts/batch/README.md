@@ -23,6 +23,25 @@ bun scripts/batch/sync-kv.ts --local --dry-run
 
 The sync writes `domains/<canonical-domain>/integrations.json`. It unions by canonical domain, keeps the repo copy when KV has no row for that domain, and only replaces an existing file when the incoming row has a newer `discoveredAt`.
 
+Rejected domains never enter: the sync drops incoming rows for denylisted
+domains and junk hosting hosts (`*.vercel.app`, `*.run.app`, …), counts them in
+the summary, and deletes any `domains/` file left over for a denylisted domain.
+
+## Reject a record
+
+**Deleting `domains/<domain>/integrations.json` does not reject anything.** The
+row is still in KV, so the next nightly sync writes the file back.
+
+To reject a record, add it to `catalog-denylist.json` at the repo root:
+
+```jsonc
+{ "domain": "example-host.run.app", "reason": "Why this is not a real record.", "addedAt": "2026-09-21" }
+```
+
+One entry is enough. The next sync removes the file, the build and the render
+paths skip the domain, and `bun run validate:batch` fails if a file for a
+denylisted (or junk-host) domain reappears. An entry also covers subdomains.
+
 ## Validate catalog data
 
 Validate the repo catalog tree:

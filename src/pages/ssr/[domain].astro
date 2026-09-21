@@ -8,7 +8,9 @@
 // /disc/{domain}.json baseline is the discovery fallback. The same DomainPage
 // component renders both, so nothing can drift.
 import DomainPage from "~/components/DomainPage.astro";
+import { isDenylisted } from "~/lib/catalog-denylist.ts";
 import { aliasesOf, canonicalDomain } from "~/lib/domain-aliases.ts";
+import { applyEndpointVerdicts } from "~/lib/endpoint-verdicts.ts";
 import type { DiscoverData } from "~/lib/surface-sections.ts";
 
 export const prerender = false;
@@ -18,6 +20,9 @@ const domain = canonicalDomain(decodeURIComponent(Astro.params.domain ?? ""));
 
 // Normally reached through the worker's rewrite (which already checked KV),
 // but re-read defensively: a direct /ssr/* hit or a KV miss falls back cleanly.
+// A denylisted domain has no page, whatever KV still holds for it.
+if (isDenylisted(domain)) return new Response(null, { status: 404 });
+
 const raw = runtime
   ? await (async () => {
       const stored = await runtime.env.DISCOVERY.get(domain);
@@ -48,6 +53,10 @@ if (!initialData && runtime) {
 
 // No KV and no baseline discovery surfaces → true 404.
 if (!initialData) return new Response(null, { status: 404 });
+
+// Probe verdicts: drop dead MCP endpoints and downgrade unverified public
+// claims, so this SSR path renders exactly what `discoveryDoc` would return.
+if (initialData.surfaces) initialData = { ...initialData, surfaces: applyEndpointVerdicts(initialData.surfaces) };
 
 Astro.response.headers.set("cache-control", "public, max-age=60");
 ---

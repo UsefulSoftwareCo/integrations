@@ -13,6 +13,8 @@ import { discover, type ChatFn, type DiscoverEvent, type WebBackend } from "../s
 import { naiveWeb } from "../src/lib/contextdev.ts";
 import { Credential, CredentialType, DISCOVERY_VERSION, Surface } from "../src/lib/discovery-schema.ts";
 import { canonicalDomain } from "../src/lib/domain-aliases.ts";
+import { denylistEntry } from "../src/lib/catalog-denylist.ts";
+import { isPlatformHost, registrableDomain } from "../src/lib/favicon.ts";
 
 export const DetectParams = Schema.Struct({ domain: Schema.String });
 
@@ -156,11 +158,52 @@ export const packDiscovery = (domain: string, detect: unknown, disc: Awaited<Ret
     }),
   );
 
+/** Why a domain may not become a catalog record, if it may not. A platform host
+ *  (`*.vercel.app`, `*.run.app`) is someone's deployment rather than a service,
+ *  a denylisted domain was rejected on purpose, and a bare label or an IP
+ *  literal is not a domain at all. Every path that runs or stores discovery
+ *  asks this first — the discovery button is public. */
+export function discoveryRefusal(domain: string): { status: 400 | 403; reason: string; message: string } | null {
+  const denied = denylistEntry(domain);
+  if (denied) return { status: 403, reason: "denylisted", message: denied.reason };
+  if (!registrableDomain(domain)) {
+    return { status: 400, reason: "not-registrable", message: `${domain} is not a registrable domain` };
+  }
+  if (isPlatformHost(domain)) {
+    return {
+      status: 400,
+      reason: "junk-host",
+      message:
+        "this host is not a catalog domain \u2014 it is an application-hosting platform, a deployment host, or a test name",
+    };
+  }
+  return null;
+}
+
+/** A refused domain still answers in the result shape, with the reason as the
+ *  summary and nothing published. */
+const packRefusal = (domain: string, message: string) =>
+  JSON.parse(
+    JSON.stringify({
+      version: DISCOVERY_VERSION,
+      domain,
+      detect: null,
+      usedLlm: false,
+      discoveredAt: new Date().toISOString(),
+      summary: message,
+      credentials: {},
+      surfaces: [],
+    }),
+  );
+
 /** The discover handler, shared by REST and MCP. Detect-first to seed the agent
  * with authoritative signals; the model then drives its own discovery trajectory. */
 export const runDiscover = (domain: string): Effect.Effect<typeof DiscoverResult.Type> =>
   Effect.promise(async () => {
-    const d = await detect(canonicalDomain(domain));
+    const canonical = canonicalDomain(domain);
+    const refusal = discoveryRefusal(canonical);
+    if (refusal) return packRefusal(canonical, refusal.message);
+    const d = await detect(canonical);
     if (!chatFn) return packDiscovery(d.domain, d, null, false);
     const disc = await discover(d.domain, d, chatFn, webBackend ?? naiveWeb()).catch(() => null);
     return packDiscovery(d.domain, d, disc, true);
@@ -174,6 +217,8 @@ export const discoverWithProgress = async (
   domain: string,
   emit: (event: DiscoverEvent) => void,
 ): Promise<typeof DiscoverResult.Type> => {
+  const refusal = discoveryRefusal(canonicalDomain(domain));
+  if (refusal) return packRefusal(canonicalDomain(domain), refusal.message);
   emit({ kind: "progress", message: "Checking well-known endpoints…" });
   const d = await detect(canonicalDomain(domain));
   emit({ kind: "progress", message: d.found.length ? `Detected: ${d.found.join(", ")}` : "No standard signals — searching" });

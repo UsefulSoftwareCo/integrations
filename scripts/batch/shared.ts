@@ -8,44 +8,11 @@ import { assignSlug } from "../../src/lib/discover.ts";
 import { preserveSlugs } from "../../worker/operations.ts";
 import { dedupSurfacesWithReport, type DedupCollapse } from "./dedup.ts";
 
-export const ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
-
-export type Args = {
-  flags: Map<string, string[]>;
-  positionals: string[];
-};
-
-export function parseArgs(argv = Bun.argv.slice(2)): Args {
-  const flags = new Map<string, string[]>();
-  const positionals: string[] = [];
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]!;
-    if (!arg.startsWith("--")) {
-      positionals.push(arg);
-      continue;
-    }
-    const raw = arg.slice(2);
-    const eq = raw.indexOf("=");
-    const key = eq >= 0 ? raw.slice(0, eq) : raw;
-    const value = eq >= 0 ? raw.slice(eq + 1) : argv[i + 1] && !argv[i + 1]!.startsWith("--") ? argv[++i]! : "true";
-    const values = flags.get(key) ?? [];
-    values.push(value);
-    flags.set(key, values);
-  }
-  return { flags, positionals };
-}
-
-export const hasFlag = (args: Args, name: string): boolean => args.flags.has(name);
-export const getFlag = (args: Args, name: string, fallback?: string): string | undefined => args.flags.get(name)?.at(-1) ?? fallback;
-export const getNumberFlag = (args: Args, name: string, fallback: number): number => {
-  const n = Number(getFlag(args, name));
-  return Number.isFinite(n) && n > 0 ? n : fallback;
-};
-
-export function usage(text: string): never {
-  console.log(text.trimStart());
-  process.exit(0);
-}
+// Arg parsing and ROOT live in args.ts so dependency-light scripts (sync-kv)
+// can import them without dragging in the discovery runtime and its generated
+// output/catalog-seeds.json. Re-exported here for the existing importers.
+import { ROOT } from "./args.ts";
+export { getFlag, getNumberFlag, hasFlag, parseArgs, ROOT, usage, type Args } from "./args.ts";
 
 export function readLines(path: string): string[] {
   return readFileSync(path, "utf8")

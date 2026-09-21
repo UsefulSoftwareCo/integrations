@@ -1,16 +1,22 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   catalogDomainFromLooseStored,
   catalogDomainFromStored,
+  catalogRejection,
   mergeCatalogs,
   readDomainCatalogTree,
   writeDomainCatalogTree,
   type Catalog,
   type CatalogDomain,
 } from "./discovered-catalog.ts";
+import { denylistEntries } from "../../src/lib/catalog-denylist.ts";
+
+/** A real entry, so the test exercises the wiring rather than a stub — but the
+ *  catalog rows around it are synthetic and written to a temp tree. */
+const DENYLISTED = denylistEntries()[0]!.domain;
 
 const domain = (domainName: string, discoveredAt: string, summary = `${domainName} summary`): CatalogDomain => ({
   domain: domainName,
@@ -76,7 +82,7 @@ describe("mergeCatalogs", () => {
         domain("brand-new.com", "2026-07-02T00:00:00.000Z"),
       ]);
 
-      expect(written).toEqual({ written: 2, changed: 2, skipped: [] });
+      expect(written).toEqual({ written: 2, changed: 2, skipped: [], removed: [] });
       expect(readDomainCatalogTree(dir).domains.map((row) => row.domain)).toEqual(["brand-new.com", "zoom.us"]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -119,8 +125,54 @@ describe("mergeCatalogs", () => {
 
     const dir = mkdtempSync(join(tmpdir(), "catalog-tree-zero-"));
     try {
-      expect(writeDomainCatalogTree(dir, merged.catalog.domains)).toEqual({ written: 1, changed: 1, skipped: [] });
+      expect(writeDomainCatalogTree(dir, merged.catalog.domains)).toEqual({ written: 1, changed: 1, skipped: [], removed: [] });
       expect(readDomainCatalogTree(dir).domains).toEqual([strict]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("durable rejection", () => {
+  test("classifies denylisted domains, junk hosting domains, and ordinary ones", () => {
+    expect(catalogRejection(DENYLISTED)).toContain("denylisted");
+    expect(catalogRejection("synthetic-fixture.vercel.app")).toBe("junk hosting domain");
+    expect(catalogRejection("synthetic-fixture.fly.dev")).toBe("junk hosting domain");
+    expect(catalogRejection("synthetic-fixture.com")).toBeNull();
+    expect(catalogRejection("api.synthetic-fixture.com")).toBeNull();
+  });
+
+  test("refuses to write rejected domains and keeps the good ones", () => {
+    const dir = mkdtempSync(join(tmpdir(), "catalog-tree-reject-"));
+    try {
+      const written = writeDomainCatalogTree(dir, [
+        domain("synthetic-fixture.com", "2026-09-01T00:00:00.000Z"),
+        domain("synthetic-fixture.vercel.app", "2026-09-01T00:00:00.000Z"),
+        domain(DENYLISTED, "2026-09-01T00:00:00.000Z"),
+      ]);
+
+      expect(written.written).toBe(1);
+      expect(written.skipped.map((row) => row.domain).sort()).toEqual([DENYLISTED, "synthetic-fixture.vercel.app"]);
+      expect(readDomainCatalogTree(dir).domains.map((row) => row.domain)).toEqual(["synthetic-fixture.com"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("a denylist entry alone removes an existing file, even when nothing incoming mentions it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "catalog-tree-remove-"));
+    try {
+      // The file an older sync wrote, before the domain was denylisted. KV may
+      // no longer return the row at all, so nothing incoming mentions it.
+      const path = join(dir, DENYLISTED, "integrations.json");
+      mkdirSync(join(path, ".."), { recursive: true });
+      writeFileSync(path, JSON.stringify(domain(DENYLISTED, "2026-08-01T00:00:00.000Z")));
+
+      const result = writeDomainCatalogTree(dir, [domain("synthetic-fixture.com", "2026-09-01T00:00:00.000Z")]);
+
+      expect(result.removed.map((row) => row.domain)).toEqual([DENYLISTED]);
+      expect(existsSync(path)).toBe(false);
+      expect(readDomainCatalogTree(dir).domains.map((row) => row.domain)).toEqual(["synthetic-fixture.com"]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

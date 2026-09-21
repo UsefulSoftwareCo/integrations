@@ -11,7 +11,9 @@
 import Base from "~/layouts/Base.astro";
 import Breadcrumb from "~/components/Breadcrumb.astro";
 import Setup from "~/components/surface/Setup.tsx";
+import { isDenylisted } from "~/lib/catalog-denylist.ts";
 import { aliasesOf, canonicalDomain } from "~/lib/domain-aliases.ts";
+import { applyEndpointVerdicts } from "~/lib/endpoint-verdicts.ts";
 import { faviconFor, isJunkDomain } from "~/lib/favicon.ts";
 import { isSdkNotCli } from "~/lib/surface-classify.ts";
 import {
@@ -39,13 +41,17 @@ const looksLikeDomain = domain.includes(".");
 
 // Slugs are server-assigned identity (v3) — match directly. A client SDK/library
 // mis-typed as `cli` is not a surface, so its slug resolves to nothing → 404.
+// The same corrections the worker applies to a discovery document, so this
+// page cannot publish a surface the API and the domain page have dropped: a
+// client SDK mis-typed as `cli` is not a surface, a dead MCP endpoint is not
+// published, and an unverified public claim is downgraded to `unknown`.
 const find = (doc?: DiscoveryDoc | null) =>
-  (doc?.surfaces ?? []).find((s) => s.slug === slug && !isSdkNotCli(s));
+  applyEndpointVerdicts((doc?.surfaces ?? []).filter((s) => !isSdkNotCli(s))).find((s) => s.slug === slug);
 
 let surface: Surface | undefined;
 let creds: Record<string, Credential> = {};
 
-if (looksLikeDomain && !isJunkDomain(domain) && runtime) {
+if (looksLikeDomain && !isJunkDomain(domain) && !isDenylisted(domain) && runtime) {
   // Live discovery (KV) wins; fall back to the baseline discovery document.
   let raw = await runtime.env.DISCOVERY.get(domain);
   if (!raw) {
@@ -117,10 +123,23 @@ const clipDescription = (s: string) => {
 const canonicalPath = `/${domain}/${slug}/`;
 const canonical = new URL(canonicalPath, Astro.site).href;
 const description = clipDescription(`${surface.name} on ${domain}: ${typeLabel} endpoint, auth methods, and setup.`);
-const provLabel = (basis: Basis) => (basis.via === "detected" ? "detected" : basis.via === "declared" ? "declared" : "discovered");
+const shortDate = (iso: string | undefined) => {
+  const t = iso ? Date.parse(iso) : Number.NaN;
+  return Number.isNaN(t) ? null : new Date(t).toISOString().slice(0, 10);
+};
+// A `detected` basis is the only one backed by a re-verifiable check, so it is
+// the only one that names the day it was verified.
+const provLabel = (basis: Basis) => {
+  if (basis.via !== "detected") return basis.via === "declared" ? "declared" : "discovered";
+  const on = shortDate(basis.verifiedAt);
+  return on ? `detected ${on}` : "detected";
+};
 const provClass = (basis: Basis) => (basis.via === "detected" ? "disc-prov-det" : basis.via === "declared" ? "disc-prov-decl" : "disc-prov-disc");
 const provTitle = (basis: Basis) => {
-  if (basis.via === "detected") return `Detected via ${basis.signal} — re-verifiable`;
+  if (basis.via === "detected") {
+    const on = shortDate(basis.verifiedAt);
+    return `Detected via ${basis.signal}${on ? ` on ${on}` : ""} — re-verifiable`;
+  }
   if (basis.via === "declared") return "Declared by the site owner via integrations.json";
   return basis.evidence?.length ? `Read from: ${basis.evidence.join(", ")}` : "Read from docs";
 };
@@ -304,9 +323,12 @@ Astro.response.headers.set("cache-control", "public, max-age=60");
       {surface.auth.status === "unknown" && <p class="muted">Authentication not yet determined.</p>}
       {surface.auth.status === "none" && (
         <div class="auth-row auth-none">
-          <span class="auth-use">No auth — public</span>
+          <span class="auth-use">{surface.auth.basis.via === "detected" ? "No auth — public" : "No auth documented"}</span>
           <span class={`disc-prov ${provClass(surface.auth.basis)} prov-end`} title={provTitle(surface.auth.basis)}>{provLabel(surface.auth.basis)}</span>
         </div>
+      )}
+      {surface.auth.status === "none" && surface.auth.basis.via !== "detected" && (
+        <p class="muted">Read from the service's documentation. No probe has confirmed that this endpoint answers without a credential.</p>
       )}
       {surface.auth.status === "required" &&
         authRows.map((row) => {

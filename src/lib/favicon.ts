@@ -1,6 +1,13 @@
 import { parse } from "tldts";
 
 const JUNK_TLDS = new Set(["local", "test", "internal", "example"]);
+/**
+ * Application-hosting platforms. A host under one of these is someone's
+ * deployment, not a service's own domain, so it must never become a catalog
+ * DOMAIN key. `isJunkDomain` is only applied to domain keys — never to a
+ * surface URL — so a vendor record for `netlify.com` keeps its endpoint on
+ * `netlify.app`.
+ */
 const JUNK_HOSTING_SUFFIXES = [
   "workers.dev",
   "awsapprunner.com",
@@ -8,6 +15,17 @@ const JUNK_HOSTING_SUFFIXES = [
   "cloudfront.net",
   "onrender.com",
   "appspot.com",
+  "vercel.app",
+  "run.app",
+  "herokuapp.com",
+  "replit.app",
+  "railway.app",
+  "now.sh",
+  "fly.dev",
+  "netlify.app",
+  "pages.dev",
+  "azurecontainerapps.io",
+  "github.io",
 ];
 
 /**
@@ -94,6 +112,21 @@ function looksGeneratedLabel(label: string): boolean {
 
 /** Domains that are implementation hosts, fixtures, or generated deployment
  * names rather than durable public service domains. */
+/** A host on an application-hosting platform or a reserved test TLD, by suffix
+ *  alone — no guessing from label shape. This is the ingestion-time rule: it
+ *  refuses discovery and sync for `*.vercel.app`-style hosts without ever
+ *  rejecting a real vendor whose name merely looks generated
+ *  (`searchads360.googleapis.com`). `isJunkDomain` adds the label heuristic
+ *  and stays the render-time filter it always was. */
+export function isPlatformHost(domain: string | null | undefined): boolean {
+  const host = normalizeHost(domain);
+  if (!host) return false;
+  const labels = host.split(".").filter(Boolean);
+  const tld = labels[labels.length - 1];
+  if (tld && JUNK_TLDS.has(tld)) return true;
+  return JUNK_HOSTING_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+}
+
 export function isJunkDomain(domain: string | null | undefined): boolean {
   const host = normalizeHost(domain);
   if (!host) return false;

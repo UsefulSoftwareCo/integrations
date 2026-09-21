@@ -1,9 +1,11 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseDomain } from "tldts";
 import type { AuthStatus, StoredDiscovery, Surface } from "../../src/lib/discovery-schema.ts";
 import { canonicalDomain } from "../../src/lib/domain-aliases.ts";
+import { denylistEntry } from "../../src/lib/catalog-denylist.ts";
+import { isPlatformHost } from "../../src/lib/favicon.ts";
 
 export const ROOT = fileURLToPath(new URL("../..", import.meta.url)).replace(/\/$/, "");
 export const DEFAULT_DOMAIN_CATALOG_DIR = join(ROOT, "domains");
@@ -80,6 +82,24 @@ export function catalogDomainKey(input: string | undefined): string | null {
   const canonicalInfo = parseDomain(`https://${canonical}`, { allowPrivateDomains: true });
   if (canonicalInfo.isIp || !canonicalInfo.domain || !(canonicalInfo.isIcann || canonicalInfo.isPrivate)) return null;
   return canonical;
+}
+
+/**
+ * Why a domain must not be published, or null when it may be.
+ *
+ * Two independent reasons, both durable: an explicit denylist entry (a human
+ * rejected the record) and a junk hosting host (someone's deployment on
+ * vercel.app/run.app/..., never a service's own domain). Deleting the file is
+ * not a rejection — the next KV sync re-imports the row. This is the check
+ * every write path consults instead.
+ */
+export function catalogRejection(domain: string | undefined): string | null {
+  const key = catalogDomainKey(domain) ?? domain?.trim().toLowerCase();
+  if (!key) return null;
+  const denied = denylistEntry(key);
+  if (denied) return `denylisted (${denied.reason})`;
+  if (isPlatformHost(key)) return "junk hosting domain";
+  return null;
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -210,13 +230,43 @@ export function readDomainCatalogTree(root = DEFAULT_DOMAIN_CATALOG_DIR): Catalo
   return { domains };
 }
 
-export function writeDomainCatalogTree(
-  root: string,
-  domains: readonly CatalogDomain[],
-): { written: number; changed: number; skipped: Array<{ domain: string; reason: string }> } {
+export type CatalogWriteResult = {
+  written: number;
+  changed: number;
+  skipped: Array<{ domain: string; reason: string }>;
+  /** Files deleted because their domain is denylisted. */
+  removed: Array<{ domain: string; reason: string }>;
+};
+
+/** Delete a domain's file and its now-empty directory. Best effort: a missing
+ *  file is already the desired end state. */
+function removeDomainFile(root: string, key: string): boolean {
+  const path = domainFilePath(root, key);
+  if (!existsSync(path)) return false;
+  unlinkSync(path);
+  try {
+    rmdirSync(join(path, ".."));
+  } catch {
+    // Directory still holds other files — leave it.
+  }
+  return true;
+}
+
+export function writeDomainCatalogTree(root: string, domains: readonly CatalogDomain[]): CatalogWriteResult {
   let written = 0;
   let changed = 0;
   const skipped: Array<{ domain: string; reason: string }> = [];
+  const removed: Array<{ domain: string; reason: string }> = [];
+
+  // Sweep first: a denylist entry alone must be enough to clean the repo, even
+  // for a domain KV no longer returns and that is therefore absent from
+  // `domains` below.
+  for (const path of listDomainCatalogFiles(root)) {
+    const folder = basename(dirname(path));
+    const denied = denylistEntry(folder);
+    if (!denied) continue;
+    if (removeDomainFile(root, folder)) removed.push({ domain: folder, reason: `denylisted (${denied.reason})` });
+  }
 
   const rows = [...domains].sort((a, b) => {
     const aKey = catalogDomainKey(a.domain) ?? a.domain;
@@ -230,6 +280,14 @@ export function writeDomainCatalogTree(
       skipped.push({ domain: domain.domain, reason: "invalid registrable domain" });
       continue;
     }
+    const rejection = catalogRejection(key);
+    if (rejection) {
+      skipped.push({ domain: domain.domain, reason: rejection });
+      // A denylisted domain is also swept above; a junk host is only refused a
+      // write, so an existing file stays for a human to review.
+      if (denylistEntry(key) && removeDomainFile(root, key)) removed.push({ domain: key, reason: rejection });
+      continue;
+    }
     const path = domainFilePath(root, key);
     const next = stableJson(domain);
     const before = existsSync(path) ? readFileSync(path, "utf8") : undefined;
@@ -241,7 +299,7 @@ export function writeDomainCatalogTree(
     written++;
   }
 
-  return { written, changed, skipped };
+  return { written, changed, skipped, removed };
 }
 
 export function mergeCatalogs(existing: Catalog, incomingDomains: readonly CatalogDomain[]): CatalogMergeResult {

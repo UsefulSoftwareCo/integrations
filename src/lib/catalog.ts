@@ -5,6 +5,7 @@
  * pages call these functions, so SSR goes through the same "API" everyone else
  * uses (no ad-hoc grouping in templates). Built over the enriched index.
  */
+import { isDenylisted } from "./catalog-denylist.ts";
 import { index } from "./data.ts";
 import { faviconUrl, isJunkDomain } from "./favicon.ts";
 import { searchIndex } from "./search-index.ts";
@@ -27,7 +28,7 @@ const DOMAINS: DomainSummary[] = (() => {
   for (const r of index) {
     const d = r.domain || r.slug;
     if (!d) continue;
-    if (isJunkDomain(d)) continue;
+    if (isJunkDomain(d) || isDenylisted(d)) continue;
     let g = map.get(d);
     if (!g) {
       g = { domain: d, icon: faviconUrl(d), total: 0, formats: {}, popularity: 0, devtool: false, description: "" };
@@ -43,7 +44,7 @@ const DOMAINS: DomainSummary[] = (() => {
     if (entry.total !== 0) continue;
     const d = entry.domain.trim().toLowerCase();
     if (!d) continue;
-    if (isJunkDomain(d)) continue;
+    if (isJunkDomain(d) || isDenylisted(d)) continue;
     if (map.has(d)) continue;
     map.set(d, {
       domain: d,

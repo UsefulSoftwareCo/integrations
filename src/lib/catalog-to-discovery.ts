@@ -18,6 +18,8 @@ import type { Integration } from "./types.ts";
 import { DISCOVERY_VERSION } from "./discovery-schema.ts";
 import type { Surface as SurfaceView } from "./surface-view.ts";
 import { assignSlug } from "./discover.ts";
+import { isDenylisted } from "./catalog-denylist.ts";
+import { applyEndpointVerdicts } from "./endpoint-verdicts.ts";
 import { isJunkDomain } from "./favicon.ts";
 
 const REG_BASIS = { via: "detected" as const, signal: "registry" };
@@ -94,7 +96,9 @@ export function catalogDiscovery(domain: string, records: Integration[]) {
     const s = recordToSurface(r);
     if (s) surfaces.push({ ...s, slug: slugs.get(r.id)! });
   }
-  return { version: DISCOVERY_VERSION, domain, summary: "", credentials: {}, surfaces };
+  // The probe verdicts decide what the baseline may publish too: a registry
+  // record pointing at a dead MCP endpoint is not a surface.
+  return { version: DISCOVERY_VERSION, domain, summary: "", credentials: {}, surfaces: applyEndpointVerdicts(surfaces) };
 }
 
 /** Records grouped the same way the baseline `/disc/{domain}.json` files are
@@ -103,7 +107,7 @@ export function baselineDiscoveryGroups(records: Integration[], domainOf: (recor
   const groups = new Map<string, Integration[]>();
   for (const r of records) {
     const domain = domainOf(r);
-    if (!domain || isJunkDomain(domain)) continue;
+    if (!domain || isJunkDomain(domain) || isDenylisted(domain)) continue;
     (groups.get(domain) ?? groups.set(domain, []).get(domain)!).push(r);
   }
   return groups;

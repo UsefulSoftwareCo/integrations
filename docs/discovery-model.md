@@ -38,6 +38,18 @@ mature catalogs converge on the same shapes. We borrow from three:
   the CLI and MCP surfaces, so we're registry-compatible (and can ingest
   `server.json` directly).
 
+## Verified auth claims
+
+An MCP surface may publish `auth.status: "none"` only while the probe cache
+(`output/mcp-endpoints.json`, written by `scripts/verify-mcp-endpoints.ts`)
+agrees. A server that answered an unauthenticated `initialize` with 401/403
+contradicts the docs, so the claim drops to `unknown`; a `dead` endpoint is
+dropped entirely. `src/lib/endpoint-verdicts.ts` is the single place that rule
+lives — the build (`scripts/normalize.ts`) and the render paths both call it.
+A clean `initialize` is not an upgrade: it proves a server exists, not that its
+tools run without credentials, so a docs-sourced `none` keeps its `discovered`
+basis.
+
 ## Design principles
 
 1. **Discriminated unions are the backbone.** Four of them, each keyed by a tag

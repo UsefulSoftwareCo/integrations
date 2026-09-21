@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import {
   catalogDomainFromLooseStored,
   catalogDomainKey,
+  catalogRejection,
   DEFAULT_DOMAIN_CATALOG_DIR,
   mergeCatalogs,
   readDomainCatalogTree,
@@ -11,7 +12,10 @@ import {
   type CatalogDomain,
   writeDomainCatalogTree,
 } from "./discovered-catalog.ts";
-import { getFlag, hasFlag, parseArgs, ROOT, usage } from "./shared.ts";
+// args.ts, not shared.ts: shared.ts pulls in the discovery runtime, which
+// statically imports the generated output/catalog-seeds.json. That import is
+// what made this script — and the nightly workflow — fail on a fresh checkout.
+import { getFlag, hasFlag, parseArgs, ROOT, usage } from "./args.ts";
 
 const DISCOVERY_NAMESPACE_ID = "7456151d9722471ca000f6d3b03a62c7";
 const BULK_CHUNK_SIZE = 100;
@@ -33,6 +37,7 @@ type KvRow = { key: string; value: string };
 export type SyncSummary = {
   keysListed: number;
   skippedInvalid: number;
+  skippedRejected: number;
   parsed: number;
   mergedNew: number;
   updated: number;
@@ -182,6 +187,10 @@ async function main(): Promise<void> {
   }
 
   const incoming: CatalogDomain[] = [];
+  // A rejected domain is dropped on the way IN, so a denylist entry or a junk
+  // hosting host cannot be re-imported by tomorrow's sync after someone
+  // deletes its file.
+  let skippedRejected = 0;
   for (const row of rows) {
     try {
       const parsed = JSON.parse(row.value) as unknown;
@@ -195,6 +204,12 @@ async function main(): Promise<void> {
         console.warn(`sync-kv: skipped ${row.key}: invalid registrable domain ${domain.domain}`);
         continue;
       }
+      const rejection = catalogRejection(domain.domain);
+      if (rejection) {
+        skippedRejected++;
+        console.warn(`sync-kv: rejected ${domain.domain}: ${rejection}`);
+        continue;
+      }
       incoming.push(domain);
     } catch (err) {
       console.warn(`sync-kv: skipped ${row.key}: ${(err as Error).message}`);
@@ -206,6 +221,7 @@ async function main(): Promise<void> {
   const summary: SyncSummary = {
     keysListed: keys.length,
     skippedInvalid,
+    skippedRejected,
     parsed: incoming.length,
     mergedNew: merged.stats.new,
     updated: merged.stats.updated,
@@ -216,6 +232,7 @@ async function main(): Promise<void> {
     [
       `keys listed: ${summary.keysListed}`,
       `skipped invalid: ${summary.skippedInvalid}`,
+      `skipped rejected (denylist/junk host): ${summary.skippedRejected}`,
       `parsed: ${summary.parsed}`,
       `domain files added: ${summary.mergedNew}`,
       `domain files updated: ${summary.updated}`,
@@ -232,7 +249,12 @@ async function main(): Promise<void> {
   for (const skip of written.skipped) {
     console.warn(`sync-kv: skipped ${skip.domain}: ${skip.reason}`);
   }
-  console.log(`wrote ${written.written} domain files to ${outDir} (${written.changed} changed)`);
+  for (const removed of written.removed) {
+    console.log(`sync-kv: removed ${removed.domain}: ${removed.reason}`);
+  }
+  console.log(
+    `wrote ${written.written} domain files to ${outDir} (${written.changed} changed, ${written.removed.length} removed)`,
+  );
 }
 
 if (import.meta.main) await main();

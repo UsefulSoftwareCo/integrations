@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildDiscoveredEntries, buildSearchIndex } from "./normalize.ts";
+import { denylistEntries } from "../src/lib/catalog-denylist.ts";
 
 describe("normalize discovered zero-surface domains", () => {
   test("threads empty and all-filtered discovered domains into the search index without fake kinds", () => {
@@ -111,5 +112,21 @@ describe("standalone product rows", () => {
     );
     expect(index).toHaveLength(1);
     expect(index[0]?.name).toBe("Outlook Mail");
+  });
+});
+
+describe("rejected domains never reach the search index", () => {
+  test("a denylisted domain and a junk hosting host are both dropped", () => {
+    const denylisted = denylistEntries()[0]!.domain;
+    const index = buildSearchIndex(
+      [],
+      [
+        { domain: "synthetic-fixture.com", description: "kept" },
+        { domain: denylisted, description: "rejected by the denylist" },
+        { domain: "synthetic-fixture.vercel.app", description: "someone's deployment" },
+      ],
+    );
+
+    expect(index.map((entry) => entry.domain)).toEqual(["synthetic-fixture.com"]);
   });
 });

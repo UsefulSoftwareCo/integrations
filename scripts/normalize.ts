@@ -10,6 +10,8 @@ import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
 const getDomain = (url: string) => tldGetDomain(url, { allowPrivateDomains: true });
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
 import { faviconUrl, isJunkDomain } from "../src/lib/favicon.ts";
+import { isDenylisted } from "../src/lib/catalog-denylist.ts";
+import { isPublishableMcpUrl, verifiedMcpAuth } from "../src/lib/endpoint-verdicts.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 import { readDomainCatalogTree, type Catalog } from "./batch/discovered-catalog.ts";
 
@@ -758,48 +760,21 @@ interface ToolsCache {
 // ─────────────────────────────────────────────────────────────────────────────
 // MCP endpoint verdicts: output/mcp-endpoints.json from verify-mcp-endpoints.ts
 //
-// A large share of MCP surfaces came from LLM discovery, which will assert a
-// server at `https://<domain>/mcp` because that is the convention. Often it is
-// right. Sometimes it is not, and the catalog then sends people to an endpoint
-// that cannot work — executor's add form rejects it, but only after the click.
-// Publishing an endpoint nobody verified is the bug; this drops the ones the
-// network positively denied.
+// The rules themselves live in src/lib/endpoint-verdicts.ts — the same module
+// the site's render paths use — so the build and the pages cannot disagree
+// about which endpoints are publishable or which `none` auth claims survive.
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface EndpointVerdict {
-  status: "live" | "auth" | "dead" | "unknown";
-  detail: string;
-  checkedAt: string;
-}
-
-/** Structurally unpublishable regardless of what a probe says: an unsubstituted
- *  `{placeholder}` copied out of docs, or a loopback address that could only
- *  ever have meant the author's own machine. */
-export function isUnusableEndpoint(url: string): boolean {
-  if (/[{}]/.test(url)) return true;
-  // oxlint-disable-next-line executor/no-try-catch-or-throw -- boundary: URL parsing reports failure by throwing
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local");
-  } catch {
-    return true;
-  }
-}
-
 function applyEndpointVerdicts(recs: Integration[]): Integration[] {
-  const path = join(OUTPUT, "mcp-endpoints.json");
-  const verdicts: Record<string, EndpointVerdict> = existsSync(path)
-    ? (JSON.parse(readFileSync(path, "utf8")) as { endpoints: Record<string, EndpointVerdict> })
-        .endpoints
-    : {};
-  return recs.filter((r) => {
-    const url = r.mcp?.remoteUrl?.trim();
-    if (!url) return true;
-    if (isUnusableEndpoint(url)) return false;
-    // Only a positive denial removes a record. A timeout or a 5xx means the
-    // service had a bad minute, not that it does not exist.
-    return verdicts[url]?.status !== "dead";
-  });
+  return recs.filter((r) => isPublishableMcpUrl(r.mcp?.remoteUrl));
+}
+
+/** Whether an MCP record may still publish an "auth: none" claim. The docs
+ *  saying a server is public is not evidence; a probe that got 401/403 is
+ *  evidence against it. Same rule as `verifiedMcpAuth`, expressed over the
+ *  feed-shaped record instead of a Surface. */
+function keepsNoneAuth(remoteUrl: string | undefined): boolean {
+  return verifiedMcpAuth(remoteUrl, { status: "none", basis: { via: "discovered", evidence: [] } }).status === "none";
 }
 
 function applyToolsCache(kind: Kind, recs: Integration[]): Integration[] {
@@ -1070,10 +1045,14 @@ function mcpSurfaceAuth(
       ...(mcp.authNote ? { note: mcp.authNote } : {}),
     };
   }
-  if (mcp.isAuthless === true) return { kind: "none" };
+  if (mcp.isAuthless === true) return keepsNoneAuth(mcp.remoteUrl) ? { kind: "none" } : undefined;
   const kinds = (mcp.authTypes ?? []).map((type) => type.toLowerCase());
   for (const kind of ["oauth", "api_key", "none"]) {
-    if (kinds.includes(kind)) return { kind };
+    if (!kinds.includes(kind)) continue;
+    // A feed's "NONE" is a claim like any other: drop it to unknown (no auth
+    // hint at all) when the probe contradicts it.
+    if (kind === "none" && !keepsNoneAuth(mcp.remoteUrl)) return undefined;
+    return { kind };
   }
   return undefined;
 }
@@ -1109,7 +1088,7 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
   for (const r of index) {
     const domain = r.domain || r.slug;
     if (!domain) continue;
-    if (isJunkDomain(domain)) continue;
+    if (isJunkDomain(domain) || isDenylisted(domain)) continue;
     seenDomains.add(domain);
     // A standalone product is its own search row: 25 Microsoft Graph workloads
     // on graph.microsoft.com must not collapse into one openapi surface.
@@ -1143,7 +1122,7 @@ export function buildSearchIndex(index: IndexEntry[], zeroSurfaceDomains: readon
   for (const zero of zeroSurfaceDomains) {
     const domain = zero.domain.trim().toLowerCase();
     if (!domain) continue;
-    if (isJunkDomain(domain)) continue;
+    if (isJunkDomain(domain) || isDenylisted(domain)) continue;
     if (seenDomains.has(domain) || seenDomains.has(canonicalDomain(domain)) || map.has(domain)) continue;
     map.set(domain, {
       domain,
@@ -1205,7 +1184,15 @@ function catalogSeedEntry(r: Integration): { domain: string; entry: CatalogSeedE
   const base = { kind: r.kind, name: r.name, feeds: r.feeds };
   if (r.kind === "mcp") {
     if (!r.mcp?.remoteUrl) return null;
-    return { domain, entry: { ...base, remoteUrl: r.mcp.remoteUrl, transport: r.mcp.transport, authTypes: r.mcp.authTypes } };
+    // The seed text is read back by the discovery prompt, so an unverified
+    // "NONE" would re-enter the catalog as fact. Same rule as verifiedMcpAuth.
+    const authTypes = keepsNoneAuth(r.mcp.remoteUrl)
+      ? r.mcp.authTypes
+      : r.mcp.authTypes?.filter((type) => type.toLowerCase() !== "none");
+    return {
+      domain,
+      entry: { ...base, remoteUrl: r.mcp.remoteUrl, transport: r.mcp.transport, authTypes: authTypes?.length ? authTypes : undefined },
+    };
   }
   if (r.kind === "openapi") {
     if (!r.openapi?.specUrl) return null;

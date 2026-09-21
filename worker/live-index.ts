@@ -2,6 +2,7 @@ import { apiEnvelope, unwrapEnvelope, type ApiEnvelope } from "../src/lib/api-en
 import type { DomainSummary } from "../src/lib/catalog.ts";
 import type { IndexRecord } from "../src/lib/data.ts";
 import { canonicalDomain } from "../src/lib/domain-aliases.ts";
+import { isDenylisted } from "../src/lib/catalog-denylist.ts";
 import { slugifyName } from "../src/lib/discover.ts";
 import { faviconUrl } from "../src/lib/favicon.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
@@ -92,6 +93,9 @@ export function normalizeLiveIndex(value: unknown): LiveIndexEntry[] {
   for (const item of value) {
     const entry = normalizeLiveEntry(item);
     if (!entry) continue;
+    // The index is a KV row of its own: a denylisted domain already written to
+    // it must drop out of the search feeds on read, not wait for a rewrite.
+    if (isDenylisted(entry.domain)) continue;
     const prior = byDomain.get(entry.domain);
     if (!prior || discoveredTime(entry) >= discoveredTime(prior)) byDomain.set(entry.domain, entry);
   }

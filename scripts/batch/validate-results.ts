@@ -9,6 +9,8 @@ import {
   listDomainCatalogFiles,
   readDomainCatalogFile,
 } from "./discovered-catalog.ts";
+import { denylistEntry } from "../../src/lib/catalog-denylist.ts";
+import { isPlatformHost } from "../../src/lib/favicon.ts";
 
 /**
  * Post-run validation gate for batch discovery output.
@@ -329,6 +331,16 @@ async function main(): Promise<void> {
         if (folder !== key) report.add("catalogWrongFolder", domain, `file is under ${folder}; expected ${key}`);
       } else {
         report.add("catalogBadDomain", domain, `domain=${JSON.stringify(d.domain)}`);
+      }
+
+      // Drift: a record the catalog has already rejected is still on disk.
+      // Both are durable rejections the sync now honors, so a file surviving
+      // one means someone re-added it by hand or an older sync wrote it.
+      const denied = denylistEntry(key ?? domain);
+      if (denied) {
+        report.add("catalogDenylistedDomain", domain, `denylisted ${denied.addedAt}: ${denied.reason} — delete ${file}`);
+      } else if (isPlatformHost(key ?? domain)) {
+        report.add("catalogJunkDomain", domain, `platform-hosted or generated host, not a service domain — ${file}`);
       }
       if (typeof d.summary !== "string" || d.summary.trim().length === 0) {
         report.add("catalogMissingSummary", domain, "summary is empty");

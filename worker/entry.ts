@@ -18,9 +18,11 @@ import { apiContext, apiHandler } from "./api.ts";
 import { canonicalRedirect } from "./canonical.ts";
 import { discoveryDoc, discoveryKvGet } from "./discovery-doc.ts";
 import { apiJsonWithLiveIndex, domainsJsonWithLiveIndex, upsertLiveIndex } from "./live-index.ts";
-import { setChat, setWebBackend, discoverWithProgress, preserveSlugs } from "./operations.ts";
+import { setChat, setWebBackend, discoverWithProgress, discoveryRefusal, preserveSlugs } from "./operations.ts";
 import { contextWeb, naiveWeb } from "../src/lib/contextdev.ts";
+import { isDenylisted } from "../src/lib/catalog-denylist.ts";
 import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
+import { applyEndpointVerdicts } from "../src/lib/endpoint-verdicts.ts";
 import { isJunkDomain, logoHost, registrableDomain } from "../src/lib/favicon.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
@@ -95,6 +97,9 @@ async function priorSurfaces(env: Env, origin: string, domain: string): Promise<
 
 async function persistDiscovery(env: Env, result: { domain?: string; surfaces?: readonly unknown[]; summary?: unknown; discoveredAt?: string }, model: string): Promise<void> {
   if (!result.domain) return;
+  // Defense in depth: the stream route already refuses these, but nothing that
+  // writes a durable record may take a host on trust.
+  if (discoveryRefusal(canonicalDomain(result.domain))) return;
   // Keep the result's own generation timestamp: the cache-hit backfill also
   // lands here, and stamping `now` would relabel a day-old cached result as
   // fresh — hiding the regenerate affordance for another staleness window.
@@ -280,11 +285,15 @@ function discoveryCounts(result: {
 /** Drop SDK-as-`cli` surfaces from a stored-discovery KV envelope's JSON string,
  * so the /api/{domain}/discovery endpoint matches the rendered pages. Serves the
  * value unchanged if it doesn't parse into the expected shape. */
-function stripSdkFromStored(raw: string): string {
+/** The stored-discovery JSON, corrected the way the pages correct it: client
+ *  SDKs mis-typed as `cli` dropped, and the MCP probe verdicts applied (dead
+ *  endpoints dropped, unverified `none` claims downgraded). Without this the
+ *  API and the rendered page disagree about the same record. */
+function correctStored(raw: string): string {
   try {
     const envelope = JSON.parse(raw) as { result?: { surfaces?: Surface[] } };
     if (envelope.result?.surfaces?.length) {
-      envelope.result.surfaces = envelope.result.surfaces.filter((s) => !isSdkNotCli(s));
+      envelope.result.surfaces = applyEndpointVerdicts(envelope.result.surfaces.filter((s) => !isSdkNotCli(s)));
       return JSON.stringify(envelope);
     }
   } catch {
@@ -594,10 +603,12 @@ async function handleRequest(
     const storedMatch = /^\/api\/([^/]+)\/discovery\/?$/.exec(url.pathname);
     if (storedMatch) {
       const domain = canonicalDomain(decodeURIComponent(storedMatch[1]));
+      // `discoveryKvGet` returns null for a denylisted domain, so a rejected
+      // record 404s here exactly as it does on the pages.
       const raw = await discoveryKvGet(env, domain);
-      // Strip client SDKs mis-typed as `cli` so this stored-discovery API agrees
-      // with what the pages render. Falls back to raw if the value doesn't parse.
-      const body = raw ? stripSdkFromStored(raw) : JSON.stringify({ stored: false });
+      // Correct the stored surfaces so this API agrees with what the pages
+      // render. Falls back to raw if the value doesn't parse.
+      const body = raw ? correctStored(raw) : JSON.stringify({ stored: false });
       return new Response(body, {
         status: raw ? 200 : 404,
         headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "public, max-age=60" },
@@ -611,6 +622,14 @@ async function handleRequest(
     const streamMatch = /^\/api\/([^/]+)\/discover\/stream\/?$/.exec(url.pathname);
     if (streamMatch) {
       const domain = canonicalDomain(decodeURIComponent(streamMatch[1]));
+      // Who may become a catalog record is decided BEFORE the rate limiter and
+      // before any LLM spend: the button is public, so the refusal has to be
+      // the cheapest path, and it has to explain itself to the island.
+      const refusal = discoveryRefusal(domain);
+      if (refusal) {
+        track(env, ctx, request, "discovery_refused", { domain, reason: refusal.reason });
+        return json({ error: refusal.message }, refusal.status);
+      }
       // `force=1` (the regenerate button) skips the cached result and re-runs
       // discovery; the fresh run then overwrites the cache entry below.
       const force = url.searchParams.get("force") === "1";
@@ -717,6 +736,18 @@ async function handleRequest(
           },
         });
       }
+      // The JSON `/api/{domain}/discover` runs the same loop as the stream and
+      // writes the same KV row, so it refuses the same hosts, and before the
+      // cache so a warm rejected result cannot be served either.
+      const apiDiscoverMatch = /^\/api\/([^/]+)\/discover\/?$/.exec(url.pathname);
+      if (apiDiscoverMatch) {
+        const target = canonicalDomain(decodeURIComponent(apiDiscoverMatch[1]));
+        const refusal = discoveryRefusal(target);
+        if (refusal) {
+          track(env, ctx, request, "discovery_refused", { domain: target, reason: refusal.reason });
+          return json({ error: refusal.message }, refusal.status);
+        }
+      }
       const cache = (caches as unknown as EdgeCaches).default;
       // Version the cache key so a deploy that bumps CACHE_VERSION orphans stale
       // entries (the Cache API otherwise survives deploys).
@@ -810,7 +841,7 @@ async function handleRequest(
     const domainMatch = /^\/([^/]+)\/?$/.exec(url.pathname);
     if (request.method === "GET" && domainMatch && domainMatch[1].includes(".")) {
       const domain = canonicalDomain(decodeURIComponent(domainMatch[1]));
-      if (!isJunkDomain(domain) && await discoveryKvGet(env, domain)) {
+      if (!isJunkDomain(domain) && !isDenylisted(domain) && await discoveryKvGet(env, domain)) {
         const ssrUrl = new URL(`/ssr/${encodeURIComponent(domain)}/`, url.origin);
         return handle(manifest, app, new Request(ssrUrl, request) as never, env as never, ctx as never);
       }

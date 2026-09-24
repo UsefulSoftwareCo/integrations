@@ -94,6 +94,7 @@ async function main(): Promise<void> {
 
     const spec = JSON.parse(conversion.specText) as {
       info?: Record<string, unknown>;
+      servers?: { url: string }[];
       paths?: Record<string, Record<string, unknown>>;
     };
     // The bundle converter titles everything "Google"; a hosted standalone
@@ -103,7 +104,12 @@ async function main(): Promise<void> {
       title?: string;
       version?: string;
       description?: string;
+      rootUrl?: string;
     };
+    // Bundle fallback servers are for multi-service specs, not standalone APIs.
+    if (documents.length === 1 && discovery.rootUrl) {
+      spec.servers = [{ url: discovery.rootUrl }];
+    }
     spec.info = {
       ...spec.info,
       title: discovery.title ?? preset.name,

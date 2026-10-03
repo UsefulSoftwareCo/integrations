@@ -736,9 +736,24 @@ function markDeclaredSurface(surface: Surface, source: string): Surface {
   return surface;
 }
 
-function surfaceLocator(s: Surface): string {
-  const packageId = s.packages?.[0]?.identifier;
-  return `${s.type}|${(s.spec || s.url || s.command || packageId || s.name).toLowerCase()}`;
+/** Every key a surface can be recognized by. A declared surface must merge
+ * into its discovered twin even when one carries a spec and the other only a
+ * base url (or their urls are templated differently), so matching tries each
+ * facet — ending with type+name, the same pair the batch validator treats as
+ * a duplicate. A surface with a spec does NOT expose its url as a facet:
+ * distinct APIs can share a base url (Clerk's Backend and Platform APIs both
+ * live at api.clerk.com/v1), and the spec is what tells them apart. */
+function surfaceLocators(s: Surface): string[] {
+  const keys: string[] = [];
+  const add = (value: string | undefined) => {
+    if (value) keys.push(`${s.type}|${value.toLowerCase()}`);
+  };
+  add(s.spec);
+  if (!s.spec) add(s.url);
+  add(s.command);
+  add(s.packages?.[0]?.identifier);
+  add(s.name);
+  return keys;
 }
 
 function entryKey(entry: AuthEntry): string {
@@ -802,7 +817,7 @@ function mergeDeclaredSurface(existing: Surface, declared: Surface): void {
   mergeDeclaredAuth(existing, declared);
 }
 
-function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): void {
+export function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): void {
   const declared = detect.integrationsJson;
   if (!declared?.result) return;
   const source = declared.url;
@@ -812,11 +827,17 @@ function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit)
       emit?.({ kind: "credential", id, credential: r.credentials[id] });
     }
   }
-  const byLocator = new Map(r.surfaces.map((surface) => [surfaceLocator(surface), surface]));
+  const byLocator = new Map<string, Surface>();
+  const index = (surface: Surface): void => {
+    for (const key of surfaceLocators(surface)) if (!byLocator.has(key)) byLocator.set(key, surface);
+  };
+  for (const surface of r.surfaces) index(surface);
   for (const rawSurface of declared.result.surfaces ?? []) {
     const surface = markDeclaredSurface(cloneJson(rawSurface) as Surface, source);
     if (!surface.slug) surface.slug = assignSlug(surface.name || "Declared surface", r.surfaces);
-    const existing = byLocator.get(surfaceLocator(surface));
+    const existing = surfaceLocators(surface)
+      .map((key) => byLocator.get(key))
+      .find(Boolean);
     if (existing) {
       mergeDeclaredSurface(existing, surface);
       emit?.({ kind: "surface", surface: existing });
@@ -824,7 +845,7 @@ function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit)
     }
     surface.slug = assignSlug(surface.slug || surface.name || "Declared surface", r.surfaces);
     r.surfaces.push(surface);
-    byLocator.set(surfaceLocator(surface), surface);
+    index(surface);
     emit?.({ kind: "surface", surface });
   }
 }

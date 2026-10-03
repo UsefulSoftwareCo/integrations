@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { PROBE_KEYS } from "./conventions.ts";
-import { discover, slackMcpAppManifestUrl, type ChatFn, type WebBackend } from "./discover.ts";
+import { discover, mergeDeclared, slackMcpAppManifestUrl, type ChatFn, type WebBackend } from "./discover.ts";
 import type { DetectionResult } from "./detect.ts";
 
 const web: WebBackend = {
@@ -187,5 +187,161 @@ describe("discover MCP onboarding overrides", () => {
     expect(setup).toContain("pre-registered app required");
     expect(setup).not.toContain("Slack MCP server access");
     expect(setup).not.toContain("api.slack.com/apps?new_app=1");
+  });
+});
+
+describe("mergeDeclared", () => {
+  const declaredSource = "https://clerk.example/.well-known/integrations.json";
+  const declaredBasis = { via: "declared", source: declaredSource } as const;
+
+  function resultWith(surfaces: object[]): Parameters<typeof mergeDeclared>[0] {
+    return {
+      version: 3,
+      domain: "clerk.example",
+      summary: "",
+      credentials: {},
+      surfaces,
+    } as Parameters<typeof mergeDeclared>[0];
+  }
+
+  function detectionWith(surfaces: object[]): DetectionResult {
+    return {
+      ...baseDetection(""),
+      integrationsJson: {
+        url: declaredSource,
+        result: { version: 3, credentials: {}, surfaces },
+      },
+    } as DetectionResult;
+  }
+
+  test("merges a declared surface into its discovered twin when only one carries a spec", () => {
+    const r = resultWith([
+      {
+        type: "http",
+        slug: "backend-api",
+        name: "Backend API",
+        url: "https://api.clerk.example/v1",
+        basis: { via: "discovered", evidence: [] },
+        auth: { status: "unknown" },
+      },
+    ]);
+    mergeDeclared(
+      r,
+      detectionWith([
+        {
+          type: "http",
+          slug: "backend-api",
+          name: "Backend API",
+          url: "https://api.clerk.example/v1",
+          spec: "https://clerk.example/spec/bapi/latest.yml",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+      ]),
+    );
+
+    expect(r.surfaces).toHaveLength(1);
+    expect(r.surfaces[0].slug).toBe("backend-api");
+    expect(r.surfaces[0].spec).toBe("https://clerk.example/spec/bapi/latest.yml");
+    expect(r.surfaces[0].basis.via).toBe("declared");
+  });
+
+  test("falls back to type+name when locator urls are templated differently", () => {
+    const r = resultWith([
+      {
+        type: "http",
+        slug: "frontend-api",
+        name: "Frontend API",
+        url: "https://{domain}.accounts.example",
+        basis: { via: "discovered", evidence: [] },
+        auth: { status: "unknown" },
+      },
+    ]);
+    mergeDeclared(
+      r,
+      detectionWith([
+        {
+          type: "http",
+          slug: "frontend-api",
+          name: "Frontend API",
+          url: "https://{frontend_api}",
+          spec: "https://clerk.example/spec/fapi/latest.yml",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+      ]),
+    );
+
+    expect(r.surfaces).toHaveLength(1);
+    expect(r.surfaces[0].spec).toBe("https://clerk.example/spec/fapi/latest.yml");
+  });
+
+  test("still appends genuinely new declared surfaces", () => {
+    const r = resultWith([
+      {
+        type: "http",
+        slug: "backend-api",
+        name: "Backend API",
+        url: "https://api.clerk.example/v1",
+        basis: { via: "discovered", evidence: [] },
+        auth: { status: "unknown" },
+      },
+    ]);
+    mergeDeclared(
+      r,
+      detectionWith([
+        {
+          type: "http",
+          slug: "platform-api",
+          name: "Platform API",
+          url: "https://api.clerk.example/v1#platform",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+      ]),
+    );
+
+    expect(r.surfaces).toHaveLength(2);
+    expect(r.surfaces.map((s) => s.slug)).toEqual(["backend-api", "platform-api"]);
+  });
+
+  test("does not merge distinct spec-bearing APIs that share a base url", () => {
+    const r = resultWith([
+      {
+        type: "http",
+        slug: "backend-api",
+        name: "Backend API",
+        url: "https://api.clerk.example/v1",
+        basis: { via: "discovered", evidence: [] },
+        auth: { status: "unknown" },
+      },
+    ]);
+    mergeDeclared(
+      r,
+      detectionWith([
+        {
+          type: "http",
+          slug: "backend-api",
+          name: "Backend API",
+          url: "https://api.clerk.example/v1",
+          spec: "https://clerk.example/spec/bapi/latest.yml",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+        {
+          type: "http",
+          slug: "platform-api",
+          name: "Platform API",
+          url: "https://api.clerk.example/v1",
+          spec: "https://clerk.example/spec/platform/latest.yml",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+      ]),
+    );
+
+    expect(r.surfaces.map((s) => s.slug)).toEqual(["backend-api", "platform-api"]);
+    expect(r.surfaces[0].spec).toBe("https://clerk.example/spec/bapi/latest.yml");
+    expect(r.surfaces[1].spec).toBe("https://clerk.example/spec/platform/latest.yml");
   });
 });

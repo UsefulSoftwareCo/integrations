@@ -189,3 +189,93 @@ describe("discover MCP onboarding overrides", () => {
     expect(setup).not.toContain("api.slack.com/apps?new_app=1");
   });
 });
+
+describe("discover owner declaration merge", () => {
+  const declaredSource = "https://example.com/.well-known/integrations.json";
+
+  function httpDiscovery(recorded: Record<string, unknown>): ChatFn {
+    return async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        {
+          id: "cred-1",
+          name: "record_credential",
+          arguments: { id: "api_key", type: "api_key", label: "API key", setup: "Create a key in the dashboard." },
+        },
+        {
+          id: "surface-1",
+          name: "record_surface",
+          arguments: {
+            name: "Example API",
+            type: "http",
+            authStatus: "required",
+            auth: [{ use: [{ id: "api_key", mechanics: { source: "http", in: "header", headerName: "Authorization", scheme: "Bearer" } }], basis: { via: "discovered", evidence: ["https://example.com/docs/api"] } }],
+            basis: { via: "discovered", evidence: ["https://example.com/docs/api"] },
+            ...recorded,
+          },
+        },
+        { id: "finish-1", name: "finish", arguments: { summary: "Provides an HTTP API.", description: "Example service." } },
+      ],
+    });
+  }
+
+  function declaredDetection(declaredSurface: Record<string, unknown>): DetectionResult {
+    return {
+      domain: "example.com",
+      found: [PROBE_KEYS.integrationsJson],
+      probed: [PROBE_KEYS.integrationsJson],
+      mcp: [],
+      errors: [],
+      integrationsJson: {
+        url: declaredSource,
+        result: {
+          version: 3,
+          credentials: { api_key: { type: "api_key", label: "API key", setup: "Create a key in the dashboard." } },
+          surfaces: [
+            {
+              slug: "api",
+              name: "Example API",
+              type: "http",
+              basis: { via: "declared", source: declaredSource },
+              auth: { status: "required", entries: [{ use: [{ id: "api_key", mechanics: { source: "http", in: "header", headerName: "Authorization", scheme: "Bearer" } }], basis: { via: "declared", source: declaredSource } }] },
+              ...declaredSurface,
+            },
+          ],
+        },
+      } as DetectionResult["integrationsJson"],
+    };
+  }
+
+  test("folds a declared surface with a spec into the discovered row that only knows the base URL", async () => {
+    const chat = httpDiscovery({ url: "https://api.example.com/v1" });
+    const result = await discover("example.com", declaredDetection({ url: "https://api.example.com/v1", spec: "https://api.example.com/v1/openapi.json" }), chat, web);
+    if (!result) throw new Error("discover returned null");
+
+    const http = result.surfaces.filter((s) => s.type === "http");
+    expect(http).toHaveLength(1);
+    expect(http[0]?.url).toBe("https://api.example.com/v1");
+    expect(http[0]?.spec).toBe("https://api.example.com/v1/openapi.json");
+    expect(http[0]?.basis.via).toBe("declared");
+  });
+
+  test("folds a declared base-URL-only surface into a discovered row that knows the spec", async () => {
+    // A graphql "introspection" spec is a literal, not a URL, so record_surface
+    // keeps it without the network validation an OpenAPI URL would trigger.
+    const chat = httpDiscovery({ name: "Example GraphQL", type: "graphql", url: "https://api.example.com/graphql", spec: "introspection" });
+    const result = await discover("example.com", declaredDetection({ name: "Example GraphQL", type: "graphql", url: "https://api.example.com/graphql" }), chat, web);
+    if (!result) throw new Error("discover returned null");
+
+    const graphql = result.surfaces.filter((s) => s.type === "graphql");
+    expect(graphql).toHaveLength(1);
+    expect(graphql[0]?.spec).toBe("introspection");
+    expect(graphql[0]?.basis.via).toBe("declared");
+  });
+
+  test("still adds a declared surface for a different base URL", async () => {
+    const chat = httpDiscovery({ url: "https://api.example.com/v1" });
+    const result = await discover("example.com", declaredDetection({ name: "Ingest API", url: "https://ingest.example.com", slug: "ingest-api" }), chat, web);
+    if (!result) throw new Error("discover returned null");
+
+    expect(result.surfaces.filter((s) => s.type === "http")).toHaveLength(2);
+  });
+});

@@ -1,0 +1,309 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Salesforce Data 360 Profile API",
+    "version": "1.0.0",
+    "description": "Hand-written, source-mapped OpenAPI surface for Data 360 instance-host Profile API endpoints. The host is the instance_url returned by /services/a360/token, typically https://<tenant>.c360a.salesforce.com. This spec covers read/query profile operations documented in the Data 360 REST API reference.",
+    "x-sourceDocs": [
+      "https://developer.salesforce.com/docs/data/data-cloud-query-guide/references/data-cloud-query-api-reference/c360a-api-profile-call-overview.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-query-guide/references/data-cloud-query-api-reference/c360a-api-profile-meta.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-query-guide/references/data-cloud-query-api-reference/c360a-api-profile-meta-dmname.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-query-guide/references/data-cloud-query-api-reference/c360a-api-profile-dmname.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-query-guide/references/data-cloud-query-api-reference/c360a-api-profile-dmname-id.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-query-guide/references/data-cloud-query-api-reference/c360a-api-profile-dmname-id-child-dmname.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-query-guide/references/data-cloud-query-api-reference/c360a-api-profile-dmname-id-ci-ci-name.html"
+    ]
+  },
+  "servers": [
+    {
+      "url": "https://REPLACE-WITH-D360-INSTANCE-HOST.c360a.salesforce.com",
+      "description": "Data 360 instance host returned as instance_url from the a360 token exchange"
+    }
+  ],
+  "paths": {
+    "/api/v1/profile/metadata": {
+      "get": {
+        "operationId": "getProfileMetadata",
+        "summary": "Get metadata for all profiles",
+        "description": "Retrieves metadata for all accessible profile data model objects in a Data 360 instance.",
+        "tags": ["Profile Metadata"],
+        "responses": {
+          "200": {
+            "description": "Profile metadata list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProfileMetadataList" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/profile/metadata/{dataModelName}": {
+      "get": {
+        "operationId": "getProfileMetadataByDataModel",
+        "summary": "Get profile metadata for one data model",
+        "description": "Retrieves field, index, and relationship metadata for a specific profile data model object.",
+        "tags": ["Profile Metadata"],
+        "parameters": [{ "$ref": "#/components/parameters/DataModelName" }],
+        "responses": {
+          "200": {
+            "description": "Profile data model metadata",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProfileMetadata" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/profile/{dataModelName}": {
+      "get": {
+        "operationId": "getProfileData",
+        "summary": "Query profile data",
+        "description": "Queries profile data from a specific profile-category data model object using fields, filters, ordering, and pagination.",
+        "tags": ["Profile Data"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DataModelName" },
+          { "$ref": "#/components/parameters/Fields" },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "Filter criteria using AND equality syntax, for example [FirstName__c=John].",
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Offset" },
+          { "$ref": "#/components/parameters/OrderBy" }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/ProfileDataResponse" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/profile/{dataModelName}/{Id}": {
+      "get": {
+        "operationId": "getProfileDataById",
+        "summary": "Get profile data by ID",
+        "description": "Retrieves a specific profile record by primary or secondary key lookup.",
+        "tags": ["Profile Data"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DataModelName" },
+          { "$ref": "#/components/parameters/ProfileRecordId" },
+          { "$ref": "#/components/parameters/Fields" },
+          {
+            "name": "searchkey",
+            "in": "query",
+            "required": false,
+            "description": "Field to search by for secondary key lookup.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/ProfileDataResponse" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/profile/{dataModelName}/{Id}/{childDataModelName}": {
+      "get": {
+        "operationId": "getProfileChildData",
+        "summary": "Get profile child data",
+        "description": "Retrieves child records related to a specific profile record through parent-child relationships.",
+        "tags": ["Profile Data"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DataModelName" },
+          { "$ref": "#/components/parameters/ProfileRecordId" },
+          { "$ref": "#/components/parameters/ChildDataModelName" },
+          { "$ref": "#/components/parameters/Fields" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/Offset" },
+          { "$ref": "#/components/parameters/OrderBy" },
+          {
+            "name": "searchkey",
+            "in": "query",
+            "required": false,
+            "description": "Field to search by for related records.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/ProfileDataResponse" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/profile/{dataModelName}/{Id}/calculated-insights/{ci-name}": {
+      "get": {
+        "operationId": "getProfileCalculatedInsightsData",
+        "summary": "Get profile calculated insights data",
+        "description": "Retrieves calculated insight attributes and metrics for a specific profile record.",
+        "tags": ["Profile Calculated Insights"],
+        "parameters": [
+          { "$ref": "#/components/parameters/DataModelName" },
+          { "$ref": "#/components/parameters/ProfileRecordId" },
+          {
+            "name": "ci-name",
+            "in": "path",
+            "required": true,
+            "description": "Calculated insight API name.",
+            "schema": { "type": "string" }
+          },
+          { "$ref": "#/components/parameters/Fields" }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/ProfileDataResponse" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "DataModelName": {
+        "name": "dataModelName",
+        "in": "path",
+        "required": true,
+        "description": "Profile data model object API name, for example Individual__dlm.",
+        "schema": { "type": "string" }
+      },
+      "ChildDataModelName": {
+        "name": "childDataModelName",
+        "in": "path",
+        "required": true,
+        "description": "Child data model object API name, for example ContactPointEmail__dlm.",
+        "schema": { "type": "string" }
+      },
+      "ProfileRecordId": {
+        "name": "Id",
+        "in": "path",
+        "required": true,
+        "description": "Profile record ID or secondary key value.",
+        "schema": { "type": "string" }
+      },
+      "Fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated list of fields to include. Specify fields to retrieve more than 10 fields.",
+        "schema": { "type": "string" }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Maximum records to return. Salesforce documents default 49,999 and response limit 4,999 for profile queries.",
+        "schema": { "type": "integer", "minimum": 1 }
+      },
+      "Offset": {
+        "name": "offset",
+        "in": "query",
+        "required": false,
+        "description": "Rows to skip before returning results.",
+        "schema": { "type": "integer", "minimum": 0 }
+      },
+      "OrderBy": {
+        "name": "orderby",
+        "in": "query",
+        "required": false,
+        "description": "Field to sort results by. Use - prefix for descending order.",
+        "schema": { "type": "string" }
+      }
+    },
+    "schemas": {
+      "ProfileMetadata": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "displayName": { "type": "string" },
+          "category": { "type": "string" },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "indexes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "ProfileMetadataList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProfileMetadata" }
+          }
+        },
+        "additionalProperties": true
+      },
+      "ProfileData": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "done": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "errorCode": { "type": "string" },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "responses": {
+      "ProfileDataResponse": {
+        "description": "Profile records response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ProfileData" }
+          }
+        }
+      },
+      "Error": {
+        "description": "Salesforce error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}

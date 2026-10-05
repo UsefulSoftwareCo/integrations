@@ -7,34 +7,44 @@
  * third-party conversions (apis.guru) are what gave the catalog rows like
  * "Gmailpostmastertools". This script runs executor's own Discovery→OpenAPI
  * converter — the exact pipeline the product executes at add time — and then
- * hostedGoogleSpec (scripts/google-specs.ts) corrects the two things that
- * converter's multi-service bundle output gets wrong for a document describing
- * one service: its document server and Discovery's string-encoded defaults.
+ * corrects what that converter's multi-service bundle output gets wrong for a
+ * document describing one service (scripts/google-specs.ts): realGooglePaths
+ * keys every operation by its real path, and hostedGoogleSpec fixes the
+ * document server, types Discovery's string-encoded defaults, writes everything
+ * in a fixed order and refuses any operation left on a placeholder path.
  *
  * The converter is not part of the published @executor-js/plugin-openapi
- * package, so it is imported from a local executor checkout, along with the
- * preset table that names the services and their consent scopes:
+ * package, so it is imported from a local executor (v1) checkout, along with
+ * the preset table that names the services and their consent scopes. The
+ * default is the sibling checkout, ../executor; pass another with --executor
+ * (resolved from this repository's root):
  *
  *   bun scripts/generate-google-specs.ts --executor ../executor
  *
  * Output is committed, like the Microsoft Graph slices: no cron, no build-time
  * network. Re-run when Google revs a service and commit the diff.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hostedGoogleSpec, isJsonObject, parseJsonObject } from "./google-specs.ts";
+import {
+  hostedGoogleSpec,
+  isJsonObject,
+  parseJsonObject,
+  realGooglePaths,
+} from "./google-specs.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "public", "specs", "google");
 
 const executorArg = process.argv.indexOf("--executor");
-const EXECUTOR = resolve(
-  ROOT,
-  executorArg >= 0 ? (process.argv[executorArg + 1] ?? "") : "../../../executor",
-);
+const executorPath = executorArg >= 0 ? process.argv[executorArg + 1] : "../executor";
+if (executorPath === undefined) throw new Error("--executor needs a path");
+const EXECUTOR = resolve(ROOT, executorPath);
 
 const providerDir = join(EXECUTOR, "packages/plugins/openapi/src/providers/google");
+if (!existsSync(providerDir))
+  throw new Error(`${EXECUTOR} is not an executor checkout; pass one with --executor <path>`);
 const { googleOpenApiPresets, googleCatalogOAuthScopesForPreset } = await import(
   join(providerDir, "presets.ts")
 );
@@ -94,7 +104,14 @@ async function main(): Promise<void> {
       }),
     );
 
-    const hosted = hostedGoogleSpec(parseJsonObject(conversion.specText, preset.id), preset.id);
+    const converted = parseJsonObject(conversion.specText, preset.id);
+    const discoveryDocuments = documents.map(({ documentText }, index) =>
+      parseJsonObject(documentText, `${preset.id} Discovery document ${index}`),
+    );
+    const hosted = hostedGoogleSpec(
+      realGooglePaths(converted, discoveryDocuments, preset.id),
+      preset.id,
+    );
     if (hosted === undefined) {
       // Keep, for example: enterprise-only, and executor's service policy
       // strips every method. A spec with no operations helps nobody.

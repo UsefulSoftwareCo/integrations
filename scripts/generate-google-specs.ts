@@ -6,9 +6,10 @@
  * Google does not publish OpenAPI; it publishes Discovery documents, and the
  * third-party conversions (apis.guru) are what gave the catalog rows like
  * "Gmailpostmastertools". This script runs executor's own Discovery→OpenAPI
- * converter — the exact pipeline the product executes at add time — so the
- * hosted spec is byte-identical to what a client would have derived, minus the
- * per-request work.
+ * converter — the exact pipeline the product executes at add time — and then
+ * hostedGoogleSpec (scripts/google-specs.ts) corrects the two things that
+ * converter's multi-service bundle output gets wrong for a document describing
+ * one service: its document server and Discovery's string-encoded defaults.
  *
  * The converter is not part of the published @executor-js/plugin-openapi
  * package, so it is imported from a local executor checkout, along with the
@@ -22,6 +23,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { hostedGoogleSpec, isJsonObject, parseJsonObject } from "./google-specs.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "public", "specs", "google");
@@ -48,12 +50,12 @@ interface ManifestEntry {
   readonly title: string;
   readonly service: string;
   readonly version: string;
+  /** Where the spec's operations are sent: its document server. */
+  readonly server: string;
   readonly paths: number;
   readonly operations: number;
   readonly discoveryUrls: readonly string[];
 }
-
-const HTTP_METHODS = new Set(["get", "put", "post", "delete", "options", "head", "patch", "trace"]);
 
 async function main(): Promise<void> {
   mkdirSync(OUT, { recursive: true });
@@ -92,10 +94,14 @@ async function main(): Promise<void> {
       }),
     );
 
-    const spec = JSON.parse(conversion.specText) as {
-      info?: Record<string, unknown>;
-      paths?: Record<string, Record<string, unknown>>;
-    };
+    const hosted = hostedGoogleSpec(parseJsonObject(conversion.specText, preset.id), preset.id);
+    if (hosted === undefined) {
+      // Keep, for example: enterprise-only, and executor's service policy
+      // strips every method. A spec with no operations helps nobody.
+      console.error(`${preset.id}: 0 operations after policy filtering, skipping`);
+      continue;
+    }
+
     // The bundle converter titles everything "Google"; a hosted standalone
     // document should carry the service's own identity, since clients name an
     // added integration from info.title.
@@ -104,27 +110,18 @@ async function main(): Promise<void> {
       version?: string;
       description?: string;
     };
-    spec.info = {
-      ...spec.info,
-      title: discovery.title ?? preset.name,
-      version: discovery.version ?? "v1",
-      ...(discovery.description ? { description: discovery.description } : {}),
+    const info = hosted.document.info;
+    if (!isJsonObject(info)) throw new Error(`${preset.id}: converted spec has no info object`);
+    const spec = {
+      ...hosted.document,
+      info: {
+        ...info,
+        title: discovery.title ?? preset.name,
+        version: discovery.version ?? "v1",
+        ...(discovery.description ? { description: discovery.description } : {}),
+      },
     };
     const specText = JSON.stringify(spec);
-    const paths = Object.keys(spec.paths ?? {});
-    const operations = paths.reduce(
-      (count, path) =>
-        count +
-        Object.keys(spec.paths?.[path] ?? {}).filter((method) => HTTP_METHODS.has(method)).length,
-      0,
-    );
-
-    if (operations === 0) {
-      // Keep, for example: enterprise-only, and executor's service policy
-      // strips every method. A spec with no operations helps nobody.
-      console.error(`${preset.id}: 0 operations after policy filtering, skipping`);
-      continue;
-    }
 
     const file = `${preset.id}.json`;
     writeFileSync(join(OUT, file), specText);
@@ -133,12 +130,13 @@ async function main(): Promise<void> {
       title: discovery.title ?? preset.name,
       service: conversion.service ?? preset.id,
       version: discovery.version ?? "v1",
-      paths: paths.length,
-      operations,
+      server: hosted.server,
+      paths: hosted.paths,
+      operations: hosted.operations,
       discoveryUrls: urls,
     };
     console.log(
-      `${preset.id}: ${paths.length} paths, ${operations} operations, ${(specText.length / 1e6).toFixed(2)} MB`,
+      `${preset.id}: ${hosted.paths} paths, ${hosted.operations} operations on ${hosted.server}, ${(specText.length / 1e6).toFixed(2)} MB`,
     );
   }
 

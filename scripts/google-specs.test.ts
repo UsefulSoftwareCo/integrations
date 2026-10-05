@@ -85,26 +85,32 @@ describe("hosted Google specs", () => {
     }
   });
 
-  test("People methods that share /v1/{+resourceName} each have their own path", () => {
+  test("People splits only the methods that share GET /v1/{+resourceName}", () => {
     const people = read("google-people.json");
     expect(routes(people)).toMatchObject({
       "people.people.get": "GET /v1/people/{peopleId}",
       "people.contactGroups.get": "GET /v1/contactGroups/{contactGroupsId}",
-      "people.people.updateContact": "PATCH /v1/people/{peopleId}:updateContact",
+      "people.contactGroups.update": "PUT /v1/{resourceName}",
+      "people.people.updateContact": "PATCH /v1/{resourceName}:updateContact",
     });
     expect(pathParameters(people, "/v1/contactGroups/{contactGroupsId}", "get")).toMatchObject([
       { name: "contactGroupsId", in: "path", allowReserved: true },
     ]);
+    const [resourceName] = pathParameters(people, "/v1/{resourceName}:updateContact", "patch") ?? [];
+    expect(resourceName).toMatchObject({ name: "resourceName", in: "path", allowReserved: true });
+    expect(resourceName?.description).toStartWith("The resource name for the person");
   });
 
-  test("Chat methods that share /v1/{+name} each have their own path", () => {
+  test("Chat splits only the methods that share a method and template", () => {
     const chat = read("google-chat.json");
     expect(routes(chat)).toMatchObject({
       "chat.spaces.get": "GET /v1/spaces/{spacesId}",
       "chat.spaces.messages.get": "GET /v1/spaces/{spacesId}/messages/{messagesId}",
       "chat.spaces.members.get": "GET /v1/spaces/{spacesId}/members/{membersId}",
       "chat.users.spaces.getSpaceReadState": "GET /v1/users/{usersId}/spaces/{spacesId}/spaceReadState",
-      "chat.media.uploadMedia": "POST /upload/v1/spaces/{spacesId}/attachments:upload",
+      "chat.spaces.messages.update": "PUT /v1/{name}",
+      "chat.spaces.messages.list": "GET /v1/{parent}/messages",
+      "chat.media.uploadMedia": "POST /upload/v1/{parent}/attachments:upload",
     });
   });
 });
@@ -209,29 +215,17 @@ describe("realGooglePaths", () => {
     expect(JSON.stringify(document)).not.toContain("x-executor-pathTemplate");
   });
 
-  test("names every segment, keeps one-wildcard patterns and resolves media uploads", () => {
+  test("keeps a template no other operation shares with its whole resource name", () => {
+    const message = (id: string, httpMethod: string): DiscoveryMethod => ({
+      id,
+      path: "v1/{+name}",
+      httpMethod,
+      parameters: { name: { location: "path", pattern: "^spaces/[^/]+/messages/[^/]+$" } },
+    });
     const document = real([
-      {
-        id: "chat.spaces.messages.get",
-        path: "v1/{+name}",
-        httpMethod: "GET",
-        parameters: { name: { location: "path", pattern: "^spaces/[^/]+/messages/[^/]+$" } },
-      },
-      {
-        id: "crm.operations.get",
-        path: "v3/{+name}",
-        httpMethod: "GET",
-        parameters: { name: { location: "path", pattern: "^operations/.*$" } },
-      },
-      {
-        id: "bigquery.datasets.get",
-        path: "projects/{+projectId}/datasets/{+datasetId}",
-        httpMethod: "GET",
-        parameters: {
-          projectId: { location: "path", pattern: "^[^/]+$" },
-          datasetId: { location: "path", pattern: "^[^/]+$" },
-        },
-      },
+      // Another method on the same template is not a shared route.
+      message("chat.spaces.messages.get", "GET"),
+      message("chat.spaces.messages.delete", "DELETE"),
       {
         id: "chat.media.upload",
         path: "v1/{+parent}/attachments:upload",
@@ -241,30 +235,107 @@ describe("realGooglePaths", () => {
       },
     ]);
     expect(routes(document)).toEqual({
-      "chat.spaces.messages.get": "GET /v1/spaces/{spacesId}/messages/{messagesId}",
-      "crm.operations.get": "GET /v3/operations/{operationsId}",
-      "bigquery.datasets.get": "GET /projects/{projectId}/datasets/{datasetId}",
-      "chat.media.upload": "POST /v1/spaces/{spacesId}/attachments:upload",
-      "chat.media.uploadMedia": "POST /upload/v1/spaces/{spacesId}/attachments:upload",
+      "chat.spaces.messages.get": "GET /v1/{name}",
+      "chat.spaces.messages.delete": "DELETE /v1/{name}",
+      "chat.media.upload": "POST /v1/{parent}/attachments:upload",
+      "chat.media.uploadMedia": "POST /upload/v1/{parent}/attachments:upload",
     });
+    expect(pathParameters(document, "/v1/{name}", "get")).toEqual([
+      {
+        name: "name",
+        in: "path",
+        required: true,
+        description: "The name.",
+        schema: { description: "The name.", type: "string" },
+        allowReserved: true,
+      },
+    ]);
+    expect(JSON.stringify(document)).not.toContain("x-executor-pathTemplate");
+  });
+
+  test("names every segment of a shared template and keeps one-wildcard patterns", () => {
+    const document = real([
+      {
+        id: "chat.spaces.get",
+        path: "v1/{+name}",
+        httpMethod: "GET",
+        parameters: { name: { location: "path", pattern: "^spaces/[^/]+$" } },
+      },
+      {
+        id: "chat.spaces.messages.get",
+        path: "v1/{+name}",
+        httpMethod: "GET",
+        parameters: { name: { location: "path", pattern: "^spaces/[^/]+/messages/[^/]+$" } },
+      },
+      // Its `{+resourceName}` matches the same requests as `{+name}`.
+      people,
+      {
+        id: "crm.operations.get",
+        path: "v3/{+name}",
+        httpMethod: "GET",
+        parameters: { name: { location: "path", pattern: "^operations/.*$" } },
+      },
+      {
+        id: "crm.folders.get",
+        path: "v3/{+name}",
+        httpMethod: "GET",
+        parameters: { name: { location: "path", pattern: "^[^/]+$" } },
+      },
+    ]);
+    expect(routes(document)).toEqual({
+      "chat.spaces.get": "GET /v1/spaces/{spacesId}",
+      "chat.spaces.messages.get": "GET /v1/spaces/{spacesId}/messages/{messagesId}",
+      "people.people.get": "GET /v1/people/{peopleId}",
+      "crm.operations.get": "GET /v3/operations/{operationsId}",
+      "crm.folders.get": "GET /v3/{name}",
+    });
+    expect(
+      pathParameters(document, "/v1/spaces/{spacesId}/messages/{messagesId}", "get"),
+    ).toMatchObject([
+      {
+        name: "spacesId",
+        description: "`spacesId` of `name` (`spaces/{spacesId}/messages/{messagesId}`). The name.",
+        allowReserved: true,
+      },
+      {
+        name: "messagesId",
+        description: "`messagesId` of `name` (`spaces/{spacesId}/messages/{messagesId}`). The name.",
+        allowReserved: true,
+      },
+    ]);
     expect(pathParameters(document, "/v3/operations/{operationsId}", "get")).toMatchObject([
       { name: "operationsId", allowReserved: true },
     ]);
-    expect(
-      pathParameters(document, "/projects/{projectId}/datasets/{datasetId}", "get"),
-    ).toMatchObject([
-      { name: "projectId", description: "The projectId.", allowReserved: true },
-      { name: "datasetId", description: "The datasetId.", allowReserved: true },
+    expect(pathParameters(document, "/v3/{name}", "get")).toMatchObject([
+      { name: "name", description: "The name.", allowReserved: true },
     ]);
   });
 
-  test("refuses a pattern that is not a resource-name path", () => {
+  test("resolves the Discovery method of a shared media upload", () => {
+    const upload = (id: string, parent: string): DiscoveryMethod => ({
+      id,
+      path: "v1/{+parent}/attachments:upload",
+      httpMethod: "POST",
+      parameters: { parent: { location: "path", pattern: `^${parent}/[^/]+$` } },
+      upload: "/upload/v1/{+parent}/attachments:upload",
+    });
+    const document = real([upload("chat.media.upload", "spaces"), upload("chat.users.upload", "users")]);
+    expect(routes(document)).toEqual({
+      "chat.media.upload": "POST /v1/spaces/{spacesId}/attachments:upload",
+      "chat.media.uploadMedia": "POST /upload/v1/spaces/{spacesId}/attachments:upload",
+      "chat.users.upload": "POST /v1/users/{usersId}/attachments:upload",
+      "chat.users.uploadMedia": "POST /upload/v1/users/{usersId}/attachments:upload",
+    });
+  });
+
+  test("refuses a shared template's pattern that is not a resource-name path", () => {
     expect(() =>
       real([
         {
           ...people,
           parameters: { resourceName: { location: "path", pattern: "^people/\\d+$" } },
         },
+        contactGroups,
       ]),
     ).toThrow('unsupported pattern "^people/\\\\d+$"');
   });
@@ -277,6 +348,7 @@ describe("realGooglePaths", () => {
     expect(() =>
       real([
         people,
+        contactGroups,
         {
           id: "people.people.lookup",
           path: "v1/people/{+personId}",

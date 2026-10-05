@@ -24,12 +24,14 @@
  * - It writes paths, schemas, properties and parameters in Discovery's order,
  *   which changes on every fetch.
  *
- * `realGooglePaths` keys every operation by its real path, built from its
- * Discovery template and its parameters' patterns. It needs the Discovery
- * documents, so only generation runs it. `hostedGoogleSpec` rewrites the rest
- * and refuses an operation whose path is not real. Generation and the
- * committed-spec test both run `hostedGoogleSpec`, so a regenerated spec cannot
- * reintroduce any of these mistakes.
+ * `realGooglePaths` keys every operation by its real path. An operation whose
+ * method and template no other operation shares keeps that template and its
+ * resource-name parameter, such as `name: "spaces/AAA/messages/BBB"`.
+ * Operations that share one are told apart by their parameters' Discovery
+ * patterns. It needs the Discovery documents, so only generation runs it.
+ * `hostedGoogleSpec` rewrites the rest and refuses an operation whose path is
+ * not real. Generation and the committed-spec test both run `hostedGoogleSpec`,
+ * so a regenerated spec cannot reintroduce any of these mistakes.
  */
 
 /** A parsed JSON value. */
@@ -184,11 +186,12 @@ function patternParts(pattern: string, where: string): readonly PatternPart[] {
 }
 
 /**
- * Replaces a reserved-expansion path parameter with the path its pattern
- * describes. A parameter whose pattern is one wildcard (`^[^/]+$`, `^.*$`)
- * stays as it is. Otherwise each wildcard becomes its own parameter, named
- * after the literal before it as Discovery's `flatPath` does: `name` with
- * `^spaces/[^/]+/messages/[^/]+$` becomes `spaces/{spacesId}/messages/{messagesId}`.
+ * Replaces a reserved-expansion path parameter of a shared template with the
+ * path its pattern describes. A parameter whose pattern is one wildcard
+ * (`^[^/]+$`, `^.*$`) stays as it is. Otherwise each wildcard becomes its own
+ * parameter, named after the literal before it as Discovery's `flatPath` does:
+ * `name` with `^spaces/[^/]+/messages/[^/]+$` becomes
+ * `spaces/{spacesId}/messages/{messagesId}`.
  * The new parameters keep the original's location, schema and reserved
  * expansion, so a valid value is sent exactly as before.
  */
@@ -224,17 +227,19 @@ function expandReserved(
   };
 }
 
-/** One converted operation keyed by its real path, without the template. */
-function realOperation(
+/**
+ * An operation on a template it shares with another operation, keyed by the
+ * path its resource-name parameters' patterns describe (see `expandReserved`).
+ * `operation` no longer carries the template.
+ */
+function splitOperation(
   operation: JsonObject,
+  template: string,
   methods: ReadonlyMap<string, JsonObject>,
   where: string,
 ): { readonly path: string; readonly operation: JsonObject } {
-  const { [PATH_TEMPLATE]: template, ...rest } = operation;
-  if (typeof template !== "string" || !template.startsWith("/"))
-    throw new Error(`${where}: expected an absolute ${PATH_TEMPLATE}`);
   const reserved = [...template.matchAll(RESERVED_EXPANSION)].map(([, name]) => name!);
-  if (reserved.length === 0) return { path: template, operation: rest };
+  if (reserved.length === 0) return { path: template, operation };
 
   const method = discoveryMethodFor(operation, template, methods, where);
   const discoveryParameters = objectAt(method.parameters, `${where} Discovery parameters`);
@@ -267,21 +272,33 @@ function realOperation(
   const repeated = names.find((name, index) => names.indexOf(name) !== index);
   if (repeated !== undefined)
     throw new Error(`${where}: ${path} declares parameter ${JSON.stringify(repeated)} twice`);
-  return { path, operation: { ...rest, parameters } };
+  return { path, operation: { ...operation, parameters } };
 }
+
+/** The requests a method and path match. Paths that differ only in parameter
+ *  names, or in `{+name}` against `{name}`, match the same requests. */
+const routeOf = (method: string, path: string): string =>
+  `${method} ${path.replace(PATH_PARAMETER, "{}")}`;
 
 /**
  * Keys every operation of a converted Google bundle by the path it is sent to,
- * built from its Discovery path template and its path parameters' Discovery
- * patterns (see `expandReserved`), and drops `x-executor-pathTemplate`, which
- * the path now states. Each path depends only on its own method, so the result
- * is the same whatever order the Discovery documents list methods in.
- * `discovery` holds the documents the spec was converted from. The input is not
- * modified.
+ * and drops `x-executor-pathTemplate`, which the path now states.
  *
- * @throws when an operation has no template or Discovery method, when a
- * pattern is not a path Google's resource names use, or when two operations
- * would still share a method and a path (ignoring parameter names).
+ * An operation whose method and Discovery template no other operation shares is
+ * keyed by that template, and keeps its parameters: `/v1/{+name}` becomes
+ * `/v1/{name}`, and `name` still takes a whole resource name such as
+ * `spaces/AAA/messages/BBB`, the form Google returns. Operations that share a
+ * method and template (ignoring parameter names) are keyed by the paths their
+ * parameters' Discovery patterns describe (see `expandReserved`), so each gets
+ * its own path. Which operations share a template depends only on the set of
+ * methods, so the result is the same whatever order the Discovery documents
+ * list them in. `discovery` holds the documents the spec was converted from.
+ * The input is not modified.
+ *
+ * @throws when an operation has no template, when a shared template's
+ * operation has no Discovery method or a pattern that is not a path Google's
+ * resource names use, or when two operations would still share a method and a
+ * path (ignoring parameter names).
  */
 export function realGooglePaths(
   spec: JsonObject,
@@ -289,24 +306,39 @@ export function realGooglePaths(
   at: string,
 ): JsonObject {
   const methods = discoveryMethods(discovery, at);
-  const paths: Record<string, JsonObject> = {};
-  // A request matches paths that differ only in parameter names equally well.
-  const routes = new Map<string, { readonly path: string; readonly id: Json | undefined }>();
-  for (const [key, value] of Object.entries(objectAt(spec.paths, `${at} paths`))) {
-    for (const [method, operation] of Object.entries(objectAt(value, `${at} ${key}`))) {
+  const operations = Object.entries(objectAt(spec.paths, `${at} paths`)).flatMap(([key, value]) =>
+    Object.entries(objectAt(value, `${at} ${key}`)).map(([method, field]) => {
       const where = `${at} ${method} ${key}`;
       if (!HTTP_METHODS.has(method)) throw new Error(`${where}: unexpected path item field`);
-      const real = realOperation(objectAt(operation, where), methods, where);
-      const route = `${method} ${real.path.replace(PATH_PARAMETER, "{}")}`;
-      const existing = routes.get(route);
-      if (existing !== undefined) {
-        const first = `${JSON.stringify(existing.id)} (${existing.path})`;
-        const second = `${JSON.stringify(real.operation.operationId)} (${real.path})`;
-        throw new Error(`${at}: ${first} and ${second} are the same ${method.toUpperCase()} route`);
-      }
-      routes.set(route, { path: real.path, id: real.operation.operationId });
-      (paths[real.path] ??= {})[method] = real.operation;
+      const { [PATH_TEMPLATE]: template, ...operation } = objectAt(field, where);
+      if (typeof template !== "string" || !template.startsWith("/"))
+        throw new Error(`${where}: expected an absolute ${PATH_TEMPLATE}`);
+      return { method, template, operation, where };
+    }),
+  );
+  const seen = new Set<string>();
+  const shared = new Set<string>();
+  for (const { method, template } of operations) {
+    const route = routeOf(method, template);
+    if (seen.has(route)) shared.add(route);
+    seen.add(route);
+  }
+
+  const paths: Record<string, JsonObject> = {};
+  const routes = new Map<string, { readonly path: string; readonly id: Json | undefined }>();
+  for (const { method, template, operation, where } of operations) {
+    const real = shared.has(routeOf(method, template))
+      ? splitOperation(operation, template, methods, where)
+      : { path: template.replace(RESERVED_EXPANSION, "{$1}"), operation };
+    const route = routeOf(method, real.path);
+    const existing = routes.get(route);
+    if (existing !== undefined) {
+      const first = `${JSON.stringify(existing.id)} (${existing.path})`;
+      const second = `${JSON.stringify(real.operation.operationId)} (${real.path})`;
+      throw new Error(`${at}: ${first} and ${second} are the same ${method.toUpperCase()} route`);
     }
+    routes.set(route, { path: real.path, id: real.operation.operationId });
+    (paths[real.path] ??= {})[method] = real.operation;
   }
   return { ...spec, paths };
 }

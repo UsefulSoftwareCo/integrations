@@ -21,6 +21,9 @@
  *   uses.
  * - It copies Discovery defaults verbatim, and Discovery encodes every default
  *   as a string, so a boolean parameter declares `default: "true"`.
+ * - It gives each operation only the consent scopes that cover its method, so
+ *   every Gmail operation, reads included, declares full mail access
+ *   (`https://mail.google.com/`) although Google accepts `gmail.readonly`.
  * - It writes paths, schemas, properties and parameters in Discovery's order,
  *   which changes on every fetch.
  *
@@ -28,7 +31,9 @@
  * method and template no other operation shares keeps that template and its
  * resource-name parameter, such as `name: "spaces/AAA/messages/BBB"`.
  * Operations that share one are told apart by their parameters' Discovery
- * patterns. It needs the Discovery documents, so only generation runs it.
+ * patterns. `googleOperationScopes` lists every scope Discovery accepts for
+ * each operation that its converted scopes cover. Both need the Discovery
+ * documents, so only generation runs them.
  * `hostedGoogleSpec` rewrites the rest and refuses an operation whose path is
  * not real. Generation and the committed-spec test both run `hostedGoogleSpec`,
  * so a regenerated spec cannot reintroduce any of these mistakes.
@@ -344,6 +349,147 @@ export function realGooglePaths(
 }
 
 // ---------------------------------------------------------------------------
+// Operation scopes
+// ---------------------------------------------------------------------------
+
+const OAUTH_SCHEME = "googleOAuth2";
+const GOOGLE_SCOPES = "x-google-scopes";
+
+/** Whether a token granted `consent` may call a method that accepts `scope`.
+ *  Generation passes executor's rule, the one its converter applied. */
+export type ScopeCovers = (consent: string, scope: string) => boolean;
+
+/** The scopes an operation's security requirements name. */
+function securityScopes(security: Json | undefined, at: string): readonly string[] {
+  if (security === undefined) return [];
+  return arrayAt(security, at).flatMap((requirement) =>
+    Object.values(objectAt(requirement, at)).flatMap((scopes) =>
+      arrayAt(scopes, at).map((scope) => {
+        if (typeof scope !== "string") throw new Error(`${at}: expected scope names`);
+        return scope;
+      }),
+    ),
+  );
+}
+
+/** The scope descriptions the Discovery documents declare. */
+function discoveryScopeDescriptions(discovery: readonly JsonObject[]): ReadonlyMap<string, string> {
+  const descriptions = new Map<string, string>();
+  for (const document of discovery) {
+    const auth = isJsonObject(document.auth) ? document.auth.oauth2 : undefined;
+    const scopes = isJsonObject(auth) ? auth.scopes : undefined;
+    if (isJsonObject(scopes))
+      for (const [scope, value] of Object.entries(scopes))
+        if (isJsonObject(value) && typeof value.description === "string")
+          descriptions.set(scope, value.description);
+  }
+  return descriptions;
+}
+
+/**
+ * Lists on each operation every scope Google accepts for it, not only the
+ * broad scope the integration asks consent for.
+ *
+ * Executor's converter gives each operation the consent scopes that cover its
+ * method, so every Gmail operation, reads included, declared only
+ * `https://mail.google.com/`. Discovery lists the scopes each method accepts
+ * (`users.messages.list` accepts `gmail.readonly`, `gmail.metadata`,
+ * `gmail.modify` and full access). Each operation now names, as alternative
+ * security requirements, every scope Discovery lists for its method that one
+ * of its converted scopes covers, narrower scopes first, then the converted
+ * scopes. The covered rule keeps scopes Google will not grant through user
+ * consent out. An operation with no Discovery method or no Discovery scopes
+ * (executor's own Photos upload, Photos Picker's unscoped methods) keeps the
+ * scopes the converter gave it. The OAuth scheme declares every scope an
+ * operation names, with Discovery's description. Run after `realGooglePaths`.
+ * The input is not modified.
+ */
+export function googleOperationScopes(
+  spec: JsonObject,
+  discovery: readonly JsonObject[],
+  covers: ScopeCovers,
+  at: string,
+): JsonObject {
+  const methods = discoveryMethods(discovery, at);
+  const descriptions = discoveryScopeDescriptions(discovery);
+  const used = new Set<string>();
+  const paths = Object.fromEntries(
+    Object.entries(objectAt(spec.paths, `${at} paths`)).map(([path, value]) => {
+      const item = objectAt(value, `${at} ${path}`);
+      return [
+        path,
+        Object.fromEntries(
+          Object.entries(item).map(([method, field]): [string, Json] => {
+            if (!HTTP_METHODS.has(method)) return [method, field];
+            const where = `${at} ${method} ${path}`;
+            const operation = objectAt(field, where);
+            const granted = securityScopes(operation.security, `${where} security`);
+            granted.forEach((scope) => used.add(scope));
+            const id = operation.operationId;
+            const discoveryMethod =
+              typeof id !== "string"
+                ? undefined
+                : (methods.get(id) ??
+                  (id.endsWith("Media") ? methods.get(id.slice(0, -"Media".length)) : undefined));
+            const accepted = discoveryMethod?.scopes;
+            if (accepted === undefined || granted.length === 0) return [method, operation];
+            const narrower = arrayAt(accepted, `${where} Discovery scopes`)
+              .flatMap((scope) => {
+                if (typeof scope !== "string")
+                  throw new Error(`${where}: Discovery scopes are not names`);
+                return granted.includes(scope) ||
+                  !granted.some((consent) => covers(consent, scope))
+                  ? []
+                  : [scope];
+              })
+              .sort(byText);
+            const scopes = [...narrower, ...granted];
+            scopes.forEach((scope) => used.add(scope));
+            return [
+              method,
+              {
+                ...operation,
+                security: scopes.map((scope) => ({ [OAUTH_SCHEME]: [scope] })),
+                [GOOGLE_SCOPES]: scopes,
+              },
+            ];
+          }),
+        ),
+      ];
+    }),
+  );
+
+  const components = objectAt(spec.components, `${at} components`);
+  const schemes = objectAt(components.securitySchemes, `${at} securitySchemes`);
+  const scheme = objectAt(schemes[OAUTH_SCHEME], `${at} ${OAUTH_SCHEME}`);
+  const flows = objectAt(scheme.flows, `${at} ${OAUTH_SCHEME} flows`);
+  const flow = objectAt(flows.authorizationCode, `${at} ${OAUTH_SCHEME} authorizationCode`);
+  const declared = objectAt(flow.scopes, `${at} ${OAUTH_SCHEME} scopes`);
+  const scopes: JsonObject = { ...declared };
+  for (const scope of used) {
+    const description = declared[scope];
+    scopes[scope] =
+      typeof description === "string" && description !== ""
+        ? description
+        : (descriptions.get(scope) ?? "");
+  }
+  return {
+    ...spec,
+    paths,
+    components: {
+      ...components,
+      securitySchemes: {
+        ...schemes,
+        [OAUTH_SCHEME]: {
+          ...scheme,
+          flows: { ...flows, authorizationCode: { ...flow, scopes } },
+        },
+      },
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Hosted form
 // ---------------------------------------------------------------------------
 
@@ -369,13 +515,15 @@ export interface HostedGoogleSpec {
  * - Paths, methods, schemas, properties and parameters are written in a fixed
  *   order, so the same service always produces the same document.
  *
- * @throws when an operation is not keyed by a real path, when the operations
- * span more than one origin, or when a default cannot be read as its schema's
+ * @throws when an operation is not keyed by a real path, when a security
+ * requirement names a scope its OAuth scheme does not declare, when the
+ * operations span more than one origin, or when a default cannot be read as its schema's
  * type. Each is a change in Google's documents or executor's converter that a
  * person must look at, not something to publish.
  */
 export function hostedGoogleSpec(spec: JsonObject, at: string): HostedGoogleSpec | undefined {
   assertRealPaths(spec, at);
+  assertDeclaredScopes(spec, at);
   const routed = withOperationServer(spec, at);
   if (routed === undefined) return undefined;
   const schemas = withSchemas(routed.document, at, (schema, where) =>
@@ -433,6 +581,34 @@ function assertRealPaths(spec: JsonObject, at: string): void {
         );
     }
   }
+}
+
+/** @throws when a security requirement names a scope its OAuth scheme does not declare. */
+function assertDeclaredScopes(spec: JsonObject, at: string): void {
+  const components = isJsonObject(spec.components) ? spec.components : {};
+  const schemes = isJsonObject(components.securitySchemes) ? components.securitySchemes : {};
+  const declared = (name: string, where: string): JsonObject | undefined => {
+    const scheme = schemes[name];
+    if (!isJsonObject(scheme)) throw new Error(`${where}: no security scheme ${name}`);
+    if (scheme.type !== "oauth2") return undefined;
+    const flows = objectAt(scheme.flows, `${at} ${name} flows`);
+    return objectAt(objectAt(flows.authorizationCode, `${at} ${name} authorizationCode`).scopes, `${at} ${name} scopes`);
+  };
+  const check = (security: Json | undefined, where: string): void => {
+    if (security === undefined) return;
+    for (const requirement of arrayAt(security, `${where} security`))
+      for (const [name, scopes] of Object.entries(objectAt(requirement, `${where} security`))) {
+        const known = declared(name, where);
+        if (known === undefined) continue;
+        for (const scope of arrayAt(scopes, `${where} security`))
+          if (typeof scope !== "string" || !(scope in known))
+            throw new Error(`${where}: ${name} does not declare the scope ${JSON.stringify(scope)}`);
+      }
+  };
+  check(spec.security, at);
+  for (const [path, value] of Object.entries(objectAt(spec.paths, `${at} paths`)))
+    for (const { method, operation } of itemOperations(objectAt(value, `${at} ${path}`), `${at} ${path}`))
+      check(operation.security, `${at} ${method} ${path}`);
 }
 
 function singleServerUrl(servers: Json | undefined, at: string): string | undefined {

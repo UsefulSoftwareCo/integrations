@@ -9,7 +9,8 @@
  * converter — the exact pipeline the product executes at add time — and then
  * corrects what that converter's multi-service bundle output gets wrong for a
  * document describing one service (scripts/google-specs.ts): realGooglePaths
- * keys every operation by its real path, and hostedGoogleSpec fixes the
+ * keys every operation by its real path, googleOperationScopes lists every
+ * scope Google accepts for each operation, and hostedGoogleSpec fixes the
  * document server, types Discovery's string-encoded defaults, writes everything
  * in a fixed order and refuses any operation left on a placeholder path.
  *
@@ -28,6 +29,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  googleOperationScopes,
   hostedGoogleSpec,
   isJsonObject,
   parseJsonObject,
@@ -51,6 +53,17 @@ const { googleOpenApiPresets, googleCatalogOAuthScopesForPreset } = await import
 const { convertGoogleDiscoveryBundleToOpenApi, normalizeGoogleDiscoveryUrl } = await import(
   join(providerDir, "discovery.ts")
 );
+const { compactGoogleOAuthScopes, isGoogleUserConsentOAuthScope } = await import(
+  join(providerDir, "oauth-scopes.ts")
+);
+
+/** Executor's rule for whether a consent scope grants a method scope, as its
+ *  converter applies it (googleScopeCovers in discovery.ts, not exported). */
+const scopeCovers = (consent: string, scope: string): boolean =>
+  consent === scope ||
+  (isGoogleUserConsentOAuthScope(scope) &&
+    !compactGoogleOAuthScopes([consent, scope]).includes(scope));
+
 // The converter returns executor-flavored Effects; run them with executor's
 // own effect instance so the runtime identities match.
 const { Effect } = await import(join(EXECUTOR, "node_modules/effect/dist/index.js"));
@@ -109,7 +122,12 @@ async function main(): Promise<void> {
       parseJsonObject(documentText, `${preset.id} Discovery document ${index}`),
     );
     const hosted = hostedGoogleSpec(
-      realGooglePaths(converted, discoveryDocuments, preset.id),
+      googleOperationScopes(
+        realGooglePaths(converted, discoveryDocuments, preset.id),
+        discoveryDocuments,
+        scopeCovers,
+        preset.id,
+      ),
       preset.id,
     );
     if (hosted === undefined) {

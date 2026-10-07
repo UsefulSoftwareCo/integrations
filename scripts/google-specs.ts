@@ -32,8 +32,8 @@
  * resource-name parameter, such as `name: "spaces/AAA/messages/BBB"`.
  * Operations that share one are told apart by their parameters' Discovery
  * patterns. `googleOperationScopes` lists every scope Discovery accepts for
- * each operation that its converted scopes cover. Both need the Discovery
- * documents, so only generation runs them.
+ * each operation that Google grants through user consent. Both need the
+ * Discovery documents, so only generation runs them.
  * `hostedGoogleSpec` rewrites the rest and refuses an operation whose path is
  * not real. Generation and the committed-spec test both run `hostedGoogleSpec`,
  * so a regenerated spec cannot reintroduce any of these mistakes.
@@ -355,9 +355,17 @@ export function realGooglePaths(
 const OAUTH_SCHEME = "googleOAuth2";
 const GOOGLE_SCOPES = "x-google-scopes";
 
-/** Whether a token granted `consent` may call a method that accepts `scope`.
- *  Generation passes executor's rule, the one its converter applied. */
-export type ScopeCovers = (consent: string, scope: string) => boolean;
+/** Executor's Google scope rules. Generation passes the ones executor's
+ *  converter applies, from the executor checkout it runs. */
+export interface GoogleScopeRules {
+  /** The scopes executor's policy for a Discovery service lets one of its
+   *  methods accept, given the scopes Discovery lists for the method. */
+  readonly methodScopes: (service: string, version: string, scopes: readonly string[]) => readonly string[];
+  /** Whether Google grants a scope through an ordinary user's OAuth consent. */
+  readonly userConsent: (scope: string) => boolean;
+  /** Whether a token granted `consent` may call a method that accepts `scope`. */
+  readonly covers: (consent: string, scope: string) => boolean;
+}
 
 /** The scopes an operation's security requirements name. */
 function securityScopes(security: Json | undefined, at: string): readonly string[] {
@@ -386,6 +394,87 @@ function discoveryScopeDescriptions(discovery: readonly JsonObject[]): ReadonlyM
   return descriptions;
 }
 
+type ServiceMethod = {
+  readonly method: JsonObject;
+  readonly service: string;
+  readonly version: string;
+};
+
+/** Each Discovery method by id, with the service and version of the document
+ *  that lists it, which is how executor's service policies are keyed. */
+function serviceMethods(
+  discovery: readonly JsonObject[],
+  at: string,
+): ReadonlyMap<string, ServiceMethod> {
+  return new Map(
+    discovery.flatMap((document, index) => {
+      const { name: service, version } = document;
+      if (typeof service !== "string" || typeof version !== "string")
+        throw new Error(`${at} Discovery document ${index}: no name or version`);
+      return [...discoveryMethods([document], at)].map(
+        ([id, method]) => [id, { method, service, version }] as const,
+      );
+    }),
+  );
+}
+
+/**
+ * Orders scopes so that each comes after every other listed scope it covers:
+ * a broad scope follows the narrower ones it grants. Scopes neither of which
+ * covers the other are in name order. That is not a privilege ranking, since
+ * the coverage rule does not relate every pair (`gmail.compose` and
+ * `gmail.send` are unrelated under it, and sort by name).
+ *
+ * @throws when two scopes cover each other.
+ */
+function coverageOrder(
+  scopes: readonly string[],
+  covers: GoogleScopeRules["covers"],
+  at: string,
+): readonly string[] {
+  const remaining = [...new Set(scopes)].sort(byText);
+  const ordered: string[] = [];
+  while (remaining.length > 0) {
+    const next = remaining.findIndex(
+      (scope) => !remaining.some((other) => other !== scope && covers(scope, other)),
+    );
+    if (next < 0) throw new Error(`${at}: the scopes ${remaining.join(", ")} cover each other`);
+    ordered.push(...remaining.splice(next, 1));
+  }
+  return ordered;
+}
+
+/** The Discovery method an operation was converted from, by its operation id.
+ *  The converter names a media upload `${id}Media`. */
+function sourceMethod(
+  methods: ReadonlyMap<string, ServiceMethod>,
+  operation: JsonObject,
+): ServiceMethod | undefined {
+  const id = operation.operationId;
+  if (typeof id !== "string") return undefined;
+  return (
+    methods.get(id) ??
+    (id.endsWith("Media") ? methods.get(id.slice(0, -"Media".length)) : undefined)
+  );
+}
+
+/** The scopes Discovery lists for a method that executor's service policy
+ *  admits and that Google grants through user consent, in Discovery's order. */
+function acceptedScopes(
+  source: ServiceMethod,
+  rules: GoogleScopeRules,
+  at: string,
+): readonly string[] {
+  const listed =
+    source.method.scopes === undefined
+      ? []
+      : arrayAt(source.method.scopes, `${at} Discovery scopes`).map((scope) => {
+          if (typeof scope !== "string") throw new Error(`${at}: Discovery scopes are not names`);
+          return scope;
+        });
+  return rules.methodScopes(source.service, source.version, listed).filter(rules.userConsent);
+}
+
 /**
  * Lists on each operation every scope Google accepts for it, not only the
  * broad scope the integration asks consent for.
@@ -395,22 +484,30 @@ function discoveryScopeDescriptions(discovery: readonly JsonObject[]): ReadonlyM
  * `https://mail.google.com/`. Discovery lists the scopes each method accepts
  * (`users.messages.list` accepts `gmail.readonly`, `gmail.metadata`,
  * `gmail.modify` and full access). Each operation now names, as alternative
- * security requirements, every scope Discovery lists for its method that one
- * of its converted scopes covers, narrower scopes first, then the converted
- * scopes. The covered rule keeps scopes Google will not grant through user
- * consent out. An operation with no Discovery method or no Discovery scopes
- * (executor's own Photos upload, Photos Picker's unscoped methods) keeps the
- * scopes the converter gave it. The OAuth scheme declares every scope an
- * operation names, with Discovery's description. Run after `realGooglePaths`.
- * The input is not modified.
+ * security requirements:
+ *
+ * - every scope Discovery lists for its method, as executor's policy for the
+ *   service admits it (Photos keeps only the scopes Google still grants), that
+ *   Google grants through user consent; and
+ * - the scopes the converter gave it, so the integration's consent still
+ *   reaches every operation.
+ *
+ * Whether a consent scope covers a Discovery scope does not matter here: the
+ * coverage table knows only some pairs, and `chat.messages.create` is accepted
+ * by `spaces.messages.create` although `chat.messages` is not known to cover
+ * it. The order is `coverageOrder`'s. An operation with no Discovery method or
+ * no security (executor's own Photos upload) keeps the scopes the converter
+ * gave it. The OAuth scheme declares every scope an operation names, with
+ * Discovery's description. Run after `realGooglePaths`. The input is not
+ * modified.
  */
 export function googleOperationScopes(
   spec: JsonObject,
   discovery: readonly JsonObject[],
-  covers: ScopeCovers,
+  rules: GoogleScopeRules,
   at: string,
 ): JsonObject {
-  const methods = discoveryMethods(discovery, at);
+  const methods = serviceMethods(discovery, at);
   const descriptions = discoveryScopeDescriptions(discovery);
   const used = new Set<string>();
   const paths = Object.fromEntries(
@@ -425,25 +522,10 @@ export function googleOperationScopes(
             const operation = objectAt(field, where);
             const granted = securityScopes(operation.security, `${where} security`);
             granted.forEach((scope) => used.add(scope));
-            const id = operation.operationId;
-            const discoveryMethod =
-              typeof id !== "string"
-                ? undefined
-                : (methods.get(id) ??
-                  (id.endsWith("Media") ? methods.get(id.slice(0, -"Media".length)) : undefined));
-            const accepted = discoveryMethod?.scopes;
-            if (accepted === undefined || granted.length === 0) return [method, operation];
-            const narrower = arrayAt(accepted, `${where} Discovery scopes`)
-              .flatMap((scope) => {
-                if (typeof scope !== "string")
-                  throw new Error(`${where}: Discovery scopes are not names`);
-                return granted.includes(scope) ||
-                  !granted.some((consent) => covers(consent, scope))
-                  ? []
-                  : [scope];
-              })
-              .sort(byText);
-            const scopes = [...narrower, ...granted];
+            const source = sourceMethod(methods, operation);
+            if (source === undefined || granted.length === 0) return [method, operation];
+            const accepted = acceptedScopes(source, rules, where);
+            const scopes = [...coverageOrder([...accepted, ...granted], rules.covers, where)];
             scopes.forEach((scope) => used.add(scope));
             return [
               method,
@@ -487,6 +569,34 @@ export function googleOperationScopes(
       },
     },
   };
+}
+
+/**
+ * The scopes Google accepts for an operation's Discovery method through user
+ * consent (`acceptedScopes`) that the operation does not name, one
+ * `<method> <path>: <scope>` line each. Generation fails on any, so no later
+ * step can drop a scope from a published spec.
+ */
+export function unlistedDiscoveryScopes(
+  spec: JsonObject,
+  discovery: readonly JsonObject[],
+  rules: GoogleScopeRules,
+  at: string,
+): readonly string[] {
+  const methods = serviceMethods(discovery, at);
+  return Object.entries(objectAt(spec.paths, `${at} paths`)).flatMap(([path, value]) =>
+    itemOperations(objectAt(value, `${at} ${path}`), `${at} ${path}`).flatMap(
+      ({ method, operation }) => {
+        const where = `${at} ${method} ${path}`;
+        const source = sourceMethod(methods, operation);
+        if (source === undefined) return [];
+        const named = securityScopes(operation.security, `${where} security`);
+        return acceptedScopes(source, rules, where)
+          .filter((scope) => !named.includes(scope))
+          .map((scope) => `${method} ${path}: ${scope}`);
+      },
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------

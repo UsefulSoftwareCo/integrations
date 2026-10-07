@@ -34,6 +34,8 @@ import {
   isJsonObject,
   parseJsonObject,
   realGooglePaths,
+  unlistedDiscoveryScopes,
+  type GoogleScopeRules,
 } from "./google-specs.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -56,13 +58,35 @@ const { convertGoogleDiscoveryBundleToOpenApi, normalizeGoogleDiscoveryUrl } = a
 const { compactGoogleOAuthScopes, isGoogleUserConsentOAuthScope } = await import(
   join(providerDir, "oauth-scopes.ts")
 );
+const { googleDiscoveryPolicyFor } = await import(join(providerDir, "service-policy.ts"));
 
-/** Executor's rule for whether a consent scope grants a method scope, as its
- *  converter applies it (googleScopeCovers in discovery.ts, not exported). */
-const scopeCovers = (consent: string, scope: string): boolean =>
-  consent === scope ||
-  (isGoogleUserConsentOAuthScope(scope) &&
-    !compactGoogleOAuthScopes([consent, scope]).includes(scope));
+/** Executor's Google scope rules, as its converter applies them. Neither
+ *  discoveryMethodScopesForService nor googleScopeCovers in discovery.ts is
+ *  exported, so these repeat them over the exported parts. One difference:
+ *  compaction renames `userinfo.email` to `email` rather than dropping it, so
+ *  googleScopeCovers has every scope cover the identity scopes, and each
+ *  identity scope cover the other. Here a scope covers another only when
+ *  compaction drops the other and keeps it unchanged. */
+const scopeRules: GoogleScopeRules = {
+  methodScopes: (service, version, scopes) => {
+    const policy = googleDiscoveryPolicyFor(service, version) as
+      | {
+          readonly authoritativeScopes?: Readonly<Record<string, string>>;
+          readonly fallbackMethodScopes?: readonly string[];
+        }
+      | undefined;
+    if (scopes.length === 0) return policy?.fallbackMethodScopes ?? scopes;
+    const authoritative = policy?.authoritativeScopes;
+    return authoritative ? scopes.filter((scope) => authoritative[scope] !== undefined) : scopes;
+  },
+  userConsent: isGoogleUserConsentOAuthScope,
+  covers: (consent, scope) => {
+    if (consent === scope) return true;
+    if (!isGoogleUserConsentOAuthScope(scope)) return false;
+    const compacted = compactGoogleOAuthScopes([consent, scope]);
+    return compacted.length === 1 && compacted[0] === consent;
+  },
+};
 
 // The converter returns executor-flavored Effects; run them with executor's
 // own effect instance so the runtime identities match.
@@ -125,7 +149,7 @@ async function main(): Promise<void> {
       googleOperationScopes(
         realGooglePaths(converted, discoveryDocuments, preset.id),
         discoveryDocuments,
-        scopeCovers,
+        scopeRules,
         preset.id,
       ),
       preset.id,
@@ -136,6 +160,14 @@ async function main(): Promise<void> {
       console.error(`${preset.id}: 0 operations after policy filtering, skipping`);
       continue;
     }
+    const unlisted = unlistedDiscoveryScopes(
+      hosted.document,
+      discoveryDocuments,
+      scopeRules,
+      preset.id,
+    );
+    if (unlisted.length > 0)
+      throw new Error(`${preset.id}: operations omit scopes Google accepts:\n${unlisted.join("\n")}`);
 
     // The bundle converter titles everything "Google"; a hosted standalone
     // document should carry the service's own identity, since clients name an

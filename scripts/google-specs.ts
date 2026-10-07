@@ -22,7 +22,7 @@
  * - It copies Discovery defaults verbatim, and Discovery encodes every default
  *   as a string, so a boolean parameter declares `default: "true"`.
  * - It gives each operation only the consent scopes that cover its method, so
- *   every Gmail operation, reads included, declares full mail access
+ *   every Gmail operation, reads included, names only full mail access
  *   (`https://mail.google.com/`) although Google accepts `gmail.readonly`.
  * - It writes paths, schemas, properties and parameters in Discovery's order,
  *   which changes on every fetch.
@@ -31,9 +31,11 @@
  * method and template no other operation shares keeps that template and its
  * resource-name parameter, such as `name: "spaces/AAA/messages/BBB"`.
  * Operations that share one are told apart by their parameters' Discovery
- * patterns. `googleOperationScopes` lists every scope Discovery accepts for
- * each operation that Google grants through user consent. Both need the
- * Discovery documents, so only generation runs them.
+ * patterns. `googleOperationScopes` lists in each operation's
+ * `x-google-scopes` every scope Discovery accepts for it that Google grants
+ * through user consent, and leaves `security` and the OAuth flow as the
+ * converter wrote them. Both need the Discovery documents, so only generation
+ * runs them.
  * `hostedGoogleSpec` rewrites the rest and refuses an operation whose path is
  * not real. Generation and the committed-spec test both run `hostedGoogleSpec`,
  * so a regenerated spec cannot reintroduce any of these mistakes.
@@ -355,8 +357,8 @@ export function realGooglePaths(
 const OAUTH_SCHEME = "googleOAuth2";
 const GOOGLE_SCOPES = "x-google-scopes";
 
-/** Executor's Google scope rules. Generation passes the ones executor's
- *  converter applies, from the executor checkout it runs. */
+/** Executor's Google scope rules. Generation builds them with
+ *  `executorScopeRules` from the executor checkout it runs. */
 export interface GoogleScopeRules {
   /** The scopes executor's policy for a Discovery service lets one of its
    *  methods accept, given the scopes Discovery lists for the method. */
@@ -365,6 +367,51 @@ export interface GoogleScopeRules {
   readonly userConsent: (scope: string) => boolean;
   /** Whether a token granted `consent` may call a method that accepts `scope`. */
   readonly covers: (consent: string, scope: string) => boolean;
+}
+
+/** The parts of executor's Google provider (`service-policy.ts`,
+ *  `oauth-scopes.ts`) that `executorScopeRules` is built from. */
+export interface ExecutorGoogleScopes {
+  readonly googleDiscoveryPolicyFor: (
+    service: string,
+    version: string,
+  ) =>
+    | {
+        readonly authoritativeScopes?: Readonly<Record<string, string>>;
+        readonly fallbackMethodScopes?: readonly string[];
+      }
+    | undefined;
+  readonly isGoogleUserConsentOAuthScope: (scope: string) => boolean;
+  readonly compactGoogleOAuthScopes: (scopes: Iterable<string>) => string[];
+}
+
+/**
+ * Executor's Google scope rules, as its converter applies them. Neither
+ * `discoveryMethodScopesForService` nor `googleScopeCovers` in executor's
+ * `discovery.ts` is exported, so these repeat them over the exported parts.
+ *
+ * One difference: compaction renames the identity scopes (`userinfo.email`
+ * becomes `email`) rather than dropping them, so `googleScopeCovers` has every
+ * scope cover them. Here a scope covers another only when compacting the two
+ * keeps the first unchanged and drops the second.
+ */
+export function executorScopeRules(executor: ExecutorGoogleScopes): GoogleScopeRules {
+  const { compactGoogleOAuthScopes, isGoogleUserConsentOAuthScope } = executor;
+  return {
+    methodScopes: (service, version, scopes) => {
+      const policy = executor.googleDiscoveryPolicyFor(service, version);
+      if (scopes.length === 0) return policy?.fallbackMethodScopes ?? scopes;
+      const authoritative = policy?.authoritativeScopes;
+      return authoritative ? scopes.filter((scope) => authoritative[scope] !== undefined) : scopes;
+    },
+    userConsent: isGoogleUserConsentOAuthScope,
+    covers: (consent, scope) => {
+      if (consent === scope) return true;
+      if (!isGoogleUserConsentOAuthScope(scope)) return false;
+      const compacted = compactGoogleOAuthScopes([consent, scope]);
+      return compacted.length === 1 && compacted[0] === consent;
+    },
+  };
 }
 
 /** The scopes an operation's security requirements name. */
@@ -420,10 +467,13 @@ function serviceMethods(
 
 /**
  * Orders scopes so that each comes after every other listed scope it covers:
- * a broad scope follows the narrower ones it grants. Scopes neither of which
- * covers the other are in name order. That is not a privilege ranking, since
+ * a broad scope follows the narrower ones it grants. It is a topological sort
+ * that, at each step, takes the first scope by name among those that cover no
+ * scope still waiting. So unrelated scopes are not always in name order:
+ * `drive` waits for `drive.file`, which it covers, and `drive.apps.readonly`,
+ * which it does not, can come before it. Nor is it a privilege ranking, since
  * the coverage rule does not relate every pair (`gmail.compose` and
- * `gmail.send` are unrelated under it, and sort by name).
+ * `gmail.send` are unrelated under it).
  *
  * @throws when two scopes cover each other.
  */
@@ -475,31 +525,49 @@ function acceptedScopes(
   return rules.methodScopes(source.service, source.version, listed).filter(rules.userConsent);
 }
 
+/** The scope names in an `x-google-scopes` list. */
+function scopeList(value: Json | undefined, at: string): readonly string[] {
+  if (value === undefined) return [];
+  return arrayAt(value, at).map((scope) => {
+    if (typeof scope !== "string") throw new Error(`${at}: expected scope names`);
+    return scope;
+  });
+}
+
 /**
- * Lists on each operation every scope Google accepts for it, not only the
- * broad scope the integration asks consent for.
+ * Lists in each operation's `x-google-scopes` every scope Google accepts for
+ * it, not only the broad scope the integration asks consent for.
  *
  * Executor's converter gives each operation the consent scopes that cover its
- * method, so every Gmail operation, reads included, declared only
+ * method, so every Gmail operation, reads included, named only
  * `https://mail.google.com/`. Discovery lists the scopes each method accepts
  * (`users.messages.list` accepts `gmail.readonly`, `gmail.metadata`,
- * `gmail.modify` and full access). Each operation now names, as alternative
- * security requirements:
+ * `gmail.modify` and full access). Each operation's `x-google-scopes` now
+ * names, in `coverageOrder`:
  *
  * - every scope Discovery lists for its method, as executor's policy for the
  *   service admits it (Photos keeps only the scopes Google still grants), that
  *   Google grants through user consent; and
- * - the scopes the converter gave it, so the integration's consent still
- *   reaches every operation.
+ * - the scopes its security requirements name.
  *
  * Whether a consent scope covers a Discovery scope does not matter here: the
  * coverage table knows only some pairs, and `chat.messages.create` is accepted
  * by `spaces.messages.create` although `chat.messages` is not known to cover
- * it. The order is `coverageOrder`'s. An operation with no Discovery method or
- * no security (executor's own Photos upload) keeps the scopes the converter
- * gave it. The OAuth scheme declares every scope an operation names, with
- * Discovery's description. Run after `realGooglePaths`. The input is not
- * modified.
+ * it. The OAuth scheme's own `x-google-scopes` maps every scope an operation
+ * lists to its description, the flow's or else Discovery's, in name order. An
+ * operation with no Discovery method or no security (executor's own Photos
+ * upload) keeps the list the converter gave it.
+ *
+ * The operations' `security` and the flow's `scopes` stay exactly as the
+ * converter wrote them. Importers take the consent they request from those:
+ * legacy Executor's URL importer (`@executor-js/plugin-openapi`) asks for
+ * every scope the flow declares and records each operation's `security` as
+ * its required scopes. Listing the alternatives there would make a Docs
+ * connection ask for all of Drive, and OpenAPI linters reject a requirement
+ * naming a scope its flow does not declare. Extensions are valid on Operation
+ * and Security Scheme Objects, and those importers ignore them.
+ *
+ * Run after `realGooglePaths`. The input is not modified.
  */
 export function googleOperationScopes(
   spec: JsonObject,
@@ -521,20 +589,17 @@ export function googleOperationScopes(
             const where = `${at} ${method} ${path}`;
             const operation = objectAt(field, where);
             const granted = securityScopes(operation.security, `${where} security`);
-            granted.forEach((scope) => used.add(scope));
             const source = sourceMethod(methods, operation);
-            if (source === undefined || granted.length === 0) return [method, operation];
+            if (source === undefined || granted.length === 0) {
+              scopeList(operation[GOOGLE_SCOPES], `${where} ${GOOGLE_SCOPES}`).forEach((scope) =>
+                used.add(scope),
+              );
+              return [method, operation];
+            }
             const accepted = acceptedScopes(source, rules, where);
             const scopes = [...coverageOrder([...accepted, ...granted], rules.covers, where)];
             scopes.forEach((scope) => used.add(scope));
-            return [
-              method,
-              {
-                ...operation,
-                security: scopes.map((scope) => ({ [OAUTH_SCHEME]: [scope] })),
-                [GOOGLE_SCOPES]: scopes,
-              },
-            ];
+            return [method, { ...operation, [GOOGLE_SCOPES]: scopes }];
           }),
         ),
       ];
@@ -547,33 +612,30 @@ export function googleOperationScopes(
   const flows = objectAt(scheme.flows, `${at} ${OAUTH_SCHEME} flows`);
   const flow = objectAt(flows.authorizationCode, `${at} ${OAUTH_SCHEME} authorizationCode`);
   const declared = objectAt(flow.scopes, `${at} ${OAUTH_SCHEME} scopes`);
-  const scopes: JsonObject = { ...declared };
-  for (const scope of used) {
-    const description = declared[scope];
-    scopes[scope] =
-      typeof description === "string" && description !== ""
-        ? description
-        : (descriptions.get(scope) ?? "");
-  }
+  const described = Object.fromEntries(
+    [...used].sort(byText).map((scope) => {
+      const description = declared[scope];
+      return [
+        scope,
+        typeof description === "string" && description !== ""
+          ? description
+          : (descriptions.get(scope) ?? ""),
+      ];
+    }),
+  );
   return {
     ...spec,
     paths,
     components: {
       ...components,
-      securitySchemes: {
-        ...schemes,
-        [OAUTH_SCHEME]: {
-          ...scheme,
-          flows: { ...flows, authorizationCode: { ...flow, scopes } },
-        },
-      },
+      securitySchemes: { ...schemes, [OAUTH_SCHEME]: { ...scheme, [GOOGLE_SCOPES]: described } },
     },
   };
 }
 
 /**
  * The scopes Google accepts for an operation's Discovery method through user
- * consent (`acceptedScopes`) that the operation does not name, one
+ * consent (`acceptedScopes`) that its `x-google-scopes` does not list, one
  * `<method> <path>: <scope>` line each. Generation fails on any, so no later
  * step can drop a scope from a published spec.
  */
@@ -590,9 +652,9 @@ export function unlistedDiscoveryScopes(
         const where = `${at} ${method} ${path}`;
         const source = sourceMethod(methods, operation);
         if (source === undefined) return [];
-        const named = securityScopes(operation.security, `${where} security`);
+        const listed = scopeList(operation[GOOGLE_SCOPES], `${where} ${GOOGLE_SCOPES}`);
         return acceptedScopes(source, rules, where)
-          .filter((scope) => !named.includes(scope))
+          .filter((scope) => !listed.includes(scope))
           .map((scope) => `${method} ${path}: ${scope}`);
       },
     ),
@@ -626,14 +688,17 @@ export interface HostedGoogleSpec {
  *   order, so the same service always produces the same document.
  *
  * @throws when an operation is not keyed by a real path, when a security
- * requirement names a scope its OAuth scheme does not declare, when the
- * operations span more than one origin, or when a default cannot be read as its schema's
- * type. Each is a change in Google's documents or executor's converter that a
- * person must look at, not something to publish.
+ * requirement names a scope its OAuth scheme does not declare, when an
+ * operation's `x-google-scopes` leaves out a scope its security names or lists
+ * one the OAuth scheme does not describe, when the operations span more than
+ * one origin, or when a default cannot be read as its schema's type. Each is a
+ * change in Google's documents or executor's converter that a person must look
+ * at, not something to publish.
  */
 export function hostedGoogleSpec(spec: JsonObject, at: string): HostedGoogleSpec | undefined {
   assertRealPaths(spec, at);
   assertDeclaredScopes(spec, at);
+  assertListedScopes(spec, at);
   const routed = withOperationServer(spec, at);
   if (routed === undefined) return undefined;
   const schemas = withSchemas(routed.document, at, (schema, where) =>
@@ -719,6 +784,35 @@ function assertDeclaredScopes(spec: JsonObject, at: string): void {
   for (const [path, value] of Object.entries(objectAt(spec.paths, `${at} paths`)))
     for (const { method, operation } of itemOperations(objectAt(value, `${at} ${path}`), `${at} ${path}`))
       check(operation.security, `${at} ${method} ${path}`);
+}
+
+/**
+ * @throws when an operation's `x-google-scopes` leaves out a scope its security
+ * requirements name, or lists a scope that neither the OAuth flow declares nor
+ * the OAuth scheme's `x-google-scopes` describes.
+ */
+function assertListedScopes(spec: JsonObject, at: string): void {
+  const components = isJsonObject(spec.components) ? spec.components : {};
+  const schemes = isJsonObject(components.securitySchemes) ? components.securitySchemes : {};
+  const scheme = isJsonObject(schemes[OAUTH_SCHEME]) ? schemes[OAUTH_SCHEME] : {};
+  const flows = isJsonObject(scheme.flows) ? scheme.flows : {};
+  const flow = isJsonObject(flows.authorizationCode) ? flows.authorizationCode : {};
+  const known = new Set([
+    ...Object.keys(isJsonObject(flow.scopes) ? flow.scopes : {}),
+    ...Object.keys(scheme[GOOGLE_SCOPES] === undefined ? {} : objectAt(scheme[GOOGLE_SCOPES], `${at} ${OAUTH_SCHEME} ${GOOGLE_SCOPES}`)),
+  ]);
+  for (const [path, value] of Object.entries(objectAt(spec.paths, `${at} paths`)))
+    for (const { method, operation } of itemOperations(objectAt(value, `${at} ${path}`), `${at} ${path}`)) {
+      if (operation[GOOGLE_SCOPES] === undefined) continue;
+      const where = `${at} ${method} ${path}`;
+      const listed = scopeList(operation[GOOGLE_SCOPES], `${where} ${GOOGLE_SCOPES}`);
+      for (const scope of securityScopes(operation.security, `${where} security`))
+        if (!listed.includes(scope))
+          throw new Error(`${where}: ${GOOGLE_SCOPES} leaves out the security scope ${JSON.stringify(scope)}`);
+      for (const scope of listed)
+        if (!known.has(scope))
+          throw new Error(`${where}: ${OAUTH_SCHEME} does not describe the listed scope ${JSON.stringify(scope)}`);
+    }
 }
 
 function singleServerUrl(servers: Json | undefined, at: string): string | undefined {

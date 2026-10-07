@@ -10,9 +10,10 @@
  * corrects what that converter's multi-service bundle output gets wrong for a
  * document describing one service (scripts/google-specs.ts): realGooglePaths
  * keys every operation by its real path, googleOperationScopes lists every
- * scope Google accepts for each operation, and hostedGoogleSpec fixes the
- * document server, types Discovery's string-encoded defaults, writes everything
- * in a fixed order and refuses any operation left on a placeholder path.
+ * scope Google accepts for each operation in its x-google-scopes, and
+ * hostedGoogleSpec fixes the document server, types Discovery's string-encoded
+ * defaults, writes everything in a fixed order and refuses any operation left
+ * on a placeholder path.
  *
  * The converter is not part of the published @executor-js/plugin-openapi
  * package, so it is imported from a local executor (v1) checkout, along with
@@ -29,13 +30,13 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  executorScopeRules,
   googleOperationScopes,
   hostedGoogleSpec,
   isJsonObject,
   parseJsonObject,
   realGooglePaths,
   unlistedDiscoveryScopes,
-  type GoogleScopeRules,
 } from "./google-specs.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -59,34 +60,11 @@ const { compactGoogleOAuthScopes, isGoogleUserConsentOAuthScope } = await import
   join(providerDir, "oauth-scopes.ts")
 );
 const { googleDiscoveryPolicyFor } = await import(join(providerDir, "service-policy.ts"));
-
-/** Executor's Google scope rules, as its converter applies them. Neither
- *  discoveryMethodScopesForService nor googleScopeCovers in discovery.ts is
- *  exported, so these repeat them over the exported parts. One difference:
- *  compaction renames `userinfo.email` to `email` rather than dropping it, so
- *  googleScopeCovers has every scope cover the identity scopes, and each
- *  identity scope cover the other. Here a scope covers another only when
- *  compaction drops the other and keeps it unchanged. */
-const scopeRules: GoogleScopeRules = {
-  methodScopes: (service, version, scopes) => {
-    const policy = googleDiscoveryPolicyFor(service, version) as
-      | {
-          readonly authoritativeScopes?: Readonly<Record<string, string>>;
-          readonly fallbackMethodScopes?: readonly string[];
-        }
-      | undefined;
-    if (scopes.length === 0) return policy?.fallbackMethodScopes ?? scopes;
-    const authoritative = policy?.authoritativeScopes;
-    return authoritative ? scopes.filter((scope) => authoritative[scope] !== undefined) : scopes;
-  },
-  userConsent: isGoogleUserConsentOAuthScope,
-  covers: (consent, scope) => {
-    if (consent === scope) return true;
-    if (!isGoogleUserConsentOAuthScope(scope)) return false;
-    const compacted = compactGoogleOAuthScopes([consent, scope]);
-    return compacted.length === 1 && compacted[0] === consent;
-  },
-};
+const scopeRules = executorScopeRules({
+  googleDiscoveryPolicyFor,
+  isGoogleUserConsentOAuthScope,
+  compactGoogleOAuthScopes,
+});
 
 // The converter returns executor-flavored Effects; run them with executor's
 // own effect instance so the runtime identities match.

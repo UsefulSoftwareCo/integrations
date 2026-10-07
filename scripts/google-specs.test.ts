@@ -495,6 +495,54 @@ const legacyExecutor = {
 describe("legacy Executor imports of the hosted specs", () => {
   const auth = (name: string) => `https://www.googleapis.com/auth/${name}`;
   const identity = ["openid", "email", "profile"];
+  // Each import's consent on main, before any scope was added to the specs,
+  // without the identity scopes. Short names are under googleapis.com/auth/.
+  const consentOnMain: Record<string, readonly string[]> = {
+    "google-admin-directory.json": [
+      "admin.chrome.printers", "admin.directory.customer", "admin.directory.device.chromeos",
+      "admin.directory.device.mobile", "admin.directory.domain", "admin.directory.group",
+      "admin.directory.orgunit", "admin.directory.resource.calendar", "admin.directory.rolemanagement",
+      "admin.directory.user", "admin.directory.user.security", "admin.directory.userschema",
+    ],
+    "google-admin-reports.json": ["admin.reports.audit.readonly", "admin.reports.usage.readonly"],
+    "google-apps-script.json": [
+      "script.deployments", "script.metrics", "script.processes", "script.projects",
+    ],
+    "google-bigquery.json": ["bigquery"],
+    "google-calendar.json": ["calendar"],
+    "google-chat.json": [
+      "chat.customemojis", "chat.delete", "chat.memberships", "chat.messages", "chat.spaces",
+      "chat.users.availability", "chat.users.readstate", "chat.users.sections", "chat.users.spacesettings",
+    ],
+    "google-classroom.json": [
+      "classroom.announcements", "classroom.courses", "classroom.coursework.me",
+      "classroom.coursework.students", "classroom.courseworkmaterials",
+      "classroom.guardianlinks.me.readonly", "classroom.guardianlinks.students.readonly",
+      "classroom.profile.emails", "classroom.profile.photos", "classroom.rosters", "classroom.topics",
+    ],
+    "google-cloud-resource-manager.json": ["cloud-platform"],
+    "google-docs.json": ["documents"],
+    "google-drive.json": ["drive"],
+    "google-forms.json": ["forms.body", "forms.responses.readonly"],
+    "google-gmail.json": ["gmail.settings.basic", "https://mail.google.com/"],
+    "google-meet.json": ["meetings.space.created", "meetings.space.readonly", "meetings.space.settings"],
+    "google-people.json": [
+      "contacts", "contacts.other.readonly", "directory.readonly", "user.addresses.read",
+      "user.birthday.read", "user.emails.read", "user.gender.read", "user.organization.read",
+      "user.phonenumbers.read",
+    ],
+    "google-photos-library.json": [
+      "photoslibrary.appendonly", "photoslibrary.edit.appcreateddata",
+      "photoslibrary.readonly.appcreateddata",
+    ],
+    "google-photos-picker.json": ["photospicker.mediaitems.readonly"],
+    "google-search-console.json": ["webmasters"],
+    "google-sheets.json": ["drive.file", "spreadsheets"],
+    "google-slides.json": ["presentations"],
+    "google-tasks.json": ["tasks"],
+    "google-youtube-data.json": ["youtube.channel-memberships.creator", "youtube.force-ssl"],
+  };
+  const fullScope = (name: string) => (name.startsWith("https://") ? name : auth(name));
   const required = (file: string, operationId: string) => {
     const spec = read(file);
     const found = operations(spec).find(({ operation }) => operation.operationId === operationId);
@@ -517,6 +565,14 @@ describe("legacy Executor imports of the hosted specs", () => {
     expect(required("google-docs.json", "docs.documents.get")).toEqual([[auth("documents")]]);
     expect(required("google-bigquery.json", "bigquery.datasets.list")).toEqual([[auth("bigquery")]]);
     expect(required("google-gmail.json", "gmail.users.messages.list")).toEqual([["https://mail.google.com/"]]);
+  });
+
+  test("asks every import for the same consent as main", () => {
+    expect([...files].sort()).toEqual(Object.keys(consentOnMain).sort());
+    for (const file of files) {
+      const consent = [...identity, ...consentOnMain[file].map(fullScope)].sort();
+      expect([file, legacyExecutor.consent(read(file)).map((each) => [...each].sort())]).toEqual([file, [consent]]);
+    }
   });
 
   test("never asks for or requires a scope the spec's own consent leaves out", () => {

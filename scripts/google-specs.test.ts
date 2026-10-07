@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   HTTP_METHODS,
+  executorScopeRules,
   googleOperationScopes,
   hostedGoogleSpec,
   parseJsonObject,
@@ -33,6 +34,10 @@ type Operation = {
   parameters?: Parameter[];
   security?: Record<string, string[]>[];
   "x-google-scopes"?: string[];
+};
+type OAuthScheme = {
+  flows: { authorizationCode: { authorizationUrl: string; scopes: Record<string, string> } };
+  "x-google-scopes": Record<string, string>;
 };
 // SAFETY: test-only view of a converted spec's paths. Every assertion below
 // compares against literal expectations, so a wrong shape fails the test.
@@ -103,10 +108,29 @@ describe("hosted Google specs", () => {
     ]);
     // Google allows permanent deletion only with full mail access.
     expect(scopes("/gmail/v1/users/{userId}/messages/{id}", "delete")).toEqual([mail]);
-    for (const { operation } of operations(gmail))
-      expect(operation.security).toEqual(
-        operation["x-google-scopes"]?.map((scope) => ({ googleOAuth2: [scope] })),
-      );
+    // The security requirement stays the consent scope the converter gave it.
+    expect(pathsOf(gmail)["/gmail/v1/users/{userId}/messages"]?.get?.security).toEqual([
+      { googleOAuth2: [mail] },
+    ]);
+  });
+
+  test("every operation lists its security scopes, and the scheme describes every listed scope", () => {
+    for (const file of files) {
+      const spec = read(file);
+      const scheme = (spec.components as { securitySchemes: { googleOAuth2: OAuthScheme } })
+        .securitySchemes.googleOAuth2;
+      const flow = scheme.flows.authorizationCode.scopes;
+      for (const { path, method, operation } of operations(spec)) {
+        const listed = operation["x-google-scopes"] ?? [];
+        for (const requirement of operation.security ?? [])
+          for (const scope of requirement.googleOAuth2 ?? []) {
+            expect([file, method, path, scope, scope in flow]).toEqual([file, method, path, scope, true]);
+            expect(listed).toContain(scope);
+          }
+        for (const scope of listed)
+          expect([file, scope, typeof scheme["x-google-scopes"][scope]]).toEqual([file, scope, "string"]);
+      }
+    }
   });
 
   test("operations list Discovery scopes the consent scopes are not known to cover", () => {
@@ -416,6 +440,98 @@ describe("realGooglePaths", () => {
   });
 });
 
+/**
+ * What legacy Executor's generic URL importer (`@executor-js/plugin-openapi`
+ * 1.6.10, usefulsoftwareco/executor at 27dccb896) takes from a hosted Google
+ * spec. It repeats that code's logic over the same fields, line for line:
+ *
+ * - `consent`: the OAuth template a URL import stores, whose scopes the
+ *   connection asks Google for. preview.ts:251-275 reads each
+ *   authorizationCode flow's `scopes` map, preview.ts:406-427 makes one preset
+ *   per flow with `identityScopes: "auto"`, and derive-auth.ts:40-59 and
+ *   :168-195 request every key of that map. "auto" adds `openid`, `email` and
+ *   `profile` only when the map already has them, so it adds nothing.
+ *   plugin.ts:770 discovers scopes from operations only for a spec that
+ *   declares no OAuth flow.
+ * - `requiredScopes`: each operation's `requiredScopeAlternatives`
+ *   (extract.ts:585-616), which an insufficient-scope failure names. One
+ *   alternative per security requirement, its scopes sorted and unioned, the
+ *   document's `security` when the operation has none.
+ *
+ * Neither reads an extension, so `x-google-scopes` never reaches them.
+ */
+const legacyExecutor = {
+  consent: (spec: JsonObject): readonly (readonly string[])[] => {
+    const schemes = (spec.components as { securitySchemes?: Record<string, JsonObject> } | undefined)
+      ?.securitySchemes;
+    return Object.values(schemes ?? {}).flatMap((scheme) => {
+      const flow = (scheme.flows as { authorizationCode?: JsonObject } | undefined)?.authorizationCode;
+      if (scheme.type !== "oauth2" || flow === undefined) return [];
+      if (typeof flow.authorizationUrl !== "string" || typeof flow.tokenUrl !== "string") return [];
+      return [
+        Object.entries((flow.scopes as JsonObject | undefined) ?? {})
+          .filter(([, description]) => typeof description === "string")
+          .map(([scope]) => scope),
+      ];
+    });
+  },
+  requiredScopes: (spec: JsonObject, operation: Operation): readonly (readonly string[])[] | undefined => {
+    const security = operation.security ?? spec.security;
+    if (!Array.isArray(security) || security.length === 0) return undefined;
+    const seen = new Set<string>();
+    const alternatives: string[][] = [];
+    for (const requirement of security as Record<string, string[]>[]) {
+      const scopes = new Set(Object.values(requirement).flat().filter((scope) => scope.trim() !== ""));
+      if (scopes.size === 0) continue;
+      const alternative = [...scopes].sort();
+      if (seen.has(alternative.join(" "))) continue;
+      seen.add(alternative.join(" "));
+      alternatives.push(alternative);
+    }
+    return alternatives.length > 0 ? alternatives : undefined;
+  },
+};
+
+describe("legacy Executor imports of the hosted specs", () => {
+  const auth = (name: string) => `https://www.googleapis.com/auth/${name}`;
+  const identity = ["openid", "email", "profile"];
+  const required = (file: string, operationId: string) => {
+    const spec = read(file);
+    const found = operations(spec).find(({ operation }) => operation.operationId === operationId);
+    return found && legacyExecutor.requiredScopes(spec, found.operation);
+  };
+
+  // The scopes each import requests, as the specs before the narrower scopes
+  // were listed produced them. Listing the alternatives in the flow made Docs
+  // ask for all of Drive and BigQuery for cloud-platform and
+  // devstorage.full_control.
+  test("asks Docs, BigQuery and Gmail users for the same consent as before", () => {
+    expect(legacyExecutor.consent(read("google-docs.json"))).toEqual([[...identity, auth("documents")]]);
+    expect(legacyExecutor.consent(read("google-bigquery.json"))).toEqual([[...identity, auth("bigquery")]]);
+    expect(legacyExecutor.consent(read("google-gmail.json"))).toEqual([
+      [...identity, "https://mail.google.com/", auth("gmail.settings.basic")],
+    ]);
+  });
+
+  test("records the same required scopes as before", () => {
+    expect(required("google-docs.json", "docs.documents.get")).toEqual([[auth("documents")]]);
+    expect(required("google-bigquery.json", "bigquery.datasets.list")).toEqual([[auth("bigquery")]]);
+    expect(required("google-gmail.json", "gmail.users.messages.list")).toEqual([["https://mail.google.com/"]]);
+  });
+
+  test("never asks for or requires a scope the spec's own consent leaves out", () => {
+    for (const file of files) {
+      const spec = read(file);
+      const consent = (spec.security as Record<string, string[]>[]).flatMap((each) => each.googleOAuth2 ?? []);
+      expect([file, legacyExecutor.consent(spec)]).toEqual([file, [consent]]);
+      for (const { path, method, operation } of operations(spec))
+        for (const alternative of legacyExecutor.requiredScopes(spec, operation) ?? [])
+          for (const scope of alternative)
+            expect([file, method, path, scope, consent.includes(scope)]).toEqual([file, method, path, scope, true]);
+    }
+  });
+});
+
 describe("googleOperationScopes", () => {
   const full = "https://example.com/full";
   const read = "https://example.com/read";
@@ -472,13 +588,16 @@ describe("googleOperationScopes", () => {
       },
     },
   };
-  const operation = (operationId: string, scopes: readonly string[]) => ({
+  /** An operation as the converter writes it, whose security requirements
+   *  name `granted`, listing `listed` in `x-google-scopes`. */
+  const operation = (operationId: string, granted: readonly string[], listed = granted) => ({
     operationId,
-    security: scopes.map((scope) => ({ googleOAuth2: [scope] })),
-    "x-google-scopes": [...scopes],
+    security: granted.map((scope) => ({ googleOAuth2: [scope] })),
+    "x-google-scopes": [...listed],
   });
   const converted: JsonObject = {
     openapi: "3.1.0",
+    security: [{ googleOAuth2: [full, settings, read] }],
     paths: {
       "/items": {
         get: operation("items.list", [full]),
@@ -503,35 +622,39 @@ describe("googleOperationScopes", () => {
   test("lists every Discovery scope user consent grants, covered or not", () => {
     const paths = pathsOf(spec);
     // A scope comes after the scopes it covers, otherwise in name order:
-    // `create` and full access are unrelated, so they sort by name.
-    expect(paths["/items"]?.get).toEqual(operation("items.list", [read, full]));
-    expect(paths["/items"]?.post).toEqual(operation("items.insert", [create, full]));
+    // `create` and full access are unrelated, so they sort by name. The
+    // security requirements stay the converter's.
+    expect(paths["/items"]?.get).toEqual(operation("items.list", [full], [read, full]));
+    expect(paths["/items"]?.post).toEqual(operation("items.insert", [full], [create, full]));
     expect(paths["/items"]?.put).toEqual(operation("items.update", [settings]));
     // A media upload takes the scopes of the method it uploads for.
-    expect(paths["/upload/items"]?.post).toEqual(operation("items.uploadMedia", [create, full]));
+    expect(paths["/upload/items"]?.post).toEqual(
+      operation("items.uploadMedia", [full], [create, full]),
+    );
     // The service's policy decides which Discovery scopes count, and which
     // scopes a method Discovery gives none accepts.
     expect(paths["/photos"]?.get).toEqual(operation("photos.list", [read]));
     expect(paths["/photos"]?.post).toEqual(operation("photos.pick", [read]));
     // No Discovery method: the converted scopes stay.
     expect(paths["/synthetic"]?.post).toEqual(operation("items.synthetic", [full]));
+  });
+
+  test("describes the listed scopes beside the flow, and leaves the flow as it was", () => {
     expect(spec.components).toEqual({
       securitySchemes: {
         googleOAuth2: {
           type: "oauth2",
-          flows: {
-            authorizationCode: {
-              scopes: {
-                [full]: "Everything",
-                [settings]: "Settings",
-                [read]: "Read",
-                [create]: "Create",
-              },
-            },
+          flows: { authorizationCode: { scopes: { [full]: "", [settings]: "", [read]: "" } } },
+          "x-google-scopes": {
+            [create]: "Create",
+            [full]: "Everything",
+            [read]: "Read",
+            [settings]: "Settings",
           },
         },
       },
     });
+    expect(spec.security).toEqual(converted.security);
   });
 
   test("leaves no scope Google accepts unlisted, and finds one that is", () => {
@@ -549,6 +672,54 @@ describe("googleOperationScopes", () => {
     expect(() => googleOperationScopes(converted, [items, photos], loose, "synthetic")).toThrow(
       "cover each other",
     );
+  });
+});
+
+describe("executorScopeRules", () => {
+  const mail = "https://mail.google.com/";
+  const readonly = "https://www.googleapis.com/auth/gmail.readonly";
+  const userinfoEmail = "https://www.googleapis.com/auth/userinfo.email";
+  const blocked = "https://www.googleapis.com/auth/chat.bot";
+  /** Executor's compaction (oauth-scopes.ts) in miniature: it drops scopes
+   *  user consent cannot grant, renames `userinfo.email` to `email`, and drops
+   *  `gmail.readonly` when full mail access is present. */
+  const compact = (scopes: Iterable<string>): string[] => {
+    const named = [...new Set([...scopes].map((scope) => (scope === userinfoEmail ? "email" : scope)))]
+      .filter((scope) => scope !== blocked);
+    return named.filter((scope) => !(scope === readonly && named.includes(mail)));
+  };
+  const rules = executorScopeRules({
+    googleDiscoveryPolicyFor: (service) =>
+      service === "photos"
+        ? { authoritativeScopes: { kept: "Kept" }, fallbackMethodScopes: ["fallback"] }
+        : undefined,
+    isGoogleUserConsentOAuthScope: (scope) => scope !== blocked,
+    compactGoogleOAuthScopes: compact,
+  });
+
+  test("a scope covers what compaction drops beside it", () => {
+    expect(rules.covers(mail, readonly)).toBe(true);
+    expect(rules.covers(readonly, mail)).toBe(false);
+    expect(rules.covers(mail, mail)).toBe(true);
+    // A scope user consent cannot grant is covered by nothing else.
+    expect(rules.covers(mail, blocked)).toBe(false);
+  });
+
+  test("an identity scope compaction renames is not covered by every scope", () => {
+    // Compaction keeps `email` beside full access, so full access does not
+    // cover `userinfo.email`, as executor's googleScopeCovers says it does.
+    expect(rules.covers(mail, userinfoEmail)).toBe(false);
+    // `email` is what compaction makes of `userinfo.email`; not the reverse.
+    expect(rules.covers("email", userinfoEmail)).toBe(true);
+    expect(rules.covers(userinfoEmail, "email")).toBe(false);
+  });
+
+  test("applies the service policy to a method's Discovery scopes", () => {
+    expect(rules.methodScopes("photos", "v1", ["kept", "retired"])).toEqual(["kept"]);
+    expect(rules.methodScopes("photos", "v1", [])).toEqual(["fallback"]);
+    expect(rules.methodScopes("gmail", "v1", [readonly, mail])).toEqual([readonly, mail]);
+    expect(rules.methodScopes("gmail", "v1", [])).toEqual([]);
+    expect(rules.userConsent(blocked)).toBe(false);
   });
 });
 
@@ -646,6 +817,36 @@ describe("hostedGoogleSpec", () => {
         "synthetic",
       ),
     ).toThrow('googleOAuth2 does not declare the scope "https://example.com/read"');
+  });
+
+  test("refuses x-google-scopes that leave out a security scope or name an undescribed one", () => {
+    const read = "https://example.com/read";
+    const full = "https://example.com/full";
+    const withScopes = (listed: readonly string[], described: JsonObject) => () =>
+      hostedGoogleSpec(
+        {
+          ...bundle({
+            "/v1/items": { get: { security: [{ googleOAuth2: [full] }], "x-google-scopes": [...listed] } },
+          }),
+          components: {
+            securitySchemes: {
+              googleOAuth2: {
+                type: "oauth2",
+                flows: { authorizationCode: { scopes: { [full]: "" } } },
+                "x-google-scopes": described,
+              },
+            },
+          },
+        },
+        "synthetic",
+      );
+    expect(withScopes([read], { [read]: "" })).toThrow(
+      'x-google-scopes leaves out the security scope "https://example.com/full"',
+    );
+    expect(withScopes([read, full], { [full]: "" })).toThrow(
+      'googleOAuth2 does not describe the listed scope "https://example.com/read"',
+    );
+    expect(withScopes([read, full], { [read]: "", [full]: "" })).not.toThrow();
   });
 
   test("refuses an operation that is not on its real path", () => {

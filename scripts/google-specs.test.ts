@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   HTTP_METHODS,
+  googleOperationScopes,
   hostedGoogleSpec,
   parseJsonObject,
   realGooglePaths,
@@ -24,7 +25,13 @@ type Parameter = {
   allowReserved?: boolean;
   schema: JsonObject;
 };
-type Operation = { operationId?: string; servers?: { url: string }[]; parameters?: Parameter[] };
+type Operation = {
+  operationId?: string;
+  servers?: { url: string }[];
+  parameters?: Parameter[];
+  security?: Record<string, string[]>[];
+  "x-google-scopes"?: string[];
+};
 // SAFETY: test-only view of a converted spec's paths. Every assertion below
 // compares against literal expectations, so a wrong shape fails the test.
 const pathsOf = (spec: JsonObject) => spec.paths as Record<string, Record<string, Operation>>;
@@ -72,6 +79,32 @@ describe("hosted Google specs", () => {
     expect(parameter(gmail, list, "get", "prettyPrint")).toMatchObject({ type: "boolean", default: true });
     expect(parameter(gmail, list, "get", "includeSpamTrash")).toMatchObject({ type: "boolean", default: false });
     expect(parameter(gmail, list, "get", "maxResults")).toMatchObject({ type: "integer", default: 100 });
+  });
+
+  test("Gmail reads accept the read-only scope, not only full mail access", () => {
+    const gmail = read("google-gmail.json");
+    const scopes = (path: string, method: string) =>
+      pathsOf(gmail)[path]?.[method]?.["x-google-scopes"];
+    const mail = "https://mail.google.com/";
+    const gmailScope = (name: string) => `https://www.googleapis.com/auth/gmail.${name}`;
+    expect(scopes("/gmail/v1/users/{userId}/messages", "get")).toEqual([
+      gmailScope("metadata"),
+      gmailScope("modify"),
+      gmailScope("readonly"),
+      mail,
+    ]);
+    expect(scopes("/gmail/v1/users/{userId}/messages/send", "post")).toEqual([
+      gmailScope("compose"),
+      gmailScope("modify"),
+      gmailScope("send"),
+      mail,
+    ]);
+    // Google allows permanent deletion only with full mail access.
+    expect(scopes("/gmail/v1/users/{userId}/messages/{id}", "delete")).toEqual([mail]);
+    for (const { operation } of operations(gmail))
+      expect(operation.security).toEqual(
+        operation["x-google-scopes"]?.map((scope) => ({ googleOAuth2: [scope] })),
+      );
   });
 
   test("Drive keeps its media uploads on the root URL of the same host", () => {
@@ -360,6 +393,83 @@ describe("realGooglePaths", () => {
   });
 });
 
+describe("googleOperationScopes", () => {
+  const full = "https://example.com/full";
+  const read = "https://example.com/read";
+  const settings = "https://example.com/settings";
+  const blocked = "https://example.com/blocked";
+  /** Full access grants every scope but `blocked`; each scope grants itself. */
+  const covers = (consent: string, scope: string) =>
+    consent === scope || (consent === full && scope !== blocked);
+  const discovery: JsonObject = {
+    auth: {
+      oauth2: {
+        scopes: {
+          [full]: { description: "Everything" },
+          [read]: { description: "Read" },
+          [settings]: { description: "Settings" },
+        },
+      },
+    },
+    resources: {
+      items: {
+        methods: {
+          list: { id: "items.list", scopes: [full, read, blocked] },
+          update: { id: "items.update", scopes: [settings] },
+          upload: { id: "items.upload", scopes: [full] },
+          public: { id: "items.public" },
+        },
+      },
+    },
+  };
+  const operation = (operationId: string, scopes: readonly string[]) => ({
+    operationId,
+    security: scopes.map((scope) => ({ googleOAuth2: [scope] })),
+    "x-google-scopes": [...scopes],
+  });
+  const converted: JsonObject = {
+    openapi: "3.1.0",
+    paths: {
+      "/items": { get: operation("items.list", [full]), put: operation("items.update", [settings]) },
+      "/upload/items": { post: operation("items.uploadMedia", [full]) },
+      "/public": { get: operation("items.public", [full]) },
+      "/synthetic": { post: operation("items.synthetic", [full]) },
+    },
+    components: {
+      securitySchemes: {
+        googleOAuth2: {
+          type: "oauth2",
+          flows: { authorizationCode: { scopes: { [full]: "", [settings]: "" } } },
+        },
+      },
+    },
+  };
+
+  test("lists every covered Discovery scope, narrower first, and declares them", () => {
+    const spec = googleOperationScopes(converted, [discovery], covers, "synthetic");
+    const paths = pathsOf(spec);
+    expect(paths["/items"]?.get).toMatchObject(operation("items.list", [read, full]));
+    expect(paths["/items"]?.put).toEqual(operation("items.update", [settings]));
+    // A media upload takes the scopes of the method it uploads for.
+    expect(paths["/upload/items"]?.post).toEqual(operation("items.uploadMedia", [full]));
+    // No Discovery scopes, or no Discovery method: the converted scopes stay.
+    expect(paths["/public"]?.get).toEqual(operation("items.public", [full]));
+    expect(paths["/synthetic"]?.post).toEqual(operation("items.synthetic", [full]));
+    expect(spec.components).toEqual({
+      securitySchemes: {
+        googleOAuth2: {
+          type: "oauth2",
+          flows: {
+            authorizationCode: {
+              scopes: { [full]: "Everything", [settings]: "Settings", [read]: "Read" },
+            },
+          },
+        },
+      },
+    });
+  });
+});
+
 describe("hostedGoogleSpec", () => {
   const bundle = (paths: JsonObject, schemas: JsonObject = {}): JsonObject => ({
     openapi: "3.1.0",
@@ -438,6 +548,22 @@ describe("hostedGoogleSpec", () => {
         "synthetic",
       ),
     ).toThrow("a hosted document must address one origin");
+  });
+
+  test("refuses a security requirement whose scope the OAuth scheme does not declare", () => {
+    expect(() =>
+      hostedGoogleSpec(
+        {
+          ...bundle({ "/v1/items": { get: { security: [{ googleOAuth2: ["https://example.com/read"] }] } } }),
+          components: {
+            securitySchemes: {
+              googleOAuth2: { type: "oauth2", flows: { authorizationCode: { scopes: {} } } },
+            },
+          },
+        },
+        "synthetic",
+      ),
+    ).toThrow('googleOAuth2 does not declare the scope "https://example.com/read"');
   });
 
   test("refuses an operation that is not on its real path", () => {

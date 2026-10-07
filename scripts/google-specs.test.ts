@@ -8,6 +8,8 @@ import {
   hostedGoogleSpec,
   parseJsonObject,
   realGooglePaths,
+  unlistedDiscoveryScopes,
+  type GoogleScopeRules,
   type Json,
   type JsonObject,
 } from "./google-specs.ts";
@@ -105,6 +107,27 @@ describe("hosted Google specs", () => {
       expect(operation.security).toEqual(
         operation["x-google-scopes"]?.map((scope) => ({ googleOAuth2: [scope] })),
       );
+  });
+
+  test("operations list Discovery scopes the consent scopes are not known to cover", () => {
+    const scopes = (file: string, operationId: string) =>
+      operations(read(file)).find(({ operation }) => operation.operationId === operationId)
+        ?.operation["x-google-scopes"];
+    const auth = (name: string) => `https://www.googleapis.com/auth/${name}`;
+    // Google accepts the narrower chat.messages.create; chat.bot and
+    // chat.import, which user consent cannot grant, stay out.
+    expect(scopes("google-chat.json", "chat.spaces.messages.create")).toEqual([
+      auth("chat.messages"),
+      auth("chat.messages.create"),
+    ]);
+    // Docs reads also accept Drive's per-file and read-only scopes.
+    expect(scopes("google-docs.json", "docs.documents.get")).toEqual([
+      auth("documents.readonly"),
+      auth("documents"),
+      auth("drive.file"),
+      auth("drive.readonly"),
+      auth("drive"),
+    ]);
   });
 
   test("Drive keeps its media uploads on the root URL of the same host", () => {
@@ -396,17 +419,32 @@ describe("realGooglePaths", () => {
 describe("googleOperationScopes", () => {
   const full = "https://example.com/full";
   const read = "https://example.com/read";
+  const create = "https://example.com/create";
   const settings = "https://example.com/settings";
   const blocked = "https://example.com/blocked";
-  /** Full access grants every scope but `blocked`; each scope grants itself. */
-  const covers = (consent: string, scope: string) =>
-    consent === scope || (consent === full && scope !== blocked);
-  const discovery: JsonObject = {
+  const retired = "https://example.com/retired";
+  /** Full access is known to cover only `read`; `create` is accepted but no
+   *  rule relates it to full access. User consent cannot grant `blocked`, and
+   *  the `photos` service's policy no longer admits `retired`. */
+  const rules: GoogleScopeRules = {
+    methodScopes: (service, _version, scopes) =>
+      scopes.length === 0
+        ? service === "photos"
+          ? [read]
+          : scopes
+        : scopes.filter((scope) => service !== "photos" || scope !== retired),
+    userConsent: (scope) => scope !== blocked,
+    covers: (consent, scope) => consent === scope || (consent === full && scope === read),
+  };
+  const items: JsonObject = {
+    name: "items",
+    version: "v1",
     auth: {
       oauth2: {
         scopes: {
           [full]: { description: "Everything" },
           [read]: { description: "Read" },
+          [create]: { description: "Create" },
           [settings]: { description: "Settings" },
         },
       },
@@ -415,9 +453,21 @@ describe("googleOperationScopes", () => {
       items: {
         methods: {
           list: { id: "items.list", scopes: [full, read, blocked] },
+          insert: { id: "items.insert", scopes: [full, create, blocked] },
           update: { id: "items.update", scopes: [settings] },
-          upload: { id: "items.upload", scopes: [full] },
-          public: { id: "items.public" },
+          upload: { id: "items.upload", scopes: [full, create] },
+        },
+      },
+    },
+  };
+  const photos: JsonObject = {
+    name: "photos",
+    version: "v1",
+    resources: {
+      photos: {
+        methods: {
+          list: { id: "photos.list", scopes: [read, retired] },
+          pick: { id: "photos.pick" },
         },
       },
     },
@@ -430,30 +480,40 @@ describe("googleOperationScopes", () => {
   const converted: JsonObject = {
     openapi: "3.1.0",
     paths: {
-      "/items": { get: operation("items.list", [full]), put: operation("items.update", [settings]) },
+      "/items": {
+        get: operation("items.list", [full]),
+        post: operation("items.insert", [full]),
+        put: operation("items.update", [settings]),
+      },
       "/upload/items": { post: operation("items.uploadMedia", [full]) },
-      "/public": { get: operation("items.public", [full]) },
+      "/photos": { get: operation("photos.list", [read]), post: operation("photos.pick", [read]) },
       "/synthetic": { post: operation("items.synthetic", [full]) },
     },
     components: {
       securitySchemes: {
         googleOAuth2: {
           type: "oauth2",
-          flows: { authorizationCode: { scopes: { [full]: "", [settings]: "" } } },
+          flows: { authorizationCode: { scopes: { [full]: "", [settings]: "", [read]: "" } } },
         },
       },
     },
   };
+  const spec = googleOperationScopes(converted, [items, photos], rules, "synthetic");
 
-  test("lists every covered Discovery scope, narrower first, and declares them", () => {
-    const spec = googleOperationScopes(converted, [discovery], covers, "synthetic");
+  test("lists every Discovery scope user consent grants, covered or not", () => {
     const paths = pathsOf(spec);
-    expect(paths["/items"]?.get).toMatchObject(operation("items.list", [read, full]));
+    // A scope comes after the scopes it covers, otherwise in name order:
+    // `create` and full access are unrelated, so they sort by name.
+    expect(paths["/items"]?.get).toEqual(operation("items.list", [read, full]));
+    expect(paths["/items"]?.post).toEqual(operation("items.insert", [create, full]));
     expect(paths["/items"]?.put).toEqual(operation("items.update", [settings]));
     // A media upload takes the scopes of the method it uploads for.
-    expect(paths["/upload/items"]?.post).toEqual(operation("items.uploadMedia", [full]));
-    // No Discovery scopes, or no Discovery method: the converted scopes stay.
-    expect(paths["/public"]?.get).toEqual(operation("items.public", [full]));
+    expect(paths["/upload/items"]?.post).toEqual(operation("items.uploadMedia", [create, full]));
+    // The service's policy decides which Discovery scopes count, and which
+    // scopes a method Discovery gives none accepts.
+    expect(paths["/photos"]?.get).toEqual(operation("photos.list", [read]));
+    expect(paths["/photos"]?.post).toEqual(operation("photos.pick", [read]));
+    // No Discovery method: the converted scopes stay.
     expect(paths["/synthetic"]?.post).toEqual(operation("items.synthetic", [full]));
     expect(spec.components).toEqual({
       securitySchemes: {
@@ -461,12 +521,34 @@ describe("googleOperationScopes", () => {
           type: "oauth2",
           flows: {
             authorizationCode: {
-              scopes: { [full]: "Everything", [settings]: "Settings", [read]: "Read" },
+              scopes: {
+                [full]: "Everything",
+                [settings]: "Settings",
+                [read]: "Read",
+                [create]: "Create",
+              },
             },
           },
         },
       },
     });
+  });
+
+  test("leaves no scope Google accepts unlisted, and finds one that is", () => {
+    expect(unlistedDiscoveryScopes(spec, [items, photos], rules, "synthetic")).toEqual([]);
+    // The converter's own output omits what the coverage rule does not know.
+    expect(unlistedDiscoveryScopes(converted, [items, photos], rules, "synthetic")).toEqual([
+      "get /items: https://example.com/read",
+      "post /items: https://example.com/create",
+      "post /upload/items: https://example.com/create",
+    ]);
+  });
+
+  test("refuses scopes that cover each other", () => {
+    const loose = { ...rules, covers: () => true };
+    expect(() => googleOperationScopes(converted, [items, photos], loose, "synthetic")).toThrow(
+      "cover each other",
+    );
   });
 });
 

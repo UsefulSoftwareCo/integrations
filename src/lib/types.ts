@@ -93,6 +93,9 @@ export interface Integration {
   cli?: {
     /** Install / run command, e.g. "brew install gh && gh auth login". */
     install: string;
+    /** The command a user types, when the record slug is not it: a curated
+     *  CLI's slug is `<domain>-cli`, but GitHub's command is `gh`. */
+    command?: string;
     /** The registrable domain this CLI is grouped under. */
     domain: string;
     docs?: string;

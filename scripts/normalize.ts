@@ -664,7 +664,11 @@ export function buildCurated(): Integration[] {
           ...(iface.note ? { authNote: iface.note } : {}),
         };
       } else {
-        rec.cli = { install: iface.install ?? iface.name ?? "", domain: productDomain };
+        rec.cli = {
+          install: iface.install ?? iface.name ?? "",
+          ...(iface.name ? { command: iface.name } : {}),
+          domain: productDomain,
+        };
       }
       recs.push(rec);
     }

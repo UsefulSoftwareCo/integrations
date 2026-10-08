@@ -65,7 +65,7 @@ export function recordToSurface(r: Integration): Omit<SurfaceView, "slug"> | nul
         auth: r.graphql?.hasSecurity ? { status: "unknown" } : { status: "none", basis: REG_BASIS },
       };
     case "cli":
-      return { name: r.name, type: "cli", docs: r.cli?.docs ?? r.url, basis: REG_BASIS, command: r.slug, notes: r.cli?.install, auth: { status: "unknown" } };
+      return { name: r.name, type: "cli", docs: r.cli?.docs ?? r.url, basis: REG_BASIS, command: r.cli?.command ?? r.slug, notes: r.cli?.install, auth: { status: "unknown" } };
     default:
       return null;
   }

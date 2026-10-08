@@ -50,6 +50,7 @@ export function recordToSurface(r: Integration): Omit<SurfaceView, "slug"> | nul
         basis: REG_BASIS,
         url: r.mcp?.remoteUrl,
         transports: r.mcp?.transport ? [r.mcp.transport] : undefined,
+        variables: r.mcp?.variables,
         auth: r.mcp?.isAuthless ? { status: "none", basis: REG_BASIS } : { status: "unknown" },
       };
     case "openapi":

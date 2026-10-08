@@ -1,3 +1,5 @@
+import type { Variable } from "./discovery-schema.ts";
+
 export type Kind = "mcp" | "openapi" | "graphql" | "cli";
 
 /** Display formats. Superset of Kind: curated providers can also expose CLIs. */
@@ -43,6 +45,9 @@ export interface Integration {
      *  accepting "Authorization: Bearer {pat}". */
     authHeader?: string;
     authNote?: string;
+    /** Tokens templated into `remoteUrl` (`{environment_address}`), for
+     *  self-hosted servers that have no one shared endpoint. */
+    variables?: Variable[];
     worksWith?: string[];
     install?: string;
   };

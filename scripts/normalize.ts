@@ -10,6 +10,7 @@ import { parseProviderIds } from "../src/lib/provider-id.ts";
 // (app.vercel.app, user.github.io) instead of collapsing onto the platform.
 const getDomain = (url: string) => tldGetDomain(url, { allowPrivateDomains: true });
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
+import type { Variable } from "../src/lib/discovery-schema.ts";
 import { faviconUrl, isJunkDomain } from "../src/lib/favicon.ts";
 import { isDenylisted } from "../src/lib/catalog-denylist.ts";
 import { isPublishableMcpUrl, verifiedMcpAuth } from "../src/lib/endpoint-verdicts.ts";
@@ -570,6 +571,9 @@ interface CuratedInterface {
   note?: string;
   /** RFC 6902 JSON Patch to apply to the spec before use. */
   specOverrides?: unknown[];
+  /** Tokens templated into `endpoint`, e.g. `{environment_address}` for a
+   *  self-hosted MCP server with no shared URL. */
+  variables?: Variable[];
 }
 
 interface CuratedRecord {
@@ -634,6 +638,7 @@ export function buildCurated(): Integration[] {
           ...(iface.auth ? { authTypes: [iface.auth] } : {}),
           ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
           ...(iface.note ? { authNote: iface.note } : {}),
+          ...(iface.variables && iface.variables.length > 0 ? { variables: iface.variables } : {}),
         };
       } else if (kind === "openapi") {
         rec.openapi = {

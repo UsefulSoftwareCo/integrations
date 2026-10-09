@@ -574,6 +574,9 @@ interface CuratedInterface {
   /** Tokens templated into `endpoint`, e.g. `{environment_address}` for a
    *  self-hosted MCP server with no shared URL. */
   variables?: Variable[];
+  /** Markdown guide to signing in, for an `auth: "oauth"` MCP interface whose
+   *  sign-in has a step a client cannot discover, like T3 Code's pairing code. */
+  setup?: string;
 }
 
 interface CuratedRecord {
@@ -639,6 +642,9 @@ export function buildCurated(): Integration[] {
           ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
           ...(iface.note ? { authNote: iface.note } : {}),
           ...(iface.variables && iface.variables.length > 0 ? { variables: iface.variables } : {}),
+          ...(iface.auth === "oauth" && iface.setup
+            ? { oauthCredential: { type: "oauth2" as const, label: `${entry.name ?? domain} sign-in`, setup: iface.setup } }
+            : {}),
         };
       } else if (kind === "openapi") {
         rec.openapi = {

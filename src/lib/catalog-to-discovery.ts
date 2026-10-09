@@ -24,6 +24,20 @@ import { isJunkDomain } from "./favicon.ts";
 
 const REG_BASIS = { via: "detected" as const, signal: "registry" };
 
+/** Baseline credential id for a record's documented OAuth sign-in. */
+const oauthCredentialId = (r: Integration) => `${r.slug}-oauth`;
+
+/** A curated OAuth sign-in resolves from the MCP URL's RFC 9728 metadata;
+ *  without one the registry knows only whether the server is public. */
+function mcpAuth(r: Integration): SurfaceView["auth"] {
+  if (r.mcp?.isAuthless) return { status: "none", basis: REG_BASIS };
+  if (!r.mcp?.oauthCredential) return { status: "unknown" };
+  return {
+    status: "required",
+    entries: [{ use: [{ id: oauthCredentialId(r), mechanics: { source: "well-known" } }], basis: REG_BASIS }],
+  };
+}
+
 export function isDiscoveredShim(r: { feeds?: readonly string[] }): boolean {
   return r.feeds?.includes("discovered") ?? false;
 }
@@ -51,7 +65,7 @@ export function recordToSurface(r: Integration): Omit<SurfaceView, "slug"> | nul
         url: r.mcp?.remoteUrl,
         transports: r.mcp?.transport ? [r.mcp.transport] : undefined,
         variables: r.mcp?.variables,
-        auth: r.mcp?.isAuthless ? { status: "none", basis: REG_BASIS } : { status: "unknown" },
+        auth: mcpAuth(r),
       };
     case "openapi":
       return { name: r.name, type: "http", docs: r.openapi?.docsUrl ?? r.url, basis: REG_BASIS, spec: r.openapi?.specUrl, url: r.url, auth: { status: "unknown" } };
@@ -99,7 +113,10 @@ export function catalogDiscovery(domain: string, records: Integration[]) {
   }
   // The probe verdicts decide what the baseline may publish too: a registry
   // record pointing at a dead MCP endpoint is not a surface.
-  return { version: DISCOVERY_VERSION, domain, summary: "", credentials: {}, surfaces: applyEndpointVerdicts(surfaces) };
+  const credentials = Object.fromEntries(
+    records.flatMap((r) => (r.mcp?.oauthCredential ? [[oauthCredentialId(r), r.mcp.oauthCredential] as const] : [])),
+  );
+  return { version: DISCOVERY_VERSION, domain, summary: "", credentials, surfaces: applyEndpointVerdicts(surfaces) };
 }
 
 /** Records grouped the same way the baseline `/disc/{domain}.json` files are

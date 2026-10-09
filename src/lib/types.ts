@@ -1,4 +1,4 @@
-import type { Variable } from "./discovery-schema.ts";
+import type { Credential, Variable } from "./discovery-schema.ts";
 
 export type Kind = "mcp" | "openapi" | "graphql" | "cli";
 
@@ -48,6 +48,10 @@ export interface Integration {
     /** Tokens templated into `remoteUrl` (`{environment_address}`), for
      *  self-hosted servers that have no one shared endpoint. */
     variables?: Variable[];
+    /** The OAuth sign-in a curated record documents, with its setup guide.
+     *  Present only when the record carries one, so the page can show how to
+     *  sign in instead of "not yet determined". */
+    oauthCredential?: Credential;
     worksWith?: string[];
     install?: string;
   };

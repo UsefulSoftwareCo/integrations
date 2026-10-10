@@ -1,3 +1,5 @@
+import type { Credential, Variable } from "./discovery-schema.ts";
+
 export type Kind = "mcp" | "openapi" | "graphql" | "cli";
 
 /** Display formats. Superset of Kind: curated providers can also expose CLIs. */
@@ -43,6 +45,13 @@ export interface Integration {
      *  accepting "Authorization: Bearer {pat}". */
     authHeader?: string;
     authNote?: string;
+    /** Tokens templated into `remoteUrl` (`{environment_address}`), for
+     *  self-hosted servers that have no one shared endpoint. */
+    variables?: Variable[];
+    /** The OAuth sign-in a curated record documents, with its setup guide.
+     *  Present only when the record carries one, so the page can show how to
+     *  sign in instead of "not yet determined". */
+    oauthCredential?: Credential;
     worksWith?: string[];
     install?: string;
   };
@@ -88,6 +97,9 @@ export interface Integration {
   cli?: {
     /** Install / run command, e.g. "brew install gh && gh auth login". */
     install: string;
+    /** The command a user types, when the record slug is not it: a curated
+     *  CLI's slug is `<domain>-cli`, but GitHub's command is `gh`. */
+    command?: string;
     /** The registrable domain this CLI is grouped under. */
     domain: string;
     docs?: string;

@@ -1,0 +1,382 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Salesforce Data 360 Ingestion API",
+    "version": "1.0.0",
+    "description": "Hand-written, source-mapped OpenAPI surface for Data 360 instance-host Ingestion API endpoints. The host is the instance_url returned by /services/a360/token, typically https://<tenant>.c360a.salesforce.com. This spec intentionally covers the core streaming and bulk ingestion lifecycle only; it is safe registration scaffolding, not a claim of full vendor coverage.",
+    "x-sourceDocs": [
+      "https://developer.salesforce.com/docs/data/data-cloud-int/guide/c360-a-ingestion-api.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-int/references/data-cloud-ingestionapi-ref/c360-a-api-insert-records.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-int/references/data-cloud-ingestionapi-ref/c360-a-api-delete-records.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-int/references/data-cloud-ingestionapi-ref/c360-a-api-create-a-job.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-int/references/data-cloud-ingestionapi-ref/c360-a-api-get-all-jobs.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-int/references/data-cloud-ingestionapi-ref/c360-a-api-get-job-info.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-int/references/data-cloud-ingestionapi-ref/c360-a-api-upload-job-data.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-int/references/data-cloud-ingestionapi-ref/c360-a-api-close-or-abort-a-job.html",
+      "https://developer.salesforce.com/docs/data/data-cloud-int/references/data-cloud-ingestionapi-ref/c360-a-api-delete-a-job.html"
+    ]
+  },
+  "servers": [
+    {
+      "url": "https://REPLACE-WITH-D360-INSTANCE-HOST.c360a.salesforce.com",
+      "description": "Data 360 instance host returned as instance_url from the a360 token exchange"
+    }
+  ],
+  "paths": {
+    "/api/v1/ingest/sources/{name}/{object-name}": {
+      "post": {
+        "operationId": "upsertRecords",
+        "summary": "Upsert streaming records",
+        "description": "Load new objects and update existing objects into a Data 360 data lake table using the streaming Ingestion API. Salesforce returns 202 Accepted and processes the data asynchronously.",
+        "tags": ["Streaming Ingestion"],
+        "parameters": [
+          { "$ref": "#/components/parameters/IngestionConnectorName" },
+          { "$ref": "#/components/parameters/IngestionObjectName" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "$ref": "#/components/responses/AcceptedAsync" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteRecords",
+        "summary": "Delete streaming records",
+        "description": "Delete up to 200 records from a data lake table using primary key IDs. For larger deletes, use the bulk ingestion job flow.",
+        "tags": ["Streaming Ingestion"],
+        "parameters": [
+          { "$ref": "#/components/parameters/IngestionConnectorName" },
+          { "$ref": "#/components/parameters/IngestionObjectName" },
+          {
+            "name": "ids",
+            "in": "query",
+            "required": false,
+            "description": "Comma-delimited primary key IDs. IDs can also be supplied in the JSON request body.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "$ref": "#/components/responses/AcceptedAsync" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/ingest/jobs": {
+      "get": {
+        "operationId": "listJobs",
+        "summary": "Get all ingestion jobs",
+        "description": "Retrieves ingestion jobs, optionally filtered by state.",
+        "tags": ["Bulk Ingestion"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of records to return. Defaults to 20; maximum 100.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Number of rows to skip before returning results.",
+            "schema": { "type": "integer", "minimum": 0 }
+          },
+          {
+            "name": "orderBy",
+            "in": "query",
+            "required": false,
+            "description": "Field used to order job results. Salesforce defaults to systemModstamp.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "states",
+            "in": "query",
+            "required": false,
+            "description": "Comma-delimited job states.",
+            "schema": {
+              "type": "string",
+              "example": "Open,UploadComplete,Failed,Aborted,JobComplete"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobList" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "operationId": "createJob",
+        "summary": "Create a bulk ingestion job",
+        "description": "Creates a bulk ingestion job for upserting or deleting data. The job starts in Open state and can accept CSV uploads.",
+        "tags": ["Bulk Ingestion"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateJobRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created job",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Job" }
+              }
+            }
+          },
+          "201": {
+            "description": "Created job",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Job" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/ingest/jobs/{id}": {
+      "get": {
+        "operationId": "getJobInfo",
+        "summary": "Get ingestion job info",
+        "description": "Retrieves detailed information about a specified bulk ingestion job.",
+        "tags": ["Bulk Ingestion"],
+        "parameters": [{ "$ref": "#/components/parameters/JobId" }],
+        "responses": {
+          "200": {
+            "description": "Job information",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Job" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "operationId": "closeOrAbortJob",
+        "summary": "Close or abort an ingestion job",
+        "description": "Update a job state to UploadComplete to close it, or Aborted to abort it. Closing a job enqueues uploaded data for processing.",
+        "tags": ["Bulk Ingestion"],
+        "parameters": [{ "$ref": "#/components/parameters/JobId" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["state"],
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": ["UploadComplete", "Aborted"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated job",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Job" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteJob",
+        "summary": "Delete an ingestion job",
+        "description": "Deletes job metadata and stored job data for jobs in terminal or upload-complete states.",
+        "tags": ["Bulk Ingestion"],
+        "parameters": [{ "$ref": "#/components/parameters/JobId" }],
+        "responses": {
+          "204": { "description": "Job deleted" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/ingest/jobs/{id}/batches": {
+      "put": {
+        "operationId": "uploadJobData",
+        "summary": "Upload CSV data for an ingestion job",
+        "description": "Uploads CSV data to a bulk ingestion job. A job can include up to 100 uploaded data files; close the job after uploads are complete.",
+        "tags": ["Bulk Ingestion"],
+        "parameters": [{ "$ref": "#/components/parameters/JobId" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "$ref": "#/components/responses/AcceptedAsync" },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "IngestionConnectorName": {
+        "name": "name",
+        "in": "path",
+        "required": true,
+        "description": "Name of the Ingestion API data connector.",
+        "schema": { "type": "string" }
+      },
+      "IngestionObjectName": {
+        "name": "object-name",
+        "in": "path",
+        "required": true,
+        "description": "Object name configured in the Ingestion API connector.",
+        "schema": { "type": "string" }
+      },
+      "JobId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Bulk ingestion job ID.",
+        "schema": { "type": "string" }
+      }
+    },
+    "schemas": {
+      "CreateJobRequest": {
+        "type": "object",
+        "required": ["object", "operation", "sourceName"],
+        "properties": {
+          "object": {
+            "type": "string",
+            "description": "Object type for the data being processed."
+          },
+          "operation": {
+            "type": "string",
+            "enum": ["upsert", "delete"],
+            "description": "Processing operation for the job."
+          },
+          "sourceName": {
+            "type": "string",
+            "description": "Name of the Ingestion API connector."
+          }
+        },
+        "additionalProperties": true
+      },
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "state": {
+            "type": "string",
+            "enum": ["Open", "UploadComplete", "InProgress", "JobComplete", "Failed", "Aborted"]
+          },
+          "object": { "type": "string" },
+          "operation": { "type": "string" },
+          "sourceName": { "type": "string" },
+          "createdDate": { "type": "string" },
+          "systemModstamp": { "type": "string" }
+        },
+        "additionalProperties": true
+      },
+      "JobList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Job" }
+          },
+          "done": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "errorCode": { "type": "string" },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "responses": {
+      "AcceptedAsync": {
+        "description": "Accepted for asynchronous processing"
+      },
+      "Error": {
+        "description": "Salesforce error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}

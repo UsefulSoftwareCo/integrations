@@ -191,13 +191,13 @@ describe("discover MCP onboarding overrides", () => {
 });
 
 describe("mergeDeclared", () => {
-  const declaredSource = "https://clerk.example/.well-known/integrations.json";
+  const declaredSource = "https://acme.example/.well-known/integrations.json";
   const declaredBasis = { via: "declared", source: declaredSource } as const;
 
   function resultWith(surfaces: object[]): Parameters<typeof mergeDeclared>[0] {
     return {
       version: 3,
-      domain: "clerk.example",
+      domain: "acme.example",
       summary: "",
       credentials: {},
       surfaces,
@@ -220,7 +220,7 @@ describe("mergeDeclared", () => {
         type: "http",
         slug: "backend-api",
         name: "Backend API",
-        url: "https://api.clerk.example/v1",
+        url: "https://api.acme.example/v1",
         basis: { via: "discovered", evidence: [] },
         auth: { status: "unknown" },
       },
@@ -232,8 +232,8 @@ describe("mergeDeclared", () => {
           type: "http",
           slug: "backend-api",
           name: "Backend API",
-          url: "https://api.clerk.example/v1",
-          spec: "https://clerk.example/spec/bapi/latest.yml",
+          url: "https://api.acme.example/v1",
+          spec: "https://acme.example/specs/backend.yml",
           basis: declaredBasis,
           auth: { status: "unknown" },
         },
@@ -242,7 +242,7 @@ describe("mergeDeclared", () => {
 
     expect(r.surfaces).toHaveLength(1);
     expect(r.surfaces[0].slug).toBe("backend-api");
-    expect(r.surfaces[0].spec).toBe("https://clerk.example/spec/bapi/latest.yml");
+    expect(r.surfaces[0].spec).toBe("https://acme.example/specs/backend.yml");
     expect(r.surfaces[0].basis.via).toBe("declared");
   });
 
@@ -265,7 +265,7 @@ describe("mergeDeclared", () => {
           slug: "frontend-api",
           name: "Frontend API",
           url: "https://{frontend_api}",
-          spec: "https://clerk.example/spec/fapi/latest.yml",
+          spec: "https://acme.example/specs/frontend.yml",
           basis: declaredBasis,
           auth: { status: "unknown" },
         },
@@ -273,7 +273,7 @@ describe("mergeDeclared", () => {
     );
 
     expect(r.surfaces).toHaveLength(1);
-    expect(r.surfaces[0].spec).toBe("https://clerk.example/spec/fapi/latest.yml");
+    expect(r.surfaces[0].spec).toBe("https://acme.example/specs/frontend.yml");
   });
 
   test("still appends genuinely new declared surfaces", () => {
@@ -282,7 +282,7 @@ describe("mergeDeclared", () => {
         type: "http",
         slug: "backend-api",
         name: "Backend API",
-        url: "https://api.clerk.example/v1",
+        url: "https://api.acme.example/v1",
         basis: { via: "discovered", evidence: [] },
         auth: { status: "unknown" },
       },
@@ -294,7 +294,7 @@ describe("mergeDeclared", () => {
           type: "http",
           slug: "platform-api",
           name: "Platform API",
-          url: "https://api.clerk.example/v1#platform",
+          url: "https://api.acme.example/v1#platform",
           basis: declaredBasis,
           auth: { status: "unknown" },
         },
@@ -311,7 +311,7 @@ describe("mergeDeclared", () => {
         type: "http",
         slug: "backend-api",
         name: "Backend API",
-        url: "https://api.clerk.example/v1",
+        url: "https://api.acme.example/v1",
         basis: { via: "discovered", evidence: [] },
         auth: { status: "unknown" },
       },
@@ -323,8 +323,8 @@ describe("mergeDeclared", () => {
           type: "http",
           slug: "backend-api",
           name: "Backend API",
-          url: "https://api.clerk.example/v1",
-          spec: "https://clerk.example/spec/bapi/latest.yml",
+          url: "https://api.acme.example/v1",
+          spec: "https://acme.example/specs/backend.yml",
           basis: declaredBasis,
           auth: { status: "unknown" },
         },
@@ -332,8 +332,8 @@ describe("mergeDeclared", () => {
           type: "http",
           slug: "platform-api",
           name: "Platform API",
-          url: "https://api.clerk.example/v1",
-          spec: "https://clerk.example/spec/platform/latest.yml",
+          url: "https://api.acme.example/v1",
+          spec: "https://acme.example/specs/platform.yml",
           basis: declaredBasis,
           auth: { status: "unknown" },
         },
@@ -341,36 +341,36 @@ describe("mergeDeclared", () => {
     );
 
     expect(r.surfaces.map((s) => s.slug)).toEqual(["backend-api", "platform-api"]);
-    expect(r.surfaces[0].spec).toBe("https://clerk.example/spec/bapi/latest.yml");
-    expect(r.surfaces[1].spec).toBe("https://clerk.example/spec/platform/latest.yml");
+    expect(r.surfaces[0].spec).toBe("https://acme.example/specs/backend.yml");
+    expect(r.surfaces[1].spec).toBe("https://acme.example/specs/platform.yml");
   });
 });
 
 describe("MCP OAuth binding with multiple OAuth credentials", () => {
-  const mcpUrl = "https://mcp.clerk.example/mcp";
+  const mcpUrl = "https://mcp.acme.example/mcp";
   const cliSession = {
     id: "cli_session",
     type: "oauth2",
-    label: "Clerk CLI session",
-    setup: "Run `clerk auth login` to authenticate the CLI through your browser.",
+    label: "Acme CLI session",
+    setup: "Run `acme auth login` to authenticate the CLI through your browser.",
   };
   const mcpSession = {
     id: "mcp_session",
     type: "oauth2",
-    label: "Clerk MCP OAuth",
+    label: "Acme MCP OAuth",
     setup: "Approve access in the browser.",
   };
-  const discovered = { via: "discovered", evidence: ["https://docs.clerk.example/cli"] };
+  const discovered = { via: "discovered", evidence: ["https://docs.acme.example/cli"] };
 
-  function clerkDetection(declaredSurfaces?: object[]): DetectionResult {
+  function serviceDetection(declaredSurfaces?: object[]): DetectionResult {
     return {
-      domain: "clerk.example",
+      domain: "acme.example",
       found: ["mcp"],
       probed: [],
-      mcp: [{ url: mcpUrl, source: "probe", auth: "oauth2", authorizationServer: "https://auth.clerk.example", dcr: true, cimd: true }],
+      mcp: [{ url: mcpUrl, source: "probe", auth: "oauth2", authorizationServer: "https://auth.acme.example", dcr: true, cimd: true }],
       ...(declaredSurfaces && {
         integrationsJson: {
-          url: "https://clerk.example/.well-known/integrations.json",
+          url: "https://acme.example/.well-known/integrations.json",
           result: { version: 3, credentials: {}, surfaces: declaredSurfaces },
         },
       }),
@@ -378,7 +378,7 @@ describe("MCP OAuth binding with multiple OAuth credentials", () => {
     } as DetectionResult;
   }
 
-  async function discoverClerk(detect: DetectionResult, bindCliInModel: boolean) {
+  async function discoverService(detect: DetectionResult, bindCliInModel: boolean) {
     const chat: ChatFn = async () => ({
       message: { role: "assistant", content: null },
       toolCalls: [
@@ -388,12 +388,12 @@ describe("MCP OAuth binding with multiple OAuth credentials", () => {
           id: "surface-cli",
           name: "record_surface",
           arguments: {
-            name: "Clerk CLI",
+            name: "Acme CLI",
             type: "cli",
-            command: "clerk",
+            command: "acme",
             authStatus: bindCliInModel ? "required" : "unknown",
             ...(bindCliInModel && {
-              auth: [{ use: [{ id: "cli_session", mechanics: { source: "cli", command: "clerk auth login" } }], basis: discovered }],
+              auth: [{ use: [{ id: "cli_session", mechanics: { source: "cli", command: "acme auth login" } }], basis: discovered }],
             }),
             basis: discovered,
           },
@@ -401,9 +401,9 @@ describe("MCP OAuth binding with multiple OAuth credentials", () => {
         {
           id: "surface-mcp",
           name: "record_surface",
-          arguments: { name: "Clerk MCP server", type: "mcp", url: mcpUrl, authStatus: "unknown", basis: discovered },
+          arguments: { name: "Acme MCP server", type: "mcp", url: mcpUrl, authStatus: "unknown", basis: discovered },
         },
-        { id: "finish-1", name: "finish", arguments: { summary: "Clerk.", description: "Auth." } },
+        { id: "finish-1", name: "finish", arguments: { summary: "Acme.", description: "Auth." } },
       ],
     });
     const result = await discover(detect.domain, detect, chat, web);
@@ -417,7 +417,7 @@ describe("MCP OAuth binding with multiple OAuth credentials", () => {
   }
 
   test("binds the MCP surface to mcp_session and leaves the CLI's credential untouched", async () => {
-    const result = await discoverClerk(clerkDetection(), true);
+    const result = await discoverService(serviceDetection(), true);
 
     expect(result.credentials.cli_session.label).toBe(cliSession.label);
     expect(result.credentials.cli_session.setup).toBe(cliSession.setup);
@@ -426,20 +426,20 @@ describe("MCP OAuth binding with multiple OAuth credentials", () => {
   });
 
   test("treats credentials bound only by the owner declaration as in use", async () => {
-    const result = await discoverClerk(
-      clerkDetection([
+    const result = await discoverService(
+      serviceDetection([
         {
           type: "cli",
-          slug: "clerk-cli",
-          name: "Clerk CLI",
-          command: "clerk",
-          basis: { via: "declared", source: "https://clerk.example/.well-known/integrations.json" },
+          slug: "acme-cli",
+          name: "Acme CLI",
+          command: "acme",
+          basis: { via: "declared", source: "https://acme.example/.well-known/integrations.json" },
           auth: {
             status: "required",
             entries: [
               {
-                use: [{ id: "cli_session", mechanics: { source: "cli", command: "clerk auth login" } }],
-                basis: { via: "declared", source: "https://clerk.example/.well-known/integrations.json" },
+                use: [{ id: "cli_session", mechanics: { source: "cli", command: "acme auth login" } }],
+                basis: { via: "declared", source: "https://acme.example/.well-known/integrations.json" },
               },
             ],
           },

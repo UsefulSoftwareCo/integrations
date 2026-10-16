@@ -453,3 +453,47 @@ describe("MCP OAuth binding with multiple OAuth credentials", () => {
     expect(mcpAuthIds(result)).toEqual(["mcp_session"]);
   });
 });
+
+describe("MCP OAuth binding with a credential shared across surfaces", () => {
+  test("mints a separate MCP credential instead of rewriting a shared one", async () => {
+    const mcpUrl = "https://mcp.acme.example/mcp";
+    const shared = { id: "shared", type: "oauth2", label: "Acme account sign-in", setup: "Sign in with your Acme account." };
+    const discovered = { via: "discovered", evidence: ["https://docs.acme.example"] };
+    const sharedAuth = [{ use: [{ id: "shared", mechanics: { source: "well-known" } }], basis: discovered }];
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        { id: "cred-shared", name: "record_credential", arguments: shared },
+        {
+          id: "surface-cli",
+          name: "record_surface",
+          arguments: { name: "Acme CLI", type: "cli", command: "acme", authStatus: "required", auth: sharedAuth, basis: discovered },
+        },
+        {
+          id: "surface-mcp",
+          name: "record_surface",
+          arguments: { name: "Acme MCP server", type: "mcp", url: mcpUrl, authStatus: "required", auth: sharedAuth, basis: discovered },
+        },
+        { id: "finish-1", name: "finish", arguments: { summary: "Acme.", description: "Auth." } },
+      ],
+    });
+    const detect = {
+      domain: "acme.example",
+      found: ["mcp"],
+      probed: [],
+      mcp: [{ url: mcpUrl, source: "probe", auth: "oauth2", authorizationServer: "https://auth.acme.example", dcr: true, cimd: true }],
+      errors: [],
+    } as DetectionResult;
+
+    const result = await discover(detect.domain, detect, chat, web);
+    if (!result) throw new Error("discover returned null");
+
+    expect(result.credentials.shared.label).toBe(shared.label);
+    expect(result.credentials.shared.setup).toBe(shared.setup);
+    const mcp = result.surfaces.find((s) => s.type === "mcp" && s.url === mcpUrl);
+    const mcpIds = mcp?.auth.status === "required" ? mcp.auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
+    expect(mcpIds).toHaveLength(1);
+    expect(mcpIds[0]).not.toBe("shared");
+    expect(result.credentials[mcpIds[0]].setup).toContain("self-onboarding");
+  });
+});

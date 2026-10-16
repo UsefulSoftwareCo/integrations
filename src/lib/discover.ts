@@ -876,12 +876,12 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
 
   // Ensure a detected OAuth credential exists (referenced by detected MCP auth).
   // The bind helpers rewrite the credential they get, so this must never hand
-  // back one another surface uses: prefer an OAuth credential `surface` already
+  // back one another surface uses: prefer an OAuth credential only `surface`
   // references, then an unreferenced one, else mint a fresh id.
   const ensureOauthCred = (surface?: Surface): string => {
-    const own = surface && authIds(surface).find((id) => r.credentials[id] && isOauthCred(r.credentials[id]));
-    if (own) return own;
     const used = idsUsedElsewhere(surface);
+    const own = surface && authIds(surface).find((id) => !used.has(id) && r.credentials[id] && isOauthCred(r.credentials[id]));
+    if (own) return own;
     const free = Object.entries(r.credentials).find(([id, c]) => !used.has(id) && isOauthCred(c));
     if (free) return free[0];
     let id = "oauth";

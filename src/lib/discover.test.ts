@@ -345,3 +345,111 @@ describe("mergeDeclared", () => {
     expect(r.surfaces[1].spec).toBe("https://clerk.example/spec/platform/latest.yml");
   });
 });
+
+describe("MCP OAuth binding with multiple OAuth credentials", () => {
+  const mcpUrl = "https://mcp.clerk.example/mcp";
+  const cliSession = {
+    id: "cli_session",
+    type: "oauth2",
+    label: "Clerk CLI session",
+    setup: "Run `clerk auth login` to authenticate the CLI through your browser.",
+  };
+  const mcpSession = {
+    id: "mcp_session",
+    type: "oauth2",
+    label: "Clerk MCP OAuth",
+    setup: "Approve access in the browser.",
+  };
+  const discovered = { via: "discovered", evidence: ["https://docs.clerk.example/cli"] };
+
+  function clerkDetection(declaredSurfaces?: object[]): DetectionResult {
+    return {
+      domain: "clerk.example",
+      found: ["mcp"],
+      probed: [],
+      mcp: [{ url: mcpUrl, source: "probe", auth: "oauth2", authorizationServer: "https://auth.clerk.example", dcr: true, cimd: true }],
+      ...(declaredSurfaces && {
+        integrationsJson: {
+          url: "https://clerk.example/.well-known/integrations.json",
+          result: { version: 3, credentials: {}, surfaces: declaredSurfaces },
+        },
+      }),
+      errors: [],
+    } as DetectionResult;
+  }
+
+  async function discoverClerk(detect: DetectionResult, bindCliInModel: boolean) {
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        { id: "cred-cli", name: "record_credential", arguments: cliSession },
+        { id: "cred-mcp", name: "record_credential", arguments: mcpSession },
+        {
+          id: "surface-cli",
+          name: "record_surface",
+          arguments: {
+            name: "Clerk CLI",
+            type: "cli",
+            command: "clerk",
+            authStatus: bindCliInModel ? "required" : "unknown",
+            ...(bindCliInModel && {
+              auth: [{ use: [{ id: "cli_session", mechanics: { source: "cli", command: "clerk auth login" } }], basis: discovered }],
+            }),
+            basis: discovered,
+          },
+        },
+        {
+          id: "surface-mcp",
+          name: "record_surface",
+          arguments: { name: "Clerk MCP server", type: "mcp", url: mcpUrl, authStatus: "unknown", basis: discovered },
+        },
+        { id: "finish-1", name: "finish", arguments: { summary: "Clerk.", description: "Auth." } },
+      ],
+    });
+    const result = await discover(detect.domain, detect, chat, web);
+    if (!result) throw new Error("discover returned null");
+    return result;
+  }
+
+  function mcpAuthIds(result: NonNullable<Awaited<ReturnType<typeof discover>>>): string[] {
+    const mcp = result.surfaces.find((s) => s.type === "mcp" && s.url === mcpUrl);
+    return mcp?.auth.status === "required" ? mcp.auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
+  }
+
+  test("binds the MCP surface to mcp_session and leaves the CLI's credential untouched", async () => {
+    const result = await discoverClerk(clerkDetection(), true);
+
+    expect(result.credentials.cli_session.label).toBe(cliSession.label);
+    expect(result.credentials.cli_session.setup).toBe(cliSession.setup);
+    expect(mcpAuthIds(result)).toEqual(["mcp_session"]);
+    expect(result.credentials.mcp_session.setup).toContain("self-onboarding");
+  });
+
+  test("treats credentials bound only by the owner declaration as in use", async () => {
+    const result = await discoverClerk(
+      clerkDetection([
+        {
+          type: "cli",
+          slug: "clerk-cli",
+          name: "Clerk CLI",
+          command: "clerk",
+          basis: { via: "declared", source: "https://clerk.example/.well-known/integrations.json" },
+          auth: {
+            status: "required",
+            entries: [
+              {
+                use: [{ id: "cli_session", mechanics: { source: "cli", command: "clerk auth login" } }],
+                basis: { via: "declared", source: "https://clerk.example/.well-known/integrations.json" },
+              },
+            ],
+          },
+        },
+      ]),
+      false,
+    );
+
+    expect(result.credentials.cli_session.label).toBe(cliSession.label);
+    expect(result.credentials.cli_session.setup).toBe(cliSession.setup);
+    expect(mcpAuthIds(result)).toEqual(["mcp_session"]);
+  });
+});

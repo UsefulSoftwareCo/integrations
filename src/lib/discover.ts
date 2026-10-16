@@ -859,11 +859,34 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   const oauth = detect.auth?.oauth;
   const hasDetOauth = oauth && (oauth.authorizationEndpoint || oauth.tokenEndpoint || oauth.registrationEndpoint || oauth.scopes?.length);
 
+  const isOauthCred = (c: Credential): boolean => /oauth/i.test(c.type) || /oauth/i.test(c.label);
+  const authIds = (s: Pick<Surface, "auth">): string[] =>
+    s.auth?.status === "required" ? s.auth.entries.flatMap((entry) => entry.use.map((use) => use.id)) : [];
+
+  // Credentials bound to any surface other than `surface` — in this result or in
+  // the owner declaration (merged later, so not in r.surfaces yet).
+  const idsUsedElsewhere = (surface?: Surface): Set<string> => {
+    const ids = new Set<string>();
+    for (const s of r.surfaces) if (s !== surface) for (const id of authIds(s)) ids.add(id);
+    for (const s of detect.integrationsJson?.result?.surfaces ?? []) {
+      const isThisSurface = surface && s.type === surface.type && "url" in s && s.url === surface.url;
+      if (!isThisSurface) for (const id of authIds(s as Surface)) ids.add(id);
+    }
+    return ids;
+  };
+
   // Ensure a detected OAuth credential exists (referenced by detected MCP auth).
-  const ensureOauthCred = (): string => {
-    const existing = Object.entries(r.credentials).find(([, c]) => /oauth/i.test(c.type) || /oauth/i.test(c.label));
-    if (existing) return existing[0];
-    const id = "oauth";
+  // The bind helpers rewrite the credential they get, so this must never hand
+  // back one another surface uses: prefer an OAuth credential `surface` already
+  // references, then an unreferenced one, else mint a fresh id.
+  const ensureOauthCred = (surface?: Surface): string => {
+    const own = surface && authIds(surface).find((id) => r.credentials[id] && isOauthCred(r.credentials[id]));
+    if (own) return own;
+    const used = idsUsedElsewhere(surface);
+    const free = Object.entries(r.credentials).find(([id, c]) => !used.has(id) && isOauthCred(c));
+    if (free) return free[0];
+    let id = "oauth";
+    for (let n = 2; r.credentials[id]; n++) id = `oauth-${n}`;
     const c: Credential = {
       type: "oauth2",
       label: "OAuth 2.0",
@@ -885,7 +908,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   // developer portal, copy client_id/client_secret" story the model wrote from
   // docs — and bind the surface to it as a detected signal.
   const bindMcpSelfOnboard = (surface: Surface, mcp: McpDetection): void => {
-    const id = ensureOauthCred();
+    const id = ensureOauthCred(surface);
     const c = r.credentials[id];
     c.type = "oauth2";
     c.label = "OAuth 2.0";
@@ -916,7 +939,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   const isMcpManualOnboard = (mcp: McpDetection): boolean => mcp.authorizationServerMetadataFetched === true && !mcp.dcr && !mcp.cimd;
 
   const bindMcpManualOnboard = (surface: Surface, mcp: McpDetection): void => {
-    const id = ensureOauthCred();
+    const id = ensureOauthCred(surface);
     const c = r.credentials[id];
     const hostKnowledge = mcpHostKnowledge(mcp.url);
     c.type = "oauth2";
@@ -943,7 +966,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     }
     const auth: AuthStatus =
       hasDetOauth || mcp.auth
-        ? { status: "required", entries: [{ use: [{ id: ensureOauthCred(), mechanics: { source: "well-known" } }], basis: { via: "detected", signal: "oauth-protected-resource", verifiedAt } }] }
+        ? { status: "required", entries: [{ use: [{ id: ensureOauthCred({ type: "mcp", url: mcp.url } as Surface), mechanics: { source: "well-known" } }], basis: { via: "detected", signal: "oauth-protected-resource", verifiedAt } }] }
         : { status: "unknown" };
     const s: Surface = { slug: assignSlug("MCP server", r.surfaces), name: "MCP server", type: "mcp", url: mcp.url, basis: { via: "detected", signal: "mcp:initialize", verifiedAt }, auth, notes: mcp.dcr || mcp.cimd ? "Self-onboarding (DCR/CIMD)" : undefined };
     r.surfaces.unshift(s);

@@ -123,6 +123,30 @@ describe("discoveryDoc", () => {
     expect(doc?.surfaces).toHaveLength(1);
     expect(doc?.surfaces?.[0]).toMatchObject({ slug: "kept", spec: "https://stored.example/spec.json" });
   });
+
+  test("a self-hosted MCP surface with a declared URL variable survives baseline backfill", async () => {
+    const variables = [{ name: "environment_address" }];
+    const doc = await discoveryDoc(
+      envWith({
+        kv: {
+          "selfhosted.test": JSON.stringify(
+            storedDoc("selfhosted.test", [{ type: "mcp", slug: "mcp", name: "MCP", auth: { status: "unknown" } }]),
+          ),
+        },
+        baseline: {
+          version: 3,
+          domain: "selfhosted.test",
+          surfaces: [{ type: "mcp", url: "https://{environment_address}/mcp", variables, slug: "mcp" }],
+        },
+      }),
+      origin,
+      "selfhosted.test",
+    );
+
+    expect(doc?.surfaces).toEqual([
+      expect.objectContaining({ slug: "mcp", url: "https://{environment_address}/mcp", variables }),
+    ]);
+  });
 });
 
 // The catalog's trust rules, exercised through the loader every render path

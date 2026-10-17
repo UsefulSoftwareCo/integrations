@@ -3,6 +3,7 @@ import type { DiscoverData } from "../src/lib/surface-sections.ts";
 import { isDenylisted } from "../src/lib/catalog-denylist.ts";
 import { aliasesOf, canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { applyEndpointVerdicts } from "../src/lib/endpoint-verdicts.ts";
+import type { Variable } from "../src/lib/discovery-schema.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 
 export async function discoveryKvGet(env: Env, domain: string): Promise<string | null> {
@@ -40,6 +41,7 @@ type SurfaceLike = {
   url?: string;
   spec?: string;
   slug?: string;
+  variables?: readonly Pick<Variable, "name">[];
 };
 
 /** The machine locator per surface type — what a consumer needs to actually
@@ -79,7 +81,11 @@ const backfillBaselineLocators = (
       const target = storedOfType[0]!;
       const source = candidates[0]!;
       if (!target.spec && source.spec) target.spec = source.spec;
-      if (!target.url && source.url) target.url = source.url;
+      if (!target.url && source.url) {
+        target.url = source.url;
+        // A templated URL is only publishable with the variables it declares.
+        if (!target.variables && source.variables) target.variables = source.variables;
+      }
       continue;
     }
     for (const candidate of candidates) {

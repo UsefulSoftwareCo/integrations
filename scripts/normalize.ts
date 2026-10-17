@@ -15,6 +15,13 @@ import { isDenylisted } from "../src/lib/catalog-denylist.ts";
 import { isPublishableMcpUrl, verifiedMcpAuth } from "../src/lib/endpoint-verdicts.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 import { readDomainCatalogTree, type Catalog } from "./batch/discovered-catalog.ts";
+import {
+  parseRegistryAuth,
+  resolveOpenapiAuth,
+  summarizeSpecAuth,
+  type RegistryAuth,
+} from "../src/lib/openapi-auth.ts";
+import { specAuthKey } from "../src/lib/openapi-auth-cache.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCES = join(ROOT, "sources");
@@ -778,6 +785,45 @@ function keepsNoneAuth(remoteUrl: string | undefined): boolean {
   return verifiedMcpAuth(remoteUrl, { status: "none", basis: { via: "discovered", evidence: [] } }).status === "none";
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// OpenAPI auth: curated record > the spec's own securitySchemes (summarized
+// offline into output/openapi-auth.json by extract-openapi-auth.ts) > the
+// registry's per-domain auth data (registry-auth.json). The rules live in
+// src/lib/openapi-auth.ts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function applyOpenapiAuth(
+  recs: Integration[],
+  specs: Readonly<Record<string, { spec?: unknown }>>,
+  registry: ReadonlyMap<string, RegistryAuth>,
+): Integration[] {
+  return recs.map((r) => {
+    if (r.kind !== "openapi" || !r.openapi) return r;
+    const domain = recordDomain(r);
+    const curated = r.feeds.includes("curated")
+      ? { auth: r.openapi.auth, authHeader: r.openapi.authHeader }
+      : undefined;
+    const specUrl = r.openapi.specUrl;
+    const slim = specUrl ? specs[specAuthKey(specUrl, r.openapi.specOverrides)]?.spec : undefined;
+    const spec = slim && specUrl ? summarizeSpecAuth(slim, specUrl) : undefined;
+    // Registry facts describe a service, so they only apply where there is a
+    // spec to bind them to.
+    const reg = specUrl && domain ? (registry.get(domain) ?? registry.get(canonicalDomain(domain))) : undefined;
+    const resolvedAuth = resolveOpenapiAuth({ curated, spec, registry: reg });
+    if (!resolvedAuth) return r;
+    return { ...r, openapi: { ...r.openapi, resolvedAuth } };
+  });
+}
+
+function loadOpenapiAuth(): { specs: Record<string, { spec?: unknown }>; registry: Map<string, RegistryAuth> } {
+  const cachePath = join(OUTPUT, "openapi-auth.json");
+  const specs = existsSync(cachePath)
+    ? readJson<{ specs: Record<string, { spec?: unknown }> }>(cachePath).specs
+    : {};
+  const registry = parseRegistryAuth(readJson(join(ROOT, "registry-auth.json")));
+  return { specs, registry };
+}
+
 function applyToolsCache(kind: Kind, recs: Integration[]): Integration[] {
   const dir = join(OUTPUT, "tools", kind);
   if (!existsSync(dir)) return recs;
@@ -1023,8 +1069,8 @@ function buildIndex(all: Integration[]) {
               ...(r.graphql.authHeader ? { header: r.graphql.authHeader } : {}),
               ...(r.graphql.authNote ? { note: r.graphql.authNote } : {}),
             }
-          : r.kind === "openapi" && r.openapi?.authHeader
-            ? { kind: r.openapi.auth ?? "api_key", header: r.openapi.authHeader }
+          : r.kind === "openapi"
+            ? r.openapi?.resolvedAuth
             : r.kind === "mcp" && r.mcp
               ? mcpSurfaceAuth(r.mcp)
               : undefined,
@@ -1066,7 +1112,7 @@ interface SearchIndexSurface {
   /** A hand-picked product mark from the curated record, when it beats the
    *  domain favicon (Google Calendar's own logo, not the generic G). */
   icon?: string;
-  auth?: { kind?: string; header?: string; note?: string };
+  auth?: { kind?: string; header?: string; query?: string; scheme?: string; oauth?: { authorizationUrl: string; tokenUrl: string }; note?: string; source?: string };
   /** RFC 6902 JSON Patch a client should apply to the spec before use. */
   specOverrides?: unknown[];
 }
@@ -1329,8 +1375,13 @@ function main() {
     [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli, ...discovered],
     parseProviderIds(readJson(join(ROOT, "provider-ids.json"))),
   );
+  const openapiAuth = loadOpenapiAuth();
   const mcp = withIds.filter((r) => r.kind === "mcp");
-  const openapi = withIds.filter((r) => r.kind === "openapi");
+  const openapi = applyOpenapiAuth(
+    withIds.filter((r) => r.kind === "openapi"),
+    openapiAuth.specs,
+    openapiAuth.registry,
+  );
   const graphql = withIds.filter((r) => r.kind === "graphql");
   const cli = withIds.filter((r) => r.kind === "cli");
 

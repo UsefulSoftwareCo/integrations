@@ -455,6 +455,10 @@ export function buildDiscoveredEntries(
   knownRawDomains: Set<string>,
   knownDomainKinds: Set<string>,
   knownDomains: Set<string>,
+  /** (domain, kind) slots a known record left without an endpoint. A
+   *  discovered surface may fill one even though its domain is known — but
+   *  only with a URL, since an endpoint is the one thing the slot is missing. */
+  openDomainKinds: ReadonlySet<string> = new Set(),
 ): { records: Integration[]; zeroSurfaceDomains: ZeroSurfaceDomain[] } {
   const recs: Integration[] = [];
   const zeroSurfaceDomains = new Map<string, ZeroSurfaceDomain>();
@@ -463,7 +467,10 @@ export function buildDiscoveredEntries(
     const domain = d.domain.trim().toLowerCase();
     if (!domain) continue;
     const canonical = canonicalDomain(domain);
-    if (knownRawDomains.has(domain)) continue;
+    const knownRaw = knownRawDomains.has(domain);
+    const fillsOpenSlot = (s: DiscoveredSurface) =>
+      Boolean(s.url) && openDomainKinds.has(domainKindKey(domain, discoveredKind(s.type)));
+    if (knownRaw && !(d.surfaces ?? []).some(fillsOpenSlot)) continue;
     if (DISCOVERED_ALIAS_DEDUPE.has(domain) && knownDomains.has(canonical)) continue;
     const surfaces = d.surfaces ?? [];
     const byKind = new Map<Kind, DiscoveredSurface>();
@@ -471,6 +478,12 @@ export function buildDiscoveredEntries(
       // A client SDK/library mis-typed as `cli` is not a CLI surface — skip it.
       if (isSdkNotCli(surface)) continue;
       const kind = discoveredKind(surface.type);
+      if (fillsOpenSlot(surface)) {
+        if (!byKind.has(kind)) byKind.set(kind, surface);
+        continue;
+      }
+      // A known domain contributes only the slots left open for it.
+      if (knownRaw) continue;
       if (canonical === domain && knownDomainKinds.has(domainKindKey(domain, kind))) continue;
       if (!byKind.has(kind)) byKind.set(kind, surface);
     }
@@ -592,27 +605,59 @@ const CURATED_KIND: Record<string, Kind> = {
   cli: "cli",
 };
 
+/** Whether a curated MCP interface names a hosted endpoint a client can
+ *  connect to, by the same rules the build publishes MCP endpoints with. */
+function hasHostedMcpEndpoint(iface: CuratedInterface): boolean {
+  return isHttpUrl(iface.endpoint) && isPublishableMcpUrl(iface.endpoint);
+}
+
+/** The interface that represents each kind. The first one listed, except
+ *  that a hosted MCP endpoint beats an endpoint-less (local stdio) entry
+ *  listed before it — the picker's MCP surface is the one a client connects
+ *  to, and the local program is the fallback, not the headline. */
+function primaryCuratedInterfaces(interfaces: CuratedInterface[]): Map<Kind, CuratedInterface> {
+  const primary = new Map<Kind, CuratedInterface>();
+  for (const iface of interfaces) {
+    const kind = CURATED_KIND[(iface.format ?? "").toLowerCase()];
+    if (!kind || iface.slug?.trim()) continue;
+    const current = primary.get(kind);
+    if (!current || (kind === "mcp" && !hasHostedMcpEndpoint(current) && hasHostedMcpEndpoint(iface))) {
+      primary.set(kind, iface);
+    }
+  }
+  return primary;
+}
+
 export function buildCurated(): Integration[] {
   if (!existsSync(CURATED)) return [];
+  const entries = readdirSync(CURATED)
+    .filter((file) => file.endsWith(".json"))
+    .map((file) => readJson<CuratedRecord>(join(CURATED, file)));
+  return buildCuratedEntries(entries);
+}
+
+export function buildCuratedEntries(entries: CuratedRecord[]): Integration[] {
   const recs: Integration[] = [];
-  for (const file of readdirSync(CURATED)) {
-    if (!file.endsWith(".json")) continue;
-    const entry = readJson<CuratedRecord>(join(CURATED, file));
+  for (const entry of entries) {
     const domain = (entry.domain ?? "").trim().toLowerCase();
     if (!domain) continue;
     const description = (entry.description ?? entry.tagline ?? "").replace(/\s+/g, " ").trim();
     const domainSlug = slugify(domain);
+    const primary = primaryCuratedInterfaces(entry.interfaces ?? []);
     const seen = new Set<Kind>();
-    for (const iface of entry.interfaces ?? []) {
-      const kind = CURATED_KIND[(iface.format ?? "").toLowerCase()];
+    for (const listed of entry.interfaces ?? []) {
+      const kind = CURATED_KIND[(listed.format ?? "").toLowerCase()];
       if (!kind) continue;
-      const productSlug = iface.slug?.trim().toLowerCase();
+      const productSlug = listed.slug?.trim().toLowerCase();
       // One record per kind: the picker offers a surface, not every endpoint.
       // Slugged interfaces are exempt — each is a product in its own right.
       if (!productSlug) {
         if (seen.has(kind)) continue;
         seen.add(kind);
       }
+      // The record keeps the position of the kind's first listing (which
+      // decides its slug) but takes its facts from the kind's primary interface.
+      const iface = productSlug ? listed : primary.get(kind)!;
       const productDescription = (iface.description ?? "").replace(/\s+/g, " ").trim();
       const productDomain = iface.domain?.trim().toLowerCase() || domain;
       const rec: Integration = {
@@ -665,14 +710,6 @@ export function buildCurated(): Integration[] {
     }
   }
   return dedupeSlugs(recs);
-}
-
-function buildDiscovered(
-  knownRawDomains: Set<string>,
-  knownDomainKinds: Set<string>,
-  knownDomains: Set<string>,
-): { records: Integration[]; zeroSurfaceDomains: ZeroSurfaceDomain[] } {
-  return buildDiscoveredEntries(readDomainCatalogTree(DOMAINS), knownRawDomains, knownDomainKinds, knownDomains);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -972,7 +1009,7 @@ function printDomainMismatchWarnings(all: Integration[]): void {
   if (warnings.length > 50) console.warn(`domain-mismatch warnings truncated: showing 50 of ${warnings.length}`);
 }
 
-function buildIndex(all: Integration[]) {
+export function buildIndex(all: Integration[]) {
   return all.map((r) => {
     const domain = recordDomain(r);
     const remapped = r.kind === "openapi" && DOMAIN_REMAP[(r.openapi?.provider ?? "").trim()];
@@ -1271,62 +1308,114 @@ export function applyProviderIds(recs: Integration[], ids: ReadonlyMap<string, s
   return out;
 }
 
+/** A curated MCP record with no endpoint describes a local program, not a
+ *  surface a client can connect to. It must not hold its (domain, mcp) slot
+ *  against a hosted endpoint from another source: that is how Resend's
+ *  https://mcp.resend.com/mcp, sitting in domains/resend.com, never reached
+ *  the catalog behind a curated entry that only had `npx -y resend-mcp`. */
+const leavesMcpSlotOpen = (r: Integration) =>
+  r.kind === "mcp" && !r.standalone && !r.mcp?.remoteUrl;
+
+export interface FeedRecords {
+  mcp: Integration[];
+  openapi: Integration[];
+  graphql: Integration[];
+  cli: Integration[];
+}
+
+/** Merge curated, feed and discovered records into the catalog's record list.
+ *  Feeds arrive already filtered to public, publishable records; curated
+ *  records come first so every other source dedupes against them. */
+export function assembleRecords(
+  curated: Integration[],
+  feeds: FeedRecords,
+  discoveredCatalog: Pick<Catalog, "domains">,
+): { records: Integration[]; discoveredCount: number; zeroSurfaceDomains: ZeroSurfaceDomain[]; warnings: string[] } {
+  const slotKey = (r: Integration) => domainKindKey(recordDomain(r), r.kind);
+  const curatedKinds = new Set(curated.filter((r) => !leavesMcpSlotOpen(r)).map(slotKey));
+  // A crawled or third-party row for a (domain, kind) a human has already
+  // verified is noise beside it, not extra coverage.
+  const notCurated = (r: Integration) => !curatedKinds.has(slotKey(r));
+
+  const base = [
+    ...curated.filter((r) => r.kind === "mcp"),
+    ...feeds.mcp.filter(notCurated),
+    ...curated.filter((r) => r.kind === "openapi"),
+    ...feeds.openapi.filter(notCurated),
+    ...curated.filter((r) => r.kind === "graphql"),
+    ...feeds.graphql.filter(notCurated),
+    ...curated.filter((r) => r.kind === "cli"),
+    ...feeds.cli.filter(notCurated),
+  ];
+
+  const knownRawDomains = new Set(base.map(rawRecordDomain).filter(Boolean));
+  const knownDomains = new Set(base.map(recordDomain).filter(Boolean));
+  const knownDomainKinds = new Set(
+    base.flatMap((r) => {
+      const domain = recordDomain(r);
+      return domain ? [domainKindKey(domain, r.kind)] : [];
+    }),
+  );
+  // Slots an endpoint-less curated record left open that no feed filled: a
+  // discovered hosted endpoint may still fill them.
+  const filled = new Set(base.filter((r) => r.kind === "mcp" && r.mcp?.remoteUrl).map(slotKey));
+  const openDomainKinds = new Set(
+    curated.filter(leavesMcpSlotOpen).map(slotKey).filter((key) => !filled.has(key)),
+  );
+  const discoveredBuild = buildDiscoveredEntries(
+    discoveredCatalog,
+    knownRawDomains,
+    knownDomainKinds,
+    knownDomains,
+    openDomainKinds,
+  );
+  const discovered = applyEndpointVerdicts(discoveredBuild.records.filter(isPublic));
+
+  // Every candidate has passed the same isPublic + endpoint-verdict rules as
+  // any other published record; an endpoint-less curated record yields to the
+  // first one with a URL, loudly, so the curated file gets fixed at the source.
+  const all = [...base, ...discovered];
+  const hosted = new Map<string, Integration>();
+  for (const r of all) {
+    if (r.kind === "mcp" && r.mcp?.remoteUrl && !hosted.has(slotKey(r))) hosted.set(slotKey(r), r);
+  }
+  const warnings: string[] = [];
+  const records = all.filter((r) => {
+    if (!r.feeds.includes("curated") || !leavesMcpSlotOpen(r)) return true;
+    const replacement = hosted.get(slotKey(r));
+    if (!replacement) return true;
+    warnings.push(
+      `curated-mcp-no-endpoint: ${r.id} has no endpoint; publishing ${replacement.id} (${replacement.mcp?.remoteUrl}) instead — add the verified endpoint to the curated file`,
+    );
+    return false;
+  });
+
+  return {
+    records,
+    discoveredCount: discovered.length,
+    zeroSurfaceDomains: discoveredBuild.zeroSurfaceDomains,
+    warnings,
+  };
+}
+
 function main() {
   // Order: build feed records → apply overrides (may add new records) → fill
   // tools from cache → swap broken icons for domain-based fallbacks → keep only
   // publicly-accessible records.
-  // Curated records come first so every other source dedupes against them.
-  const curated = buildCurated();
-  const curatedKinds = new Set(curated.map((r) => domainKindKey(recordDomain(r), r.kind)));
-  // A crawled or third-party row for a (domain, kind) a human has already
-  // verified is noise beside it, not extra coverage.
-  const notCurated = (r: Integration) =>
-    !curatedKinds.has(domainKindKey(recordDomain(r), r.kind));
-
-  const baseMcp = [
-    ...curated.filter((r) => r.kind === "mcp"),
-    ...applyEndpointVerdicts(applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp()))))
-      .filter(isPublic)
-      .filter(notCurated),
-  ];
-  const baseOpenapi = [
-    ...curated.filter((r) => r.kind === "openapi"),
-    ...applyFavicons(applyToolsCache("openapi", applyOverrides("openapi", buildOpenapi())))
-      .filter(isPublic)
-      .filter(notCurated),
-  ];
-  const baseGraphql = [
-    ...curated.filter((r) => r.kind === "graphql"),
-    ...applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql())))
-      .filter(isPublic)
-      .filter(notCurated),
-  ];
-  const baseCli = [
-    ...curated.filter((r) => r.kind === "cli"),
-    ...buildCli().filter(isPublic).filter(notCurated),
-  ];
-
-  const knownRawDomains = new Set(
-    [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
-      .map(rawRecordDomain)
-      .filter(Boolean),
+  const assembled = assembleRecords(
+    buildCurated(),
+    {
+      mcp: applyEndpointVerdicts(applyFavicons(applyToolsCache("mcp", applyOverrides("mcp", buildMcp()))))
+        .filter(isPublic),
+      openapi: applyFavicons(applyToolsCache("openapi", applyOverrides("openapi", buildOpenapi()))).filter(isPublic),
+      graphql: applyFavicons(applyToolsCache("graphql", applyOverrides("graphql", buildGraphql()))).filter(isPublic),
+      cli: buildCli().filter(isPublic),
+    },
+    readDomainCatalogTree(DOMAINS),
   );
-  const knownDomains = new Set(
-    [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
-      .map(recordDomain)
-      .filter(Boolean),
-  );
-  const knownDomainKinds = new Set(
-    [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli]
-      .flatMap((r) => {
-        const domain = recordDomain(r);
-        return domain ? [domainKindKey(domain, r.kind)] : [];
-      }),
-  );
-  const discoveredBuild = buildDiscovered(knownRawDomains, knownDomainKinds, knownDomains);
-  const discovered = applyEndpointVerdicts(discoveredBuild.records.filter(isPublic));
+  for (const warning of assembled.warnings) console.warn(warning);
   const withIds = applyProviderIds(
-    [...baseMcp, ...baseOpenapi, ...baseGraphql, ...baseCli, ...discovered],
+    assembled.records,
     parseProviderIds(readJson(join(ROOT, "provider-ids.json"))),
   );
   const mcp = withIds.filter((r) => r.kind === "mcp");
@@ -1343,7 +1432,7 @@ function main() {
   const index = buildIndex(all);
   writeFileSync(join(OUTPUT, "index.json"), JSON.stringify(index));
   writeFileSync(join(OUTPUT, "catalog-seeds.json"), JSON.stringify(buildCatalogSeedData(all)));
-  writeFileSync(join(OUTPUT, "search-index.json"), JSON.stringify(buildSearchIndex(index, discoveredBuild.zeroSurfaceDomains)));
+  writeFileSync(join(OUTPUT, "search-index.json"), JSON.stringify(buildSearchIndex(index, assembled.zeroSurfaceDomains)));
 
   const mergedMcp = mcp.filter((r) => r.feeds.length > 1).length;
   const withTools = (rs: Integration[]) =>
@@ -1354,7 +1443,7 @@ function main() {
   console.log(`openapi: ${openapi.length.toString().padStart(5)}  (${withTools(openapi)} with tools)`);
   console.log(`graphql: ${graphql.length.toString().padStart(5)}  (${withTools(graphql)} with tools)`);
   console.log(`cli:     ${cli.length.toString().padStart(5)}`);
-  console.log(`discovered: ${discovered.length.toString().padStart(5)}`);
+  console.log(`discovered: ${assembled.discoveredCount.toString().padStart(5)}`);
   console.log(`total:   ${all.length.toString().padStart(5)}`);
 
   const validatedIcons = Object.keys(faviconCache).length;

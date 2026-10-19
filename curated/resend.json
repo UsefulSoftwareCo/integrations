@@ -1,7 +1,7 @@
 {
   "slug": "resend",
   "name": "Resend",
-  "tagline": "Send email from any agent with one API key.",
+  "tagline": "Send email from any agent over hosted MCP, OAuth or one API key.",
   "description": "Resend is an email API built for developers. The official MCP server exposes sending, contacts, audiences, broadcasts, and domain management; the REST API is small enough for an agent to learn in one read.",
   "domain": "resend.com",
   "icon": "https://www.google.com/s2/favicons?domain=resend.com&sz=64",
@@ -13,12 +13,17 @@
   "auth": {
     "methods": [
       {
+        "type": "oauth2",
+        "label": "OAuth (hosted MCP)",
+        "note": "Browser login to Resend, approved per client. Recommended for MCP clients that support OAuth."
+      },
+      {
         "type": "api_key",
         "label": "API key",
-        "note": "One key, sent as a bearer header. Scoped keys can restrict to sending-only."
+        "note": "One key, sent as a bearer header. Works for headless MCP clients, the local MCP server and the REST API. Scoped keys can restrict to sending-only."
       }
     ],
-    "guide": "Create an API key at [resend.com/api-keys](https://resend.com/api-keys) (`re_\u2026`). Keys can be **full access** or restricted to **sending access** only \u2014 prefer the latter for agents that just send mail.\n\n```bash\ncurl https://api.resend.com/emails \\\n  -H \"Authorization: Bearer $RESEND_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"from\": \"you@yourdomain.com\", \"to\": [\"them@example.com\"], \"subject\": \"Hi\", \"text\": \"Hello from an agent.\"}'\n```\n\n**MCP (stdio):** the official server runs locally with the same key:\n\n```bash\nclaude mcp add resend -e RESEND_API_KEY=re_xxxxxxxxx -- npx -y resend-mcp\n```\n\nYou'll need a verified sending domain before production sends \u2014 set one up under [Domains](https://resend.com/domains).",
+    "guide": "**Hosted MCP with OAuth (fastest):** Resend hosts a Streamable HTTP server at `https://mcp.resend.com/mcp`. Connecting opens a browser window to log in to Resend and approve access.\n\n```bash\nclaude mcp add --transport http resend https://mcp.resend.com/mcp\n```\n\n**API key (headless agents):** create a key at [resend.com/api-keys](https://resend.com/api-keys) (`re_\u2026`). Keys can be **full access** or restricted to **sending access** only \u2014 prefer the latter for agents that just send mail. Pass it to the hosted server as a bearer header:\n\n```bash\nclaude mcp add --transport http resend https://mcp.resend.com/mcp --header \"Authorization: Bearer $RESEND_API_KEY\"\n```\n\n**Local MCP (stdio):** the open-source server runs on your machine with the same key:\n\n```bash\nclaude mcp add resend -e RESEND_API_KEY=$RESEND_API_KEY -- npx -y resend-mcp\n```\n\nThe same header works against the REST API (`curl https://api.resend.com/emails -H \"Authorization: Bearer $RESEND_API_KEY\"`). You'll need a verified sending domain before production sends \u2014 set one up under [Domains](https://resend.com/domains).",
     "sources": [
       {
         "title": "Resend Docs \u2014 API keys & authentication",
@@ -29,17 +34,27 @@
         "url": "https://resend.com/docs/mcp-server"
       }
     ],
-    "generatedAt": "2026-06-11",
+    "generatedAt": "2026-10-20",
     "verified": true
   },
   "interfaces": [
     {
       "format": "mcp",
       "name": "Resend MCP",
+      "endpoint": "https://mcp.resend.com/mcp",
+      "auth": "mixed",
+      "authHeader": "Authorization: Bearer {re_key}",
+      "docs": "https://resend.com/docs/mcp-server",
+      "note": "OAuth in supporting clients (browser login); API-key bearer header for headless agents. Local stdio alternative: npx -y resend-mcp",
+      "origin": "vendor"
+    },
+    {
+      "format": "mcp",
+      "name": "Resend MCP (local)",
       "auth": "api_key",
       "install": "claude mcp add resend -e RESEND_API_KEY=re_xxx -- npx -y resend-mcp",
       "docs": "https://resend.com/docs/mcp-server",
-      "note": "Runs locally over stdio with your API key.",
+      "note": "Open-source server; runs locally over stdio with your API key (RESEND_API_KEY).",
       "origin": "vendor"
     },
     {

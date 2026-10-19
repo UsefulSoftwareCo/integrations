@@ -226,6 +226,12 @@ function isHttpUrl(url: string | undefined): url is string {
   }
 }
 
+/** Whether an MCP URL is a hosted endpoint a client can connect to, by the
+ *  same rules the build publishes MCP endpoints with. */
+function isHostedMcpUrl(url: string | undefined): url is string {
+  return isHttpUrl(url) && isPublishableMcpUrl(url);
+}
+
 function isPlausibleSpecUrl(url: string | undefined): url is string {
   if (!isHttpUrl(url)) return false;
   const path = new URL(url).pathname;
@@ -459,8 +465,14 @@ export function buildDiscoveredEntries(
    *  discovered surface may fill one even though its domain is known — but
    *  only with a URL, since an endpoint is the one thing the slot is missing. */
   openDomainKinds: ReadonlySet<string> = new Set(),
-): { records: Integration[]; zeroSurfaceDomains: ZeroSurfaceDomain[] } {
+): {
+  records: Integration[];
+  zeroSurfaceDomains: ZeroSurfaceDomain[];
+  /** MCP records whose surface beat an earlier, unusable one for its domain. */
+  promoted: Set<Integration>;
+} {
   const recs: Integration[] = [];
+  const promoted = new Set<Integration>();
   const zeroSurfaceDomains = new Map<string, ZeroSurfaceDomain>();
 
   for (const d of data.domains ?? []) {
@@ -469,23 +481,38 @@ export function buildDiscoveredEntries(
     const canonical = canonicalDomain(domain);
     const knownRaw = knownRawDomains.has(domain);
     const fillsOpenSlot = (s: DiscoveredSurface) =>
-      Boolean(s.url) && openDomainKinds.has(domainKindKey(domain, discoveredKind(s.type)));
+      isHostedMcpUrl(s.url) && openDomainKinds.has(domainKindKey(domain, discoveredKind(s.type)));
     if (knownRaw && !(d.surfaces ?? []).some(fillsOpenSlot)) continue;
     if (DISCOVERED_ALIAS_DEDUPE.has(domain) && knownDomains.has(canonical)) continue;
     const surfaces = d.surfaces ?? [];
     const byKind = new Map<Kind, DiscoveredSurface>();
+    // One surface per kind, first listed — except that for MCP a hosted,
+    // publishable endpoint beats an earlier entry without one. Otherwise a
+    // docs server listed with no URL, or a `{APP_ID}` template, wins the kind
+    // and is then dropped by the endpoint rules, taking the domain's real
+    // hosted server with it (Commerce Layer, LangChain, Algolia).
+    const promotedKinds = new Set<Kind>();
+    const take = (kind: Kind, surface: DiscoveredSurface) => {
+      const current = byKind.get(kind);
+      if (!current) {
+        byKind.set(kind, surface);
+      } else if (kind === "mcp" && !isHostedMcpUrl(current.url) && isHostedMcpUrl(surface.url)) {
+        byKind.set(kind, surface);
+        promotedKinds.add(kind);
+      }
+    };
     for (const surface of surfaces) {
       // A client SDK/library mis-typed as `cli` is not a CLI surface — skip it.
       if (isSdkNotCli(surface)) continue;
       const kind = discoveredKind(surface.type);
       if (fillsOpenSlot(surface)) {
-        if (!byKind.has(kind)) byKind.set(kind, surface);
+        take(kind, surface);
         continue;
       }
       // A known domain contributes only the slots left open for it.
       if (knownRaw) continue;
       if (canonical === domain && knownDomainKinds.has(domainKindKey(domain, kind))) continue;
-      if (!byKind.has(kind)) byKind.set(kind, surface);
+      take(kind, surface);
     }
     const kinds = DISCOVERED_KIND_PRIORITY.filter((kind) => byKind.has(kind));
     const description = discoveredDescription(d);
@@ -513,6 +540,7 @@ export function buildDiscoveredEntries(
         feeds: ["discovered"],
         raw: { discovered: { domain, surface } },
       };
+      if (promotedKinds.has(kind)) promoted.add(rec);
       if (kind === "mcp") {
         rec.mcp = { remoteUrl: surface.url };
       } else if (kind === "openapi") {
@@ -539,7 +567,7 @@ export function buildDiscoveredEntries(
     });
   }
 
-  return { records: dedupeSlugs(recs), zeroSurfaceDomains: [...zeroSurfaceDomains.values()] };
+  return { records: dedupeSlugs(recs), zeroSurfaceDomains: [...zeroSurfaceDomains.values()], promoted };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -605,12 +633,6 @@ const CURATED_KIND: Record<string, Kind> = {
   cli: "cli",
 };
 
-/** Whether a curated MCP interface names a hosted endpoint a client can
- *  connect to, by the same rules the build publishes MCP endpoints with. */
-function hasHostedMcpEndpoint(iface: CuratedInterface): boolean {
-  return isHttpUrl(iface.endpoint) && isPublishableMcpUrl(iface.endpoint);
-}
-
 /** The interface that represents each kind. The first one listed, except
  *  that a hosted MCP endpoint beats an endpoint-less (local stdio) entry
  *  listed before it — the picker's MCP surface is the one a client connects
@@ -621,7 +643,7 @@ function primaryCuratedInterfaces(interfaces: CuratedInterface[]): Map<Kind, Cur
     const kind = CURATED_KIND[(iface.format ?? "").toLowerCase()];
     if (!kind || iface.slug?.trim()) continue;
     const current = primary.get(kind);
-    if (!current || (kind === "mcp" && !hasHostedMcpEndpoint(current) && hasHostedMcpEndpoint(iface))) {
+    if (!current || (kind === "mcp" && !isHostedMcpUrl(current.endpoint) && isHostedMcpUrl(iface.endpoint))) {
       primary.set(kind, iface);
     }
   }
@@ -1330,7 +1352,13 @@ export function assembleRecords(
   curated: Integration[],
   feeds: FeedRecords,
   discoveredCatalog: Pick<Catalog, "domains">,
-): { records: Integration[]; discoveredCount: number; zeroSurfaceDomains: ZeroSurfaceDomain[]; warnings: string[] } {
+): {
+  records: Integration[];
+  discoveredCount: number;
+  zeroSurfaceDomains: ZeroSurfaceDomain[];
+  warnings: string[];
+  withheldMcp: { domain: string; url: string }[];
+} {
   const slotKey = (r: Integration) => domainKindKey(recordDomain(r), r.kind);
   const curatedKinds = new Set(curated.filter((r) => !leavesMcpSlotOpen(r)).map(slotKey));
   // A crawled or third-party row for a (domain, kind) a human has already
@@ -1369,7 +1397,18 @@ export function assembleRecords(
     knownDomains,
     openDomainKinds,
   );
-  const discovered = applyEndpointVerdicts(discoveredBuild.records.filter(isPublic));
+  // A promoted MCP surface must not become a second card for an endpoint
+  // another row already publishes: domotz.app's "documented endpoint" is the
+  // one domotz.com lists. Rows that were already duplicated are left alone.
+  const mcpUrlKey = (r: Integration) => (r.kind === "mcp" && r.mcp?.remoteUrl ? canonUrl(r.mcp.remoteUrl) : undefined);
+  const otherMcpUrls = new Set(
+    [...base, ...discoveredBuild.records.filter((r) => !discoveredBuild.promoted.has(r))].map(mcpUrlKey).filter(Boolean),
+  );
+  const discovered = applyEndpointVerdicts(
+    discoveredBuild.records
+      .filter(isPublic)
+      .filter((r) => !discoveredBuild.promoted.has(r) || !otherMcpUrls.has(mcpUrlKey(r))),
+  );
 
   // Every candidate has passed the same isPublic + endpoint-verdict rules as
   // any other published record; an endpoint-less curated record yields to the
@@ -1395,7 +1434,40 @@ export function assembleRecords(
     discoveredCount: discovered.length,
     zeroSurfaceDomains: discoveredBuild.zeroSurfaceDomains,
     warnings,
+    withheldMcp: withheldDiscoveredMcp(records, discoveredCatalog),
   };
+}
+
+/** Hosted MCP endpoints discovery found for a domain that ends up with no MCP
+ *  surface at all, and that no other row publishes either. Today that happens
+ *  when another source (an apis.guru spec, a GraphQL or CLI feed row, a curated
+ *  file without an MCP interface) already covers the domain: its discovered
+ *  record is skipped wholesale. These are reported, not published — crawled
+ *  data for a domain other sources already vouch for needs a maintainer's look,
+ *  and the repo has no per-surface rejection if one turns out wrong. */
+export function withheldDiscoveredMcp(
+  records: Integration[],
+  discoveredCatalog: Pick<Catalog, "domains">,
+): { domain: string; url: string }[] {
+  const published = new Set(
+    records.flatMap((r) => (r.kind === "mcp" && r.mcp?.remoteUrl ? [canonUrl(r.mcp.remoteUrl) ?? r.mcp.remoteUrl] : [])),
+  );
+  const withMcp = new Set(records.filter((r) => r.kind === "mcp").map(recordDomain));
+  const out: { domain: string; url: string }[] = [];
+  for (const d of discoveredCatalog.domains ?? []) {
+    const domain = d.domain.trim().toLowerCase();
+    if (!domain || isJunkDomain(domain) || isDenylisted(domain)) continue;
+    if (withMcp.has(canonicalDomain(domain)) || out.some((w) => w.domain === domain)) continue;
+    const hosted = (d.surfaces ?? []).find(
+      (s) =>
+        s.type === "mcp" &&
+        isHostedMcpUrl(s.url) &&
+        !GATED_HOST.test(new URL(s.url).hostname) &&
+        !published.has(canonUrl(s.url) ?? s.url),
+    );
+    if (hosted?.url) out.push({ domain, url: hosted.url });
+  }
+  return out;
 }
 
 function main() {
@@ -1455,6 +1527,13 @@ function main() {
   }
 
   printDomainMismatchWarnings(all);
+
+  const withheld = assembled.withheldMcp;
+  if (withheld.length > 0) {
+    console.warn(`discovered-mcp-withheld: ${withheld.length} hosted MCP endpoints found by discovery are not published (domain covered by another source with no MCP surface)`);
+    for (const { domain, url } of withheld.slice(0, 50)) console.warn(`discovered-mcp-withheld: ${domain} ${url}`);
+    if (withheld.length > 50) console.warn(`discovered-mcp-withheld truncated: showing 50 of ${withheld.length}`);
+  }
 }
 
 if (import.meta.main) main();

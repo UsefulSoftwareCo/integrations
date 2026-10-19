@@ -8,6 +8,7 @@ import {
   buildDiscoveredEntries,
   buildIndex,
   buildSearchIndex,
+  withheldDiscoveredMcp,
 } from "./normalize.ts";
 import { denylistEntries } from "../src/lib/catalog-denylist.ts";
 import type { Integration } from "../src/lib/types.ts";
@@ -361,5 +362,143 @@ describe("endpoint-less curated MCP entries", () => {
       "discovered/synthetic-other-com-mcp",
       "discovered/synthetic-other-com-openapi",
     ]);
+  });
+});
+
+// ── Discovered MCP surfaces: one per domain, and the usable one ─────────────
+
+const mcpSurface = (slug: string, url?: string, authStatus: "none" | "required" | "unknown" = "required") => ({
+  slug,
+  name: slug,
+  type: "mcp" as const,
+  ...(url ? { url } : {}),
+  authStatus,
+});
+const discoveredOnly = (domain: string, surfaces: ReturnType<typeof mcpSurface>[]) => ({
+  domain,
+  summary: `${domain} fixture`,
+  surfaces: [
+    { slug: "rest", name: "REST", type: "http" as const, url: `https://api.${domain}`, authStatus: "required" as const },
+    ...surfaces,
+  ],
+});
+const mcpOf = (records: Integration[], domain: string) =>
+  records.filter((r) => r.kind === "mcp" && (r.raw.discovered as { domain?: string } | undefined)?.domain === domain);
+
+describe("discovered MCP surface selection", () => {
+  test("a hosted endpoint listed after an endpoint-less or templated one is published", () => {
+    // Shapes of domains/commercelayer.io, domains/langchain.com and domains/algolia.com.
+    const { records } = assembleRecords([], noFeeds, {
+      domains: [
+        discoveredOnly("synthetic-commerce.com", [
+          mcpSurface("docs-mcp", undefined, "none"),
+          mcpSurface("core-mcp", "https://core-mcp.synthetic-commerce.com/mcp"),
+          mcpSurface("metrics-mcp", "https://metrics-mcp.synthetic-commerce.com/mcp"),
+        ]),
+        discoveredOnly("synthetic-search.com", [
+          mcpSurface("public-mcp", "https://{APP_ID}.synthetic-search.net/mcp/1/{UNIQ_ID}/mcp", "none"),
+          mcpSurface("productivity-mcp", "https://mcp.synthetic-search.com/mcp"),
+        ]),
+      ],
+    });
+
+    expect(mcpOf(records, "synthetic-commerce.com").map((r) => r.mcp?.remoteUrl)).toEqual([
+      "https://core-mcp.synthetic-commerce.com/mcp",
+    ]);
+    expect(mcpOf(records, "synthetic-search.com").map((r) => r.mcp?.remoteUrl)).toEqual([
+      "https://mcp.synthetic-search.com/mcp",
+    ]);
+    // The REST record and the domain's slugs are unaffected.
+    expect(records.filter((r) => r.kind === "openapi").map((r) => r.slug)).toEqual([
+      "synthetic-commerce-com-openapi",
+      "synthetic-search-com-openapi",
+    ]);
+  });
+
+  test("the first listed hosted endpoint still wins, and an all-unusable domain still publishes no MCP", () => {
+    const { records } = assembleRecords([], noFeeds, {
+      domains: [
+        discoveredOnly("synthetic-first.com", [
+          mcpSurface("a", "https://a.synthetic-first.com/mcp"),
+          mcpSurface("b", "https://b.synthetic-first.com/mcp"),
+        ]),
+        discoveredOnly("synthetic-none.com", [
+          mcpSurface("docs", undefined, "none"),
+          mcpSurface("local", "http://localhost:3000/mcp"),
+        ]),
+      ],
+    });
+    expect(mcpOf(records, "synthetic-first.com").map((r) => r.mcp?.remoteUrl)).toEqual(["https://a.synthetic-first.com/mcp"]);
+    expect(mcpOf(records, "synthetic-none.com")).toEqual([]);
+  });
+
+  test("a promoted endpoint never becomes a second card for one another row already publishes", () => {
+    // domotz.app lists an unusable endpoint first, then domotz.com's own.
+    const shared = "https://mcp.synthetic-net.com/mcp";
+    const { records } = assembleRecords([], noFeeds, {
+      domains: [
+        discoveredOnly("synthetic-net.app", [mcpSurface("old", "https://{tenant}.synthetic-net.app/mcp"), mcpSurface("documented", shared)]),
+        discoveredOnly("synthetic-net.com", [mcpSurface("mcp", shared)]),
+        // Pre-existing duplicates (both first-listed) are left exactly as they were.
+        discoveredOnly("synthetic-twin-a.com", [mcpSurface("mcp", "https://mcp.synthetic-twin.com/mcp")]),
+        discoveredOnly("synthetic-twin-b.com", [mcpSurface("mcp", "https://mcp.synthetic-twin.com/mcp")]),
+      ],
+    });
+    const byUrl = (url: string) => records.filter((r) => r.kind === "mcp" && r.mcp?.remoteUrl === url);
+    expect(byUrl(shared).map((r) => (r.raw.discovered as { domain: string }).domain)).toEqual(["synthetic-net.com"]);
+    expect(byUrl("https://mcp.synthetic-twin.com/mcp")).toHaveLength(2);
+  });
+});
+
+describe("withheld discovered MCP endpoints", () => {
+  test("a hosted endpoint for a domain another source covers is reported, not published", () => {
+    // apis.guru covers synthetic-api.com with a spec; discovery also found its MCP server.
+    const spec: Integration = {
+      id: "openapi/synthetic-api-com",
+      kind: "openapi",
+      slug: "synthetic-api-com",
+      name: "Synthetic API",
+      description: "",
+      categories: [],
+      feeds: ["apis-guru"],
+      openapi: { provider: "synthetic-api.com", version: "1", specUrl: "https://synthetic-api.com/openapi.json", openapiVer: "3.0.0" },
+      raw: {},
+    };
+    const legacySpec: Integration = {
+      ...spec,
+      id: "openapi/synthetic-legacy-com",
+      slug: "synthetic-legacy-com",
+      openapi: { ...spec.openapi!, provider: "synthetic-legacy.com" },
+    };
+    const catalog = {
+      domains: [
+        discoveredOnly("synthetic-api.com", [mcpSurface("mcp", "https://mcp.synthetic-api.com/mcp")]),
+        // Already published under the vendor's current domain: not withheld.
+        discoveredOnly("synthetic-legacy.com", [mcpSurface("mcp", "https://mcp.synthetic-new.com/mcp")]),
+        discoveredOnly("synthetic-new.com", [mcpSurface("mcp", "https://mcp.synthetic-new.com/mcp")]),
+      ],
+    };
+    const { records, withheldMcp } = assembleRecords([], { ...noFeeds, openapi: [spec, legacySpec] }, catalog);
+
+    expect(records.filter((r) => r.kind === "mcp").map((r) => r.mcp?.remoteUrl)).toEqual(["https://mcp.synthetic-new.com/mcp"]);
+    expect(withheldMcp).toEqual([{ domain: "synthetic-api.com", url: "https://mcp.synthetic-api.com/mcp" }]);
+    // Nothing to report once the domain has an MCP surface of its own.
+    const ownMcp: Integration = { ...spec, id: "mcp/x", kind: "mcp", openapi: undefined, mcp: { remoteUrl: "https://other.synthetic-api.com/mcp" } };
+    expect(withheldDiscoveredMcp([...records, ownMcp], catalog)).toEqual([]);
+  });
+});
+
+describe("MCP overrides correcting feed URLs", () => {
+  // The OpenAI directory lists Deel's staging host and AppDeploy's previous
+  // host; the vendors document these instead.
+  const override = (slug: string) =>
+    JSON.parse(readFileSync(join(import.meta.dir, "..", "overrides", "mcp", `${slug}.json`), "utf8"));
+
+  test("Deel points at its documented production endpoint", () => {
+    expect(override("deel").mcp.remoteUrl).toBe("https://api.letsdeel.com/mcp");
+  });
+
+  test("AppDeploy points at its documented production server", () => {
+    expect(override("appdeploy").mcp.remoteUrl).toBe("https://api-v2.appdeploy.ai/mcp");
   });
 });

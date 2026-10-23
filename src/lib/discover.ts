@@ -741,6 +741,14 @@ function surfaceLocator(s: Surface): string {
   return `${s.type}|${(s.spec || s.url || s.command || packageId || s.name).toLowerCase()}`;
 }
 
+/** Secondary identity for surfaces that carry a base URL. The primary locator
+ * prefers `spec`, so an owner declaration that names both `url` and `spec`
+ * keys differently from a discovered surface that only knows `url` (or the
+ * reverse) even though they describe the same API. */
+function surfaceUrlKey(s: Surface): string | undefined {
+  return s.url ? `${s.type}|${s.url.toLowerCase()}` : undefined;
+}
+
 function entryKey(entry: AuthEntry): string {
   return entry.use
     .map((use) => `${use.id}:${JSON.stringify(use.mechanics)}`)
@@ -813,10 +821,25 @@ function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit)
     }
   }
   const byLocator = new Map(r.surfaces.map((surface) => [surfaceLocator(surface), surface]));
+  // Fallback identity by base URL, so a declaration is folded into the row
+  // for the same endpoint even when only one side knows the spec URL. Without
+  // it the page shows the API twice: once "discovered", once "declared".
+  const byUrl = new Map<string, Surface>();
+  const indexUrl = (surface: Surface): void => {
+    const key = surfaceUrlKey(surface);
+    if (key && !byUrl.has(key)) byUrl.set(key, surface);
+  };
+  for (const surface of r.surfaces) indexUrl(surface);
+  const findExisting = (surface: Surface): Surface | undefined => {
+    const byLoc = byLocator.get(surfaceLocator(surface));
+    if (byLoc) return byLoc;
+    const key = surfaceUrlKey(surface);
+    return key ? byUrl.get(key) : undefined;
+  };
   for (const rawSurface of declared.result.surfaces ?? []) {
     const surface = markDeclaredSurface(cloneJson(rawSurface) as Surface, source);
     if (!surface.slug) surface.slug = assignSlug(surface.name || "Declared surface", r.surfaces);
-    const existing = byLocator.get(surfaceLocator(surface));
+    const existing = findExisting(surface);
     if (existing) {
       mergeDeclaredSurface(existing, surface);
       emit?.({ kind: "surface", surface: existing });
@@ -825,6 +848,7 @@ function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit)
     surface.slug = assignSlug(surface.slug || surface.name || "Declared surface", r.surfaces);
     r.surfaces.push(surface);
     byLocator.set(surfaceLocator(surface), surface);
+    indexUrl(surface);
     emit?.({ kind: "surface", surface });
   }
 }

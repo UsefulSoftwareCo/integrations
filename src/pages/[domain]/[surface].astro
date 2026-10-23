@@ -83,7 +83,7 @@ if (!surface) return new Response(null, { status: 404 });
 const typeLabel = SURFACE_TYPE_LABEL[surface.type] ?? surface.type;
 const letter = (surface.name[0] ?? "?").toUpperCase();
 
-const detailRows: { label: string; value: string; kind: "code" | "link" | "text"; linkLabel?: string }[] = [];
+const detailRows: { label: string; value: string; kind: "code" | "link" | "text"; linkLabel?: string; detail?: string }[] = [];
 const specFormatLabel = (url: string) => {
   const path = (() => {
     try {
@@ -96,6 +96,9 @@ const specFormatLabel = (url: string) => {
   return match?.[1]?.toLowerCase() || hostOf(url) || "alt";
 };
 if (surface.url) detailRows.push({ label: surface.type === "mcp" || surface.type === "graphql" ? "Endpoint" : "URL", value: surface.url, kind: "code" });
+for (const v of surface.variables ?? []) {
+  detailRows.push({ label: "Variable", value: `{${v.name}}`, kind: "code", detail: v.description });
+}
 if (surface.transports?.length) detailRows.push({ label: "Transport", value: surface.transports.join(", "), kind: "text" });
 if (surface.spec)
   detailRows.push(
@@ -312,6 +315,7 @@ Astro.response.headers.set("cache-control", "public, max-age=60");
                   <a href={r.value} target="_blank" rel="noopener noreferrer">{r.linkLabel ?? r.value}</a>
                 )}
                 {r.kind === "text" && r.value}
+                {r.detail && <p class="kv-detail">{r.detail}</p>}
               </dd>
             </>
           ))}
@@ -427,6 +431,7 @@ Astro.response.headers.set("cache-control", "public, max-age=60");
   .use { display: inline-flex; align-items: baseline; gap: 6px; }
   .and { font-family: var(--font-mono); font-size: 12px; color: var(--gray-400); }
   .or { font-family: var(--font-mono); font-size: 11px; color: var(--gray-300); }
+  .kv-detail { margin: 6px 0 0; color: var(--gray-500); word-break: normal; overflow-wrap: anywhere; }
   .mech { font-family: var(--font-mono); font-size: 12px; color: var(--gray-700); background: var(--gray-25); border: 1px solid var(--gray-100); border-radius: 5px; padding: 1px 6px; word-break: break-all; }
   .auth-none .auth-use { font-size: 13px; color: var(--gray-500); font-weight: 400; }
   .muted { color: var(--gray-400); font-size: 13.5px; margin: 14px 0 0; }

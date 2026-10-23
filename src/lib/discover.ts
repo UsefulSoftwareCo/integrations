@@ -838,8 +838,33 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   const oauth = detect.auth?.oauth;
   const hasDetOauth = oauth && (oauth.authorizationEndpoint || oauth.tokenEndpoint || oauth.registrationEndpoint || oauth.scopes?.length);
 
-  // Ensure a detected OAuth credential exists (referenced by detected MCP auth).
-  const ensureOauthCred = (): string => {
+  const declaredMcpOauthCredential = (mcpUrl: string): readonly [string, Credential] | undefined => {
+    const declared = detect.integrationsJson?.result;
+    const surface = declared?.surfaces?.find((candidate) => candidate.type === "mcp" && candidate.url === mcpUrl);
+    if (surface?.auth.status !== "required") return undefined;
+    for (const entry of surface.auth.entries) {
+      for (const use of entry.use) {
+        const credential = declared?.credentials?.[use.id];
+        if (credential && (/oauth/i.test(credential.type) || /oauth/i.test(credential.label))) {
+          return [use.id, credential];
+        }
+      }
+    }
+    return undefined;
+  };
+
+  // Preserve the OAuth identity that the owner bound to this MCP surface before
+  // falling back to a model-discovered, domain-wide OAuth credential.
+  const ensureOauthCred = (mcpUrl: string): string => {
+    const declared = declaredMcpOauthCredential(mcpUrl);
+    if (declared) {
+      const [id, credential] = declared;
+      if (!r.credentials[id]) {
+        r.credentials[id] = cloneJson(credential);
+        emit?.({ kind: "credential", id, credential: r.credentials[id] });
+      }
+      return id;
+    }
     const existing = Object.entries(r.credentials).find(([, c]) => /oauth/i.test(c.type) || /oauth/i.test(c.label));
     if (existing) return existing[0];
     const id = "oauth";
@@ -864,7 +889,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   // developer portal, copy client_id/client_secret" story the model wrote from
   // docs — and bind the surface to it as a detected signal.
   const bindMcpSelfOnboard = (surface: Surface, mcp: McpDetection): void => {
-    const id = ensureOauthCred();
+    const id = ensureOauthCred(mcp.url);
     const c = r.credentials[id];
     c.type = "oauth2";
     c.label = "OAuth 2.0";
@@ -895,7 +920,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   const isMcpManualOnboard = (mcp: McpDetection): boolean => mcp.authorizationServerMetadataFetched === true && !mcp.dcr && !mcp.cimd;
 
   const bindMcpManualOnboard = (surface: Surface, mcp: McpDetection): void => {
-    const id = ensureOauthCred();
+    const id = ensureOauthCred(mcp.url);
     const c = r.credentials[id];
     const hostKnowledge = mcpHostKnowledge(mcp.url);
     c.type = "oauth2";
@@ -922,7 +947,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     }
     const auth: AuthStatus =
       hasDetOauth || mcp.auth
-        ? { status: "required", entries: [{ use: [{ id: ensureOauthCred(), mechanics: { source: "well-known" } }], basis: { via: "detected", signal: "oauth-protected-resource", verifiedAt } }] }
+        ? { status: "required", entries: [{ use: [{ id: ensureOauthCred(mcp.url), mechanics: { source: "well-known" } }], basis: { via: "detected", signal: "oauth-protected-resource", verifiedAt } }] }
         : { status: "unknown" };
     const s: Surface = { slug: assignSlug("MCP server", r.surfaces), name: "MCP server", type: "mcp", url: mcp.url, basis: { via: "detected", signal: "mcp:initialize", verifiedAt }, auth, notes: mcp.dcr || mcp.cimd ? "Self-onboarding (DCR/CIMD)" : undefined };
     r.surfaces.unshift(s);

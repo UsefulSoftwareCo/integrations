@@ -9,9 +9,11 @@
  * converter — the exact pipeline the product executes at add time — and then
  * corrects what that converter's multi-service bundle output gets wrong for a
  * document describing one service (scripts/google-specs.ts): realGooglePaths
- * keys every operation by its real path, and hostedGoogleSpec fixes the
- * document server, types Discovery's string-encoded defaults, writes everything
- * in a fixed order and refuses any operation left on a placeholder path.
+ * keys every operation by its real path, googleOperationScopes lists every
+ * scope Google accepts for each operation in its x-google-scopes, and
+ * hostedGoogleSpec fixes the document server, types Discovery's string-encoded
+ * defaults, writes everything in a fixed order and refuses any operation left
+ * on a placeholder path.
  *
  * The converter is not part of the published @executor-js/plugin-openapi
  * package, so it is imported from a local executor (v1) checkout, along with
@@ -28,10 +30,13 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  executorScopeRules,
+  googleOperationScopes,
   hostedGoogleSpec,
   isJsonObject,
   parseJsonObject,
   realGooglePaths,
+  unlistedDiscoveryScopes,
 } from "./google-specs.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -51,6 +56,16 @@ const { googleOpenApiPresets, googleCatalogOAuthScopesForPreset } = await import
 const { convertGoogleDiscoveryBundleToOpenApi, normalizeGoogleDiscoveryUrl } = await import(
   join(providerDir, "discovery.ts")
 );
+const { compactGoogleOAuthScopes, isGoogleUserConsentOAuthScope } = await import(
+  join(providerDir, "oauth-scopes.ts")
+);
+const { googleDiscoveryPolicyFor } = await import(join(providerDir, "service-policy.ts"));
+const scopeRules = executorScopeRules({
+  googleDiscoveryPolicyFor,
+  isGoogleUserConsentOAuthScope,
+  compactGoogleOAuthScopes,
+});
+
 // The converter returns executor-flavored Effects; run them with executor's
 // own effect instance so the runtime identities match.
 const { Effect } = await import(join(EXECUTOR, "node_modules/effect/dist/index.js"));
@@ -109,7 +124,12 @@ async function main(): Promise<void> {
       parseJsonObject(documentText, `${preset.id} Discovery document ${index}`),
     );
     const hosted = hostedGoogleSpec(
-      realGooglePaths(converted, discoveryDocuments, preset.id),
+      googleOperationScopes(
+        realGooglePaths(converted, discoveryDocuments, preset.id),
+        discoveryDocuments,
+        scopeRules,
+        preset.id,
+      ),
       preset.id,
     );
     if (hosted === undefined) {
@@ -118,6 +138,14 @@ async function main(): Promise<void> {
       console.error(`${preset.id}: 0 operations after policy filtering, skipping`);
       continue;
     }
+    const unlisted = unlistedDiscoveryScopes(
+      hosted.document,
+      discoveryDocuments,
+      scopeRules,
+      preset.id,
+    );
+    if (unlisted.length > 0)
+      throw new Error(`${preset.id}: operations omit scopes Google accepts:\n${unlisted.join("\n")}`);
 
     // The bundle converter titles everything "Google"; a hosted standalone
     // document should carry the service's own identity, since clients name an

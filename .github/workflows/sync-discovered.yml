@@ -89,19 +89,25 @@ jobs:
         continue-on-error: true
         run: bun scripts/verify-mcp-endpoints.ts --stale 7
 
+      # Re-read OpenAPI specs whose security summary is missing or a month old;
+      # normalize derives each surface's feed `auth` from this cache.
+      - name: Refresh OpenAPI auth cache
+        continue-on-error: true
+        run: bun scripts/extract-openapi-auth.ts --stale 30
+
       - name: Build
         run: bun run build
 
       - name: Commit and push changes
         run: |
           # git diff misses untracked files — new domain files are the common case.
-          if [ -z "$(git status --porcelain -- domains/ output/mcp-endpoints.json src/data/github-stars.json)" ]; then
+          if [ -z "$(git status --porcelain -- domains/ output/mcp-endpoints.json output/openapi-auth.json src/data/github-stars.json)" ]; then
             echo "No discovered catalog, endpoint verdict or GitHub stars changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A domains/ output/mcp-endpoints.json src/data/github-stars.json
+          git add -A domains/ output/mcp-endpoints.json output/openapi-auth.json src/data/github-stars.json
           git commit -m "sync discovered catalog, endpoint verdicts and GitHub stars"
           # A human push to main between checkout and here would make this
           # non-fast-forward; rebase our one commit on top instead of failing.

@@ -1,3 +1,5 @@
+import type { FeedAuth } from "./openapi-auth.ts";
+
 export type Kind = "mcp" | "openapi" | "graphql" | "cli";
 
 /** Display formats. Superset of Kind: curated providers can also expose CLIs. */
@@ -66,6 +68,10 @@ export interface Integration {
      *  fork: Neon's spec, for example, declares its console's session cookies
      *  as security schemes alongside the real API key. */
     specOverrides?: unknown[];
+    /** How to authenticate, resolved at build from the curated record, the
+     *  spec's own securitySchemes (output/openapi-auth.json) and the registry's
+     *  auth data (registry-auth.json). Omitted when incomplete or ambiguous. */
+    resolvedAuth?: FeedAuth;
     /** Human-facing docs or developer portal URL. */
     docsUrl?: string;
     openapiVer: string;

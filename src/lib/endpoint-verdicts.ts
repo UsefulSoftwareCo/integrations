@@ -25,7 +25,7 @@
  * claim to contradict. Only MCP surfaces are touched: the probe covers nothing else.
  */
 import verdictsJson from "../../output/mcp-endpoints.json";
-import type { AuthStatus } from "./discovery-schema.ts";
+import type { AuthStatus, Variable } from "./discovery-schema.ts";
 
 export type EndpointStatus = "live" | "auth" | "dead" | "unknown";
 
@@ -44,12 +44,15 @@ export function endpointVerdict(url: string | undefined): EndpointVerdict | unde
 
 /** Structurally unpublishable regardless of what a probe says: an unsubstituted
  *  `{placeholder}` copied out of docs, or a loopback address that could only
- *  ever have meant the author's own machine. */
-export function isUnusableEndpoint(url: string): boolean {
-  if (/[{}]/.test(url)) return true;
+ *  ever have meant the author's own machine. A placeholder the surface declares
+ *  as a variable is a template, not a copy-paste slip: a self-hosted server
+ *  like T3 Code has no shared endpoint, only `https://{environment_address}/mcp`. */
+export function isUnusableEndpoint(url: string, variables: readonly Pick<Variable, "name">[] = []): boolean {
+  const filled = variables.reduce((u, v) => u.replaceAll(`{${v.name}}`, "variable"), url);
+  if (/[{}]/.test(filled)) return true;
   // oxlint-disable-next-line executor/no-try-catch-or-throw -- boundary: URL parsing reports failure by throwing
   try {
-    const host = new URL(url).hostname.toLowerCase();
+    const host = new URL(filled).hostname.toLowerCase();
     return host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local");
   } catch {
     return true;
@@ -58,10 +61,10 @@ export function isUnusableEndpoint(url: string): boolean {
 
 /** Whether an MCP endpoint URL may be published at all. Only a positive denial
  *  removes a record: a timeout or a 5xx means the service had a bad minute. */
-export function isPublishableMcpUrl(url: string | undefined): boolean {
+export function isPublishableMcpUrl(url: string | undefined, variables: readonly Pick<Variable, "name">[] = []): boolean {
   const key = url?.trim();
   if (!key) return true;
-  if (isUnusableEndpoint(key)) return false;
+  if (isUnusableEndpoint(key, variables)) return false;
   return verdicts[key]?.status !== "dead";
 }
 
@@ -80,7 +83,7 @@ export function verifiedMcpAuth(url: string | undefined, auth: AuthStatus): Auth
 /** Structural, not `Pick<Surface, …>`: the render paths carry the widened view
  *  type (surface-view.ts — `type: string`, per-kind fields optional), and both
  *  it and the strict wire union must be correctable in place. */
-type SurfaceLike = { readonly type?: string; readonly url?: string; readonly auth: AuthStatus };
+type SurfaceLike = { readonly type?: string; readonly url?: string; readonly variables?: readonly Pick<Variable, "name">[]; readonly auth: AuthStatus };
 
 /** Apply the probe verdicts to a surface list: drop dead MCP endpoints and
  *  downgrade unverified public claims. Non-MCP surfaces pass through untouched. */
@@ -91,7 +94,7 @@ export function applyEndpointVerdicts<S extends SurfaceLike>(surfaces: readonly 
       out.push(s);
       continue;
     }
-    if (!isPublishableMcpUrl(s.url)) continue;
+    if (!isPublishableMcpUrl(s.url, s.variables)) continue;
     const auth = verifiedMcpAuth(s.url, s.auth);
     out.push(auth === s.auth ? s : { ...s, auth });
   }

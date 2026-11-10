@@ -6,7 +6,7 @@
  * Types come from the canonical schema via `import type` (zero runtime effect
  * in the client bundle); this module adds only display logic.
  */
-import type { AuthStatus, Basis, Credential, DiscoveryResult, Mechanics } from "./discovery-schema.ts";
+import type { AuthStatus, Basis, Credential, DiscoveryResult, Mechanics, Variable } from "./discovery-schema.ts";
 
 export type { Credential, Mechanics };
 export type { AuthEntry, AuthStatus, Basis, CredentialUse } from "./discovery-schema.ts";
@@ -31,6 +31,7 @@ export interface Surface {
   transports?: readonly string[];
   packages?: readonly { registryType: string; identifier: string; runtimeHint?: string }[];
   command?: string;
+  variables?: readonly Variable[];
   notes?: string;
 }
 

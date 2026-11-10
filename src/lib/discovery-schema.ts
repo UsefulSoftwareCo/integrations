@@ -267,6 +267,7 @@ export type CredentialUse = typeof CredentialUse.Type;
 export type AuthEntry = typeof AuthEntry.Type;
 export type AuthStatus = typeof AuthStatus.Type;
 export type Surface = typeof Surface.Type;
+export type Variable = typeof Variable.Type;
 export type DiscoveryResult = typeof DiscoveryResult.Type;
 export type OwnerDeclaredDiscovery = typeof OwnerDeclaredDiscovery.Type;
 export type StoredDiscovery = typeof StoredDiscovery.Type;

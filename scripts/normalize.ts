@@ -10,6 +10,7 @@ import { parseProviderIds } from "../src/lib/provider-id.ts";
 // (app.vercel.app, user.github.io) instead of collapsing onto the platform.
 const getDomain = (url: string) => tldGetDomain(url, { allowPrivateDomains: true });
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
+import type { Variable } from "../src/lib/discovery-schema.ts";
 import { faviconUrl, isJunkDomain } from "../src/lib/favicon.ts";
 import { isDenylisted } from "../src/lib/catalog-denylist.ts";
 import { isPublishableMcpUrl, verifiedMcpAuth } from "../src/lib/endpoint-verdicts.ts";
@@ -570,6 +571,12 @@ interface CuratedInterface {
   note?: string;
   /** RFC 6902 JSON Patch to apply to the spec before use. */
   specOverrides?: unknown[];
+  /** Tokens templated into `endpoint`, e.g. `{environment_address}` for a
+   *  self-hosted MCP server with no shared URL. */
+  variables?: Variable[];
+  /** Markdown guide to signing in, for an `auth: "oauth"` MCP interface whose
+   *  sign-in has a step a client cannot discover, like T3 Code's pairing code. */
+  setup?: string;
 }
 
 interface CuratedRecord {
@@ -634,6 +641,10 @@ export function buildCurated(): Integration[] {
           ...(iface.auth ? { authTypes: [iface.auth] } : {}),
           ...(iface.authHeader ? { authHeader: iface.authHeader } : {}),
           ...(iface.note ? { authNote: iface.note } : {}),
+          ...(iface.variables && iface.variables.length > 0 ? { variables: iface.variables } : {}),
+          ...(iface.auth === "oauth" && iface.setup
+            ? { oauthCredential: { type: "oauth2" as const, label: `${entry.name ?? domain} sign-in`, setup: iface.setup } }
+            : {}),
         };
       } else if (kind === "openapi") {
         rec.openapi = {
@@ -659,7 +670,11 @@ export function buildCurated(): Integration[] {
           ...(iface.note ? { authNote: iface.note } : {}),
         };
       } else {
-        rec.cli = { install: iface.install ?? iface.name ?? "", domain: productDomain };
+        rec.cli = {
+          install: iface.install ?? iface.name ?? "",
+          ...(iface.name ? { command: iface.name } : {}),
+          domain: productDomain,
+        };
       }
       recs.push(rec);
     }

@@ -12,7 +12,7 @@ const getDomain = (url: string) => tldGetDomain(url, { allowPrivateDomains: true
 import type { Integration, Feed, Kind, ExtractedTool } from "../src/lib/types.ts";
 import { faviconUrl, isJunkDomain } from "../src/lib/favicon.ts";
 import { isDenylisted } from "../src/lib/catalog-denylist.ts";
-import { isPublishableMcpUrl, verifiedMcpAuth } from "../src/lib/endpoint-verdicts.ts";
+import { declaresOAuth, isPublishableMcpUrl, verifiedMcpAuth } from "../src/lib/endpoint-verdicts.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 import { readDomainCatalogTree, type Catalog } from "./batch/discovered-catalog.ts";
 
@@ -1034,11 +1034,14 @@ function buildIndex(all: Integration[]) {
 
 type IndexEntry = ReturnType<typeof buildIndex>[number];
 
-/** MCP auth facts come from three signals of falling confidence: a curated
+/** MCP auth facts come from four signals of falling confidence: a curated
  *  header pattern (a human verified it), Claude's explicit `is_authless`
- *  flag, and the OpenAI feed's supported auth types (NONE/OAUTH/API_KEY). */
-function mcpSurfaceAuth(
+ *  flag, the OpenAI feed's supported auth types (NONE/OAUTH/API_KEY), and the
+ *  endpoint probe finding OAuth protected-resource metadata. The last only
+ *  fills a gap: it never overrides a feed's claim. */
+export function mcpSurfaceAuth(
   mcp: NonNullable<Integration["mcp"]>,
+  declaresOAuthMetadata: (url: string | undefined) => boolean = declaresOAuth,
 ): { kind?: string; header?: string; note?: string } | undefined {
   if (mcp.authHeader) {
     return {
@@ -1056,7 +1059,7 @@ function mcpSurfaceAuth(
     if (kind === "none" && !keepsNoneAuth(mcp.remoteUrl)) return undefined;
     return { kind };
   }
-  return undefined;
+  return declaresOAuthMetadata(mcp.remoteUrl) ? { kind: "oauth" } : undefined;
 }
 
 interface SearchIndexSurface {

@@ -24,6 +24,7 @@ import { isDenylisted } from "../src/lib/catalog-denylist.ts";
 import { DOMAIN_ALIASES, canonicalDomain } from "../src/lib/domain-aliases.ts";
 import { applyEndpointVerdicts } from "../src/lib/endpoint-verdicts.ts";
 import { isJunkDomain, logoHost, registrableDomain } from "../src/lib/favicon.ts";
+import { domainFromUrlPath } from "../src/lib/domain-input.ts";
 import { isSdkNotCli } from "../src/lib/surface-classify.ts";
 import { renderOgPng, type OgFonts, type OgImageData } from "../src/lib/og.tsx";
 import type { Surface } from "../src/lib/surface-view.ts";
@@ -428,6 +429,12 @@ async function handleRequest(
     // (except /healthz, which monitors may hit on any host).
     const canonical = canonicalRedirect(request);
     if (canonical) return canonical;
+    const urlDomain = domainFromUrlPath(url.pathname);
+    if (urlDomain && (request.method === "GET" || request.method === "HEAD")) {
+      const target = new URL(url);
+      target.pathname = `/${encodeURIComponent(canonicalDomain(urlDomain))}/`;
+      return Response.redirect(target.toString(), 301);
+    }
     const aliasRedirect = aliasDomainRedirect(request, url);
     if (aliasRedirect) return aliasRedirect;
     wireAi(env);

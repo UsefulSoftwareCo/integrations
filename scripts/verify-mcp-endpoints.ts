@@ -31,6 +31,7 @@
  * Usage:
  *   bun run scripts/verify-mcp-endpoints.ts            # probe everything
  *   bun run scripts/verify-mcp-endpoints.ts --stale 30 # only re-probe entries older than 30 days
+ *   bun run scripts/verify-mcp-endpoints.ts --url <endpoint> [--url <endpoint> …] # probe just these
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -50,6 +51,11 @@ export interface EndpointVerdict {
   readonly status: EndpointStatus;
   /** Short human reason, for auditing a verdict without re-probing. */
   readonly detail: string;
+  /** Set when the endpoint publishes RFC 9728 protected-resource metadata that
+   *  names an authorization server: the server is OAuth-protected, whatever
+   *  the status of its unauthenticated `initialize`. Absent means "not seen",
+   *  never "not OAuth". */
+  readonly oauth?: true;
   readonly checkedAt: string;
 }
 
@@ -90,7 +96,51 @@ const looksLikeMcp = (body: string): boolean => {
   return false;
 };
 
+const fetchJson = async (url: string, init?: RequestInit): Promise<unknown> => {
+  // oxlint-disable-next-line executor/no-try-catch-or-throw -- boundary: fetch and JSON.parse report failure by throwing
+  try {
+    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    return response.ok ? await response.json() : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/** Whether the endpoint publishes RFC 9728 protected-resource metadata naming
+ *  an authorization server. The URL comes from the `WWW-Authenticate`
+ *  `resource_metadata` parameter when the server sent one, else from the
+ *  well-known path derived from the endpoint, with the endpoint's path first
+ *  and the bare origin second. */
+const declaresOAuth = async (url: string, wwwAuthenticate: string | null): Promise<boolean> => {
+  const advertised = wwwAuthenticate?.match(/resource_metadata="([^"]+)"/)?.[1];
+  const parsed = new URL(url);
+  const path = parsed.pathname === "/" ? "" : parsed.pathname;
+  const candidates = [
+    ...(advertised ? [advertised] : []),
+    `${parsed.origin}/.well-known/oauth-protected-resource${path}`,
+    `${parsed.origin}/.well-known/oauth-protected-resource`,
+  ];
+  for (const candidate of candidates) {
+    const metadata = (await fetchJson(candidate)) as { authorization_servers?: unknown } | undefined;
+    if (Array.isArray(metadata?.authorization_servers) && metadata.authorization_servers.length > 0) return true;
+  }
+  return false;
+};
+
 const verdictFor = async (url: string): Promise<EndpointVerdict> => {
+  const { verdict, wwwAuthenticate } = await initializeVerdict(url);
+  if (verdict.status !== "auth" && verdict.status !== "live") return verdict;
+  // oxlint-disable-next-line executor/no-try-catch-or-throw -- boundary: a malformed catalogued URL must not abort the run
+  try {
+    return (await declaresOAuth(url, wwwAuthenticate)) ? { ...verdict, oauth: true } : verdict;
+  } catch {
+    return verdict;
+  }
+};
+
+const initializeVerdict = async (
+  url: string,
+): Promise<{ verdict: EndpointVerdict; wwwAuthenticate: string | null }> => {
   const checkedAt = new Date().toISOString();
   const response = await (async () => {
     // oxlint-disable-next-line executor/no-try-catch-or-throw -- boundary: fetch reports transport failure by rejecting
@@ -122,21 +172,23 @@ const verdictFor = async (url: string): Promise<EndpointVerdict> => {
       message.includes("econnrefused") ||
       message.includes("certificate");
     return {
-      status: denied ? "dead" : "unknown",
-      detail: response.message.slice(0, 140),
-      checkedAt,
+      verdict: { status: denied ? "dead" : "unknown", detail: response.message.slice(0, 140), checkedAt },
+      wwwAuthenticate: null,
     };
   }
 
   // A server that demands credentials is a server.
   if (response.status === 401 || response.status === 403) {
-    return { status: "auth", detail: `HTTP ${response.status}`, checkedAt };
+    return {
+      verdict: { status: "auth", detail: `HTTP ${response.status}`, checkedAt },
+      wwwAuthenticate: response.headers.get("www-authenticate"),
+    };
   }
   if (response.status === 404 || response.status === 410) {
-    return { status: "dead", detail: `HTTP ${response.status}`, checkedAt };
+    return { verdict: { status: "dead", detail: `HTTP ${response.status}`, checkedAt }, wwwAuthenticate: null };
   }
   if (!response.ok) {
-    return { status: "unknown", detail: `HTTP ${response.status}`, checkedAt };
+    return { verdict: { status: "unknown", detail: `HTTP ${response.status}`, checkedAt }, wwwAuthenticate: null };
   }
 
   const body = await (async () => {
@@ -148,12 +200,18 @@ const verdictFor = async (url: string): Promise<EndpointVerdict> => {
     }
   })();
   if (looksLikeMcp(body)) {
-    return { status: "live", detail: `HTTP ${response.status}, initialize ok`, checkedAt };
+    return {
+      verdict: { status: "live", detail: `HTTP ${response.status}, initialize ok`, checkedAt },
+      wwwAuthenticate: null,
+    };
   }
   // 200 is not proof: an API gateway will happily return its own JSON for an
   // unrouted path. Without an initialize result this is not an MCP server, but
   // it answered, so call it unknown rather than dead.
-  return { status: "unknown", detail: `HTTP ${response.status}, no initialize result`, checkedAt };
+  return {
+    verdict: { status: "unknown", detail: `HTTP ${response.status}, no initialize result`, checkedAt },
+    wwwAuthenticate: null,
+  };
 };
 
 const addUrl = (urls: Set<string>, value: string | undefined): void => {
@@ -188,6 +246,8 @@ const endpointsFromDomainTree = (urls: Set<string>): number => {
 };
 
 const endpointsFromCatalog = (): string[] => {
+  const only = process.argv.flatMap((arg, i, argv) => (arg === "--url" && argv[i + 1] ? [argv[i + 1]!] : []));
+  if (only.length > 0) return only;
   const urls = new Set<string>();
   const fromFeeds = endpointsFromFeeds(urls);
   const fromTree = endpointsFromDomainTree(urls);
@@ -213,6 +273,7 @@ async function main(): Promise<void> {
   const previous = readCache();
   const urls = endpointsFromCatalog();
   const todo = urls.filter((url) => {
+    if (process.argv.includes("--url")) return true;
     const seen = previous.endpoints[url];
     if (!seen) return true;
     return Date.parse(seen.checkedAt) < staleBefore;

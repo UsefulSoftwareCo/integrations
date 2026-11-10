@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyProviderIds, buildDiscoveredEntries, buildSearchIndex } from "./normalize.ts";
+import { applyProviderIds, buildDiscoveredEntries, buildSearchIndex, mcpSurfaceAuth } from "./normalize.ts";
 import { denylistEntries } from "../src/lib/catalog-denylist.ts";
 
 describe("normalize discovered zero-surface domains", () => {
@@ -139,5 +139,24 @@ describe("provider IDs", () => {
     ] as never;
     const out = applyProviderIds(recs, new Map([["mcp/a", "a.com/mcp"], ["mcp/gone", "gone.com/mcp"]]));
     expect(out.map((r) => r.providerId)).toEqual(["a.com/mcp", undefined]);
+  });
+});
+
+describe("MCP surface auth from the endpoint probe", () => {
+  const declared = () => true;
+  const unseen = () => false;
+
+  test("an endpoint with OAuth protected-resource metadata and no feed claim publishes oauth", () => {
+    expect(mcpSurfaceAuth({ remoteUrl: "https://mcp.example.com" }, declared)).toEqual({ kind: "oauth" });
+  });
+
+  test("a feed's own claim wins over the probe", () => {
+    expect(mcpSurfaceAuth({ remoteUrl: "https://mcp.example.com", authTypes: ["API_KEY"] }, declared)).toEqual({
+      kind: "api_key",
+    });
+  });
+
+  test("an endpoint the probe found no OAuth metadata for stays unknown", () => {
+    expect(mcpSurfaceAuth({ remoteUrl: "https://mcp.example.com" }, unseen)).toBeUndefined();
   });
 });

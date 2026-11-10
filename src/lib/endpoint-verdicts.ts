@@ -32,6 +32,9 @@ export type EndpointStatus = "live" | "auth" | "dead" | "unknown";
 export interface EndpointVerdict {
   readonly status: EndpointStatus;
   readonly detail: string;
+  /** The endpoint publishes RFC 9728 protected-resource metadata naming an
+   *  authorization server (see scripts/verify-mcp-endpoints.ts). */
+  readonly oauth?: true;
   readonly checkedAt: string;
 }
 
@@ -40,6 +43,14 @@ const verdicts: Record<string, EndpointVerdict> = (verdictsJson as { endpoints: 
 export function endpointVerdict(url: string | undefined): EndpointVerdict | undefined {
   const key = url?.trim();
   return key ? verdicts[key] : undefined;
+}
+
+/** Whether the probe found OAuth protected-resource metadata for an MCP
+ *  endpoint. A fact about the wire, so it holds even where the endpoint
+ *  answers an unauthenticated `initialize` (Gorgias does) and the status alone
+ *  says nothing about credentials. */
+export function declaresOAuth(url: string | undefined): boolean {
+  return endpointVerdict(url)?.oauth === true;
 }
 
 /** Structurally unpublishable regardless of what a probe says: an unsubstituted

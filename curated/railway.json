@@ -1,0 +1,82 @@
+{
+  "slug": "railway",
+  "name": "Railway",
+  "tagline": "Projects, services, deploys, and logs your agent can manage on Railway.",
+  "description": "Railway's hosted MCP server lets agents list and create projects, redeploy services, manage feature flags, and hand multi-step debugging to the Railway agent. The GraphQL API and the `railway` CLI cover the rest of the platform: variables, domains, volumes, environments, and logs.",
+  "domain": "railway.com",
+  "icon": "https://railway.com/favicon.ico",
+  "categories": [
+    "hosting",
+    "developer-tools"
+  ],
+  "auth": {
+    "methods": [
+      {
+        "type": "oauth2",
+        "label": "OAuth 2.0",
+        "note": "The hosted MCP server uses OAuth; you pick which workspaces and projects the client can reach."
+      },
+      {
+        "type": "token",
+        "label": "Account or workspace token",
+        "note": "Created at railway.com/account/tokens; sent as a Bearer token to the GraphQL API."
+      },
+      {
+        "type": "token",
+        "label": "Project token",
+        "note": "Scoped to one environment of one project; uses the Project-Access-Token header, not Bearer. The MCP server rejects it."
+      }
+    ],
+    "guide": "**MCP with OAuth (easiest):** add `https://mcp.railway.com` in an OAuth-capable client and approve the workspaces and projects it may access.\n\n```bash\nclaude mcp add --transport http railway https://mcp.railway.com\n```\n\n**MCP through the CLI:** with Railway CLI 5.44.0 or later, `railway login` once, then let the CLI configure your editor. It proxies to the same server and reuses the CLI session, so no token lands in the editor config. `railway mcp local` runs the server in-process for machines that can't reach `mcp.railway.com`.\n\n```bash\nrailway login && railway setup agent\n```\n\n**Account or workspace token (GraphQL):** create one at [Account → Tokens](https://railway.com/account/tokens). Leave the workspace on \"No workspace\" for an account token, or pick one to scope it.\n\n```bash\ncurl https://backboard.railway.com/graphql/v2 \\\n  -H \"Authorization: Bearer $RAILWAY_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\":\"query { me { name email } }\"}'\n```\n\nProject tokens (from project settings) use a `Project-Access-Token` header instead of Bearer and do not work with the MCP server. Auth failures can come back as HTTP 200 with an `errors` array.",
+    "sources": [
+      {
+        "title": "Railway Docs — MCP server",
+        "url": "https://docs.railway.com/ai/mcp-server"
+      },
+      {
+        "title": "Railway Docs — Public API",
+        "url": "https://docs.railway.com/integrations/api"
+      },
+      {
+        "title": "Railway Docs — CLI",
+        "url": "https://docs.railway.com/guides/cli"
+      }
+    ],
+    "generatedAt": "2026-10-12",
+    "verified": true
+  },
+  "interfaces": [
+    {
+      "format": "mcp",
+      "name": "Railway MCP",
+      "endpoint": "https://mcp.railway.com",
+      "auth": "oauth",
+      "docs": "https://docs.railway.com/ai/mcp-server",
+      "note": "Also reachable over stdio through the CLI (`railway mcp`, set up with `railway setup agent`), which reuses the `railway login` session. `railway mcp local` runs a local server with a wider tool set (variables, domains, volumes, logs, metrics) for machines that can't reach mcp.railway.com. Project tokens are rejected; the server needs a user identity.",
+      "origin": "vendor"
+    },
+    {
+      "format": "graphql",
+      "name": "Railway Public API",
+      "endpoint": "https://backboard.railway.com/graphql/v2",
+      "auth": "token",
+      "authHeader": "Authorization: Bearer {token}",
+      "docs": "https://docs.railway.com/integrations/api",
+      "note": "Account, workspace, and OAuth tokens use Bearer. Project tokens use `Project-Access-Token: {token}` instead. Authorization failures can return HTTP 200 with an `errors` array.",
+      "origin": "vendor"
+    },
+    {
+      "format": "cli",
+      "name": "railway",
+      "install": "npm i -g @railway/cli && railway login",
+      "auth": "oauth",
+      "docs": "https://docs.railway.com/guides/cli",
+      "note": "For CI, set RAILWAY_TOKEN to a project token or RAILWAY_API_TOKEN to an account or workspace token instead of logging in.",
+      "origin": "vendor"
+    }
+  ],
+  "links": {
+    "homepage": "https://railway.com",
+    "docs": "https://docs.railway.com"
+  }
+}

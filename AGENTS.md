@@ -40,3 +40,10 @@ file, the build skips the domain, and `validate:batch` fails if it returns. See
 `scripts/verify-mcp-endpoints.ts` probes every catalogued MCP endpoint (the
 normalized feeds and the `domains/` tree) and writes `output/mcp-endpoints.json`.
 The nightly sync re-probes stale entries and commits that cache with `domains/`.
+
+`scripts/extract-openapi-auth.ts` stores the security-relevant slice of every
+catalogued OpenAPI spec in `output/openapi-auth.json` (same kind of tracked
+cache, refreshed nightly with `--stale 30`). `normalize.ts` turns it into each
+OpenAPI surface's feed `auth`, with `curated/*.json` first and the registry's
+own per-domain facts in `registry-auth.json` last; the rules are in
+`src/lib/openapi-auth.ts`.

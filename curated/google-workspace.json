@@ -14,9 +14,10 @@
     "guide": "Everything Workspace-related authenticates through a Google Cloud project — set one up once and every interface below can use it.\n\n**Vendor CLI (`gws`, easiest):** if you have `gcloud` installed, one command bootstraps the project, enables APIs, and logs you in:\n\n```bash\nbrew install googleworkspace-cli\ngws auth setup   # one-time; later sessions: gws auth login\n```\n\nCredentials are encrypted at rest with the key in your OS keyring. For CI, export credentials and point `GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE` at the file. Gotcha: OAuth apps in testing mode are capped at ~25 scopes — log in with only the services you need (`gws auth login -s drive,gmail,sheets`).\n\n**Community CLI (`gog`):** create a Desktop-app OAuth client in the [Cloud Console](https://console.cloud.google.com/apis/credentials), download the client JSON, then:\n\n```bash\nbrew install openclaw/tap/gogcli\ngog auth credentials ~/Downloads/client_secret.json\ngog auth add you@gmail.com --services gmail,calendar,drive\n```\n\nGotcha: OAuth apps in \"External + Testing\" status get refresh tokens that expire after 7 days — publish the app to make them durable.\n\n**REST APIs directly:** the same OAuth client works against every per-product API (`gmail.googleapis.com`, `www.googleapis.com/calendar/v3`, …) with `Authorization: Bearer {access_token}`. Service accounts with domain-wide delegation cover admin automation, but don't replace OAuth for consumer accounts.",
     "sources": [
       { "title": "googleworkspace/cli — install & auth", "url": "https://github.com/googleworkspace/cli" },
-      { "title": "openclaw/gogcli — install & auth", "url": "https://github.com/openclaw/gogcli" }
+      { "title": "openclaw/gogcli — install & auth", "url": "https://github.com/openclaw/gogcli" },
+      { "title": "Configure the Google Workspace MCP servers", "url": "https://developers.google.com/workspace/guides/configure-mcp-servers" }
     ],
-    "generatedAt": "2026-06-12",
+    "generatedAt": "2026-11-22",
     "verified": true
   },
   "interfaces": [
@@ -49,6 +50,28 @@
       "auth": "oauth",
       "docs": "https://gogcli.sh",
       "note": "MIT-licensed, multi-account, keyring-backed token storage. No Google affiliation."
+    },
+    {
+      "format": "mcp",
+      "slug": "google-workspace-universal-search-mcp",
+      "name": "Google Workspace Universal Search MCP",
+      "description": "Google's hosted Universal Search MCP server: one search tool across Gmail, Drive, Calendar and Chat.",
+      "domain": "workspace.google.com",
+      "origin": "vendor",
+      "endpoint": "https://workspacemcp.googleapis.com/mcp/v1",
+      "auth": "oauth",
+      "authHeader": "Authorization: Bearer {access_token}",
+      "docs": "https://developers.google.com/workspace/guides/configure-mcp-servers",
+      "scopes": [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/drive.readonly",
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/chat.messages.readonly",
+        "https://www.googleapis.com/auth/chat.spaces.readonly",
+        "https://www.googleapis.com/auth/chat.memberships.readonly"
+      ],
+      "note": "Streamable HTTP. OAuth 2.0 only: Google's authorization server offers no dynamic client registration, so create an OAuth client in your own Cloud project (select 'Use this client for an AI-powered agent') and enable the MCP service workspacemcp.googleapis.com. Developer Preview: requires the Google Workspace Developer Preview Program.",
+      "icon": "https://www.google.com/s2/favicons?domain=workspace.google.com&sz=64"
     }
   ],
   "links": {

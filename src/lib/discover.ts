@@ -736,9 +736,23 @@ function markDeclaredSurface(surface: Surface, source: string): Surface {
   return surface;
 }
 
-function surfaceLocator(s: Surface): string {
-  const packageId = s.packages?.[0]?.identifier;
-  return `${s.type}|${(s.spec || s.url || s.command || packageId || s.name).toLowerCase()}`;
+/** Every key a surface can be recognized by. A declared surface must merge
+ * into its discovered twin even when one carries a spec and the other only a
+ * base url (or their urls are templated differently), so matching tries each
+ * facet — ending with type+name, the same pair the batch validator treats as
+ * a duplicate. A surface with a spec does NOT expose its url as a facet:
+ * distinct APIs can share a base url, and the spec is what tells them apart. */
+function surfaceLocators(s: Surface): string[] {
+  const keys: string[] = [];
+  const add = (value: string | undefined) => {
+    if (value) keys.push(`${s.type}|${value.toLowerCase()}`);
+  };
+  add(s.spec);
+  if (!s.spec) add(s.url);
+  add(s.command);
+  add(s.packages?.[0]?.identifier);
+  add(s.name);
+  return keys;
 }
 
 function entryKey(entry: AuthEntry): string {
@@ -802,7 +816,7 @@ function mergeDeclaredSurface(existing: Surface, declared: Surface): void {
   mergeDeclaredAuth(existing, declared);
 }
 
-function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): void {
+export function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): void {
   const declared = detect.integrationsJson;
   if (!declared?.result) return;
   const source = declared.url;
@@ -812,11 +826,17 @@ function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit)
       emit?.({ kind: "credential", id, credential: r.credentials[id] });
     }
   }
-  const byLocator = new Map(r.surfaces.map((surface) => [surfaceLocator(surface), surface]));
+  const byLocator = new Map<string, Surface>();
+  const index = (surface: Surface): void => {
+    for (const key of surfaceLocators(surface)) if (!byLocator.has(key)) byLocator.set(key, surface);
+  };
+  for (const surface of r.surfaces) index(surface);
   for (const rawSurface of declared.result.surfaces ?? []) {
     const surface = markDeclaredSurface(cloneJson(rawSurface) as Surface, source);
     if (!surface.slug) surface.slug = assignSlug(surface.name || "Declared surface", r.surfaces);
-    const existing = byLocator.get(surfaceLocator(surface));
+    const existing = surfaceLocators(surface)
+      .map((key) => byLocator.get(key))
+      .find(Boolean);
     if (existing) {
       mergeDeclaredSurface(existing, surface);
       emit?.({ kind: "surface", surface: existing });
@@ -824,7 +844,7 @@ function mergeDeclared(r: DiscoveryResult, detect: DetectionResult, emit?: Emit)
     }
     surface.slug = assignSlug(surface.slug || surface.name || "Declared surface", r.surfaces);
     r.surfaces.push(surface);
-    byLocator.set(surfaceLocator(surface), surface);
+    index(surface);
     emit?.({ kind: "surface", surface });
   }
 }
@@ -838,11 +858,34 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   const oauth = detect.auth?.oauth;
   const hasDetOauth = oauth && (oauth.authorizationEndpoint || oauth.tokenEndpoint || oauth.registrationEndpoint || oauth.scopes?.length);
 
+  const isOauthCred = (c: Credential): boolean => /oauth/i.test(c.type) || /oauth/i.test(c.label);
+  const authIds = (s: Pick<Surface, "auth">): string[] =>
+    s.auth?.status === "required" ? s.auth.entries.flatMap((entry) => entry.use.map((use) => use.id)) : [];
+
+  // Credentials bound to any surface other than `surface` — in this result or in
+  // the owner declaration (merged later, so not in r.surfaces yet).
+  const idsUsedElsewhere = (surface?: Surface): Set<string> => {
+    const ids = new Set<string>();
+    for (const s of r.surfaces) if (s !== surface) for (const id of authIds(s)) ids.add(id);
+    for (const s of detect.integrationsJson?.result?.surfaces ?? []) {
+      const isThisSurface = surface && s.type === surface.type && "url" in s && s.url === surface.url;
+      if (!isThisSurface) for (const id of authIds(s as Surface)) ids.add(id);
+    }
+    return ids;
+  };
+
   // Ensure a detected OAuth credential exists (referenced by detected MCP auth).
-  const ensureOauthCred = (): string => {
-    const existing = Object.entries(r.credentials).find(([, c]) => /oauth/i.test(c.type) || /oauth/i.test(c.label));
-    if (existing) return existing[0];
-    const id = "oauth";
+  // The bind helpers rewrite the credential they get, so this must never hand
+  // back one another surface uses: prefer an OAuth credential only `surface`
+  // references, then an unreferenced one, else mint a fresh id.
+  const ensureOauthCred = (surface?: Surface): string => {
+    const used = idsUsedElsewhere(surface);
+    const own = surface && authIds(surface).find((id) => !used.has(id) && r.credentials[id] && isOauthCred(r.credentials[id]));
+    if (own) return own;
+    const free = Object.entries(r.credentials).find(([id, c]) => !used.has(id) && isOauthCred(c));
+    if (free) return free[0];
+    let id = "oauth";
+    for (let n = 2; r.credentials[id]; n++) id = `oauth-${n}`;
     const c: Credential = {
       type: "oauth2",
       label: "OAuth 2.0",
@@ -864,7 +907,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   // developer portal, copy client_id/client_secret" story the model wrote from
   // docs — and bind the surface to it as a detected signal.
   const bindMcpSelfOnboard = (surface: Surface, mcp: McpDetection): void => {
-    const id = ensureOauthCred();
+    const id = ensureOauthCred(surface);
     const c = r.credentials[id];
     c.type = "oauth2";
     c.label = "OAuth 2.0";
@@ -895,7 +938,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
   const isMcpManualOnboard = (mcp: McpDetection): boolean => mcp.authorizationServerMetadataFetched === true && !mcp.dcr && !mcp.cimd;
 
   const bindMcpManualOnboard = (surface: Surface, mcp: McpDetection): void => {
-    const id = ensureOauthCred();
+    const id = ensureOauthCred(surface);
     const c = r.credentials[id];
     const hostKnowledge = mcpHostKnowledge(mcp.url);
     c.type = "oauth2";
@@ -922,7 +965,7 @@ function merge(r: DiscoveryResult, detect: DetectionResult, emit?: Emit): Discov
     }
     const auth: AuthStatus =
       hasDetOauth || mcp.auth
-        ? { status: "required", entries: [{ use: [{ id: ensureOauthCred(), mechanics: { source: "well-known" } }], basis: { via: "detected", signal: "oauth-protected-resource", verifiedAt } }] }
+        ? { status: "required", entries: [{ use: [{ id: ensureOauthCred({ type: "mcp", url: mcp.url } as Surface), mechanics: { source: "well-known" } }], basis: { via: "detected", signal: "oauth-protected-resource", verifiedAt } }] }
         : { status: "unknown" };
     const s: Surface = { slug: assignSlug("MCP server", r.surfaces), name: "MCP server", type: "mcp", url: mcp.url, basis: { via: "detected", signal: "mcp:initialize", verifiedAt }, auth, notes: mcp.dcr || mcp.cimd ? "Self-onboarding (DCR/CIMD)" : undefined };
     r.surfaces.unshift(s);

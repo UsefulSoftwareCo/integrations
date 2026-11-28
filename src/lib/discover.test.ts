@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { PROBE_KEYS } from "./conventions.ts";
-import { discover, slackMcpAppManifestUrl, type ChatFn, type WebBackend } from "./discover.ts";
+import { discover, mergeDeclared, slackMcpAppManifestUrl, type ChatFn, type WebBackend } from "./discover.ts";
 import type { DetectionResult } from "./detect.ts";
 
 const web: WebBackend = {
@@ -187,5 +187,313 @@ describe("discover MCP onboarding overrides", () => {
     expect(setup).toContain("pre-registered app required");
     expect(setup).not.toContain("Slack MCP server access");
     expect(setup).not.toContain("api.slack.com/apps?new_app=1");
+  });
+});
+
+describe("mergeDeclared", () => {
+  const declaredSource = "https://acme.example/.well-known/integrations.json";
+  const declaredBasis = { via: "declared", source: declaredSource } as const;
+
+  function resultWith(surfaces: object[]): Parameters<typeof mergeDeclared>[0] {
+    return {
+      version: 3,
+      domain: "acme.example",
+      summary: "",
+      credentials: {},
+      surfaces,
+    } as Parameters<typeof mergeDeclared>[0];
+  }
+
+  function detectionWith(surfaces: object[]): DetectionResult {
+    return {
+      ...baseDetection(""),
+      integrationsJson: {
+        url: declaredSource,
+        result: { version: 3, credentials: {}, surfaces },
+      },
+    } as DetectionResult;
+  }
+
+  test("merges a declared surface into its discovered twin when only one carries a spec", () => {
+    const r = resultWith([
+      {
+        type: "http",
+        slug: "backend-api",
+        name: "Backend API",
+        url: "https://api.acme.example/v1",
+        basis: { via: "discovered", evidence: [] },
+        auth: { status: "unknown" },
+      },
+    ]);
+    mergeDeclared(
+      r,
+      detectionWith([
+        {
+          type: "http",
+          slug: "backend-api",
+          name: "Backend API",
+          url: "https://api.acme.example/v1",
+          spec: "https://acme.example/specs/backend.yml",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+      ]),
+    );
+
+    expect(r.surfaces).toHaveLength(1);
+    expect(r.surfaces[0].slug).toBe("backend-api");
+    expect(r.surfaces[0].spec).toBe("https://acme.example/specs/backend.yml");
+    expect(r.surfaces[0].basis.via).toBe("declared");
+  });
+
+  test("falls back to type+name when locator urls are templated differently", () => {
+    const r = resultWith([
+      {
+        type: "http",
+        slug: "frontend-api",
+        name: "Frontend API",
+        url: "https://{domain}.accounts.example",
+        basis: { via: "discovered", evidence: [] },
+        auth: { status: "unknown" },
+      },
+    ]);
+    mergeDeclared(
+      r,
+      detectionWith([
+        {
+          type: "http",
+          slug: "frontend-api",
+          name: "Frontend API",
+          url: "https://{frontend_api}",
+          spec: "https://acme.example/specs/frontend.yml",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+      ]),
+    );
+
+    expect(r.surfaces).toHaveLength(1);
+    expect(r.surfaces[0].spec).toBe("https://acme.example/specs/frontend.yml");
+  });
+
+  test("still appends genuinely new declared surfaces", () => {
+    const r = resultWith([
+      {
+        type: "http",
+        slug: "backend-api",
+        name: "Backend API",
+        url: "https://api.acme.example/v1",
+        basis: { via: "discovered", evidence: [] },
+        auth: { status: "unknown" },
+      },
+    ]);
+    mergeDeclared(
+      r,
+      detectionWith([
+        {
+          type: "http",
+          slug: "platform-api",
+          name: "Platform API",
+          url: "https://api.acme.example/v1#platform",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+      ]),
+    );
+
+    expect(r.surfaces).toHaveLength(2);
+    expect(r.surfaces.map((s) => s.slug)).toEqual(["backend-api", "platform-api"]);
+  });
+
+  test("does not merge distinct spec-bearing APIs that share a base url", () => {
+    const r = resultWith([
+      {
+        type: "http",
+        slug: "backend-api",
+        name: "Backend API",
+        url: "https://api.acme.example/v1",
+        basis: { via: "discovered", evidence: [] },
+        auth: { status: "unknown" },
+      },
+    ]);
+    mergeDeclared(
+      r,
+      detectionWith([
+        {
+          type: "http",
+          slug: "backend-api",
+          name: "Backend API",
+          url: "https://api.acme.example/v1",
+          spec: "https://acme.example/specs/backend.yml",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+        {
+          type: "http",
+          slug: "platform-api",
+          name: "Platform API",
+          url: "https://api.acme.example/v1",
+          spec: "https://acme.example/specs/platform.yml",
+          basis: declaredBasis,
+          auth: { status: "unknown" },
+        },
+      ]),
+    );
+
+    expect(r.surfaces.map((s) => s.slug)).toEqual(["backend-api", "platform-api"]);
+    expect(r.surfaces[0].spec).toBe("https://acme.example/specs/backend.yml");
+    expect(r.surfaces[1].spec).toBe("https://acme.example/specs/platform.yml");
+  });
+});
+
+describe("MCP OAuth binding with multiple OAuth credentials", () => {
+  const mcpUrl = "https://mcp.acme.example/mcp";
+  const cliSession = {
+    id: "cli_session",
+    type: "oauth2",
+    label: "Acme CLI session",
+    setup: "Run `acme auth login` to authenticate the CLI through your browser.",
+  };
+  const mcpSession = {
+    id: "mcp_session",
+    type: "oauth2",
+    label: "Acme MCP OAuth",
+    setup: "Approve access in the browser.",
+  };
+  const discovered = { via: "discovered", evidence: ["https://docs.acme.example/cli"] };
+
+  function serviceDetection(declaredSurfaces?: object[]): DetectionResult {
+    return {
+      domain: "acme.example",
+      found: ["mcp"],
+      probed: [],
+      mcp: [{ url: mcpUrl, source: "probe", auth: "oauth2", authorizationServer: "https://auth.acme.example", dcr: true, cimd: true }],
+      ...(declaredSurfaces && {
+        integrationsJson: {
+          url: "https://acme.example/.well-known/integrations.json",
+          result: { version: 3, credentials: {}, surfaces: declaredSurfaces },
+        },
+      }),
+      errors: [],
+    } as DetectionResult;
+  }
+
+  async function discoverService(detect: DetectionResult, bindCliInModel: boolean) {
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        { id: "cred-cli", name: "record_credential", arguments: cliSession },
+        { id: "cred-mcp", name: "record_credential", arguments: mcpSession },
+        {
+          id: "surface-cli",
+          name: "record_surface",
+          arguments: {
+            name: "Acme CLI",
+            type: "cli",
+            command: "acme",
+            authStatus: bindCliInModel ? "required" : "unknown",
+            ...(bindCliInModel && {
+              auth: [{ use: [{ id: "cli_session", mechanics: { source: "cli", command: "acme auth login" } }], basis: discovered }],
+            }),
+            basis: discovered,
+          },
+        },
+        {
+          id: "surface-mcp",
+          name: "record_surface",
+          arguments: { name: "Acme MCP server", type: "mcp", url: mcpUrl, authStatus: "unknown", basis: discovered },
+        },
+        { id: "finish-1", name: "finish", arguments: { summary: "Acme.", description: "Auth." } },
+      ],
+    });
+    const result = await discover(detect.domain, detect, chat, web);
+    if (!result) throw new Error("discover returned null");
+    return result;
+  }
+
+  function mcpAuthIds(result: NonNullable<Awaited<ReturnType<typeof discover>>>): string[] {
+    const mcp = result.surfaces.find((s) => s.type === "mcp" && s.url === mcpUrl);
+    return mcp?.auth.status === "required" ? mcp.auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
+  }
+
+  test("binds the MCP surface to mcp_session and leaves the CLI's credential untouched", async () => {
+    const result = await discoverService(serviceDetection(), true);
+
+    expect(result.credentials.cli_session.label).toBe(cliSession.label);
+    expect(result.credentials.cli_session.setup).toBe(cliSession.setup);
+    expect(mcpAuthIds(result)).toEqual(["mcp_session"]);
+    expect(result.credentials.mcp_session.setup).toContain("self-onboarding");
+  });
+
+  test("treats credentials bound only by the owner declaration as in use", async () => {
+    const result = await discoverService(
+      serviceDetection([
+        {
+          type: "cli",
+          slug: "acme-cli",
+          name: "Acme CLI",
+          command: "acme",
+          basis: { via: "declared", source: "https://acme.example/.well-known/integrations.json" },
+          auth: {
+            status: "required",
+            entries: [
+              {
+                use: [{ id: "cli_session", mechanics: { source: "cli", command: "acme auth login" } }],
+                basis: { via: "declared", source: "https://acme.example/.well-known/integrations.json" },
+              },
+            ],
+          },
+        },
+      ]),
+      false,
+    );
+
+    expect(result.credentials.cli_session.label).toBe(cliSession.label);
+    expect(result.credentials.cli_session.setup).toBe(cliSession.setup);
+    expect(mcpAuthIds(result)).toEqual(["mcp_session"]);
+  });
+});
+
+describe("MCP OAuth binding with a credential shared across surfaces", () => {
+  test("mints a separate MCP credential instead of rewriting a shared one", async () => {
+    const mcpUrl = "https://mcp.acme.example/mcp";
+    const shared = { id: "shared", type: "oauth2", label: "Acme account sign-in", setup: "Sign in with your Acme account." };
+    const discovered = { via: "discovered", evidence: ["https://docs.acme.example"] };
+    const sharedAuth = [{ use: [{ id: "shared", mechanics: { source: "well-known" } }], basis: discovered }];
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        { id: "cred-shared", name: "record_credential", arguments: shared },
+        {
+          id: "surface-cli",
+          name: "record_surface",
+          arguments: { name: "Acme CLI", type: "cli", command: "acme", authStatus: "required", auth: sharedAuth, basis: discovered },
+        },
+        {
+          id: "surface-mcp",
+          name: "record_surface",
+          arguments: { name: "Acme MCP server", type: "mcp", url: mcpUrl, authStatus: "required", auth: sharedAuth, basis: discovered },
+        },
+        { id: "finish-1", name: "finish", arguments: { summary: "Acme.", description: "Auth." } },
+      ],
+    });
+    const detect = {
+      domain: "acme.example",
+      found: ["mcp"],
+      probed: [],
+      mcp: [{ url: mcpUrl, source: "probe", auth: "oauth2", authorizationServer: "https://auth.acme.example", dcr: true, cimd: true }],
+      errors: [],
+    } as DetectionResult;
+
+    const result = await discover(detect.domain, detect, chat, web);
+    if (!result) throw new Error("discover returned null");
+
+    expect(result.credentials.shared.label).toBe(shared.label);
+    expect(result.credentials.shared.setup).toBe(shared.setup);
+    const mcp = result.surfaces.find((s) => s.type === "mcp" && s.url === mcpUrl);
+    const mcpIds = mcp?.auth.status === "required" ? mcp.auth.entries.flatMap((e) => e.use.map((u) => u.id)) : [];
+    expect(mcpIds).toHaveLength(1);
+    expect(mcpIds[0]).not.toBe("shared");
+    expect(result.credentials[mcpIds[0]].setup).toContain("self-onboarding");
   });
 });

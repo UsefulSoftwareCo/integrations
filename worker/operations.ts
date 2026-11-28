@@ -115,24 +115,49 @@ type SlugSurface = {
   packages?: readonly { identifier?: string }[];
 };
 
+/** HTTP surfaces key on their spec first: distinct APIs can share a base url,
+ * and the spec is what tells them apart. (GraphQL's spec can be the literal
+ * "introspection", so it keeps url-first.) */
 export const locatorOf = (s: SlugSurface): string | undefined => {
-  const loc = s.type === "cli" ? (s.command ?? s.packages?.[0]?.identifier) : (s.url ?? s.spec);
+  const loc =
+    s.type === "cli" ? (s.command ?? s.packages?.[0]?.identifier) : s.type === "http" ? (s.spec ?? s.url) : (s.url ?? s.spec);
   return loc ? `${s.type}|${loc.toLowerCase()}` : undefined;
+};
+
+const urlKeyOf = (s: SlugSurface): string | undefined => (s.type !== "cli" && s.url ? `${s.type}|${s.url.toLowerCase()}` : undefined);
+
+const countBy = (surfaces: readonly SlugSurface[], key: (s: SlugSurface) => string | undefined): Map<string, number> => {
+  const counts = new Map<string, number>();
+  for (const s of surfaces) {
+    const k = key(s);
+    if (k) counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  return counts;
 };
 
 /** Slug continuity: a fresh result's surface that matches a PRIOR surface by
  * locator keeps the prior slug, even if the model renamed it — /{domain}/{slug}/
- * links never break across re-runs. Collisions re-suffix deterministically. */
+ * links never break across re-runs. A surface whose locator changed (an HTTP
+ * API that gained or lost a spec) falls back to its url, but only when exactly
+ * one prior and one fresh surface have that url. Collisions re-suffix
+ * deterministically. */
 export function preserveSlugs<T extends SlugSurface>(surfaces: T[], prior: readonly SlugSurface[]): void {
   const bySlugLoc = new Map<string, string>();
+  const byUrl = new Map<string, string>();
   for (const p of prior) {
     const loc = locatorOf(p);
     if (loc && p.slug) bySlugLoc.set(loc, p.slug);
+    const urlKey = urlKeyOf(p);
+    if (urlKey && p.slug) byUrl.set(urlKey, p.slug);
   }
+  const priorUrlCount = countBy(prior, urlKeyOf);
+  const freshUrlCount = countBy(surfaces, urlKeyOf);
   const taken = new Set<string>();
   for (const s of surfaces) {
     const loc = locatorOf(s);
-    const inherited = loc ? bySlugLoc.get(loc) : undefined;
+    const urlKey = urlKeyOf(s);
+    const unambiguousUrl = urlKey && priorUrlCount.get(urlKey) === 1 && freshUrlCount.get(urlKey) === 1;
+    const inherited = (loc ? bySlugLoc.get(loc) : undefined) ?? (unambiguousUrl ? byUrl.get(urlKey) : undefined);
     let slug = inherited ?? s.slug;
     const base = slug || "surface";
     for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;

@@ -56,6 +56,16 @@ How to read the response:
   entry's `use[]` lists credentials needed **together (AND)**;
   `status: "unknown"` means not yet determined.
 
+For a Google `http` surface, fetch its `spec` to choose narrower OAuth scopes.
+Each operation's `x-google-scopes` lists the scopes Google accepts for it;
+any **one** of them is enough. The order is not a privilege ranking, and
+importers keep requesting the broad scopes in `security`, so pick the
+narrowest scope yourself. The `x-google-scopes` map on the `googleOAuth2`
+security scheme describes each scope. Example: to list and read Gmail
+messages, request `https://www.googleapis.com/auth/gmail.readonly`, not
+`https://mail.google.com/` (`gmail.metadata` also lists messages but can't
+read their bodies).
+
 Not found means the domain isn't cataloged yet — escalate to step 3.
 
 **3. Detect / discover** when the lookup came back empty or stale:

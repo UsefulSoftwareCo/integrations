@@ -141,6 +141,104 @@ describe("discover llms.txt seed facts", () => {
 });
 
 describe("discover MCP onboarding overrides", () => {
+  test("binds detected MCP OAuth to the credential declared for that surface", async () => {
+    const source = "https://samva.dev/.well-known/integrations.json";
+    const detect: DetectionResult = {
+      ...mcpDetection({
+        url: "https://mcp.samva.dev/mcp",
+        authorizationServer: "https://mcp.samva.dev",
+        authorizationServerMetadataFetched: true,
+        cimd: true,
+      }),
+      domain: "samva.dev",
+      integrationsJson: {
+        url: source,
+        result: {
+          version: 3,
+          credentials: {
+            samva_mcp_oauth: {
+              type: "oauth2",
+              label: "Samva MCP OAuth",
+              setup: "Connect an OAuth-capable MCP client to the hosted MCP URL.",
+            },
+            samva_cli_oauth: {
+              type: "oauth2",
+              label: "Samva CLI login",
+              setup: "Run `samva login` to complete the device flow.",
+            },
+          },
+          surfaces: [
+            {
+              slug: "samva-mcp",
+              name: "Samva hosted MCP",
+              type: "mcp",
+              url: "https://mcp.samva.dev/mcp",
+              basis: { via: "declared", source },
+              auth: {
+                status: "required",
+                entries: [
+                  {
+                    use: [{ id: "samva_mcp_oauth", mechanics: { source: "well-known" } }],
+                    basis: { via: "declared", source },
+                  },
+                ],
+              },
+            },
+            {
+              slug: "samva-cli",
+              name: "Samva CLI",
+              type: "cli",
+              command: "samva",
+              basis: { via: "declared", source },
+              auth: {
+                status: "required",
+                entries: [
+                  {
+                    use: [{ id: "samva_cli_oauth", mechanics: { source: "cli", command: "samva login" } }],
+                    basis: { via: "declared", source },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    };
+    const chat: ChatFn = async () => ({
+      message: { role: "assistant", content: null },
+      toolCalls: [
+        {
+          id: "cred-1",
+          name: "record_credential",
+          arguments: {
+            id: "samva_cli_oauth",
+            type: "oauth2",
+            label: "Samva CLI login",
+            setup: "Run `samva login` to complete the device flow.",
+          },
+        },
+        {
+          id: "finish-1",
+          name: "finish",
+          arguments: {
+            summary: "Samva exposes MCP and CLI surfaces.",
+            description: "Samva is an email API.",
+          },
+        },
+      ],
+    });
+
+    const result = await discover(detect.domain, detect, chat, web);
+    if (!result) throw new Error("discover returned null");
+    const mcp = result.surfaces.find((surface) => surface.type === "mcp");
+
+    expect(mcp?.auth.status).toBe("required");
+    if (mcp?.auth.status !== "required") throw new Error("MCP auth was not required");
+    expect(mcp.auth.entries[0]?.use[0]?.id).toBe("samva_mcp_oauth");
+    expect(result.credentials.samva_mcp_oauth?.setup).toContain("Client ID Metadata Document");
+    expect(result.credentials.samva_cli_oauth?.setup).toBe("Run `samva login` to complete the device flow.");
+  });
+
   test("rewrites Slack no-DCR MCP setup to manual registration with the manifest deep link", async () => {
     const result = await discoverMcp(mcpDetection({ authorizationServerMetadataFetched: true, dcr: false, cimd: false }));
     const setup = setupFrom(result);
